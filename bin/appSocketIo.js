@@ -1,5 +1,6 @@
 // Gestion evenements socket.io pour /millegrilles
-const debug = require('debug')('appSocketIo');
+import debugLib from 'debug'
+const debug = debugLib('appSocketIo')
 
 const routingKeysPrive = [
   'appSocketio.nodejs',  // Juste pour trouver facilement sur exchange - debug
@@ -18,7 +19,7 @@ const EVENEMENTS_SUPPORTES = [
   ...ROUTING_KEYS_COLLECTIONS,
 ]
 
-function configurerEvenements(socket) {
+export default function configurerEvenements(socket) {
   const configurationEvenements = {
     listenersPublics: [
     ],
@@ -29,8 +30,4 @@ function configurerEvenements(socket) {
   }
 
   return configurationEvenements
-}
-
-module.exports = {
-  configurerEvenements
 }
