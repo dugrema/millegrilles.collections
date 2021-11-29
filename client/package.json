@@ -3,6 +3,8 @@
   "version": "2021.1",
   "private": true,
   "dependencies": {
+    "@dugrema/millegrilles.reactjs": "https://github.com/dugrema/millegrilles.reactjs.git#2021.1.0",
+    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2021.1.0",
     "@testing-library/jest-dom": "^5.15.1",
     "@testing-library/react": "^11.2.7",
     "@testing-library/user-event": "^12.8.3",
