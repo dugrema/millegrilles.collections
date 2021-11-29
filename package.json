@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node ./bin/www",
-    "debug": "export $(cat .env.development .env.local | grep -v ^\\# | xargs) && npm start",
+    "dev": "export $(cat .env.development .env.local | grep -v ^\\# | xargs) && npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
