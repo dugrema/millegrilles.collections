@@ -4,7 +4,7 @@ import express from 'express'
 import { server5 } from '@dugrema/millegrilles.nodejs'
 import utiljs from '@dugrema/millegrilles.utiljs'
 
-import socketApp from './appSocketIo.js'
+import { configurerEvenements } from './appSocketIo.js'
 import routeCollections from './routes/collections.js'
 
 // const { GrosFichiersDao } = require('../models/grosFichiersDao')
@@ -17,7 +17,7 @@ export default async params => {
     const app = express()
     const {server, socketIo, amqpdao: amqpdaoInst} = await server5(
         app,
-        socketApp.configurerEvenements,
+        configurerEvenements,
         {pathApp: '/collections', verifierAutorisation}
     )
 

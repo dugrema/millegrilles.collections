@@ -19,9 +19,10 @@ const EVENEMENTS_SUPPORTES = [
   ...ROUTING_KEYS_COLLECTIONS,
 ]
 
-export default function configurerEvenements(socket) {
+export function configurerEvenements(socket) {
   const configurationEvenements = {
     listenersPublics: [
+      {eventName: 'challenge', callback: (params, cb) => {challenge(socket, params, cb)}},
     ],
     listenersPrives: [
     ],
@@ -30,4 +31,17 @@ export default function configurerEvenements(socket) {
   }
 
   return configurationEvenements
+}
+
+async function challenge(socket, params, cb) {
+  // Repondre avec un message signe
+  const reponse = {
+    reponse: params.challenge,
+    message: 'Trust no one',
+    nomUsager: socket.nomUsager,
+    userId: socket.userId,
+  }
+  const reponseSignee = await socket.amqpdao.pki.formatterMessage(reponse, 'challenge', {ajouterCertificat: true})
+  console.debug("!!!! Challenge reponse : %O", reponseSignee)
+  cb(reponseSignee)
 }
