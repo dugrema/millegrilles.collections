@@ -4,6 +4,7 @@ import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrem
 import './App.css'
 
 function App() {
+  console.debug("App rendered")
   return (
     <LayoutApplication>
       
