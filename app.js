@@ -6,6 +6,7 @@ import utiljs from '@dugrema/millegrilles.utiljs'
 
 import { configurerEvenements } from './appSocketIo.js'
 import routeCollections from './routes/collections.js'
+import * as mqdao from './mqdao.js'
 
 // const { GrosFichiersDao } = require('../models/grosFichiersDao')
 
@@ -24,18 +25,17 @@ export default async params => {
     const routeGrosfichiers = express.Router()
     app.use('/collections', routeGrosfichiers)
 
-  //   const grosFichiersDao = new GrosFichiersDao(amqpdaoInst)
-  //   socketIo.use((socket, next)=>{
-  //     socket.grosFichiersDao = grosFichiersDao
-  //     next()
-  //   })
+    socketIo.use((socket, next)=>{
+      socket.mqdao = mqdao
+      next()
+    })
   
-  //   // Inserer les routes apres l'initialisation, permet d'avoir le middleware
-  //   // attache avant (app.use comme le logging morgan, injection amqpdao, etc.)
-  //   routeGrosfichiers.use((req, res, next)=>{
-  //     req.grosFichiersDao = grosFichiersDao
-  //     next()
-  //   })
+    // Inserer les routes apres l'initialisation, permet d'avoir le middleware
+    // attache avant (app.use comme le logging morgan, injection amqpdao, etc.)
+    routeGrosfichiers.use((req, res, next)=>{
+      req.mqdao = mqdao
+      next()
+    })
   
     routeGrosfichiers.use(routeCollections(amqpdaoInst))
 }

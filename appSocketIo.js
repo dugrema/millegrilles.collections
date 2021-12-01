@@ -1,5 +1,7 @@
 // Gestion evenements socket.io pour /millegrilles
 import debugLib from 'debug'
+import * as mqdao from './mqdao.js'
+
 const debug = debugLib('appSocketIo')
 
 const routingKeysPrive = [
@@ -20,9 +22,10 @@ const EVENEMENTS_SUPPORTES = [
 ]
 
 export function configurerEvenements(socket) {
-  const configurationEvenements = {
+
+  return {
     listenersPublics: [
-      {eventName: 'challenge', callback: (params, cb) => {challenge(socket, params, cb)}},
+      { eventName: 'challenge', callback: (params, cb) => traiter(socket, mqdao.challenge, params, cb) },
     ],
     listenersPrives: [
     ],
@@ -30,18 +33,9 @@ export function configurerEvenements(socket) {
     ]
   }
 
-  return configurationEvenements
 }
 
-async function challenge(socket, params, cb) {
-  // Repondre avec un message signe
-  const reponse = {
-    reponse: params.challenge,
-    message: 'Trust no one',
-    nomUsager: socket.nomUsager,
-    userId: socket.userId,
-  }
-  const reponseSignee = await socket.amqpdao.pki.formatterMessage(reponse, 'challenge', {ajouterCertificat: true})
-  console.debug("!!!! Challenge reponse : %O", reponseSignee)
-  cb(reponseSignee)
+async function traiter(socket, methode, params, cb) {
+  const reponse = await methode(socket, params)
+  if(cb) cb(reponse)
 }

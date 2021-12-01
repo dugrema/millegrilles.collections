@@ -1,5 +1,4 @@
 import { proxy } from 'comlink'
-import { getUsager } from '@dugrema/millegrilles.reactjs'
 
 const CONST_APP_URL = 'collections'
 
@@ -20,27 +19,30 @@ export async function connecter(workers, setUsagerState, setEtatConnexion) {
     console.debug("Connexion info : %O", info)
 }
 
-async function setUsager(workers, nomUsager, setUsagerState) {
-  console.debug("Usager : '%s'", nomUsager)
-  const {getUsager} = await import('@dugrema/millegrilles.reactjs')
-  const usager = await getUsager(nomUsager)
-  
-  if(usager && usager.certificat) {
-      const { connexion, chiffrage, x509 } = workers
-      const fullchain = usager.certificat
-      const caPem = [...fullchain].pop()
+async function setUsager(workers, nomUsager, setUsagerState, opts) {
+    opts = opts || {}
+    console.debug("setUsager '%s'", nomUsager)
+    const { getUsager } = await import('@dugrema/millegrilles.reactjs')
+    const usager = await getUsager(nomUsager)
+    
+    if(usager && usager.certificat) {
+        const { connexion, chiffrage, x509 } = workers
+        const fullchain = usager.certificat
+        const caPem = [...fullchain].pop()
 
-      const certificatPem = fullchain.join('')
+        const certificatPem = fullchain.join('')
 
-      // Initialiser le CertificateStore
-      await chiffrage.initialiserCertificateStore(caPem, {isPEM: true, DEBUG: false})
-      await x509.init(caPem)
-      await chiffrage.initialiserFormatteurMessage(certificatPem, usager.signer, usager.dechiffrer, {DEBUG: false})
-      await connexion.initialiserFormatteurMessage(certificatPem, usager.signer, {DEBUG: false})
-  
-      setUsagerState({nomUsager})
-  } else {
-      console.warn("Pas de certificat pour l'usager '%s'", usager)
-  }
+        // Initialiser le CertificateStore
+        await chiffrage.initialiserCertificateStore(caPem, {isPEM: true, DEBUG: false})
+        await x509.init(caPem)
+
+        // Init cles privees
+        await chiffrage.initialiserFormatteurMessage(certificatPem, usager.signer, usager.dechiffrer, {DEBUG: false})
+        await connexion.initialiserFormatteurMessage(certificatPem, usager.signer, {DEBUG: false})
+    
+        setUsagerState({nomUsager})
+    } else {
+        console.warn("Pas de certificat pour l'usager '%s'", usager)
+    }
 
 }
