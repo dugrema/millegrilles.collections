@@ -1,8 +1,5 @@
 import { expose } from 'comlink'
 import { ConnexionClient } from '@dugrema/millegrilles.reactjs'
-// Exposer methodes du Worker
-expose(ConnexionClient)
-
 
 // // import {expose as comlinkExpose} from 'comlink'
 // import multibase from 'multibase'
@@ -53,122 +50,6 @@ expose(ConnexionClient)
 // //   return connexionClient.connecter(url, opts)
 // // }
 
-// async function connecter(opts) {
-//   opts = opts || {}
-
-//   let urlApp = null
-//   if(opts.url) {
-//     urlApp = new URL(opts.url)
-//   } else {
-//     if(!urlApp) {
-//       urlApp = new URL(opts.location)
-//       urlApp.pathname = URL_GROSFICHIERS
-//     }
-//   }
-//   // console.debug("url choisi : %O", urlApp)
-
-//   if(urlApp === _urlCourant) return
-//   // _urlCourant = null  // Reset url courant
-
-//   const urlSocketio = new URL(urlApp.href)
-//   urlSocketio.pathname = path.join(urlSocketio.pathname, 'socket.io')
-
-//   // console.debug("Socket.IO connecter avec url %s", urlSocketio.href)
-//   // return connexionClient.connecter(url, opts)
-
-//   // const urlInfo = new URL(url)
-//   const hostname = 'https://' + urlSocketio.host
-//   const pathSocketio = urlSocketio.pathname
-
-//   // console.debug("Connecter socket.io a url host: %s, path: %s", hostname, pathSocketio)
-//   const connexion = connexionClient.connecter(urlSocketio.href, opts)
-
-//   connexionClient.socketOn('connect', _=>{
-//     // console.debug("socket.io connecte a %O", urlSocketio)
-//     _connecte = true
-//     _urlCourant = urlApp
-//     onConnect()
-//       .then(protege=>{
-//         _protege = protege
-//         if(_callbackSetEtatConnexion) _callbackSetEtatConnexion(protege)
-//       })
-//   })
-//   connexionClient.socketOn('reconnect', _=>{
-//     // console.debug("Reconnecte")
-//     _connecte = true
-//     onConnect()
-//       .then(protege=>{
-//         _protege = protege
-//         if(_callbackSetEtatConnexion) _callbackSetEtatConnexion(protege)
-//       })
-//   })
-//   connexionClient.socketOn('disconnect', _=>{
-//     // console.debug("Disconnect socket.io")
-//     _connecte = false
-//     _protege = false
-//     if(_callbackSetEtatConnexion) _callbackSetEtatConnexion(false)
-//   })
-//   connexionClient.socketOn('connect_error', err=>{
-//     // console.debug("Erreur socket.io : %O", err)
-//     _connecte = false
-//     _protege = false
-//     if(_callbackSetEtatConnexion) _callbackSetEtatConnexion(false)
-//   })
-
-//   return connexion
-// }
-
-// async function onConnect() {
-
-//   // S'assurer que la connexion est faite avec le bon site
-//   const randomBytes = new Uint8Array(64)
-//   await getRandomValues(randomBytes)
-//   const challenge = String.fromCharCode.apply(null, multibase.encode('base64', randomBytes))
-//   const reponse = await new Promise(async (resolve, reject)=>{
-//     // console.debug("Emission challenge connexion Socket.io : %O", challenge)
-//     const timeout = setTimeout(_=>{
-//       reject('Timeout')
-//     }, 15000)
-//     const reponse = await connexionClient.emitBlocking('challenge', {challenge, noformat: true})
-//     // console.debug("Reponse challenge connexion Socket.io : %O", reponse)
-//     clearTimeout(timeout)
-
-//     if(reponse.reponse === challenge) {
-//       resolve(reponse)
-//     } else{
-//       reject('Challenge mismatch')
-//     }
-//   })
-
-//   // Initialiser les cles, stores, etc pour tous les workers avec
-//   // le nom de l'usager. Le certificat doit exister et etre valide pour la
-//   // millegrille a laquelle on se connecte.
-//   const nomUsager = reponse.nomUsager
-//   await _callbackPreparerCles(nomUsager)
-
-//   // Valider la reponse signee
-//   // const signatureValide = await _verifierSignature(reponse)
-//   const signatureValide = await _x509Worker.verifierMessage(reponse)
-//   if(!signatureValide) {
-//     throw new Error("Signature de la reponse invalide, serveur non fiable")
-//   }
-
-//   // console.debug("Signature du serveur est valide")
-//   // On vient de confirmer que le serveur a un certificat valide qui correspond
-//   // a la MilleGrille. L'authentification du client se fait automatiquement
-//   // avec le certificat (mode prive ou protege).
-
-//   // Faire l'upgrade protege
-//   const resultatProtege = await connexionClient.upgradeProteger()
-//   // console.debug("Resultat upgrade protege : %O", resultatProtege)
-
-//   // Emettre l'evenement qui va faire enregistrer les evenements de mise a jour
-//   // pour le mapping, siteconfig et sections
-//   connexionClient.emit('ecouterMaj')
-
-//   return resultatProtege
-// }
-
 // function requeteDocuments(tuuidsDocuments) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/getDocumentsParTuuid',
@@ -201,13 +82,9 @@ expose(ConnexionClient)
 // //   )
 // // }
 
-// function getFavoris() {
-//   return connexionClient.emitBlocking('grosfichiers/getFavoris')
-// }
-
-// function getSites() {
-//   return connexionClient.emitBlocking('grosfichiers/getSites')
-// }
+function getFavoris() {
+  return ConnexionClient.emitBlocking('getFavoris')
+}
 
 // function getCollections() {
 //   return connexionClient.emitBlocking('grosfichiers/getCollections')
@@ -394,3 +271,9 @@ expose(ConnexionClient)
 //   enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,
 //   enregistrerCallbackTranscodageProgres, supprimerCallbackTranscodageProgres,
 // })
+
+// Exposer methodes du Worker
+expose({
+    ...ConnexionClient, 
+    getFavoris
+})

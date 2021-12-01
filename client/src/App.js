@@ -8,6 +8,7 @@ function App() {
   
   const [workers, setWorkers] = useState('')
   const [usager, setUsager] = useState('')
+  const [etatConnexion, setEtatConnexion] = useState(false)
 
   // Chargement des proprietes et workers
   useEffect(()=>{
@@ -20,15 +21,15 @@ function App() {
 
   useEffect(()=>{
     if(workers && workers.connexion) {
-      connecter(workers, setUsager)
+      connecter(workers, setUsager, setEtatConnexion)
     }
-  }, [workers, setUsager])
+  }, [workers, setUsager, setEtatConnexion])
 
   return (
     <LayoutApplication>
       
       <HeaderApplication>
-        <Menu workers={workers} />
+        <Menu workers={workers} usager={usager} etatConnexion={etatConnexion} />
       </HeaderApplication>
 
       <Container>
@@ -56,9 +57,9 @@ async function importerWorkers(setWorkers) {
   setWorkers(workers)
 }
 
-async function connecter(workers, setUsager) {
+async function connecter(workers, setUsager, setEtatConnexion) {
   const { connecter: connecterWorker } = await import('./chargementUsager')
-  await connecterWorker(workers, setUsager)
+  await connecterWorker(workers, setUsager, setEtatConnexion)
 }
 
 function Contenu(props) {
@@ -71,8 +72,10 @@ function Contenu(props) {
 }
 
 function Menu(props) {
+  const nomUsager = props.usager?props.usager.nomUsager:''
+  const etat = props.etatConnexion?'Connecte':'Deconnecte'
   return (
-    <nav>Menu</nav>
+    <nav>Menu usager {nomUsager}, connecte : {etat}</nav>
   )
 }
 
