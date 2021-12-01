@@ -4,6 +4,9 @@ import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrem
 
 import './App.css'
 
+import Menu from './Menu'
+import Accueil from './Accueil'
+
 function App() {
   
   const [workers, setWorkers] = useState('')
@@ -29,17 +32,24 @@ function App() {
     <LayoutApplication>
       
       <HeaderApplication>
-        <Menu workers={workers} usager={usager} etatConnexion={etatConnexion} />
+        <Menu 
+          workers={workers} 
+          usager={usager} 
+          etatConnexion={etatConnexion} 
+        />
       </HeaderApplication>
 
       <Container>
         <Suspense fallback={<Attente />}>
-          <Contenu workers={workers} />
+          <Contenu 
+            workers={workers} 
+            usager={usager}
+          />
         </Suspense>
       </Container>
 
       <FooterApplication>
-        <Footer />
+        <Footer workers={workers} />
       </FooterApplication>
 
     </LayoutApplication>
@@ -63,20 +73,8 @@ async function connecter(workers, setUsager, setEtatConnexion) {
 }
 
 function Contenu(props) {
-
   if(!props.workers) return <Attente />
-
-  return (
-    <h1>Collections</h1>
-  )
-}
-
-function Menu(props) {
-  const nomUsager = props.usager?props.usager.nomUsager:''
-  const etat = props.etatConnexion?'Connecte':'Deconnecte'
-  return (
-    <nav>Menu usager {nomUsager}, connecte : {etat}</nav>
-  )
+  return <Accueil {...props} />
 }
 
 function Footer(props) {

@@ -25,17 +25,18 @@ export function configurerEvenements(socket) {
 
   return {
     listenersPublics: [
-      { eventName: 'challenge', callback: (params, cb) => traiter(socket, mqdao.challenge, params, cb) },
+      { eventName: 'challenge', callback: (params, cb) => traiter(socket, mqdao.challenge, {params, cb}) },
     ],
     listenersPrives: [
     ],
     listenersProteges: [
+      { eventName: 'favoris', callback: cb => traiter(socket, mqdao.challenge, {cb}) },
     ]
   }
 
 }
 
-async function traiter(socket, methode, params, cb) {
+async function traiter(socket, methode, {params, cb}) {
   const reponse = await methode(socket, params)
   if(cb) cb(reponse)
 }

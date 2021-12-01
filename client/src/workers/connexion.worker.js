@@ -1,6 +1,10 @@
 import { expose } from 'comlink'
 import { ConnexionClient } from '@dugrema/millegrilles.reactjs'
 
+function getFavoris() {
+  return ConnexionClient.emitBlocking('getFavoris')
+}
+
 // function requeteDocuments(tuuidsDocuments) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/getDocumentsParTuuid',
@@ -32,10 +36,6 @@ import { ConnexionClient } from '@dugrema/millegrilles.reactjs'
 // //     {domaine: 'GrosFichiers', action: 'getCleFichier'}
 // //   )
 // // }
-
-function getFavoris() {
-  return ConnexionClient.emitBlocking('getFavoris')
-}
 
 // function getCollections() {
 //   return connexionClient.emitBlocking('grosfichiers/getCollections')
