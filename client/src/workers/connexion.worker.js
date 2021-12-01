@@ -1,55 +1,6 @@
 import { expose } from 'comlink'
 import { ConnexionClient } from '@dugrema/millegrilles.reactjs'
 
-// // import {expose as comlinkExpose} from 'comlink'
-// import multibase from 'multibase'
-// import path from 'path'
-
-// // import connexionClient from '@dugrema/millegrilles.common/lib/connexionClient'
-// import { getRandomValues } from '@dugrema/millegrilles.utiljs'
-
-// const URL_GROSFICHIERS = '/grosfichiers'
-// // const URL_SOCKET = URL_GROSFICHIERS + '/socket.io'
-
-// var // _callbackSiteMaj,
-//     // _callbackSectionMaj,
-//     _callbackSetEtatConnexion,
-//     _callbackPreparerCles,
-//     // _resolverWorker,
-//     _x509Worker,
-//     // _verifierSignature,   // web worker resolver (utilise pour valider signature messages)
-//     // _siteConfig,
-//     _urlCourant = '',
-//     // _urlBase = '',
-//     _connecte = false,
-//     _protege = false
-
-// function setCallbacks(setEtatConnexion, x509Worker, callbackPreparerCles) {
-//   _callbackSetEtatConnexion = setEtatConnexion
-//   _x509Worker = x509Worker
-//   _callbackPreparerCles = callbackPreparerCles
-//   // console.debug("setCallbacks connexionWorker : %O, %O", setEtatConnexion, x509Worker, callbackPreparerCles)
-// }
-
-// function estActif() {
-//   return _urlCourant && _connecte && _protege
-// }
-
-// // function connecter(opts) {
-// //   opts = opts || {}
-// //   var url = opts.url
-// //   if(!url) {
-// //     // Utiliser le serveur local mais remplacer le pathname par URL_SOCKET
-// //     const urlLocal = new URL(opts.location)
-// //     urlLocal.pathname = URL_SOCKET
-// //     urlLocal.hash = ''
-// //     urlLocal.search = ''
-// //     url = urlLocal.href
-// //   }
-// //   console.debug("Connecter socket.io sur url %s", url)
-// //   return connexionClient.connecter(url, opts)
-// // }
-
 // function requeteDocuments(tuuidsDocuments) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/getDocumentsParTuuid',

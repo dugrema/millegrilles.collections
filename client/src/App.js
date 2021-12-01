@@ -58,7 +58,7 @@ async function importerWorkers(setWorkers) {
 }
 
 async function connecter(workers, setUsager, setEtatConnexion) {
-  const { connecter: connecterWorker } = await import('./chargementUsager')
+  const { connecter: connecterWorker } = await import('./workers/connecter')
   await connecterWorker(workers, setUsager, setEtatConnexion)
 }
 
