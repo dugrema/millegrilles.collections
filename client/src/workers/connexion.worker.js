@@ -2,7 +2,7 @@ import { expose } from 'comlink'
 import { ConnexionClient } from '@dugrema/millegrilles.reactjs'
 
 function getFavoris() {
-  return ConnexionClient.emitBlocking('getFavoris')
+  return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: 'GrosFichiers', action: 'favoris'})
 }
 
 // function requeteDocuments(tuuidsDocuments) {

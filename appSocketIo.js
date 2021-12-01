@@ -30,7 +30,7 @@ export function configurerEvenements(socket) {
     listenersPrives: [
     ],
     listenersProteges: [
-      { eventName: 'favoris', callback: cb => traiter(socket, mqdao.challenge, {cb}) },
+      { eventName: 'getFavoris', callback: (params, cb) => traiter(socket, mqdao.getFavoris, {params, cb}) },
     ]
   }
 

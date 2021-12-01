@@ -44,6 +44,7 @@ function App() {
           <Contenu 
             workers={workers} 
             usager={usager}
+            etatConnexion={etatConnexion} 
           />
         </Suspense>
       </Container>
