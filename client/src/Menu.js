@@ -15,21 +15,28 @@ function Menu(props) {
         </Navbar.Brand>
        
         <Navbar.Collapse id="responsive-navbar-menu">
+
+            <Nav.Item>
+                <Nav.Link title="Recents">
+                    <i className="fa fa-clock-o" /> {' '} Recents
+                </Nav.Link>
+            </Nav.Item>
+
             <Nav.Item>
                 <Nav.Link title="Upload">
-                    <i className="fa fa-upload" />
+                    <i className="fa fa-upload" /> {' '} Upload
                 </Nav.Link>
             </Nav.Item>
             
             <Nav.Item>
                 <Nav.Link title="Download">
-                    <i className="fa fa-download" />
+                    <i className="fa fa-download" /> {' '} Download
                 </Nav.Link>
             </Nav.Item>
 
             <Nav.Item>
-                <Nav.Link title="Portail">
-                    Portail
+                <Nav.Link title="Corbeille">
+                    <i className="fa fa-trash-o" /> {' '} Corbeille
                 </Nav.Link>
             </Nav.Item>
 
@@ -55,10 +62,13 @@ function DropDown(props) {
     return (
         <NavDropdown title={linkUsager} id="basic-nav-dropdown" drop="down" className="menu-item">
           <NavDropdown.Item>
-            Changer Langue
+            <i className="fa fa-language" /> {' '} Changer Langue
           </NavDropdown.Item>
           <NavDropdown.Item>
-            Deconnecter
+            <i className="fa fa-home" /> {' '} Portail
+          </NavDropdown.Item>
+          <NavDropdown.Item>
+            <i className="fa fa-close" /> {' '} Deconnecter
           </NavDropdown.Item>
         </NavDropdown>
     )
