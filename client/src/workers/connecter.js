@@ -37,7 +37,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         await x509.init(caPem)
 
         // Init cles privees
-        await chiffrage.initialiserFormatteurMessage(certificatPem, usager.signer, usager.dechiffrer, {DEBUG: false})
+        await chiffrage.initialiserFormatteurMessage(certificatPem, usager.dechiffrer, usager.signer, {DEBUG: false})
         await connexion.initialiserFormatteurMessage(certificatPem, usager.signer, {DEBUG: false})
     
         setUsagerState({nomUsager})

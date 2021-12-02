@@ -1,5 +1,6 @@
 
-const DOMAINE_GROSFICHIERS = 'GrosFichiers'
+const DOMAINE_GROSFICHIERS = 'GrosFichiers',
+      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
 
 export function challenge(socket, params) {
     // Repondre avec un message signe
@@ -24,10 +25,16 @@ export function getActiviteRecente(socket, params) {
     return transmettreRequete(socket, params, 'activiteRecente')
 }
 
-async function transmettreRequete(socket, params, action) {
+export function getClesFichiers(socket, params) {
+    return transmettreRequete(socket, params, 'dechiffrage', {domaine: CONST_DOMAINE_MAITREDESCLES})
+}
+
+async function transmettreRequete(socket, params, action, opts) {
+    opts = opts || {}
+    const domaine = opts.domaine || DOMAINE_GROSFICHIERS
     try {
-        verifierMessage(params, DOMAINE_GROSFICHIERS, action)
-        return await socket.amqpdao.transmettreRequete(DOMAINE_GROSFICHIERS, params, {action, noformat: true, decoder: true})
+        verifierMessage(params, domaine, action)
+        return await socket.amqpdao.transmettreRequete(domaine, params, {action, noformat: true, decoder: true})
     } catch(err) {
         console.error("mqdao.transmettreRequete ERROR : %O", err)
         return {ok: false, err: ''+err}

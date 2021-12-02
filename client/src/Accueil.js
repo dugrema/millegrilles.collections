@@ -5,7 +5,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 
-import { ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
+import { ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
 import { mapper, onContextMenu } from './mapperFichier.js'
 
 function Accueil(props) {
@@ -204,6 +204,55 @@ async function chargerCollection(workers, cuuid, setListe) {
     const reponse = await connexion.getContenuCollection(cuuid)
     console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
     const { documents } = reponse
+
+    // Precharger les cles des images thumbnails, small et posters
+    const fuuidsImages = documents.map(item=>{
+        const { version_courante } = item
+        if(version_courante && version_courante.images) {
+            const fuuidsImages = Object.keys(version_courante.images)
+                .filter(item=>['thumb', 'poster', 'small'].includes(item))
+                .map(item=>version_courante.images[item].hachage)
+                .reduce((arr, item)=>{arr.push(item); return arr}, [])
+            return fuuidsImages
+        }
+        return []
+    }).reduce((arr, item)=>{
+        return [...arr, ...item]
+    }, [])
+    console.debug("Fuuids images : %O", fuuidsImages)
+
+    // Verifier les cles qui sont deja connues
+    let fuuidsInconnus = []
+    for await (const fuuid of fuuidsImages) {
+        const cle = await getCleDechiffree(fuuid)
+        if(!cle) fuuidsInconnus.push(fuuid)
+    }
+
+    if(fuuidsInconnus.length > 0) {
+        connexion.getClesFichiers(fuuidsInconnus)
+            .then(async reponse=>{
+                console.debug("Reponse dechiffrage cles : %O", reponse)
+
+                const nomUsager = 'proprietaire'
+
+                for await (const fuuid of Object.keys(reponse.cles)) {
+                    const cleFichier = reponse.cles[fuuid]
+                    console.debug("Dechiffrer cle %O", cleFichier)
+                    const cleSecrete = await workers.chiffrage.preparerCleSecreteSubtle(cleFichier.cle, cleFichier.iv)
+                    cleFichier.cleSecrete = cleSecrete
+                    console.debug("Cle secrete fichier %O", cleFichier)
+                    saveCleDechiffree(fuuid, cleSecrete, cleFichier)
+                        .catch(err=>{
+                            console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
+                        })
+                }
+            
+            })
+            .catch(err=>{console.error("Erreur chargement cles fichiers %O : %O", fuuidsInconnus, err)})
+    } else {
+        console.debug("Toutes les cles sont deja chargees")
+    }
+
     if(documents) {
         setListe( preprarerDonnees(documents) )
     }
