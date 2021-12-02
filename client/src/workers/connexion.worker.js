@@ -1,17 +1,20 @@
 import { expose } from 'comlink'
 import { ConnexionClient } from '@dugrema/millegrilles.reactjs'
 
+const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers'
+
 function getFavoris() {
-  return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: 'GrosFichiers', action: 'favoris'})
+  return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris'})
 }
 
-// function requeteDocuments(tuuidsDocuments) {
-//   return connexionClient.emitBlocking(
-//     'grosfichiers/getDocumentsParTuuid',
-//     {tuuids_documents: tuuidsDocuments},
-//     {domaine: 'GrosFichiers', action: 'documentsParTuuid'}
-//   )
-// }
+function getActivite(params) {
+  return ConnexionClient.emitBlocking('getActivite', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente'})
+}
+
+function getContenuCollection(tuuidsDocuments) {
+  const params = {tuuid_collection: tuuidsDocuments}
+  return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection'})
+}
 
 // function getClesChiffrage() {
 //   return connexionClient.emitBlocking('grosfichiers/getClesChiffrage')
@@ -226,5 +229,5 @@ function getFavoris() {
 // Exposer methodes du Worker
 expose({
     ...ConnexionClient, 
-    getFavoris
+    getFavoris, getActivite, getContenuCollection,
 })

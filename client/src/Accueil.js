@@ -5,22 +5,23 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 
-import { ListeFichiers, MenuContextuel } from '@dugrema/millegrilles.reactjs'
+import { ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
 import { mapper, onContextMenu } from './mapperFichier.js'
 
 function Accueil(props) {
 
     const { workers, etatConnexion } = props
-    const [favoris, setFavoris] = useState('')
+    const [ favoris, setFavoris ] = useState('')
 
-    useEffect(()=>{ chargerFavoris(workers.connexion, etatConnexion, setFavoris) }, [workers, etatConnexion, setFavoris])
+    useEffect(()=>{ if(etatConnexion) chargerFavoris(workers, setFavoris) }, [workers, etatConnexion, setFavoris])
 
     return (
         <>
-            <h1>Favoris</h1>
+            <h1>Collections</h1>
             <NavigationFavoris 
                 favoris={favoris} 
                 workers={workers} 
+                etatConnexion={etatConnexion}
             />
         </>
     )
@@ -29,24 +30,9 @@ function Accueil(props) {
 
 export default Accueil
 
-async function chargerFavoris(connexion, etatConnexion, setFavoris) {
-    if(etatConnexion !== true) return  // Rien a faire
-
-    console.debug("Charger favoris")
-    try {
-        const messageFavoris = await connexion.getFavoris()
-        const favoris = messageFavoris.favoris || {}
-        console.debug("Favoris recus : %O", favoris)
-        setFavoris(favoris)
-    } catch(err) {
-        console.error("Erreur chargement favoris : %O", err)
-    }
-
-}
-
 function NavigationFavoris(props) {
 
-    const { favoris } = props
+    const { favoris, workers, etatConnexion } = props
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -61,7 +47,7 @@ function NavigationFavoris(props) {
         if(value.folderId) {
             const folderItem = liste.filter(item=>item.folderId===value.folderId).pop()
             setBreadcrumb([...breadcrumb, folderItem])
-            //setCuuidCourant(value.folderId)
+            setCuuidCourant(value.folderId)
         } else {
             throw new Error("todo")
         }
@@ -80,7 +66,7 @@ function NavigationFavoris(props) {
         setBreadcrumb(breadcrumbTronquee)
 
         // Set nouveau cuuid courant
-        if(idx >= 0) setCuuidCourant(breadcrumbTronquee[idx])
+        if(idx >= 0) setCuuidCourant(breadcrumbTronquee[idx].folderId)
         else setCuuidCourant('')  // Racine des favoris
     }, [breadcrumb, setBreadcrumb, setCuuidCourant])
 
@@ -89,20 +75,19 @@ function NavigationFavoris(props) {
 
     // Preparer donnees a afficher dans la liste
     useEffect(()=>{
-        if(!favoris) return  // Rien a faire
+        if(!favoris || !etatConnexion) return  // Rien a faire
         if(!cuuidCourant) {
             // Utiliser liste de favoris
             setListe( preprarerDonnees(favoris, {trier: trierNom}) )
-        } else {
-            // Charger collection
-            // throw new Error("todo - Charger collection")
+        } else if(etatConnexion) {
+            chargerCollection(workers, cuuidCourant, setListe)
         }
-    }, [favoris, setListe, cuuidCourant])
+    }, [workers, etatConnexion, favoris, setListe, cuuidCourant])
     
     return (
         <>
             <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
-            <p>Navigation</p>
+
             <ListeFichiers 
                 colonnes={colonnes}
                 rows={liste} 
@@ -126,18 +111,19 @@ function SectionBreadcrumb(props) {
 
     const { value, setIdx } = props
 
-    console.debug("!!! PROPPYS Breadcrumb : %O", props)
-
     return (
         <Breadcrumb>
+            
             <Breadcrumb.Item onClick={()=>setIdx(-1)}>Favoris</Breadcrumb.Item>
+            
             {value.map((item, idxItem)=>{
                 return (
-                    <Breadcrumb.Item key={item.tuuid} onClick={()=>setIdx(idxItem)} >
+                    <Breadcrumb.Item key={idxItem} onClick={()=>setIdx(idxItem)} >
                         {item.nom}
                     </Breadcrumb.Item>
                 )
             })}
+
         </Breadcrumb>
     )
 
@@ -145,10 +131,13 @@ function SectionBreadcrumb(props) {
 
 function preparerColonnes() {
     const params = {
-        ordreColonnes: ['nom', 'boutonDetail'],
+        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateAjout', 'boutonDetail'],
         paramsColonnes: {
-            'nom': {'label': 'Nom', showThumbnail: true, xs: 10, lg: 8},
-            'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 2},
+            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
+            'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
+            'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
+            'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterDate, xs: 5, lg: 2},
+            'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
         tri: {colonne: 'nom', ordre: 1},
     }
@@ -194,4 +183,28 @@ function MenuContextuelFavoris(props) {
         </MenuContextuel>
     )
 
+}
+
+async function chargerFavoris(workers, setFavoris) {
+    console.debug("Charger favoris")
+    const { connexion } = workers
+    try {
+        const messageFavoris = await connexion.getFavoris()
+        const favoris = messageFavoris.favoris || {}
+        console.debug("Favoris recus : %O", favoris)
+        setFavoris(favoris)
+    } catch(err) {
+        console.error("Erreur chargement favoris : %O", err)
+    }
+}
+
+async function chargerCollection(workers, cuuid, setListe) {
+    console.debug("Charger collection %s", cuuid)
+    const { connexion } = workers
+    const reponse = await connexion.getContenuCollection(cuuid)
+    console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
+    const { documents } = reponse
+    if(documents) {
+        setListe( preprarerDonnees(documents) )
+    }
 }

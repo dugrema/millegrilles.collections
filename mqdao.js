@@ -13,11 +13,28 @@ export function challenge(socket, params) {
 }
 
 export function getFavoris(socket, params) {
-    const action = 'favoris'
-    verifierMessage(params, DOMAINE_GROSFICHIERS, action)
-    return socket.amqpdao.transmettreRequete(DOMAINE_GROSFICHIERS, params, {action, noformat: true, decoder: true})
+    return transmettreRequete(socket, params, 'favoris')
 }
 
+export function getCollection(socket, params) {
+    return transmettreRequete(socket, params, 'contenuCollection')
+}
+
+export function getActiviteRecente(socket, params) {
+    return transmettreRequete(socket, params, 'activiteRecente')
+}
+
+async function transmettreRequete(socket, params, action) {
+    try {
+        verifierMessage(params, DOMAINE_GROSFICHIERS, action)
+        return await socket.amqpdao.transmettreRequete(DOMAINE_GROSFICHIERS, params, {action, noformat: true, decoder: true})
+    } catch(err) {
+        console.error("mqdao.transmettreRequete ERROR : %O", err)
+        return {ok: false, err: ''+err}
+    }
+}
+
+/* Fonction de verification pour eviter abus de l'API */
 function verifierMessage(message, domaine, action) {
     const entete = message['en-tete'] || {},
           domaineRecu = entete.domaine,

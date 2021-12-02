@@ -28,9 +28,11 @@ export function configurerEvenements(socket) {
       { eventName: 'challenge', callback: (params, cb) => traiter(socket, mqdao.challenge, {params, cb}) },
     ],
     listenersPrives: [
+      { eventName: 'getFavoris', callback: (params, cb) => traiter(socket, mqdao.getFavoris, {params, cb}) },
+      { eventName: 'getCollection', callback: (params, cb) => traiter(socket, mqdao.getCollection, {params, cb}) },
+      { eventName: 'getActiviteRecente', callback: (params, cb) => traiter(socket, mqdao.getActiviteRecente, {params, cb}) },
     ],
     listenersProteges: [
-      { eventName: 'getFavoris', callback: (params, cb) => traiter(socket, mqdao.getFavoris, {params, cb}) },
     ]
   }
 

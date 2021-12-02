@@ -27,14 +27,22 @@ export { Icones }
 // }
 
 export function mapper(row) {
-    const {tuuid, nom, mimetype, fuuid_v_courante} = row
+    const { tuuid, nom, date_creation, thumbnailLoader, thumbnailSrc, duree, version_courante } = row
+
+    let date_version = '', 
+        mimetype_fichier = '',
+        taille_fichier = ''
 
     let thumbnailIcon = '',
         ids = {}
-    if(!fuuid_v_courante) {
+    if(!version_courante) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
     } else {
+        const { mimetype, date_fichier, taille } = version_courante
+        mimetype_fichier = mimetype
+        date_version = date_fichier
+        taille_fichier = taille
         ids.fileId = tuuid    // Fichier, tuuid est le fileId
         const mimetypeBase = mimetype.split('/').shift()
 
@@ -60,9 +68,14 @@ export function mapper(row) {
         // folderId: tuuid,
         ...ids,
         nom,
-        mimetype: ids.folderId?'Repertoire':mimetype,
+        taille: taille_fichier,
+        dateAjout: date_version || date_creation,
+        mimetype: ids.folderId?'Repertoire':mimetype_fichier,
+        thumbnailSrc,
+        thumbnailLoader,
         thumbnailIcon,
         thumbnailCaption: nom,
+        duree,
     }
 }
 
