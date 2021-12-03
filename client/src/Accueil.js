@@ -7,6 +7,7 @@ import Button from 'react-bootstrap/Button'
 
 import { ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
 import { mapper, onContextMenu } from './mapperFichier.js'
+import { getThumbnail } from './workers/traitementFichiers'
 
 function Accueil(props) {
 
@@ -210,7 +211,7 @@ async function chargerCollection(workers, cuuid, setListe) {
         const { version_courante } = item
         if(version_courante && version_courante.images) {
             const fuuidsImages = Object.keys(version_courante.images)
-                .filter(item=>['thumb', 'poster', 'small'].includes(item))
+                .filter(item=>['thumb', 'thumbnail', 'poster', 'small'].includes(item))
                 .map(item=>version_courante.images[item].hachage)
                 .reduce((arr, item)=>{arr.push(item); return arr}, [])
             return fuuidsImages
@@ -224,16 +225,14 @@ async function chargerCollection(workers, cuuid, setListe) {
     // Verifier les cles qui sont deja connues
     let fuuidsInconnus = []
     for await (const fuuid of fuuidsImages) {
-        const cle = await getCleDechiffree(fuuid)
-        if(!cle) fuuidsInconnus.push(fuuid)
+        const cleFichier = await getCleDechiffree(fuuid)
+        if(!cleFichier) fuuidsInconnus.push(fuuid)
     }
 
     if(fuuidsInconnus.length > 0) {
         connexion.getClesFichiers(fuuidsInconnus)
             .then(async reponse=>{
                 console.debug("Reponse dechiffrage cles : %O", reponse)
-
-                const nomUsager = 'proprietaire'
 
                 for await (const fuuid of Object.keys(reponse.cles)) {
                     const cleFichier = reponse.cles[fuuid]

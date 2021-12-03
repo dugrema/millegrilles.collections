@@ -1,6 +1,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import Container from 'react-bootstrap/Container'
 import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrema/millegrilles.reactjs'
+import { ouvrirDB } from './idbCollections'
+import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 
 import './App.css'
 
@@ -17,12 +19,14 @@ function App() {
   useEffect(()=>{
     Promise.all([
       importerWorkers(setWorkers),
+      initDb(),
     ])
       .then(()=>{ console.debug("Chargement de l'application complete") })
       .catch(err=>{console.error("Erreur chargement application : %O", err)})
   }, [])
 
   useEffect(()=>{
+    setWorkersTraitementFichiers(workers)
     if(workers && workers.connexion) {
       connecter(workers, setUsager, setEtatConnexion)
     }
@@ -71,6 +75,10 @@ async function importerWorkers(setWorkers) {
 async function connecter(workers, setUsager, setEtatConnexion) {
   const { connecter: connecterWorker } = await import('./workers/connecter')
   await connecterWorker(workers, setUsager, setEtatConnexion)
+}
+
+function initDb() {
+  return ouvrirDB({upgrade: true})
 }
 
 function Contenu(props) {
