@@ -5,10 +5,10 @@ const CONST_APP_URL = 'collections'
 export async function connecter(workers, setUsagerState, setEtatConnexion) {
     const { connexion } = workers
   
-    console.debug("Set callbacks connexion worker")
+    // console.debug("Set callbacks connexion worker")
     const location = new URL(window.location.href)
     location.pathname = CONST_APP_URL
-    console.debug("Connecter a %O", location)
+    // console.debug("Connecter a %O", location)
 
     // Preparer callbacks
     const setUsagerCb = proxy( usager => setUsager(workers, usager, setUsagerState) )
@@ -16,12 +16,12 @@ export async function connecter(workers, setUsagerState, setEtatConnexion) {
     await connexion.setCallbacks(setEtatConnexionCb, workers.x509, setUsagerCb)
 
     const info = await connexion.connecter(location.href)
-    console.debug("Connexion info : %O", info)
+    // console.debug("Connexion info : %O", info)
 }
 
 async function setUsager(workers, nomUsager, setUsagerState, opts) {
     opts = opts || {}
-    console.debug("setUsager '%s'", nomUsager)
+    // console.debug("setUsager '%s'", nomUsager)
     const { getUsager } = await import('@dugrema/millegrilles.reactjs')
     const usager = await getUsager(nomUsager)
     

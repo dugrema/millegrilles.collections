@@ -49,11 +49,38 @@ export function mapper(row, workers) {
         ids.fileId = tuuid    // Fichier, tuuid est le fileId
         const mimetypeBase = mimetype.split('/').shift()
 
-        if(images) {
-            let thumbnail = images.thumb || images.thumbnail
-            if(workers && thumbnail && thumbnail.data_chiffre) {
-                console.debug("!!! Loader thumbnail chiffre : %O", thumbnail)
-                thumbnailLoader = loadThumbnailChiffre(thumbnail.hachage, workers, {dataChiffre: thumbnail.data_chiffre})
+        if(workers && images) {
+            const thumbnail = images.thumb || images.thumbnail,
+                  small = images.small || images.poster
+            let miniLoader = null, smallLoader
+            if(thumbnail) {
+                if (thumbnail.data_chiffre) {
+                    // console.debug("!!! Loader thumbnail chiffre : %O", thumbnail)
+                    miniLoader = loadThumbnailChiffre(thumbnail.hachage, workers, {dataChiffre: thumbnail.data_chiffre})
+                }
+            }
+            // if(small) {
+            //     smallLoader = loadThumbnailChiffre(small.hachage, workers)
+            // }
+            thumbnailLoader = {
+                load: async (setSrc, opts) => {
+                    let loadSmall = (opts.mini?false:true)
+                    try {
+                        await miniLoader.load(setSrc)
+                    } catch(err) {
+                        console.error("Erreur chargement mini thumbnail pour image %s : %O", tuuid, err)
+                        loadSmall = true  // Tenter de charger small en remplacement
+                    }
+
+                    if(loadSmall) {
+                        smallLoader = loadThumbnailChiffre(small.hachage, workers)
+                        await smallLoader.load(setSrc)
+                    }
+                },
+                unload: () => {
+                    if(miniLoader) miniLoader.unload()
+                    if(smallLoader) smallLoader.unload()
+                }
             }
         }
 
@@ -93,7 +120,7 @@ export function mapper(row, workers) {
 export function onContextMenu(event, value, setContextuel) {
     event.preventDefault()
     const {clientX, clientY} = event
-    console.debug("ContextMenu %O (%d, %d)", value, clientX, clientY)
+    // console.debug("ContextMenu %O (%d, %d)", value, clientX, clientY)
 
     const params = {show: true, x: clientX, y: clientY}
 
@@ -101,11 +128,11 @@ export function onContextMenu(event, value, setContextuel) {
 }
 
 function loadThumbnailChiffre(fuuid, workers, opts) {
-    console.debug("!!! loadThumbnailChiffre workers : %O", workers)
+    // console.debug("!!! loadThumbnailChiffre workers : %O", workers)
     const { traitementFichiers } = workers
     const blobPromise = traitementFichiers.getThumbnail(fuuid, opts)
         .then(blob=>{
-            console.debug("!!! BLOB cree : %O", blob)
+            // console.debug("!!! BLOB cree : %O", blob)
             return URL.createObjectURL(blob)
         })
         .catch(err=>{
@@ -114,12 +141,13 @@ function loadThumbnailChiffre(fuuid, workers, opts) {
     
     return {
         load: async setSrc => {
+            opts = opts || {}
             const urlBlob = await blobPromise
-            console.debug("!!! Blob charger pour thumbnail %s", fuuid)
+            console.debug("!!! Blob charger pour thumbnail %s (opts: %O)", fuuid, opts)
             setSrc(urlBlob)
         },
         unload: async () => {
-            console.debug("Unload thumbnail %s", fuuid)
+            // console.debug("Unload thumbnail %s", fuuid)
             const urlBlob = await blobPromise
             console.debug("Cleanup URL blob : %O", urlBlob)
             if(urlBlob) URL.revokeObjectURL(urlBlob)

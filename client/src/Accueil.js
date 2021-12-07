@@ -4,6 +4,7 @@ import Breadcrumb from 'react-bootstrap/Breadcrumb'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
+import ButtonGroup from 'react-bootstrap/ButtonGroup'
 
 import { ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
 import { mapper, onContextMenu } from './mapperFichier.js'
@@ -40,11 +41,12 @@ function NavigationFavoris(props) {
     const [ liste, setListe ] = useState([])
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ selection, setSelection ] = useState('')
+    const [ modeView, setModeView ] = useState('')
 
     // Callbacks
     const onDoubleClick = useCallback((event, value)=>{
         window.getSelection().removeAllRanges()
-        console.debug("Ouvrir %O (liste courante: %O)", value, liste)
+        // console.debug("Ouvrir %O (liste courante: %O)", value, liste)
         if(value.folderId) {
             const folderItem = liste.filter(item=>item.folderId===value.folderId).pop()
             setBreadcrumb([...breadcrumb, folderItem])
@@ -89,14 +91,19 @@ function NavigationFavoris(props) {
         <>
             <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
 
+            <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+
             <ListeFichiers 
+                modeView={modeView}
                 colonnes={colonnes}
                 rows={liste} 
                 // onClick={onClick} 
                 onDoubleClick={onDoubleClick}
                 onContextMenu={(event, value)=>onContextMenu(event, value, setContextuel)}
                 onSelection={onSelectionLignes}
-                onClickEntete={colonne=>{console.debug("Entete click : %s", colonne)}}
+                onClickEntete={colonne=>{
+                    console.debug("Entete click : %s", colonne)
+                }}
             />
 
             <MenuContextuelFavoris 
@@ -128,6 +135,27 @@ function SectionBreadcrumb(props) {
         </Breadcrumb>
     )
 
+}
+
+function BoutonsFormat(props) {
+
+    const { modeView, setModeView } = props
+
+    const setModeListe = useCallback(()=>{ setModeView('liste') }, [setModeView])
+    const setModeThumbnails = useCallback(()=>{ setModeView('thumbnails') }, [setModeView])
+
+    let variantListe = 'secondary', variantThumbnail = 'outline-secondary'
+    if( modeView === 'thumbnails' ) {
+        variantListe = 'outline-secondary'
+        variantThumbnail = 'secondary'
+    }
+
+    return (
+        <ButtonGroup>
+            <Button variant={variantListe} onClick={setModeListe}><i className="fa fa-list" /></Button>
+            <Button variant={variantThumbnail} onClick={setModeThumbnails}><i className="fa fa-th-large" /></Button>
+        </ButtonGroup>
+    )
 }
 
 function preparerColonnes() {
@@ -187,12 +215,12 @@ function MenuContextuelFavoris(props) {
 }
 
 async function chargerFavoris(workers, setFavoris) {
-    console.debug("Charger favoris")
+    // console.debug("Charger favoris")
     const { connexion } = workers
     try {
         const messageFavoris = await connexion.getFavoris()
         const favoris = messageFavoris.favoris || {}
-        console.debug("Favoris recus : %O", favoris)
+        // console.debug("Favoris recus : %O", favoris)
         setFavoris(favoris)
     } catch(err) {
         console.error("Erreur chargement favoris : %O", err)
@@ -200,10 +228,10 @@ async function chargerFavoris(workers, setFavoris) {
 }
 
 async function chargerCollection(workers, cuuid, setListe) {
-    console.debug("Charger collection %s", cuuid)
+    // console.debug("Charger collection %s", cuuid)
     const { connexion } = workers
     const reponse = await connexion.getContenuCollection(cuuid)
-    console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
+    // console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
     const { documents } = reponse
 
     // Precharger les cles des images thumbnails, small et posters
@@ -220,7 +248,7 @@ async function chargerCollection(workers, cuuid, setListe) {
     }).reduce((arr, item)=>{
         return [...arr, ...item]
     }, [])
-    console.debug("Fuuids images : %O", fuuidsImages)
+    // console.debug("Fuuids images : %O", fuuidsImages)
 
     // Verifier les cles qui sont deja connues
     let fuuidsInconnus = []
@@ -232,14 +260,14 @@ async function chargerCollection(workers, cuuid, setListe) {
     if(fuuidsInconnus.length > 0) {
         connexion.getClesFichiers(fuuidsInconnus)
             .then(async reponse=>{
-                console.debug("Reponse dechiffrage cles : %O", reponse)
+                // console.debug("Reponse dechiffrage cles : %O", reponse)
 
                 for await (const fuuid of Object.keys(reponse.cles)) {
                     const cleFichier = reponse.cles[fuuid]
-                    console.debug("Dechiffrer cle %O", cleFichier)
+                    // console.debug("Dechiffrer cle %O", cleFichier)
                     const cleSecrete = await workers.chiffrage.preparerCleSecreteSubtle(cleFichier.cle, cleFichier.iv)
                     cleFichier.cleSecrete = cleSecrete
-                    console.debug("Cle secrete fichier %O", cleFichier)
+                    // console.debug("Cle secrete fichier %O", cleFichier)
                     saveCleDechiffree(fuuid, cleSecrete, cleFichier)
                         .catch(err=>{
                             console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
@@ -249,7 +277,7 @@ async function chargerCollection(workers, cuuid, setListe) {
             })
             .catch(err=>{console.error("Erreur chargement cles fichiers %O : %O", fuuidsInconnus, err)})
     } else {
-        console.debug("Toutes les cles sont deja chargees")
+        // console.debug("Toutes les cles sont deja chargees")
     }
 
     if(documents) {
