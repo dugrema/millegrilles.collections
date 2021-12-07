@@ -26,25 +26,36 @@ export { Icones }
 //     ]
 // }
 
-export function mapper(row) {
-    const { tuuid, nom, date_creation, thumbnailLoader, thumbnailSrc, duree, version_courante } = row
+export function mapper(row, workers) {
+    const { tuuid, nom, date_creation, duree, version_courante } = row
+
+    console.debug("!!! MAPPER %O", row)
 
     let date_version = '', 
         mimetype_fichier = '',
         taille_fichier = ''
 
     let thumbnailIcon = '',
-        ids = {}
+        ids = {},
+        thumbnailLoader = null
     if(!version_courante) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
     } else {
-        const { mimetype, date_fichier, taille } = version_courante
+        const { mimetype, date_fichier, taille, images, video } = version_courante
         mimetype_fichier = mimetype
         date_version = date_fichier
         taille_fichier = taille
         ids.fileId = tuuid    // Fichier, tuuid est le fileId
         const mimetypeBase = mimetype.split('/').shift()
+
+        if(images) {
+            let thumbnail = images.thumb || images.thumbnail
+            if(workers && thumbnail && thumbnail.data_chiffre) {
+                console.debug("!!! Loader thumbnail chiffre : %O", thumbnail)
+                thumbnailLoader = loadThumbnailChiffre(thumbnail.hachage, workers, {dataChiffre: thumbnail.data_chiffre})
+            }
+        }
 
         if(mimetype === 'application/pdf') {
             thumbnailIcon = ICONE_FICHIER_PDF
@@ -71,7 +82,7 @@ export function mapper(row) {
         taille: taille_fichier,
         dateAjout: date_version || date_creation,
         mimetype: ids.folderId?'Repertoire':mimetype_fichier,
-        thumbnailSrc,
+        // thumbnailSrc,
         thumbnailLoader,
         thumbnailIcon,
         thumbnailCaption: nom,
@@ -87,4 +98,31 @@ export function onContextMenu(event, value, setContextuel) {
     const params = {show: true, x: clientX, y: clientY}
 
     setContextuel(params)
+}
+
+function loadThumbnailChiffre(fuuid, workers, opts) {
+    console.debug("!!! loadThumbnailChiffre workers : %O", workers)
+    const { traitementFichiers } = workers
+    const blobPromise = traitementFichiers.getThumbnail(fuuid, opts)
+        .then(blob=>{
+            console.debug("!!! BLOB cree : %O", blob)
+            return URL.createObjectURL(blob)
+        })
+        .catch(err=>{
+            console.error("Erreur creation blob thumbnail %s : %O", fuuid, err)
+        })
+    
+    return {
+        load: async setSrc => {
+            const urlBlob = await blobPromise
+            console.debug("!!! Blob charger pour thumbnail %s", fuuid)
+            setSrc(urlBlob)
+        },
+        unload: async () => {
+            console.debug("Unload thumbnail %s", fuuid)
+            const urlBlob = await blobPromise
+            console.debug("Cleanup URL blob : %O", urlBlob)
+            if(urlBlob) URL.revokeObjectURL(urlBlob)
+        }
+    }
 }

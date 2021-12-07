@@ -7,7 +7,7 @@ import Button from 'react-bootstrap/Button'
 
 import { ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
 import { mapper, onContextMenu } from './mapperFichier.js'
-import { getThumbnail } from './workers/traitementFichiers'
+// import { getThumbnail } from './workers/traitementFichiers'
 
 function Accueil(props) {
 
@@ -79,7 +79,7 @@ function NavigationFavoris(props) {
         if(!favoris || !etatConnexion) return  // Rien a faire
         if(!cuuidCourant) {
             // Utiliser liste de favoris
-            setListe( preprarerDonnees(favoris, {trier: trierNom}) )
+            setListe( preprarerDonnees(favoris, workers, {trier: trierNom}) )
         } else if(etatConnexion) {
             chargerCollection(workers, cuuidCourant, setListe)
         }
@@ -154,9 +154,9 @@ function trierNom(a, b) {
     return nomA.localeCompare(nomB)
 }
 
-function preprarerDonnees(liste, opts) {
+function preprarerDonnees(liste, workers, opts) {
     opts = opts || {}
-    const listeMappee = liste.map(mapper)
+    const listeMappee = liste.map(item=>mapper(item, workers))
 
     if(opts.trier) {
         listeMappee.sort(opts.trier)
@@ -253,6 +253,6 @@ async function chargerCollection(workers, cuuid, setListe) {
     }
 
     if(documents) {
-        setListe( preprarerDonnees(documents) )
+        setListe( preprarerDonnees(documents, workers) )
     }
 }

@@ -62,6 +62,9 @@ export async function getThumbnail(fuuid, opts) {
     }
 
     var [cleFichier2, abFichier] = await Promise.all([cleFichierPromise, fichierPromise])
+
+    console.debug("!!! Fichiers a dechiffrer : %O/%O", cleFichier2, abFichier)
+
     if(cleFichier2 && abFichier) {
         console.debug("Dechiffrer le fichier %O avec cle %O", abFichier, cleFichier2)
         const ab = await chiffrage.dechiffrerSubtle(abFichier, cleFichier2.cleSecrete, cleFichier2.iv, cleFichier2.tag)
