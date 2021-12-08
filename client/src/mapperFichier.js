@@ -15,19 +15,8 @@ const Icones = {
 
 export { Icones }
 
-// function sampleData1() {
-//     return [
-//         {fuuid: 'abcd-1234', nom: 'fichier1.jpg', taille: 1234, date: 1637264900, mimetype: 'image/jpg', thumbnailSrc: '/reactjs/res/001_128.jpg'},
-//         {fuuid: 'abcd-1235', nom: 'fichier2 avec un nom long.jpg', taille: 2938481, date: 1637264901, mimetype: 'image/jpg', thumbnailLoader: loadImage()},
-//         {fuuid: 'abcd-1236', nom: 'fichier3 avec un nom encore plus long que lautre pour depasser la limite de lecran.jpg', taille: 10023, date: 1637264902, mimetype: 'image/jpg'},
-//         {fuuid: 'abcd-1237', nom: 'article1.pdf', taille: 84511, date: 1637265416, mimetype: 'application/pdf'},
-//         {fuuid: 'abcd-1238', nom: 'mon film 1.mov', taille: 134874998, date: 1637278941, mimetype: 'video/qt', duree: 123},
-//         {cuuid: 'efgh-5678', nom: 'Repertoire 1', date: 1637264902},
-//     ]
-// }
-
 export function mapper(row, workers) {
-    const { tuuid, nom, date_creation, duree, version_courante } = row
+    const { tuuid, nom, date_creation, duree, fuuid_v_courante, version_courante } = row
 
     console.debug("!!! MAPPER %O", row)
 
@@ -114,6 +103,7 @@ export function mapper(row, workers) {
         thumbnailIcon,
         thumbnailCaption: nom,
         duree,
+        fuuid: fuuid_v_courante,
         version_courante,
     }
 }

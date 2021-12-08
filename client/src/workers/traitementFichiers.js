@@ -91,20 +91,20 @@ export async function getFichierChiffre(fuuid, opts) {
 */
 export function resLoader(fichier, typeRessource, opts) {
     opts = opts || {}
-    const {file_id, version_courante} = fichier
+    const {fileId, version_courante} = fichier
 
     console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
 
     let selection = ''
     if(typeRessource === 'video') {
         // Charger video pleine resolution
-        const videos = version_courante.videos
-        const labelVideo = trouverLabelVideo(Object.keys(videos), opts)
+        const {video} = version_courante
+        const labelVideo = trouverLabelVideo(Object.keys(video), opts)
         console.debug("Label video trouve : '%s'", labelVideo)
-        selection = videos[labelVideo]
+        selection = video[labelVideo]
     } else if(typeRessource === 'original') {
         // Charger contenu original
-        selection = {...version_courante, hachage: file_id}
+        selection = {version_courante, fuuid: fichier.fuuid}
     } else if(typeRessource === 'image') {
         // Charger image pleine resolution
         const images = version_courante.images
@@ -132,8 +132,13 @@ export function resLoader(fichier, typeRessource, opts) {
         }
     }
 
-    if(selection && selection.hachage) {
-        const urlBlob = getFichierChiffre(selection.hachage)
+    if(selection) {
+        const fuuid = selection.hachage || selection.fuuid
+        if(!fuuid) {
+            console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
+            return false
+        }
+        const urlBlob = getFichierChiffre(fuuid)
             .then(blob=>URL.createObjectURL(blob))
             .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
 
