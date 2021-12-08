@@ -2,6 +2,7 @@ import axios from 'axios'
 import multibase from 'multibase'
 import { saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
 import { getThumbnail as getIdbThumbnail, saveThumbnailDechiffre } from '../idbCollections'
+import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs'
 
 var _workers = null
 
@@ -11,8 +12,6 @@ export function setWorkers(workers) {
 
 export async function getThumbnail(fuuid, opts) {
     opts = opts || {}
-    const { dataChiffre } = opts
-    const { connexion, chiffrage } = _workers
 
     // Verifier si le thumbnail est deja dans collections.thumbnails
     const thumbnailCache = await getIdbThumbnail(fuuid)
@@ -20,6 +19,20 @@ export async function getThumbnail(fuuid, opts) {
         // console.debug("!!! Thumbnail cache : %O", thumbnailCache)
         return thumbnailCache.blob
     }
+
+    const blob = await getFichierChiffre(fuuid, opts)
+    if(blob) {
+        // console.debug("Sauvegarder le thumbnail dechiffre : %O", blob)
+        saveThumbnailDechiffre(fuuid, blob)
+    }
+
+    return blob
+}
+
+export async function getFichierChiffre(fuuid, opts) {
+    opts = opts || {}
+    const { dataChiffre } = opts
+    const { connexion, chiffrage } = _workers
 
     // Recuperer la cle de fichier
     const cleFichierFct = async () => {
@@ -67,11 +80,75 @@ export async function getThumbnail(fuuid, opts) {
         const ab = await chiffrage.dechiffrerSubtle(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
         // console.debug("Resultat dechiffrage : %O", ab)
         const blob = new Blob([ab])
-        // console.debug("Sauvegarder le thumbnail dechiffre : %O", blob)
-        saveThumbnailDechiffre(fuuid, blob)
-
         return blob
     }
 
-    console.error("Erreur chargement thumbnail %s (erreur recuperation cle ou download)", fuuid)
+    console.error("Erreur chargement image %s (erreur recuperation cle ou download)", fuuid)
+}
+
+/* Donne acces aux ressources, selection via typeRessource. Chargement async. 
+   Retourne { src } qui peut etre un url ou un blob. 
+*/
+export function resLoader(fichier, typeRessource, opts) {
+    opts = opts || {}
+    const {file_id, version_courante} = fichier
+
+    console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
+
+    let selection = ''
+    if(typeRessource === 'video') {
+        // Charger video pleine resolution
+        const videos = version_courante.videos
+        const labelVideo = trouverLabelVideo(Object.keys(videos), opts)
+        console.debug("Label video trouve : '%s'", labelVideo)
+        selection = videos[labelVideo]
+    } else if(typeRessource === 'original') {
+        // Charger contenu original
+        selection = {...version_courante, hachage: file_id}
+    } else if(typeRessource === 'image') {
+        // Charger image pleine resolution
+        const images = version_courante.images
+        const labelImage = trouverLabelImage(Object.keys(images), opts)
+        console.debug("Label image trouve : '%s'", labelImage)
+        selection = images[labelImage]
+    } else if(typeRessource === 'poster') {
+        // Charger poster (fallback image pleine resolution)
+        const images = version_courante.images
+        if(images.poster) selection = images.poster
+        else {
+            const labelImage = trouverLabelImage(Object.keys(images), opts)
+            console.debug("Label image trouve : '%s'", labelImage)
+            selection = images[labelImage]
+        }
+    } else if(typeRessource === 'thumbnail') {
+        // Charger thumbnail (fallback image poster, sinon pleine resolution)
+        const images = version_courante.images
+        if(images.thumbnail) selection = images.thumbnail
+        else if(images.poster) selection = images.poster
+        else {
+            const labelImage = trouverLabelImage(Object.keys(images), opts)
+            console.debug("Label image trouve : '%s'", labelImage)
+            selection = images[labelImage]
+        }
+    }
+
+    if(selection && selection.hachage) {
+        const urlBlob = getFichierChiffre(selection.hachage)
+            .then(blob=>URL.createObjectURL(blob))
+            .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
+
+        return { srcPromise: urlBlob, clean: ()=>clean(urlBlob) }
+    }
+
+    return false
+}
+
+async function clean(urlBlobPromise) {
+    try {
+        const urlBlob = await urlBlobPromise
+        console.debug("Cleanup blob %s", urlBlob)
+        URL.revokeObjectURL(urlBlob)
+    } catch(err) {
+        console.warn("Erreur cleanup URL Blob")
+    }
 }

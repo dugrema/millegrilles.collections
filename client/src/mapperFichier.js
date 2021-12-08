@@ -114,6 +114,7 @@ export function mapper(row, workers) {
         thumbnailIcon,
         thumbnailCaption: nom,
         duree,
+        version_courante,
     }
 }
 

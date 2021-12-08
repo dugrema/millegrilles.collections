@@ -6,9 +6,13 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 
-import { ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
+import { 
+    ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
+    supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled,
+} from '@dugrema/millegrilles.reactjs'
+import { ModalViewer } from '@dugrema/millegrilles.reactjs'
 import { mapper, onContextMenu } from './mapperFichier.js'
-// import { getThumbnail } from './workers/traitementFichiers'
+import { resLoader } from './workers/traitementFichiers.js'
 
 function Accueil(props) {
 
@@ -41,9 +45,17 @@ function NavigationFavoris(props) {
     const [ liste, setListe ] = useState([])
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ selection, setSelection ] = useState('')
+    const [ tuuidSelectionne, setTuuidSelectionne ] = useState('')
     const [ modeView, setModeView ] = useState('')
+    const [ showViewer, setShowViewer ] = useState(false)
+    const [ support, setSupport ] = useState({})
 
     // Callbacks
+    const showViewerAction = useCallback( async tuuid => {
+        await setTuuidSelectionne([tuuid])
+        setShowViewer(true)
+    }, [setSelection, setShowViewer])
+
     const onDoubleClick = useCallback((event, value)=>{
         window.getSelection().removeAllRanges()
         // console.debug("Ouvrir %O (liste courante: %O)", value, liste)
@@ -52,9 +64,9 @@ function NavigationFavoris(props) {
             setBreadcrumb([...breadcrumb, folderItem])
             setCuuidCourant(value.folderId)
         } else {
-            throw new Error("todo")
+            showViewerAction(value.fileId)
         }
-    }, [liste, setCuuidCourant, breadcrumb, setBreadcrumb])
+    }, [liste, setCuuidCourant, setTuuidSelectionne, breadcrumb, setBreadcrumb, showViewerAction])
 
     const onSelectionLignes = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
@@ -87,6 +99,9 @@ function NavigationFavoris(props) {
         }
     }, [workers, etatConnexion, favoris, setListe, cuuidCourant])
     
+    // Detect support divers de l'appareil/navigateur
+    useEffect(()=>detecterSupport(setSupport), [setSupport])
+
     return (
         <>
             <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
@@ -111,8 +126,39 @@ function NavigationFavoris(props) {
                 fermerContextuel={fermerContextuel}
             />
 
+            <ModalViewer 
+                show={showViewer} 
+                handleClose={()=>setShowViewer(false)} 
+                fichiers={preparerPreviews(liste, support)} 
+                tuuidSelectionne={tuuidSelectionne}
+            />
+
         </>
     )
+}
+
+function preparerPreviews(liste, support) {
+
+    const optionsLoader = {supporteWebm: support.webm, supporteWebp: support.webp}
+
+    const fichiersPreview = liste.filter(filtrerTypesPreview).map(item=>{
+        return {
+            ...item,
+            loader: typeRessource => resLoader(item, typeRessource, optionsLoader)
+        }
+    })
+    return fichiersPreview
+}
+
+function filtrerTypesPreview(item) {
+    if(item && item.mimetype) {
+        const mimetype = item.mimetype.toLowerCase(),
+              mimetypeBase = mimetype.split('/').shift()
+        
+        if(mimetype === 'application/pdf') return true
+        if(mimetypeBase === 'image') return true
+    }
+    return false
 }
 
 function SectionBreadcrumb(props) {
@@ -283,4 +329,15 @@ async function chargerCollection(workers, cuuid, setListe) {
     if(documents) {
         setListe( preprarerDonnees(documents, workers) )
     }
+}
+
+function detecterSupport(setSupport) {
+    const webp = supporteFormatWebp()
+    const webm = supporteFormatWebm()
+    const fileStream = supporteFileStream()
+    const touch = isTouchEnabled()
+
+    const support = {webp, webm, fileStream, touch}
+    console.info("Support du navigateur : %O", support)
+    setSupport(support)
 }
