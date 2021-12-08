@@ -54,11 +54,11 @@ function NavigationFavoris(props) {
     const showPreviewAction = useCallback( async tuuid => {
         await setTuuidSelectionne(tuuid)
         setShowPreview(true)
-    }, [setSelection, setShowPreview])
+    }, [setSelection, setShowPreview, setTuuidSelectionne])
 
     const onDoubleClick = useCallback((event, value)=>{
         window.getSelection().removeAllRanges()
-        console.debug("Ouvrir %O (liste courante: %O)", value, liste)
+        // console.debug("Ouvrir %O (liste courante: %O)", value, liste)
         if(value.folderId) {
             const folderItem = liste.filter(item=>item.folderId===value.folderId).pop()
             setBreadcrumb([...breadcrumb, folderItem])
@@ -118,7 +118,7 @@ function NavigationFavoris(props) {
                 onContextMenu={(event, value)=>onContextMenu(event, value, setContextuel)}
                 onSelection={onSelectionLignes}
                 onClickEntete={colonne=>{
-                    console.debug("Entete click : %s", colonne)
+                    // console.debug("Entete click : %s", colonne)
                 }}
             />
 

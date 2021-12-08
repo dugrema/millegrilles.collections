@@ -69,14 +69,14 @@ export async function getFichierChiffre(fuuid, opts) {
                 responseType: 'arraybuffer',
                 timeout: 5000,
             })
-            console.debug("!!! Reponse axios : %O", reponse)
+            // console.debug("!!! Reponse axios : %O", reponse)
             return reponse.data
         }
     }
 
     var [cleFichier, abFichier] = await Promise.all([cleFichierFct(), fichierFct()])
     if(cleFichier && abFichier) {
-        console.debug("Dechiffrer le fichier %O avec cle %O", abFichier, cleFichier)
+        // console.debug("Dechiffrer le fichier %O avec cle %O", abFichier, cleFichier)
         const ab = await chiffrage.dechiffrerSubtle(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
         // console.debug("Resultat dechiffrage : %O", ab)
         const blob = new Blob([ab])
@@ -93,14 +93,14 @@ export function resLoader(fichier, typeRessource, opts) {
     opts = opts || {}
     const {fileId, version_courante} = fichier
 
-    console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
+    // console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
 
     let selection = ''
     if(typeRessource === 'video') {
         // Charger video pleine resolution
         const {video} = version_courante
         const labelVideo = trouverLabelVideo(Object.keys(video), opts)
-        console.debug("Label video trouve : '%s'", labelVideo)
+        // console.debug("Label video trouve : '%s'", labelVideo)
         selection = video[labelVideo]
     } else if(typeRessource === 'original') {
         // Charger contenu original
@@ -109,7 +109,7 @@ export function resLoader(fichier, typeRessource, opts) {
         // Charger image pleine resolution
         const images = version_courante.images
         const labelImage = trouverLabelImage(Object.keys(images), opts)
-        console.debug("Label image trouve : '%s'", labelImage)
+        // console.debug("Label image trouve : '%s'", labelImage)
         selection = images[labelImage]
     } else if(typeRessource === 'poster') {
         // Charger poster (fallback image pleine resolution)
@@ -117,7 +117,7 @@ export function resLoader(fichier, typeRessource, opts) {
         if(images.poster) selection = images.poster
         else {
             const labelImage = trouverLabelImage(Object.keys(images), opts)
-            console.debug("Label image trouve : '%s'", labelImage)
+            // console.debug("Label image trouve : '%s'", labelImage)
             selection = images[labelImage]
         }
     } else if(typeRessource === 'thumbnail') {
@@ -127,7 +127,7 @@ export function resLoader(fichier, typeRessource, opts) {
         else if(images.poster) selection = images.poster
         else {
             const labelImage = trouverLabelImage(Object.keys(images), opts)
-            console.debug("Label image trouve : '%s'", labelImage)
+            // console.debug("Label image trouve : '%s'", labelImage)
             selection = images[labelImage]
         }
     }
@@ -151,7 +151,7 @@ export function resLoader(fichier, typeRessource, opts) {
 async function clean(urlBlobPromise) {
     try {
         const urlBlob = await urlBlobPromise
-        console.debug("Cleanup blob %s", urlBlob)
+        // console.debug("Cleanup blob %s", urlBlob)
         URL.revokeObjectURL(urlBlob)
     } catch(err) {
         console.warn("Erreur cleanup URL Blob")

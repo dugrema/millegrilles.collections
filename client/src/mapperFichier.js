@@ -18,7 +18,7 @@ export { Icones }
 export function mapper(row, workers) {
     const { tuuid, nom, date_creation, duree, fuuid_v_courante, version_courante } = row
 
-    console.debug("!!! MAPPER %O", row)
+    // console.debug("!!! MAPPER %O", row)
 
     let date_version = '', 
         mimetype_fichier = '',
@@ -134,13 +134,13 @@ function loadThumbnailChiffre(fuuid, workers, opts) {
         load: async setSrc => {
             opts = opts || {}
             const urlBlob = await blobPromise
-            console.debug("!!! Blob charger pour thumbnail %s (opts: %O)", fuuid, opts)
+            // console.debug("!!! Blob charger pour thumbnail %s (opts: %O)", fuuid, opts)
             setSrc(urlBlob)
         },
         unload: async () => {
             // console.debug("Unload thumbnail %s", fuuid)
             const urlBlob = await blobPromise
-            console.debug("Cleanup URL blob : %O", urlBlob)
+            // console.debug("Cleanup URL blob : %O", urlBlob)
             if(urlBlob) URL.revokeObjectURL(urlBlob)
         }
     }
