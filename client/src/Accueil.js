@@ -54,7 +54,7 @@ function NavigationFavoris(props) {
     const showPreviewAction = useCallback( async tuuid => {
         await setTuuidSelectionne(tuuid)
         setShowPreview(true)
-    }, [setSelection, setShowPreview, setTuuidSelectionne])
+    }, [setShowPreview, setTuuidSelectionne])
 
     const onDoubleClick = useCallback((event, value)=>{
         window.getSelection().removeAllRanges()
@@ -69,7 +69,7 @@ function NavigationFavoris(props) {
         }
     }, [liste, setCuuidCourant, setTuuidSelectionne, breadcrumb, setBreadcrumb, showPreviewAction])
 
-    const onSelectionLignes = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
+    const onSelectionLignes = useCallback(selection=>{setSelection(selection)}, [setSelection])
     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
 
     const fermerContextuel = useCallback(()=>{
@@ -125,6 +125,10 @@ function NavigationFavoris(props) {
             <MenuContextuelFavoris 
                 contextuel={contextuel} 
                 fermerContextuel={fermerContextuel}
+                fichiers={liste}
+                tuuidSelectionne={tuuidSelectionne}
+                selection={selection}
+                showPreview={showPreviewAction}
             />
 
             <PreviewFichiers 
@@ -219,11 +223,50 @@ function preprarerDonnees(liste, workers, opts) {
 
 function MenuContextuelFavoris(props) {
 
-    const { contextuel, fermerContextuel } = props
+    const { contextuel, fichiers, selection } = props
+
+    if(!contextuel.show) return ''
+
+    console.debug("Selection : %O", selection)
+    if( selection && selection.length > 1 ) {
+        return <p>TODO Multiselect</p>
+    } else if(selection.length>0) {
+        const fichierTuuid = selection[0]
+        console.debug("!!! Selection : %s, FICHIERS : %O", selection, fichiers)
+        const fichier = fichiers.filter(item=>(item.folderId||item.fileId)===fichierTuuid).pop()
+        if(fichier) {
+            if(fichier.folderId) {
+                return <MenuContextuelRepertoire {...props} repertoire={fichier} />
+            } else if(fichier.fileId) {
+                return <MenuContextuelFichier fichier={fichier} {...props} />
+            }
+        }
+    }
+
+    // Par defaut, menu fichier
+    return <MenuContextuelFichier {...props} />
+}
+
+function MenuContextuelFichier(props) {
+    const { fichier, contextuel, fermerContextuel, showPreview } = props
+
+    // Determiner si preview est disponible
+    let previewDisponible = false
+    if(fichier) {
+        const mimetype = fichier.mimetype || '',
+              mimetypeBase = mimetype.split('/').shift()
+        if(mimetype === 'application/pdf' || mimetypeBase === 'image' || mimetypeBase === 'video') {
+            previewDisponible = true
+        }
+    }
+
+    const showPreviewAction = useCallback( event => {
+        if(previewDisponible) showPreview(fichier.fileId)
+    }, [fichier, previewDisponible])
 
     return (
         <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-search"/> Preview</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-download"/> Download</Button></Col></Row>
             <hr/>
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
@@ -235,7 +278,23 @@ function MenuContextuelFavoris(props) {
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Remove</Button></Col></Row>
         </MenuContextuel>
     )
+}
 
+function MenuContextuelRepertoire(props) {
+
+    const { repertoire, contextuel, fermerContextuel } = props
+
+    return (
+        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favorite</Button></Col></Row>
+            <hr/>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-edit"/> Rename</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-cut"/> Move</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-copy"/> Copy</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Remove</Button></Col></Row>
+        </MenuContextuel>
+    )
 }
 
 async function chargerFavoris(workers, setFavoris) {
