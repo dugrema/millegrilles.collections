@@ -1,10 +1,14 @@
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
+import Badge from 'react-bootstrap/Badge'
 import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import { IconeConnexion } from '@dugrema/millegrilles.reactjs'
 
 function Menu(props) {
+
+    const { showTransfertModal } = props
+
     return (
       <Navbar collapseOnSelect expand="md">
         
@@ -23,20 +27,14 @@ function Menu(props) {
             </Nav.Item>
 
             <Nav.Item>
-                <Nav.Link title="Upload">
-                    <i className="fa fa-upload" /> {' '} Upload
-                </Nav.Link>
-            </Nav.Item>
-            
-            <Nav.Item>
-                <Nav.Link title="Download">
-                    <i className="fa fa-download" /> {' '} Download
+                <Nav.Link title="Corbeille">
+                    <i className="fa fa-trash-o" /> {' '} Corbeille
                 </Nav.Link>
             </Nav.Item>
 
             <Nav.Item>
-                <Nav.Link title="Corbeille">
-                    <i className="fa fa-trash-o" /> {' '} Corbeille
+                <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
+                    <LabelTransfert {...props} />
                 </Nav.Link>
             </Nav.Item>
 
@@ -51,6 +49,8 @@ function Menu(props) {
       </Navbar>
     )
 }
+
+export default Menu
 
 function DropDown(props) {
 
@@ -74,5 +74,22 @@ function DropDown(props) {
     )
 
 }
-  
-export default Menu
+
+function LabelTransfert(props) {
+
+  const { workers } = props
+
+  return (
+    <>
+
+      <i className="fa fa-upload" />
+      <Badge pill bg="primary">100%</Badge>
+
+      {' '}
+
+      <i className="fa fa-download" />
+      <Badge pill bg="success">100%</Badge>
+
+    </>
+  )
+}

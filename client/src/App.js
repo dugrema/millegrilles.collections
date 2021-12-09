@@ -1,8 +1,10 @@
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import Container from 'react-bootstrap/Container'
 import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrema/millegrilles.reactjs'
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
+
+import TransfertModal from './TransfertModal'
 
 import './App.css'
 
@@ -14,6 +16,10 @@ function App() {
   const [workers, setWorkers] = useState('')
   const [usager, setUsager] = useState('')
   const [etatConnexion, setEtatConnexion] = useState(false)
+  const [showTransfertModal, setShowTransfertModal] = useState(false)
+
+  const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
+  const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
 
   // Chargement des proprietes et workers
   useEffect(()=>{
@@ -40,6 +46,7 @@ function App() {
           workers={workers} 
           usager={usager} 
           etatConnexion={etatConnexion} 
+          showTransfertModal={showTransfertModalOuvrir}
         />
       </HeaderApplication>
 
@@ -56,6 +63,8 @@ function App() {
       <FooterApplication>
         <Footer workers={workers} />
       </FooterApplication>
+
+      <TransfertModal show={showTransfertModal} fermer={showTransfertModalFermer} />
 
     </LayoutApplication>
   )

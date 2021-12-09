@@ -105,9 +105,16 @@ function NavigationFavoris(props) {
 
     return (
         <>
-            <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
+            <Row>
+                <Col xs={12} md={8} lg={9}>
+                    <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
+                </Col>
 
-            <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                <Col xs={12} md={4} lg={3} className="buttonbars">
+                    <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                    <BoutonsUpload />
+                </Col>
+            </Row>
 
             <ListeFichiers 
                 modeView={modeView}
@@ -183,6 +190,16 @@ function BoutonsFormat(props) {
             <Button variant={variantListe} onClick={setModeListe}><i className="fa fa-list" /></Button>
             <Button variant={variantThumbnail} onClick={setModeThumbnails}><i className="fa fa-th-large" /></Button>
         </ButtonGroup>
+    )
+}
+
+function BoutonsUpload(props) {
+    return (
+        <>
+            <Button variant="secondary" className="individuel">
+                <i className="fa fa-plus"/> Fichier
+            </Button>
+        </>
     )
 }
 
@@ -270,12 +287,12 @@ function MenuContextuelFichier(props) {
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-download"/> Download</Button></Col></Row>
             <hr/>
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favorite</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favoris</Button></Col></Row>
             <hr/>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-edit"/> Rename</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-cut"/> Move</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-copy"/> Copy</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Remove</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-copy"/> Copier</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Retirer</Button></Col></Row>
         </MenuContextuel>
     )
 }
@@ -287,12 +304,12 @@ function MenuContextuelRepertoire(props) {
     return (
         <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favorite</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favoris</Button></Col></Row>
             <hr/>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-edit"/> Rename</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-cut"/> Move</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-copy"/> Copy</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Remove</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-copy"/> Copier</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Retirer</Button></Col></Row>
         </MenuContextuel>
     )
 }

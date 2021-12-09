@@ -11,3 +11,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.buttonbars {
+  text-align: right;
+}
+
+.buttonbars DIV {
+  margin-left: 1rem;
+}
+
+.buttonbars .individuel {
+  margin-left: 1rem;
+}
