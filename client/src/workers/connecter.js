@@ -8,12 +8,12 @@ export async function connecter(workers, setUsagerState, setEtatConnexion) {
     // console.debug("Set callbacks connexion worker")
     const location = new URL(window.location.href)
     location.pathname = CONST_APP_URL
-    // console.debug("Connecter a %O", location)
+    console.debug("Connecter a %O", location)
 
     // Preparer callbacks
     const setUsagerCb = proxy( usager => setUsager(workers, usager, setUsagerState) )
     const setEtatConnexionCb = proxy(setEtatConnexion)
-    await connexion.setCallbacks(setEtatConnexionCb, workers.x509, setUsagerCb)
+    await connexion.setCallbacks(setEtatConnexionCb, setUsagerCb)
 
     const info = await connexion.connecter(location.href)
     // console.debug("Connexion info : %O", info)

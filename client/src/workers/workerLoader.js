@@ -2,25 +2,36 @@ import { wrap } from 'comlink'
 
 import ChiffrageWorker from './chiffrage.worker'
 import ConnexionWorker from './connexion.worker'
-import X509 from './x509.worker'
-import FiletransferDownloadWorker from './filetransferDownload.worker'
+import TransfertWorker from './transfert.worker'
 import * as traitementFichiers from './traitementFichiers'
 
 // Exemple de loader pour web workers
 export function chargerWorkers() {
     const {worker: chiffrage} = charger(ChiffrageWorker)
     const {worker: connexion} = charger(ConnexionWorker)
-    const {worker: x509} = charger(X509)
-    const {worker: download} = charger(FiletransferDownloadWorker)
+    const {worker: transfertFichiers} = charger(TransfertWorker)
+
+    // Chiffrage et x509 sont combines, reduit taille de l'application
+    const x509 = chiffrage
 
     const workers = {
         chiffrage, 
         connexion, 
         x509,
-        download,
+
+        // Pseudo-workers
         traitementFichiers,
     }
-    traitementFichiers.setWorkers(workers)
+
+    // Wiring
+    try {
+        traitementFichiers.setWorkers(workers)
+    } catch(err) {
+        console.error("Erreur chargement traitementFichiers : %O", err)
+    }
+    connexion.setX509Worker(chiffrage).catch(err=>console.error("Erreur chargement connexion worker : %O", err))
+    transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
+    transfertFichiers.up_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/up worker : %O", err))
 
     return workers
 }

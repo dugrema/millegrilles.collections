@@ -1,6 +1,6 @@
 import { expose } from 'comlink'
-import { ConnexionClient, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
-
+// import { ConnexionClient, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
+import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
 
 
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',

@@ -1,8 +1,7 @@
 import axios from 'axios'
 import multibase from 'multibase'
-import { saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
+import { saveCleDechiffree, getCleDechiffree, trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs'
 import { getThumbnail as getIdbThumbnail, saveThumbnailDechiffre } from '../idbCollections'
-import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs'
 
 var _workers = null
 

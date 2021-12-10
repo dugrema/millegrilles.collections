@@ -5,8 +5,8 @@
   "proxy": "https://localhost:3037",
   "homepage": "/collections",
   "dependencies": {
-    "@dugrema/millegrilles.reactjs": "https://github.com/dugrema/millegrilles.reactjs.git#2021.1.0",
-    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2021.1.0",
+    "@dugrema/millegrilles.reactjs": "git+ssh://git.maceroc.com/git/millegrilles.reactjs#2021.1.0",
+    "@dugrema/millegrilles.utiljs": "git+ssh://git.maceroc.com/git/millegrilles.utiljs#2021.1.0",
     "@rescripts/cli": "^0.0.16",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
