@@ -365,12 +365,12 @@ function MenuContextuelRepertoire(props) {
 }
 
 async function chargerFavoris(workers, setFavoris) {
-    // console.debug("Charger favoris")
+    console.debug("Charger favoris")
     const { connexion } = workers
     try {
         const messageFavoris = await connexion.getFavoris()
         const favoris = messageFavoris.favoris || {}
-        // console.debug("Favoris recus : %O", favoris)
+        console.debug("Favoris recus : %O", favoris)
         setFavoris(favoris)
     } catch(err) {
         console.error("Erreur chargement favoris : %O", err)

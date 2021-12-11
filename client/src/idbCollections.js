@@ -34,7 +34,7 @@ function createObjectStores(db, oldVersion) {
         case 0:
             db.createObjectStore(STORE_THUMBNAILS, {keyPath: 'hachage_bytes'})
             db.createObjectStore(STORE_DOWNLOADS, {keyPath: 'hachage_bytes'})
-            db.createObjectStore(STORE_UPLOADS)
+            // db.createObjectStore(STORE_UPLOADS)
         case 1: // Plus recent, rien a faire
             break
         default:

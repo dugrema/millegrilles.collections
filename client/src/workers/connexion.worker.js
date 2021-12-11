@@ -7,21 +7,21 @@ const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
 
 function getFavoris() {
-  return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris'})
+  return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
 }
 
 function getActivite(params) {
-  return ConnexionClient.emitBlocking('getActivite', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente'})
+  return ConnexionClient.emitBlocking('getActivite', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
 
 function getContenuCollection(tuuidsDocuments) {
   const params = {tuuid_collection: tuuidsDocuments}
-  return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection'})
+  return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
 }
 
 export function getClesFichiers(fuuids) {
   const params = {liste_hachage_bytes: fuuids}
-  return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage'})
+  return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
 }
 
 
