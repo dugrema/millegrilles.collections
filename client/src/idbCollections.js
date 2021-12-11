@@ -29,7 +29,7 @@ export function ouvrirDB(opts) {
 }
 
 function createObjectStores(db, oldVersion) {
-    console.debug("dbUsagers upgrade, DB object (version %s): %O", oldVersion, db)
+    // console.debug("dbUsagers upgrade, DB object (version %s): %O", oldVersion, db)
     switch(oldVersion) {
         case 0:
             db.createObjectStore(STORE_THUMBNAILS, {keyPath: 'hachage_bytes'})
@@ -48,7 +48,7 @@ export async function saveThumbnailDechiffre(hachage_bytes, blob) {
     // Preparer une cle secrete non-exportable
     const data = { hachage_bytes, blob, date: new Date() }
   
-    console.debug("Conserver cle secrete pour fuuid %s : %O", hachage_bytes, data)
+    // console.debug("Conserver cle secrete pour fuuid %s : %O", hachage_bytes, data)
   
     return db.transaction(STORE_THUMBNAILS, 'readwrite')
       .objectStore(STORE_THUMBNAILS)

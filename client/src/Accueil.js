@@ -6,6 +6,8 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 
+import { useDropzone } from 'react-dropzone'
+
 import { 
     ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
     supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled,
@@ -49,6 +51,8 @@ function NavigationFavoris(props) {
     const [ modeView, setModeView ] = useState('')
     const [ showPreview, setShowPreview ] = useState(false)
     const [ support, setSupport ] = useState({})
+
+    const transfertFichiers = workers?workers.transfertFichiers:null
 
     // Callbacks
     const showPreviewAction = useCallback( async tuuid => {
@@ -103,8 +107,29 @@ function NavigationFavoris(props) {
     // Detect support divers de l'appareil/navigateur
     useEffect(()=>detecterSupport(setSupport), [setSupport])
 
+    // Event pour bloquer onClick sur dropzone (panneau background)
+    const onClickBack = useCallback(event=>{
+        event.stopPropagation()
+        event.preventDefault()
+    }, [])
+
+    const onDrop = useCallback( acceptedFiles => {
+        uploaderFichiers(workers, cuuidCourant, acceptedFiles)
+    }, [workers, cuuidCourant])
+
+    const dzHook = useDropzone({onDrop})
+    const {getRootProps, getInputProps, isDragActive, open: openDropzone} = dzHook
+
+    const uploaderFichiersAction = useCallback(event=>{
+        event.stopPropagation()
+        event.preventDefault()
+        openDropzone()
+    }, [openDropzone])
+
     return (
-        <>
+        <div {...getRootProps({onClick: onClickBack})}>
+            <input {...getInputProps()} />
+
             <Row>
                 <Col xs={12} md={8} lg={9}>
                     <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
@@ -112,7 +137,7 @@ function NavigationFavoris(props) {
 
                 <Col xs={12} md={4} lg={3} className="buttonbars">
                     <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                    <BoutonsUpload />
+                    <BoutonsUpload uploaderFichiersAction={uploaderFichiersAction} />
                 </Col>
             </Row>
 
@@ -147,7 +172,7 @@ function NavigationFavoris(props) {
                 support={support}
             />
 
-        </>
+        </div>
     )
 }
 
@@ -195,9 +220,16 @@ function BoutonsFormat(props) {
 }
 
 function BoutonsUpload(props) {
+
+    const { uploaderFichiersAction } = props
+
     return (
         <>
-            <Button variant="secondary" className="individuel">
+            <Button 
+                variant="secondary" 
+                className="individuel"
+                onClick={uploaderFichiersAction}
+            >
                 <i className="fa fa-plus"/> Fichier
             </Button>
         </>
@@ -412,4 +444,26 @@ async function detecterSupport(setSupport) {
     const support = {webp, webm, fileStream, touch}
     console.info("Support du navigateur : %O", support)
     setSupport(support)
+}
+
+async function uploaderFichiers(workers, cuuid, acceptedFiles) {
+    console.debug("Uploader vers '%s' fichiers : %O", cuuid, acceptedFiles)
+
+    const { transfertFichiers, connexion } = workers
+
+    const params = {}
+    if(cuuid) params.cuuid = cuuid
+
+    // S'assurer d'avoir un certificat de maitre des cles
+    const cert = await connexion.getCertificatsMaitredescles()
+    const { certificat } = cert
+
+    if(certificat) {
+        transfertFichiers.up_setCertificat(certificat)
+        transfertFichiers.up_ajouterFichiersUpload(acceptedFiles, params)
+            .catch(err=>{console.error("Erreur preparation upload fichiers : %O", err)})
+    } else {
+        console.error("Erreur getCertificatsMaitredescles - aucun certificat recu")
+    }
+    
 }
