@@ -7,7 +7,7 @@ import { IconeConnexion } from '@dugrema/millegrilles.reactjs'
 
 function Menu(props) {
 
-    console.debug("!!! Menu Proppys : %O", props)
+    // console.debug("!!! Menu Proppys : %O", props)
 
     const { showTransfertModal } = props
 

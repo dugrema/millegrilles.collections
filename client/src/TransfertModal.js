@@ -26,7 +26,7 @@ function TransfertModal(props) {
 
         const proxySetEtatDownload = proxy((pending, pct, flags)=>{
             flags = flags || {}
-            console.debug("Set nouvel etat download. pending:%d, pct:%d, flags: %O", pending, pct, flags)
+            // console.debug("Set nouvel etat download. pending:%d, pct:%d, flags: %O", pending, pct, flags)
             handleDownloadUpdate(transfertFichiers, {pending, pct, ...flags}, setEtatDownload)
         })
         transfertFichiers.down_setCallbackDownload(proxySetEtatDownload)
@@ -63,16 +63,16 @@ export default TransfertModal
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp'
 
 export async function handleDownloadUpdate(transfertFichiers, params, setEtatDownload) {
-    console.debug("handleDownloadUpdate params: %O", params)
+    // console.debug("handleDownloadUpdate params: %O", params)
     // const {pending, pct, filename, fuuid} = params
     const etat = await transfertFichiers.down_getEtatCourant()
     const etatComplet = {...params, ...etat}
-    console.debug("Etat download courant : %O", etatComplet)
+    // console.debug("Etat download courant : %O", etatComplet)
     setEtatDownload(etatComplet)
 
     if(params.fuuidReady) {
         const infoFichier = etat.downloads.filter(item=>item.fuuid===params.fuuidReady).pop()
-        console.debug("Download cache avec fuuid: %s, fichier: %O", params.fuuidReady, infoFichier)
+        // console.debug("Download cache avec fuuid: %s, fichier: %O", params.fuuidReady, infoFichier)
         downloadCache(params.fuuidReady, {filename: infoFichier.filename})
     }
 }
@@ -80,10 +80,10 @@ export async function handleDownloadUpdate(transfertFichiers, params, setEtatDow
 async function downloadCache(fuuid, opts) {
     opts = opts || {}
     if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
-    console.debug("Download fichier : %s = %O", fuuid, opts)
+    // console.debug("Download fichier : %s = %O", fuuid, opts)
     const cacheTmp = await caches.open(CACHE_TEMP_NAME)
     const cacheFichier = await cacheTmp.match(fuuid)
-    console.debug("Cache fichier : %O", cacheFichier)
+    // console.debug("Cache fichier : %O", cacheFichier)
 
     promptSaveFichier(await cacheFichier.blob(), opts)
 }
@@ -114,7 +114,7 @@ function promptSaveFichier(blob, opts) {
 
 function EtatDownload(props) {
 
-    console.debug("EtatDownload PROPPYS %O", props)
+    // console.debug("EtatDownload PROPPYS %O", props)
 
     const { workers, etat } = props
     const { transfertFichiers } = workers
@@ -128,16 +128,25 @@ function EtatDownload(props) {
 
     const annulerDownloadAction = useCallback( event => {
         const fuuid = event.currentTarget.value
-        transfertFichiers.down_annulerDownload(fuuid).catch(err=>{console.error("Erreur annuler download %O", err)})
+        transfertFichiers.down_annulerDownload(fuuid)
+            .catch(err=>{console.error("Erreur annuler download %O", err)})
     }, [transfertFichiers])
 
     const supprimerDownloadAction = useCallback( event => {
         const fuuid = event.currentTarget.value
         transfertFichiers.down_supprimerDownloads({hachage_bytes: fuuid})
+            .catch(err=>{console.error("Erreur supprimer download %O", err)})
     }, [transfertFichiers])
 
     const supprimerTousAction = useCallback( event => {
         transfertFichiers.down_supprimerDownloads({completes: true})
+            .catch(err=>{console.error("Erreur supprimer tous %O", err)})
+    }, [transfertFichiers])
+
+    const retryDownloadAction = useCallback( event => {
+        const fuuid = event.currentTarget.value
+        transfertFichiers.down_retryDownload(fuuid)
+            .catch(err=>{console.error("Erreur retry download %O", err)})
     }, [transfertFichiers])
 
     return (
@@ -167,7 +176,14 @@ function EtatDownload(props) {
                     )
                 }
                 if(item.status === 4) {
-                    return <DownloadErreur key={item.fuuid} value={item} supprimerDownloadAction={supprimerDownloadAction} />
+                    return (
+                        <DownloadErreur 
+                            key={item.fuuid} 
+                            value={item} 
+                            supprimerDownloadAction={supprimerDownloadAction} 
+                            retryDownloadAction={retryDownloadAction}
+                        />
+                    )
                 }
 
             })}
@@ -244,13 +260,20 @@ function DownloadComplete(props) {
 }
 
 function DownloadErreur(props) {
-    const { value, supprimerDownloadAction } = props
+    const { value, supprimerDownloadAction, retryDownloadAction } = props
 
     return (
         <Row>
             <Col>{value.filename}</Col>
             <Col>Erreur</Col>
             <Col>
+                <Button 
+                    variant="secondary" 
+                    value={value.fuuid} 
+                    onClick={retryDownloadAction}
+                >
+                    Retry
+                </Button>
                 <Button 
                     variant="secondary" 
                     value={value.fuuid} 
