@@ -12,7 +12,10 @@ export async function connecter(workers, setUsagerState, setEtatConnexion) {
 
     // Preparer callbacks
     const setUsagerCb = proxy( usager => setUsager(workers, usager, setUsagerState) )
-    const setEtatConnexionCb = proxy(setEtatConnexion)
+    const setEtatConnexionCb = proxy(etat => {
+        console.debug("!!! Etat connexion : %O", etat)
+        setEtatConnexion(etat)
+    })
     await connexion.setCallbacks(setEtatConnexionCb, setUsagerCb)
 
     const info = await connexion.connecter(location.href)
@@ -21,9 +24,10 @@ export async function connecter(workers, setUsagerState, setEtatConnexion) {
 
 async function setUsager(workers, nomUsager, setUsagerState, opts) {
     opts = opts || {}
-    // console.debug("setUsager '%s'", nomUsager)
+    console.debug("setUsager '%s'", nomUsager)
     const { getUsager } = await import('@dugrema/millegrilles.reactjs')
     const usager = await getUsager(nomUsager)
+    console.debug("Usager info : %O", usager)
     
     if(usager && usager.certificat) {
         const { connexion, chiffrage, x509 } = workers
@@ -37,7 +41,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         await x509.init(caPem)
 
         // Init cles privees
-        await chiffrage.initialiserFormatteurMessage(certificatPem, usager.dechiffrer, usager.signer, {DEBUG: false})
+        await chiffrage.initialiserFormatteurMessage(certificatPem, usager.dechiffrer, usager.signer, {DEBUG: true})
         await connexion.initialiserFormatteurMessage(certificatPem, usager.signer, {DEBUG: false})
     
         setUsagerState({nomUsager})

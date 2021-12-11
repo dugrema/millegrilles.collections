@@ -18,6 +18,7 @@ export function chargerWorkers() {
         chiffrage, 
         connexion, 
         x509,
+        transfertFichiers,
 
         // Pseudo-workers
         traitementFichiers,
@@ -32,6 +33,10 @@ export function chargerWorkers() {
     connexion.setX509Worker(chiffrage).catch(err=>console.error("Erreur chargement connexion worker : %O", err))
     transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
     transfertFichiers.up_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/up worker : %O", err))
+
+    const urlLocal = new URL(window.location.href)
+    urlLocal.pathname = '/fichiers'
+    transfertFichiers.down_setUrlDownload(urlLocal.href)
 
     return workers
 }

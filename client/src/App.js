@@ -17,9 +17,12 @@ function App() {
   const [usager, setUsager] = useState('')
   const [etatConnexion, setEtatConnexion] = useState(false)
   const [showTransfertModal, setShowTransfertModal] = useState(false)
+  const [etatTransfert, setEtatTransfert] = useState('')
 
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
+
+  const transfertFichiers = workers?workers.transfertFichiers:null
 
   // Chargement des proprietes et workers
   useEffect(()=>{
@@ -33,8 +36,10 @@ function App() {
 
   useEffect(()=>{
     setWorkersTraitementFichiers(workers)
-    if(workers && workers.connexion) {
-      connecter(workers, setUsager, setEtatConnexion)
+    if(workers) {
+      if(workers.connexion) {
+        connecter(workers, setUsager, setEtatConnexion)
+      }
     }
   }, [workers, setUsager, setEtatConnexion])
 
@@ -64,7 +69,11 @@ function App() {
         <Footer workers={workers} />
       </FooterApplication>
 
-      <TransfertModal show={showTransfertModal} fermer={showTransfertModalFermer} />
+      <TransfertModal 
+        show={showTransfertModal}
+        fermer={showTransfertModalFermer} 
+        workers={workers}
+      />
 
     </LayoutApplication>
   )

@@ -130,6 +130,7 @@ function NavigationFavoris(props) {
             />
 
             <MenuContextuelFavoris 
+                workers={props.workers}
                 contextuel={contextuel} 
                 fermerContextuel={fermerContextuel}
                 fichiers={liste}
@@ -265,7 +266,8 @@ function MenuContextuelFavoris(props) {
 }
 
 function MenuContextuelFichier(props) {
-    const { fichier, contextuel, fermerContextuel, showPreview } = props
+    const { workers, fichier, contextuel, fermerContextuel, showPreview } = props
+    const { transfertFichiers } = workers
 
     // Determiner si preview est disponible
     let previewDisponible = false
@@ -281,10 +283,27 @@ function MenuContextuelFichier(props) {
         if(previewDisponible) showPreview(fichier.fileId)
     }, [fichier, previewDisponible])
 
+    const downloadAction = useCallback( async event => {
+        console.debug("Download fichier %O", fichier)
+        const { fuuid, mimetype, nom: filename, taille} = fichier
+
+        const reponseCle = await workers.connexion.getCleFichierProtege(fuuid)
+        console.debug("!!! CLE %O", reponseCle)
+        if(reponseCle.code === 1) {
+            // Permis
+            const {cle, iv, tag, format} = reponseCle.cles[fuuid]
+            transfertFichiers.down_ajouterDownload(fuuid, {mimetype, filename, taille, passwordChiffre: cle, iv, tag, format})
+                .catch(err=>{console.error("Erreur debut download : %O", err)})
+        } else {
+
+        }
+
+    }, [fichier, workers])
+
     return (
         <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-download"/> Download</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={downloadAction}><i className="fa fa-download"/> Download</Button></Col></Row>
             <hr/>
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favoris</Button></Col></Row>
