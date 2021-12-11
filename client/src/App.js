@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
+import { proxy } from 'comlink'
+
 import Container from 'react-bootstrap/Container'
+
 import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrema/millegrilles.reactjs'
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
@@ -42,6 +45,18 @@ function App() {
       }
     }
   }, [workers, setUsager, setEtatConnexion])
+
+  useEffect(()=>{
+      if(!etatConnexion) return 
+      workers.connexion.enregistrerCallbackMajFichier(proxy(data=>{
+        console.debug("callbackMajFichier data: %O", data)
+      }))
+        .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
+      workers.connexion.enregistrerCallbackMajCollection(proxy(data=>{
+        console.debug("callbackMajCollection data: %O", data)
+      }))
+        .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
+  }, [etatConnexion])
 
   return (
     <LayoutApplication>

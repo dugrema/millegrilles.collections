@@ -2,6 +2,19 @@
 const DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
 
+const ROUTING_KEYS_FICHIERS = [
+    'evenement.grosfichiers.majFichier',
+]
+
+const ROUTING_KEYS_COLLECTIONS = [
+    'evenement.grosfichiers.majCollection',
+]
+
+// const EVENEMENTS_SUPPORTES = [
+// ...ROUTING_KEYS_FICHIERS,
+// ...ROUTING_KEYS_COLLECTIONS,
+// ]
+      
 export function challenge(socket, params) {
     // Repondre avec un message signe
     const reponse = {
@@ -48,4 +61,34 @@ function verifierMessage(message, domaine, action) {
           actionRecue = entete.action
     if(domaineRecu !== domaine) throw new Error(`Mismatch domaine (${domaineRecu} !== ${domaine})"`)
     if(actionRecue !== action) throw new Error(`Mismatch action (${actionRecue} !== ${action})"`)
+}
+
+export async function ecouterMajFichiers(socket, cb) {
+    const opts = {
+        routingKeys: ROUTING_KEYS_FICHIERS,
+        exchange: ['3.protege'],
+    }
+    socket.subscribe(opts, cb)
+}
+
+export async function ecouterMajCollections(socket, cb) {
+    const opts = {
+        routingKeys: ROUTING_KEYS_COLLECTIONS,
+        exchange: ['3.protege'],
+    }
+    socket.subscribe(opts, cb)
+}
+
+export async function ecouterTranscodageProgres(socket, params, cb) {
+    const opts = {
+        routingKeys: [`evenement.fichiers.${params.fuuid}.transcodageProgres`],
+        exchange: ['3.protege'],
+    }
+    socket.subscribe(opts, cb)
+}
+
+export async function retirerTranscodageProgres(socket, params, cb) {
+    const routingKey = [`3.protege.evenement.fichiers.${params.fuuid}.transcodageProgres`]
+    socket.unsubscribe({routingKeys})
+    if(cb) cb(true)
 }

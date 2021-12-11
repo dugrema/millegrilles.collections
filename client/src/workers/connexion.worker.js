@@ -181,41 +181,37 @@ export function getClesFichiers(fuuids) {
 //   )
 // }
 
-// async function enregistrerCallbackMajFichier(cb) {
-//   connexionClient.socketOn('evenement.grosfichiers.majFichier', cb)
-//   const resultat = await connexionClient.emitBlocking('grosfichiers/ecouterMajFichiers', {}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-//   // console.debug("Evenement majFichier enregistre")
-// }
+async function enregistrerCallbackMajFichier(cb) {
+  ConnexionClient.socketOn('evenement.grosfichiers.majFichier', cb)
+  const resultat = await ConnexionClient.emitBlocking('ecouterMajFichiers', {}, {noformat: true})
+  if(!resultat) {
+    throw new Error("Erreur enregistrerCallbackMajFichier")
+  }
+}
 
-// async function enregistrerCallbackMajCollection(cb) {
-//   connexionClient.socketOn('evenement.grosfichiers.majCollection', cb)
-//   const resultat = await connexionClient.emitBlocking('grosfichiers/ecouterMajCollections', {}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-//   // console.debug("Evenement enregistrerCallbackMajCollection enregistre")
-// }
+async function enregistrerCallbackMajCollection(cb) {
+  ConnexionClient.socketOn('evenement.grosfichiers.majCollection', cb)
+  const resultat = await ConnexionClient.emitBlocking('ecouterMajCollections', {}, {noformat: true})
+  if(!resultat) {
+    throw new Error("Erreur enregistrerCallbackMajFichier")
+  }
+}
 
-// async function enregistrerCallbackTranscodageProgres(fuuid, cb) {
-//   connexionClient.socketOn('evenement.fichiers.transcodageProgres', cb)
-//   const resultat = await connexionClient.emitBlocking('grosfichiers/ecouterTranscodageProgres', {fuuid}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-//   // console.debug("Ecouter evenement enregistrerCallbackTranscodageProgres %s", fuuid)
-// }
+async function enregistrerCallbackTranscodageProgres(fuuid, cb) {
+  ConnexionClient.socketOn('evenement.fichiers.transcodageProgres', cb)
+  const resultat = await ConnexionClient.emitBlocking('grosfichiers/ecouterTranscodageProgres', {fuuid}, {noformat: true})
+  if(!resultat) {
+    throw new Error("Erreur enregistrerCallbackMajFichier")
+  }
+}
 
-// async function supprimerCallbackTranscodageProgres(fuuid) {
-//   connexionClient.socketOff('evenement.fichiers.transcodageProgres')
-//   const resultat = await connexionClient.emitBlocking('grosfichiers/retirerTranscodageProgres', {fuuid}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-//   // console.debug("Retrait ecoute evenement enregistrerCallbackTranscodageProgres %s", fuuid)
-// }
+async function supprimerCallbackTranscodageProgres(fuuid) {
+  ConnexionClient.socketOff('evenement.fichiers.transcodageProgres')
+  const resultat = await ConnexionClient.emitBlocking('grosfichiers/retirerTranscodageProgres', {fuuid}, {noformat: true})
+  if(!resultat) {
+    throw new Error("Erreur enregistrerCallbackMajFichier")
+  }
+}
 
 // comlinkExpose({
 //   ...ConnexionClient,
@@ -240,4 +236,9 @@ expose({
     ...ConnexionClient, 
     getClesFichiers,
     getFavoris, getActivite, getContenuCollection,
+
+    // Event listeners
+    enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,
+    enregistrerCallbackTranscodageProgres, supprimerCallbackTranscodageProgres,
+
 })
