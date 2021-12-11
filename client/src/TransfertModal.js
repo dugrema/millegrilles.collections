@@ -7,10 +7,16 @@ import Button from 'react-bootstrap/Button'
 
 function TransfertModal(props) {
 
-    const { workers } = props
+    const { workers, setEtatTransfert } = props
     const { transfertFichiers } = workers
 
     const [etatDownload, setEtatDownload] = useState({})
+    const [etatUpload, setEtatUpload] = useState({})
+
+    // Transferer etat transfert global
+    useEffect(()=>{
+        setEtatTransfert({download: etatDownload, upload: etatUpload})
+    }, [setEtatTransfert, etatDownload, etatUpload])
 
     // Entretien idb/cache de fichiers
     useEffect(()=>{
@@ -45,7 +51,7 @@ function TransfertModal(props) {
                 </Modal.Title>
             </Modal.Header>
 
-            <EtatDownload etat={etatDownload} />
+            <EtatDownload workers={workers} etat={etatDownload} />
 
         </Modal>
     )
@@ -110,7 +116,8 @@ function EtatDownload(props) {
 
     console.debug("EtatDownload PROPPYS %O", props)
 
-    const { etat } = props
+    const { workers, etat } = props
+    const { transfertFichiers } = workers
     const { downloads } = etat || []
 
     const downloadClick = useCallback(event=>{
@@ -119,26 +126,139 @@ function EtatDownload(props) {
         downloadCache(fuuid, {filename})
     }, [])
 
+    const annulerDownloadAction = useCallback( event => {
+        const fuuid = event.currentTarget.value
+        transfertFichiers.down_annulerDownload(fuuid).catch(err=>{console.error("Erreur annuler download %O", err)})
+    }, [transfertFichiers])
+
+    const supprimerDownloadAction = useCallback( event => {
+        const fuuid = event.currentTarget.value
+        transfertFichiers.down_supprimerDownloads({hachage_bytes: fuuid})
+    }, [transfertFichiers])
+
+    const supprimerTousAction = useCallback( event => {
+        transfertFichiers.down_supprimerDownloads({completes: true})
+    }, [transfertFichiers])
+
     return (
         <>
             <p>Downloads</p>
+            <Row>
+                <Col>
+                    <Button variant="secondary" onClick={supprimerTousAction}>Clear all</Button>
+                </Col>
+            </Row>
             {downloads.map(item=>{
-                return (
-                    <Row key={item.fuuid}>
-                        <Col>{item.filename}</Col>
-                        <Col>
-                            <Button 
-                                variant="secondary" 
-                                value={item.fuuid} 
-                                data-filename={item.filename}
-                                onClick={downloadClick}
-                            >
-                                Download
-                            </Button>
-                        </Col>
-                    </Row>
-                )
+
+                if(item.status === 1) {
+                    return <DownloadPending key={item.fuuid} value={item} annulerDownloadAction={annulerDownloadAction} />
+                }
+                if(item.status === 2) {
+                    return <DownloadEnCours key={item.fuuid} etat={etat} value={item} annulerDownloadAction={annulerDownloadAction} />
+                }
+                if(item.status === 3) {
+                    return (
+                        <DownloadComplete
+                            key={item.fuuid} 
+                            value={item} 
+                            downloadClick={downloadClick} 
+                            supprimerDownloadAction={supprimerDownloadAction} 
+                        />
+                    )
+                }
+                if(item.status === 4) {
+                    return <DownloadErreur key={item.fuuid} value={item} supprimerDownloadAction={supprimerDownloadAction} />
+                }
+
             })}
         </>
+    )
+}
+
+function DownloadPending(props) {
+
+    const { value, annulerDownloadAction } = props
+
+    return (
+        <Row>
+            <Col>{value.filename}</Col>
+            <Col>
+                <Button 
+                    variant="secondary" 
+                    value={value.fuuid} 
+                    onClick={annulerDownloadAction}
+                >
+                    Annuler
+                </Button>
+            </Col>
+        </Row>
+    )
+}
+
+function DownloadEnCours(props) {
+    const { etat, value, annulerDownloadAction } = props
+    const pct = etat.pct
+
+    return (
+        <Row>
+            <Col>{value.filename}</Col>
+            <Col>{pct}</Col>
+            <Col>
+                <Button 
+                    variant="secondary" 
+                    value={value.fuuid} 
+                    onClick={annulerDownloadAction}
+                >
+                    Annuler
+                </Button>
+            </Col>
+        </Row>
+    )
+}
+
+function DownloadComplete(props) {
+    const { value, downloadClick, supprimerDownloadAction } = props
+
+    return (
+        <Row>
+            <Col>{value.filename}</Col>
+            <Col>
+                <Button 
+                    variant="secondary" 
+                    value={value.fuuid} 
+                    data-filename={value.filename}
+                    onClick={downloadClick}
+                >
+                    Download
+                </Button>
+                <Button 
+                    variant="secondary" 
+                    value={value.fuuid} 
+                    onClick={supprimerDownloadAction}
+                >
+                    Supprimer
+                </Button>
+            </Col>
+        </Row>
+    )
+}
+
+function DownloadErreur(props) {
+    const { value, supprimerDownloadAction } = props
+
+    return (
+        <Row>
+            <Col>{value.filename}</Col>
+            <Col>Erreur</Col>
+            <Col>
+                <Button 
+                    variant="secondary" 
+                    value={value.fuuid} 
+                    onClick={supprimerDownloadAction}
+                >
+                    Supprimer
+                </Button>
+            </Col>
+        </Row>
     )
 }

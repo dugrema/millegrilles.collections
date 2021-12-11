@@ -52,6 +52,7 @@ function App() {
           usager={usager} 
           etatConnexion={etatConnexion} 
           showTransfertModal={showTransfertModalOuvrir}
+          etatTransfert={etatTransfert}
         />
       </HeaderApplication>
 
@@ -73,6 +74,7 @@ function App() {
         show={showTransfertModal}
         fermer={showTransfertModalFermer} 
         workers={workers}
+        setEtatTransfert={setEtatTransfert}
       />
 
     </LayoutApplication>

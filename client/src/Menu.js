@@ -7,6 +7,8 @@ import { IconeConnexion } from '@dugrema/millegrilles.reactjs'
 
 function Menu(props) {
 
+    console.debug("!!! Menu Proppys : %O", props)
+
     const { showTransfertModal } = props
 
     return (
@@ -77,18 +79,35 @@ function DropDown(props) {
 
 function LabelTransfert(props) {
 
-  const { workers } = props
+  const { workers, etatTransfert } = props
+  const download = etatTransfert.download || {}
+  const upload = etatTransfert.upload || {}
+  const downloads = download.downloads || []
+  const pctDownload = download.pct || 100
+
+  const downloadsResultat = downloads.reduce((nb, item)=>{
+    let {encours, succes, erreur} = nb
+    if(item.status===3) succes++
+    if(item.status===4) erreur++
+    return {encours, succes, erreur}
+  }, {encours: 0, succes: 0, erreur: 0})
+
+  let variantDownload = 'primary'
+  if(downloadsResultat.erreur>0) variantDownload = 'danger'
+  else if(downloadsResultat.succes>0) variantDownload = 'success'
+
+  let variantUpload = 'primary'
 
   return (
     <>
 
       <i className="fa fa-upload" />
-      <Badge pill bg="primary">100%</Badge>
+      <Badge pill bg={variantUpload}>100%</Badge>
 
       {' '}
 
       <i className="fa fa-download" />
-      <Badge pill bg="success">100%</Badge>
+      <Badge pill bg={variantDownload}>{pctDownload}%</Badge>
 
     </>
   )
