@@ -13,6 +13,8 @@ import './App.css'
 
 import Menu from './Menu'
 import Accueil from './Accueil'
+import Recents from './Recents'
+import Corbeille from './Corbeille'
 
 function App() {
   
@@ -21,6 +23,7 @@ function App() {
   const [etatConnexion, setEtatConnexion] = useState(false)
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [etatTransfert, setEtatTransfert] = useState('')
+  const [page, setPage] = useState('Accueil')
 
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
@@ -68,6 +71,7 @@ function App() {
           etatConnexion={etatConnexion} 
           showTransfertModal={showTransfertModalOuvrir}
           etatTransfert={etatTransfert}
+          setPage={setPage}
         />
       </HeaderApplication>
 
@@ -77,6 +81,7 @@ function App() {
             workers={workers} 
             usager={usager}
             etatConnexion={etatConnexion} 
+            page={page}
           />
         </Suspense>
       </Container>
@@ -118,7 +123,15 @@ function initDb() {
 
 function Contenu(props) {
   if(!props.workers) return <Attente />
-  return <Accueil {...props} />
+
+  let Page
+  switch(props.page) {
+    case 'Recents': Page = Recents; break
+    case 'Corbeille': Page = Corbeille; break
+    default: Page = Accueil;
+  }
+
+  return <Page {...props} />
 }
 
 function Footer(props) {

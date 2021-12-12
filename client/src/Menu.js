@@ -9,13 +9,13 @@ function Menu(props) {
 
     // console.debug("!!! Menu Proppys : %O", props)
 
-    const { showTransfertModal } = props
+    const { showTransfertModal, setPage } = props
 
     return (
       <Navbar collapseOnSelect expand="md">
         
         <Navbar.Brand>
-          <Nav.Link title="Accueil MilleGrilles Collections">
+          <Nav.Link onClick={()=>setPage('Accueil')} title="Accueil MilleGrilles Collections">
               Collections
           </Nav.Link>
         </Navbar.Brand>
@@ -23,13 +23,13 @@ function Menu(props) {
         <Navbar.Collapse id="responsive-navbar-menu">
 
             <Nav.Item>
-                <Nav.Link title="Recents">
+                <Nav.Link title="Recents" onClick={()=>setPage('Recents')}>
                     <i className="fa fa-clock-o" /> {' '} Recents
                 </Nav.Link>
             </Nav.Item>
 
             <Nav.Item>
-                <Nav.Link title="Corbeille">
+                <Nav.Link title="Corbeille" onClick={()=>setPage('Corbeille')}>
                     <i className="fa fa-trash-o" /> {' '} Corbeille
                 </Nav.Link>
             </Nav.Item>

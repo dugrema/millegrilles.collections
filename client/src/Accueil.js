@@ -10,11 +10,12 @@ import { useDropzone } from 'react-dropzone'
 
 import { 
     ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
-    supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled,
 } from '@dugrema/millegrilles.reactjs'
 
-import { mapper, onContextMenu } from './mapperFichier.js'
-import PreviewFichiers from './FilePlayer.js'
+import { mapper, onContextMenu } from './mapperFichier'
+import PreviewFichiers from './FilePlayer'
+import { MenuContextuelFichier, MenuContextuelRepertoire } from './MenuContextuel'
+import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
 function Accueil(props) {
 
@@ -297,72 +298,6 @@ function MenuContextuelFavoris(props) {
     return <MenuContextuelFichier {...props} />
 }
 
-function MenuContextuelFichier(props) {
-    const { workers, fichier, contextuel, fermerContextuel, showPreview } = props
-    const { transfertFichiers } = workers
-
-    // Determiner si preview est disponible
-    let previewDisponible = false
-    if(fichier) {
-        const mimetype = fichier.mimetype || '',
-              mimetypeBase = mimetype.split('/').shift()
-        if(mimetype === 'application/pdf' || mimetypeBase === 'image' || mimetypeBase === 'video') {
-            previewDisponible = true
-        }
-    }
-
-    const showPreviewAction = useCallback( event => {
-        if(previewDisponible) showPreview(fichier.fileId)
-    }, [fichier, previewDisponible])
-
-    const downloadAction = useCallback( async event => {
-        console.debug("Download fichier %O", fichier)
-        const { fuuid, mimetype, nom: filename, taille} = fichier
-
-        const reponseCle = await workers.connexion.getCleFichierProtege(fuuid)
-        if(reponseCle.code === 1) {
-            // Permis
-            const {cle, iv, tag, format} = reponseCle.cles[fuuid]
-            transfertFichiers.down_ajouterDownload(fuuid, {mimetype, filename, taille, passwordChiffre: cle, iv, tag, format})
-                .catch(err=>{console.error("Erreur debut download : %O", err)})
-        } else {
-            console.warn("Cle refusee/erreur (code: %s) pour %s", reponseCle.code, fuuid)
-        }
-
-    }, [fichier, workers])
-
-    return (
-        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
-            <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={downloadAction}><i className="fa fa-download"/> Download</Button></Col></Row>
-            <hr/>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favoris</Button></Col></Row>
-            <hr/>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-copy"/> Copier</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Retirer</Button></Col></Row>
-        </MenuContextuel>
-    )
-}
-
-function MenuContextuelRepertoire(props) {
-
-    const { repertoire, contextuel, fermerContextuel } = props
-
-    return (
-        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-star"/> Favoris</Button></Col></Row>
-            <hr/>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-copy"/> Copier</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={fermerContextuel}><i className="fa fa-remove"/> Retirer</Button></Col></Row>
-        </MenuContextuel>
-    )
-}
 
 async function chargerFavoris(workers, setFavoris) {
     console.debug("Charger favoris")
@@ -433,37 +368,4 @@ async function chargerCollection(workers, cuuid, setListe) {
     if(documents) {
         setListe( preprarerDonnees(documents, workers) )
     }
-}
-
-async function detecterSupport(setSupport) {
-    const webp = await supporteFormatWebp()
-    const webm = supporteFormatWebm()
-    const fileStream = await supporteFileStream()
-    const touch = isTouchEnabled()
-
-    const support = {webp, webm, fileStream, touch}
-    console.info("Support du navigateur : %O", support)
-    setSupport(support)
-}
-
-async function uploaderFichiers(workers, cuuid, acceptedFiles) {
-    console.debug("Uploader vers '%s' fichiers : %O", cuuid, acceptedFiles)
-
-    const { transfertFichiers, connexion } = workers
-
-    const params = {}
-    if(cuuid) params.cuuid = cuuid
-
-    // S'assurer d'avoir un certificat de maitre des cles
-    const cert = await connexion.getCertificatsMaitredescles()
-    const { certificat } = cert
-
-    if(certificat) {
-        transfertFichiers.up_setCertificat(certificat)
-        transfertFichiers.up_ajouterFichiersUpload(acceptedFiles, params)
-            .catch(err=>{console.error("Erreur preparation upload fichiers : %O", err)})
-    } else {
-        console.error("Erreur getCertificatsMaitredescles - aucun certificat recu")
-    }
-    
 }
