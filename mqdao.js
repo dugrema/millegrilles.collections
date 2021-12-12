@@ -34,7 +34,7 @@ export function getCollection(socket, params) {
     return transmettreRequete(socket, params, 'contenuCollection')
 }
 
-export function getActiviteRecente(socket, params) {
+export function getRecents(socket, params) {
     return transmettreRequete(socket, params, 'activiteRecente')
 }
 

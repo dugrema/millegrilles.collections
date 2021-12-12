@@ -10,8 +10,8 @@ function getFavoris() {
   return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
 }
 
-function getActivite(params) {
-  return ConnexionClient.emitBlocking('getActivite', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
+function getRecents(params) {
+  return ConnexionClient.emitBlocking('getRecents', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
 
 function getContenuCollection(tuuidsDocuments) {
@@ -23,7 +23,6 @@ export function getClesFichiers(fuuids) {
   const params = {liste_hachage_bytes: fuuids}
   return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
 }
-
 
 // function getClesChiffrage() {
 //   return connexionClient.emitBlocking('grosfichiers/getClesChiffrage')
@@ -235,7 +234,7 @@ async function supprimerCallbackTranscodageProgres(fuuid) {
 expose({
     ...ConnexionClient, 
     getClesFichiers,
-    getFavoris, getActivite, getContenuCollection,
+    getFavoris, getRecents, getContenuCollection,
 
     // Event listeners
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

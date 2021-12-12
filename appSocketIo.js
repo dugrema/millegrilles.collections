@@ -32,7 +32,7 @@ export function configurerEvenements(socket) {
     listenersProteges: [
       { eventName: 'getFavoris', callback: (params, cb) => traiter(socket, mqdao.getFavoris, {params, cb}) },
       { eventName: 'getCollection', callback: (params, cb) => traiter(socket, mqdao.getCollection, {params, cb}) },
-      { eventName: 'getActiviteRecente', callback: (params, cb) => traiter(socket, mqdao.getActiviteRecente, {params, cb}) },
+      { eventName: 'getRecents', callback: (params, cb) => traiter(socket, mqdao.getRecents, {params, cb}) },
       { eventName: 'getClesFichiers', callback: (params, cb) => traiter(socket, mqdao.getClesFichiers, {params, cb}) },
 
       // Evenements
