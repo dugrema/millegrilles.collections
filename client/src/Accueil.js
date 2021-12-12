@@ -162,6 +162,7 @@ function NavigationFavoris(props) {
                 <Col xs={12} md={6} lg={5} className="buttonbars">
                     <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                     <BoutonsUpload 
+                        cuuid={cuuidCourant}
                         uploaderFichiersAction={uploaderFichiersAction} 
                         setShowCreerRepertoire={setShowCreerRepertoire}
                     />
@@ -310,7 +311,7 @@ function BoutonsFormat(props) {
 
 function BoutonsUpload(props) {
 
-    const { uploaderFichiersAction, setShowCreerRepertoire } = props
+    const { cuuid, uploaderFichiersAction, setShowCreerRepertoire } = props
 
     return (
         <>
@@ -318,6 +319,7 @@ function BoutonsUpload(props) {
                 variant="secondary" 
                 className="individuel"
                 onClick={uploaderFichiersAction}
+                disabled={!cuuid}
             >
                 <i className="fa fa-plus"/> Fichier
             </Button>
