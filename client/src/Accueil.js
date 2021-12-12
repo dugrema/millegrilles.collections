@@ -5,6 +5,8 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
+import Form from 'react-bootstrap/Form'
+import Modal from 'react-bootstrap/Modal'
 
 import { useDropzone } from 'react-dropzone'
 
@@ -52,8 +54,9 @@ function NavigationFavoris(props) {
     const [ modeView, setModeView ] = useState('')
     const [ showPreview, setShowPreview ] = useState(false)
     const [ support, setSupport ] = useState({})
+    const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
 
-    const transfertFichiers = workers?workers.transfertFichiers:null
+    const connexion = workers?workers.connexion:null
 
     // Callbacks
     const showPreviewAction = useCallback( async tuuid => {
@@ -127,18 +130,27 @@ function NavigationFavoris(props) {
         openDropzone()
     }, [openDropzone])
 
+    const creerCollectionFavoris = useCallback(event=>{
+        event.stopPropagation()
+        event.preventDefault()
+        setShowCreerRepertoire(true)
+    }, [setShowCreerRepertoire])
+
     return (
         <div {...getRootProps({onClick: onClickBack})}>
             <input {...getInputProps()} />
 
             <Row>
-                <Col xs={12} md={8} lg={9}>
+                <Col xs={12} md={6} lg={7}>
                     <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
                 </Col>
 
-                <Col xs={12} md={4} lg={3} className="buttonbars">
+                <Col xs={12} md={6} lg={5} className="buttonbars">
                     <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                    <BoutonsUpload uploaderFichiersAction={uploaderFichiersAction} />
+                    <BoutonsUpload 
+                        uploaderFichiersAction={uploaderFichiersAction} 
+                        setShowCreerRepertoire={setShowCreerRepertoire}
+                    />
                 </Col>
             </Row>
 
@@ -173,7 +185,70 @@ function NavigationFavoris(props) {
                 support={support}
             />
 
+            <ModalCreerRepertoire 
+                show={showCreerRepertoire} 
+                cuuid={cuuidCourant}
+                fermer={()=>{setShowCreerRepertoire(false)}} 
+                workers={workers}
+            />
         </div>
+    )
+}
+
+function ModalCreerRepertoire(props) {
+
+    const { show, fermer, workers, cuuid } = props
+    const { connexion } = workers
+
+    const [ nomCollection, setNomCollection ] = useState('')
+
+    const changerNomCollection = useCallback(event=>{
+        const value = event.currentTarget.value
+        setNomCollection(value)
+    }, [setNomCollection])
+
+    const creerCollection = useCallback(event=>{
+        event.preventDefault()
+        event.stopPropagation()
+
+        const opts = {}
+        const favoris = cuuid?false:true;
+        if(cuuid) opts.cuuid = cuuid
+        else opts.favoris = true
+
+        connexion.creerCollection(nomCollection, opts)
+            .then(()=>{
+                setNomCollection('')  // Reset
+                fermer()
+            })
+            .catch(err=>{
+                console.error("Erreur creation collection : %O", err)
+            })
+    }, [connexion, nomCollection, cuuid, setNomCollection])
+
+    return (
+        <Modal show={show} onHide={fermer}>
+
+            <Modal.Header closeButton>Creer nouvelle collection</Modal.Header>
+
+            <Modal.Body>
+                <Form onSubmit={creerCollection}>
+                    <Form.Group className="mb-3" controlId="formNomCollection">
+                        <Form.Label>Nom de la collection</Form.Label>
+                        <Form.Control 
+                            type="text" 
+                            placeholder="Saisir le nom ..." 
+                            onChange={changerNomCollection}
+                        />
+                    </Form.Group>
+                </Form>
+            </Modal.Body>
+
+            <Modal.Footer>
+                <Button onClick={creerCollection}>Creer</Button>
+            </Modal.Footer>
+
+        </Modal>
     )
 }
 
@@ -222,7 +297,7 @@ function BoutonsFormat(props) {
 
 function BoutonsUpload(props) {
 
-    const { uploaderFichiersAction } = props
+    const { uploaderFichiersAction, setShowCreerRepertoire } = props
 
     return (
         <>
@@ -232,6 +307,13 @@ function BoutonsUpload(props) {
                 onClick={uploaderFichiersAction}
             >
                 <i className="fa fa-plus"/> Fichier
+            </Button>
+            <Button 
+                variant="secondary" 
+                className="individuel"
+                onClick={setShowCreerRepertoire}
+            >
+                <i className="fa fa-folder"/> Collection
             </Button>
         </>
     )

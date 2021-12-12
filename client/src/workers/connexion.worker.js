@@ -19,10 +19,31 @@ function getContenuCollection(tuuidsDocuments) {
   return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
 }
 
-export function getClesFichiers(fuuids) {
+function getClesFichiers(fuuids) {
   const params = {liste_hachage_bytes: fuuids}
   return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
 }
+
+function creerCollection(nomCollection, opts) {
+  opts = opts || {}
+  const params = {nom: nomCollection}
+  if(opts.cuuid) params.cuuid = opts.cuuid
+  if(opts.favoris) params.favoris = true
+  return ConnexionClient.emitBlocking(
+    'creerCollection', 
+    params, 
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'nouvelleCollection', ajouterCertificat: true}
+  )
+}
+
+// function creerCollection(transaction) {
+//   return connexionClient.emitBlocking(
+//     'grosfichiers/creerCollection',
+//     transaction,
+//     {domaine: 'GrosFichiers', action: 'nouvelleCollection', attacherCertificat: true}
+//   )
+// }
+
 
 // function getClesChiffrage() {
 //   return connexionClient.emitBlocking('grosfichiers/getClesChiffrage')
@@ -65,14 +86,6 @@ export function getClesFichiers(fuuids) {
 //     'grosfichiers/ajouterDocumentsDansCollection',
 //     transaction,
 //     {domaine: 'GrosFichiers', action: 'ajouterFichiersCollection', attacherCertificat: true}
-//   )
-// }
-
-// function creerCollection(transaction) {
-//   return connexionClient.emitBlocking(
-//     'grosfichiers/creerCollection',
-//     transaction,
-//     {domaine: 'GrosFichiers', action: 'nouvelleCollection', attacherCertificat: true}
 //   )
 // }
 
@@ -235,6 +248,7 @@ expose({
     ...ConnexionClient, 
     getClesFichiers,
     getFavoris, getRecents, getContenuCollection,
+    creerCollection,
 
     // Event listeners
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

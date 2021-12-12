@@ -42,6 +42,10 @@ export function getClesFichiers(socket, params) {
     return transmettreRequete(socket, params, 'dechiffrage', {domaine: CONST_DOMAINE_MAITREDESCLES})
 }
 
+export function creerCollection(socket, params) {
+    return transmettreCommande(socket, params, 'nouvelleCollection')
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
@@ -50,6 +54,18 @@ async function transmettreRequete(socket, params, action, opts) {
         return await socket.amqpdao.transmettreRequete(domaine, params, {action, noformat: true, decoder: true})
     } catch(err) {
         console.error("mqdao.transmettreRequete ERROR : %O", err)
+        return {ok: false, err: ''+err}
+    }
+}
+
+async function transmettreCommande(socket, params, action, opts) {
+    opts = opts || {}
+    const domaine = opts.domaine || DOMAINE_GROSFICHIERS
+    try {
+        verifierMessage(params, domaine, action)
+        return await socket.amqpdao.transmettreCommande(domaine, params, {action, noformat: true, decoder: true})
+    } catch(err) {
+        console.error("mqdao.transmettreCommande ERROR : %O", err)
         return {ok: false, err: ''+err}
     }
 }
