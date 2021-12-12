@@ -28,7 +28,8 @@ function App() {
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
 
-  const transfertFichiers = workers?workers.transfertFichiers:null
+  const [evenementFichier, setEvenementFichier] = useState('')
+  const [evenementCollection, setEvenementCollection] = useState('')
 
   // Chargement des proprietes et workers
   useEffect(()=>{
@@ -52,11 +53,13 @@ function App() {
   useEffect(()=>{
       if(!etatConnexion) return 
       workers.connexion.enregistrerCallbackMajFichier(proxy(data=>{
-        console.debug("callbackMajFichier data: %O", data)
+        // console.debug("callbackMajFichier data: %O", data)
+        setEvenementFichier(data)
       }))
         .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
       workers.connexion.enregistrerCallbackMajCollection(proxy(data=>{
-        console.debug("callbackMajCollection data: %O", data)
+        // console.debug("callbackMajCollection data: %O", data)
+        setEvenementCollection(data)
       }))
         .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
   }, [etatConnexion])
@@ -82,6 +85,8 @@ function App() {
             usager={usager}
             etatConnexion={etatConnexion} 
             page={page}
+            evenementCollection={evenementCollection}
+            evenementFichier={evenementFichier}
           />
         </Suspense>
       </Container>

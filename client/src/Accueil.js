@@ -11,7 +11,7 @@ import Modal from 'react-bootstrap/Modal'
 import { useDropzone } from 'react-dropzone'
 
 import { 
-    ListeFichiers, MenuContextuel, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
+    ListeFichiers, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
 } from '@dugrema/millegrilles.reactjs'
 
 import { mapper, onContextMenu } from './mapperFichier'
@@ -21,10 +21,20 @@ import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
 function Accueil(props) {
 
-    const { workers, etatConnexion } = props
+    const { workers, etatConnexion, evenementCollection, evenementFichier } = props
     const [ favoris, setFavoris ] = useState('')
 
     useEffect(()=>{ if(etatConnexion) chargerFavoris(workers, setFavoris) }, [workers, etatConnexion, setFavoris])
+
+    useEffect(()=>{
+        if(!evenementCollection || !evenementCollection.message) return 
+        // Empecher cycle
+        const message = evenementCollection.message
+        if(message.favoris) {
+            // C'est un favoris, on recharge la liste au complet
+            chargerFavoris(workers, setFavoris)
+        }
+    }, [evenementCollection, workers, chargerFavoris, setFavoris])
 
     return (
         <>
@@ -33,6 +43,8 @@ function Accueil(props) {
                 favoris={favoris} 
                 workers={workers} 
                 etatConnexion={etatConnexion}
+                evenementFichier={evenementFichier}
+                evenementCollection={evenementCollection}
             />
         </>
     )
@@ -41,9 +53,11 @@ function Accueil(props) {
 
 export default Accueil
 
+let _evenementCollectionTraite = ''
+
 function NavigationFavoris(props) {
 
-    const { favoris, workers, etatConnexion } = props
+    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection } = props
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -130,11 +144,11 @@ function NavigationFavoris(props) {
         openDropzone()
     }, [openDropzone])
 
-    const creerCollectionFavoris = useCallback(event=>{
-        event.stopPropagation()
-        event.preventDefault()
-        setShowCreerRepertoire(true)
-    }, [setShowCreerRepertoire])
+    useEffect(()=>{
+        if(cuuidCourant) {
+            chargerCollection(workers, cuuidCourant, setListe)
+        }
+    }, [cuuidCourant, chargerCollection, evenementFichier, evenementCollection])
 
     return (
         <div {...getRootProps({onClick: onClickBack})}>
@@ -212,7 +226,6 @@ function ModalCreerRepertoire(props) {
         event.stopPropagation()
 
         const opts = {}
-        const favoris = cuuid?false:true;
         if(cuuid) opts.cuuid = cuuid
         else opts.favoris = true
 
