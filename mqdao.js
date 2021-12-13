@@ -1,3 +1,7 @@
+import debugLib from 'debug'
+const debug = debugLib('mqdao')
+
+const L2Prive = '2.prive'
 
 const DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
@@ -51,7 +55,11 @@ async function transmettreRequete(socket, params, action, opts) {
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
     try {
         verifierMessage(params, domaine, action)
-        return await socket.amqpdao.transmettreRequete(domaine, params, {action, noformat: true, decoder: true})
+        return await socket.amqpdao.transmettreRequete(
+            domaine, 
+            params, 
+            {action, exchange: L2Prive, noformat: true, decoder: true}
+        )
     } catch(err) {
         console.error("mqdao.transmettreRequete ERROR : %O", err)
         return {ok: false, err: ''+err}
@@ -63,7 +71,11 @@ async function transmettreCommande(socket, params, action, opts) {
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
     try {
         verifierMessage(params, domaine, action)
-        return await socket.amqpdao.transmettreCommande(domaine, params, {action, noformat: true, decoder: true})
+        return await socket.amqpdao.transmettreCommande(
+            domaine, 
+            params, 
+            {action, exchange: L2Prive, noformat: true, decoder: true}
+        )
     } catch(err) {
         console.error("mqdao.transmettreCommande ERROR : %O", err)
         return {ok: false, err: ''+err}
@@ -80,17 +92,23 @@ function verifierMessage(message, domaine, action) {
 }
 
 export async function ecouterMajFichiers(socket, cb) {
+    const userId = socket.userId
+    debug("ecouterMajFichiers userId : %s", socket.userId)
     const opts = {
         routingKeys: ROUTING_KEYS_FICHIERS,
-        exchange: ['3.protege'],
+        exchange: [L2Prive],
+        userId,
     }
     socket.subscribe(opts, cb)
 }
 
 export async function ecouterMajCollections(socket, cb) {
+    const userId = socket.userId
+    debug("ecouterMajCollections userId : %s", socket.userId)
     const opts = {
         routingKeys: ROUTING_KEYS_COLLECTIONS,
-        exchange: ['3.protege'],
+        exchange: [L2Prive],
+        userId,
     }
     socket.subscribe(opts, cb)
 }
@@ -98,13 +116,13 @@ export async function ecouterMajCollections(socket, cb) {
 export async function ecouterTranscodageProgres(socket, params, cb) {
     const opts = {
         routingKeys: [`evenement.fichiers.${params.fuuid}.transcodageProgres`],
-        exchange: ['3.protege'],
+        exchange: [L2Prive],
     }
     socket.subscribe(opts, cb)
 }
 
 export async function retirerTranscodageProgres(socket, params, cb) {
-    const routingKey = [`3.protege.evenement.fichiers.${params.fuuid}.transcodageProgres`]
+    const routingKey = [`2.prive.evenement.fichiers.${params.fuuid}.transcodageProgres`]
     socket.unsubscribe({routingKeys})
     if(cb) cb(true)
 }
