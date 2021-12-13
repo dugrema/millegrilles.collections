@@ -23,6 +23,9 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
     opts = opts || {}
     // console.debug("setUsager '%s'", nomUsager)
     const { getUsager } = await import('@dugrema/millegrilles.reactjs')
+    const { forgecommon } = await import('@dugrema/millegrilles.utiljs')
+    const { pki } = await import('node-forge')
+    const { extraireExtensionsMillegrille } = forgecommon
     const usager = await getUsager(nomUsager)
     // console.debug("Usager info : %O", usager)
     
@@ -41,7 +44,10 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         await chiffrage.initialiserFormatteurMessage(certificatPem, usager.dechiffrer, usager.signer, {DEBUG: true})
         await connexion.initialiserFormatteurMessage(certificatPem, usager.signer, {DEBUG: false})
     
-        setUsagerState({nomUsager})
+        const certForge = pki.certificateFromPem(fullchain[0])
+        const extensions = extraireExtensionsMillegrille(certForge)
+
+        setUsagerState({nomUsager, fullchain, extensions})
     } else {
         console.warn("Pas de certificat pour l'usager '%s'", usager)
     }

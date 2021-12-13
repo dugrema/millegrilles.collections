@@ -19,8 +19,28 @@ function getContenuCollection(tuuidsDocuments) {
   return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
 }
 
-function getClesFichiers(fuuids) {
-  const params = {liste_hachage_bytes: fuuids}
+async function getClesFichiers(fuuids, usager, opts) {
+  opts = opts || {}
+
+  if(opts.cache) console.warn("TODO - supporter cache cles dans idb")
+
+  // Todo - tenter de charger 
+
+  const extensions = usager || {}
+  const delegationGlobale = extensions.delegationGlobale
+
+  let permission = null
+  if(!delegationGlobale) {
+    // On doit demander une permission en premier
+    const params = { fuuids }
+    permission = await ConnexionClient.emitBlocking('getPermissionCle', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
+    console.debug("Permission recue : %O", permission)
+  }
+
+  const params = {
+    liste_hachage_bytes: fuuids,
+    permission,
+  }
   return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
 }
 

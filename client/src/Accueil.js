@@ -21,7 +21,9 @@ import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
 function Accueil(props) {
 
-    const { workers, etatConnexion, evenementCollection, evenementFichier } = props
+    console.debug("Accueil props : %O", props)
+
+    const { workers, etatConnexion, evenementCollection, evenementFichier, usager } = props
     const [ favoris, setFavoris ] = useState('')
 
     useEffect(()=>{ if(etatConnexion) chargerFavoris(workers, setFavoris) }, [workers, etatConnexion, setFavoris])
@@ -45,6 +47,7 @@ function Accueil(props) {
                 etatConnexion={etatConnexion}
                 evenementFichier={evenementFichier}
                 evenementCollection={evenementCollection}
+                usager={usager}
             />
         </>
     )
@@ -53,11 +56,9 @@ function Accueil(props) {
 
 export default Accueil
 
-let _evenementCollectionTraite = ''
-
 function NavigationFavoris(props) {
 
-    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection } = props
+    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection, usager } = props
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -69,8 +70,6 @@ function NavigationFavoris(props) {
     const [ showPreview, setShowPreview ] = useState(false)
     const [ support, setSupport ] = useState({})
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
-
-    const connexion = workers?workers.connexion:null
 
     // Callbacks
     const showPreviewAction = useCallback( async tuuid => {
@@ -118,7 +117,7 @@ function NavigationFavoris(props) {
             // Utiliser liste de favoris
             setListe( preprarerDonnees(favoris, workers, {trier: trierNom}) )
         } else if(etatConnexion) {
-            chargerCollection(workers, cuuidCourant, setListe)
+            chargerCollection(workers, cuuidCourant, setListe, usager)
         }
     }, [workers, etatConnexion, favoris, setListe, cuuidCourant])
     
@@ -409,7 +408,7 @@ async function chargerFavoris(workers, setFavoris) {
     }
 }
 
-async function chargerCollection(workers, cuuid, setListe) {
+async function chargerCollection(workers, cuuid, setListe, usager) {
     // console.debug("Charger collection %s", cuuid)
     const { connexion } = workers
     const reponse = await connexion.getContenuCollection(cuuid)
@@ -440,7 +439,7 @@ async function chargerCollection(workers, cuuid, setListe) {
     }
 
     if(fuuidsInconnus.length > 0) {
-        connexion.getClesFichiers(fuuidsInconnus)
+        connexion.getClesFichiers(fuuidsInconnus, usager)
             .then(async reponse=>{
                 // console.debug("Reponse dechiffrage cles : %O", reponse)
 

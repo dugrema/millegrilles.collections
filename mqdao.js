@@ -46,6 +46,10 @@ export function getClesFichiers(socket, params) {
     return transmettreRequete(socket, params, 'dechiffrage', {domaine: CONST_DOMAINE_MAITREDESCLES})
 }
 
+export function getPermissionCle(socket, params) {
+    return transmettreRequete(socket, params, 'getPermission')
+}
+
 export function creerCollection(socket, params) {
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }
