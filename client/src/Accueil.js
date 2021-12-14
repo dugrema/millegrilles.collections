@@ -14,8 +14,9 @@ import {
     ListeFichiers, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
 } from '@dugrema/millegrilles.reactjs'
 
-import { mapper, onContextMenu } from './mapperFichier'
 import PreviewFichiers from './FilePlayer'
+import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
+import { mapper, onContextMenu } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
@@ -70,8 +71,24 @@ function NavigationFavoris(props) {
     const [ showPreview, setShowPreview ] = useState(false)
     const [ support, setSupport ] = useState({})
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
-
+    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
+    const [ showCopierModal, setShowCopierModal ] = useState(false)
+    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    const [ showInfoModal, setShowInfoModal ] = useState(false)
+    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
+    
     // Callbacks
+    const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
+    const showSupprimerModalFermer = useCallback(()=>{ setShowSupprimerModal(false) }, [setShowSupprimerModal])
+    const showCopierModalOuvrir = useCallback(()=>{ setShowCopierModal(true) }, [setShowCopierModal])
+    const showCopierModalFermer = useCallback(()=>{ setShowCopierModal(false) }, [setShowCopierModal])
+    const showDeplacerModalOuvrir = useCallback(()=>{ setShowDeplacerModal(true) }, [setShowDeplacerModal])
+    const showDeplacerModalFermer = useCallback(()=>{ setShowDeplacerModal(false) }, [setShowDeplacerModal])
+    const showInfoModalOuvrir = useCallback(()=>{ setShowInfoModal(true) }, [setShowInfoModal])
+    const showInfoModalFermer = useCallback(()=>{ setShowInfoModal(false) }, [setShowInfoModal])
+    const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
+    const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
+
     const showPreviewAction = useCallback( async tuuid => {
         await setTuuidSelectionne(tuuid)
         setShowPreview(true)
@@ -131,6 +148,10 @@ function NavigationFavoris(props) {
     }, [])
 
     const onDrop = useCallback( acceptedFiles => {
+        if(!cuuidCourant) {
+            console.error("Cuuid non selectionne (favoris actif)")
+            return
+        }
         uploaderFichiers(workers, cuuidCourant, acceptedFiles)
     }, [workers, cuuidCourant])
 
@@ -189,6 +210,13 @@ function NavigationFavoris(props) {
                 tuuidSelectionne={tuuidSelectionne}
                 selection={selection}
                 showPreview={showPreviewAction}
+                usager={usager}
+                showSupprimerModalOuvrir={showSupprimerModalOuvrir}
+                showCopierModalOuvrir={showCopierModalOuvrir}
+                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
+                showInfoModalOuvrir={showInfoModalOuvrir}
+                showRenommerModalOuvrir={showRenommerModalOuvrir}
+                cuuid={cuuidCourant}
             />
 
             <PreviewFichiers 
@@ -205,6 +233,47 @@ function NavigationFavoris(props) {
                 fermer={()=>{setShowCreerRepertoire(false)}} 
                 workers={workers}
             />
+
+            <SupprimerModal
+                show={showSupprimerModal}
+                fermer={showSupprimerModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+            />
+
+            <CopierModal 
+                show={showCopierModal} 
+                fermer={showCopierModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+            />
+
+            <DeplacerModal 
+                show={showDeplacerModal} 
+                fermer={showDeplacerModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+            />
+
+            <InfoModal 
+                show={showInfoModal} 
+                fermer={showInfoModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+            />
+
+            <RenommerModal
+                show={showRenommerModal} 
+                fermer={showRenommerModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+            />
+
         </div>
     )
 }
@@ -374,11 +443,12 @@ function MenuContextuelFavoris(props) {
 
     if(!contextuel.show) return ''
 
+    console.debug("!!! Selection : %s, FICHIERS : %O", selection, fichiers)
+
     if( selection && selection.length > 1 ) {
-        return <MenuContextuelMultiselect {...props} selection={selection} />
+        return <MenuContextuelMultiselect {...props} />
     } else if(selection.length>0) {
         const fichierTuuid = selection[0]
-        console.debug("!!! Selection : %s, FICHIERS : %O", selection, fichiers)
         const fichier = fichiers.filter(item=>(item.folderId||item.fileId)===fichierTuuid).pop()
         if(fichier) {
             if(fichier.folderId) {
