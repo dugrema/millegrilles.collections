@@ -16,7 +16,7 @@ import {
 
 import { mapper, onContextMenu } from './mapperFichier'
 import PreviewFichiers from './FilePlayer'
-import { MenuContextuelFichier, MenuContextuelRepertoire } from './MenuContextuel'
+import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
 function Accueil(props) {
@@ -374,9 +374,8 @@ function MenuContextuelFavoris(props) {
 
     if(!contextuel.show) return ''
 
-    console.debug("Selection : %O", selection)
     if( selection && selection.length > 1 ) {
-        return <p>TODO Multiselect</p>
+        return <MenuContextuelMultiselect {...props} selection={selection} />
     } else if(selection.length>0) {
         const fichierTuuid = selection[0]
         console.debug("!!! Selection : %s, FICHIERS : %O", selection, fichiers)
@@ -390,8 +389,7 @@ function MenuContextuelFavoris(props) {
         }
     }
 
-    // Par defaut, menu fichier
-    return <MenuContextuelFichier {...props} />
+    return ''
 }
 
 
@@ -462,6 +460,8 @@ async function chargerCollection(workers, cuuid, setListe, usager) {
     }
 
     if(documents) {
-        setListe( preprarerDonnees(documents, workers) )
+        const donnees = preprarerDonnees(documents, workers)
+        console.debug("chargerCollection donnees : %O", donnees)
+        setListe( donnees )
     }
 }
