@@ -55,6 +55,15 @@ function creerCollection(nomCollection, opts) {
   )
 }
 
+function toggleFavoris(etatFavoris) {
+  // Format etatFavoris : {tuuid1: false, tuuid2: true, ...}
+  return ConnexionClient.emitBlocking(
+    'changerFavoris',
+    {favoris: etatFavoris},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'changerFavoris', attacherCertificat: true}
+  )
+}
+
 // function creerCollection(transaction) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/creerCollection',
@@ -267,7 +276,7 @@ expose({
     ...ConnexionClient, 
     getClesFichiers,
     getFavoris, getRecents, getContenuCollection,
-    creerCollection,
+    creerCollection, toggleFavoris,
 
     // Event listeners
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

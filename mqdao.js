@@ -54,6 +54,10 @@ export function creerCollection(socket, params) {
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }
 
+export function changerFavoris(socket, params) {
+    return transmettreCommande(socket, params, 'changerFavoris')
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

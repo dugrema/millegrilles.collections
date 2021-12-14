@@ -180,10 +180,21 @@ function supprimerMultiple(fermer, selection) {
 }
 
 function toggleFavoris(workers, fermer, cuuid, collection) {
+
+    const connexion = workers.connexion
+
     if(cuuid) {
         console.debug("Toggle favoris %O", collection)
+        if(collection.favoris === true) {
+            // Desactiver favoris
+            connexion.toggleFavoris({[collection.folderId]: false})
+        } else {
+            // Activer favoris
+            connexion.toggleFavoris({[collection.folderId]: true})
+        }
     } else {
         console.debug("Retirer favoris %O", collection)
+        connexion.toggleFavoris({[collection.folderId]: false})
     }
 
     fermer()

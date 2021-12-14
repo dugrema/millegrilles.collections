@@ -16,7 +16,7 @@ const Icones = {
 export { Icones }
 
 export function mapper(row, workers) {
-    const { tuuid, nom, date_creation, duree, fuuid_v_courante, version_courante } = row
+    const { tuuid, nom, date_creation, duree, fuuid_v_courante, version_courante, favoris } = row
 
     // console.debug("!!! MAPPER %O", row)
 
@@ -105,6 +105,7 @@ export function mapper(row, workers) {
         duree,
         fuuid: fuuid_v_courante,
         version_courante,
+        favoris,
     }
 }
 

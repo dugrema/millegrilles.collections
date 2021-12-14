@@ -36,6 +36,7 @@ export function configurerEvenements(socket) {
       { eventName: 'getClesFichiers', callback: (params, cb) => traiter(socket, mqdao.getClesFichiers, {params, cb}) },
       { eventName: 'creerCollection', callback: (params, cb) => traiter(socket, mqdao.creerCollection, {params, cb}) },
       { eventName: 'getPermissionCle', callback: (params, cb) => traiter(socket, mqdao.getPermissionCle, {params, cb}) },
+      { eventName: 'changerFavoris', callback: (params, cb) => traiter(socket, mqdao.changerFavoris, {params, cb}) },
 
       // Evenements
       {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},
