@@ -64,6 +64,23 @@ function toggleFavoris(etatFavoris) {
   )
 }
 
+function retirerDocumentsCollection(cuuid, tuuids) {
+  return ConnexionClient.emitBlocking(
+    'retirerDocuments',
+    {cuuid, retirer_tuuids: tuuids},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'retirerDocumentsCollection', attacherCertificat: true}
+  )
+}
+
+// function retirerDocumentsCollection(transaction) {
+//   return connexionClient.emitBlocking(
+//     'grosfichiers/retirerDocuments',
+//     transaction,
+//     {domaine: 'GrosFichiers', action: 'retirerDocumentsCollection', attacherCertificat: true}
+//   )
+// }
+
+
 // function creerCollection(transaction) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/creerCollection',
@@ -276,7 +293,7 @@ expose({
     ...ConnexionClient, 
     getClesFichiers,
     getFavoris, getRecents, getContenuCollection,
-    creerCollection, toggleFavoris,
+    creerCollection, toggleFavoris, retirerDocumentsCollection,
 
     // Event listeners
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

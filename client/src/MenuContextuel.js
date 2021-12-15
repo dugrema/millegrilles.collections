@@ -45,7 +45,7 @@ export function MenuContextuelFichier(props) {
 
     }, [fichier, workers, usager])
 
-    const retirerAction = useCallback( () => retirerFichier(workers, fermerContextuel, fichier, cuuid), [workers, fermerContextuel, fichier, cuuid] )
+    const retirerAction = useCallback( () => retirerMultiple(workers, fermerContextuel, [fichier.fileId], cuuid), [workers, fermerContextuel, fichier, cuuid] )
     const supprimerAction = useCallback( () => supprimerFichier(workers, fermerContextuel, fichier, showSupprimerModalOuvrir), [workers, fermerContextuel, fichier, showSupprimerModalOuvrir] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
@@ -129,14 +129,6 @@ export function MenuContextuelMultiselect(props) {
     )
 }
 
-function retirerFichier(workers, fermer, fichier, cuuid) {
-    const { fileId } = fichier
-
-    console.debug("Retirer fichier %s de collection %s", fileId, cuuid)
-
-    fermer()
-}
-
 function supprimerFichier(workers, fermer, fichier, showSupprimerModalOuvrir) {
     const { fileId } = fichier
     console.debug("Supprimer fichier %s", fileId)
@@ -145,13 +137,28 @@ function supprimerFichier(workers, fermer, fichier, showSupprimerModalOuvrir) {
 }
 
 function retirerCollection(workers, fermer, collection, cuuid) {
+    const connexion = workers.connexion
     const { folderId } = collection
 
-    if(!cuuid) {
+    if(cuuid) {
+        console.debug("Retirer collection %s de %s", folderId, cuuid)
+        connexion.retirerDocumentsCollection(cuuid, [folderId])
+            .then(reponse=>{
+                console.debug("Retirer collection %O de %s, reponse : %O", folderId, cuuid, reponse)
+            })
+            .catch(err=>{
+                console.error("Erreur retrait documents de collection")
+            })
+    } else {
         // Enlever flags favoris
         console.debug("Retirer favoris %s", folderId)
-    } else {
-        console.debug("Retirer collection %s de %s", folderId, cuuid)
+        connexion.toggleFavoris({[folderId]: false}).then(reponse=>{
+            if(reponse.ok === false) console.warn("Erreur retrait favoris : %O", reponse)
+            else console.debug("Reponse retirer favoris : %O", reponse)
+        })
+        .catch(err=>{
+            console.error("Erreur retirer favoris : %O", err)
+        })
     }
 
     fermer()
@@ -165,10 +172,26 @@ function supprimerCollection(workers, fermer, collection, showSupprimerModalOuvr
 }
 
 function retirerMultiple(workers, fermer, selection, cuuid) {
+
+    const connexion = workers.connexion
+
     if(cuuid) {
         console.debug("Retirer selection %O", selection)
+        connexion.retirerDocumentsCollection(cuuid, selection)
+            .then(reponse=>{
+                console.debug("Retirer documents %O de %s, reponse : %O", selection, cuuid, reponse)
+            })
+            .catch(err=>{
+                console.error("Erreur retrait documents de collection")
+            })
     } else {
         console.debug("Retirer favoris %O", selection)
+        const commande = selection.reduce((commande, item)=>{
+            commande[item] = false
+            return commande
+        }, {})
+        console.debug("retirerMultiple (favoris) commande : %O", commande)
+        connexion.toggleFavoris(commande)
     }
 
     fermer()
@@ -202,10 +225,24 @@ function toggleFavoris(workers, fermer, cuuid, collection) {
 
 function toggleFavorisMultiples(workers, fermer, cuuid, liste, selection) {
  
+    const connexion = workers.connexion
+
     if(cuuid) {
         console.debug("Toggle favoris %O (liste complete: %O)", selection, liste)
+        const commande = liste.filter(item=>selection.includes(item.folderId)).reduce((commande, item)=>{
+            commande[item.folderId] = item.favoris?false:true  // Inverser etat favoris
+            return commande
+        }, {})
+        console.debug("Toggle favoris cuuid %s commande : %O", cuuid, commande)
+        connexion.toggleFavoris(commande)
     } else {
         console.debug("Retirer favoris %O (liste complete: %O)", selection, liste)
+        const commande = selection.reduce((commande, item)=>{
+            commande[item] = false
+            return commande
+        }, {})
+        console.debug("Toggle favoris commande : %O", commande)
+        connexion.toggleFavoris(commande)
     }
 
     fermer()

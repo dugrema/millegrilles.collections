@@ -58,6 +58,10 @@ export function changerFavoris(socket, params) {
     return transmettreCommande(socket, params, 'changerFavoris')
 }
 
+export function retirerDocuments(socket, params) {
+    return transmettreCommande(socket, params, 'retirerDocumentsCollection')
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
