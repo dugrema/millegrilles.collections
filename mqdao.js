@@ -38,6 +38,10 @@ export function getFavoris(socket, params) {
     return transmettreRequete(socket, params, 'favoris')
 }
 
+export function getCorbeille(socket, params) {
+    return transmettreRequete(socket, params, 'getCorbeille')
+}
+
 export function getCollection(socket, params) {
     return transmettreRequete(socket, params, 'contenuCollection')
 }

@@ -9,6 +9,10 @@ function getFavoris() {
   return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
 }
 
+function getCorbeille() {
+  return ConnexionClient.emitBlocking('getCorbeille', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getCorbeille', ajouterCertificat: true})
+}
+
 function getRecents(params) {
   return ConnexionClient.emitBlocking('getRecents', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
@@ -103,6 +107,23 @@ function getDocuments(tuuids) {
     {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', attacherCertificat: true}
   )
 }
+
+function recupererDocuments(tuuids) {
+  return ConnexionClient.emitBlocking(
+    'recupererDocuments',
+    {tuuids},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'recupererDocuments', attacherCertificat: true}
+  )
+}
+
+// function recupererDocuments(tuuidSelectionnes) {
+//   return connexionClient.emitBlocking(
+//     'grosfichiers/recupererDocuments',
+//     {tuuids: tuuidSelectionnes},
+//     {domaine: 'GrosFichiers', action: 'recupererDocuments', attacherCertificat: true}
+//   )
+// }
+
 
 // function getFichiersActivite(params) {
 //   return connexionClient.emitBlocking('grosfichiers/getActivite', params)
@@ -302,8 +323,9 @@ async function supprimerCallbackTranscodageProgres(fuuid) {
 expose({
     ...ConnexionClient, 
     getDocuments, getClesFichiers,
-    getFavoris, getRecents, getContenuCollection,
-    creerCollection, toggleFavoris, retirerDocumentsCollection, supprimerDocuments,
+    getFavoris, getCorbeille, getRecents, getContenuCollection,
+    creerCollection, toggleFavoris, 
+    recupererDocuments, retirerDocumentsCollection, supprimerDocuments,
     decrireFichier, decrireCollection,
 
     // Event listeners

@@ -129,6 +129,22 @@ export function MenuContextuelMultiselect(props) {
     )
 }
 
+export function MenuContextuelCorbeille(props) {
+
+    const { workers, selection, contextuel, fermerContextuel } = props
+
+    const recupererAction = useCallback( 
+        () => recupererMultiple(workers, fermerContextuel, selection), 
+        [workers, fermerContextuel, selection] 
+    )
+
+    return (
+        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+            <Row><Col><Button variant="link" onClick={recupererAction}><i className="fa fa-recycle"/> Recuperer</Button></Col></Row>
+        </MenuContextuel>
+    )
+}
+
 function supprimerDocuments(fermer, showSupprimerModalOuvrir) {
     showSupprimerModalOuvrir()
     fermer()
@@ -183,6 +199,26 @@ function retirerMultiple(workers, fermer, selection, cuuid) {
         }, {})
         console.debug("retirerMultiple (favoris) commande : %O", commande)
         connexion.toggleFavoris(commande)
+    }
+
+    fermer()
+}
+
+function recupererMultiple(workers, fermer, selection) {
+
+    const connexion = workers.connexion
+
+    if(selection && selection.length > 0) {
+
+        console.debug("Recuperer selection %O", selection)
+        connexion.recupererDocuments(selection)
+        .then(reponse=>{
+            console.debug("Retirer documents %O, reponse : %O", selection, reponse)
+        })
+        .catch(err=>{
+            console.error("Erreur retrait documents de collection")
+        })
+
     }
 
     fermer()
