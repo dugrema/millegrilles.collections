@@ -96,6 +96,14 @@ function decrireCollection(tuuid, params) {
   )
 }
 
+function getDocuments(tuuids) {
+  return ConnexionClient.emitBlocking(
+    'getDocuments',
+    {tuuids_documents: tuuids},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', attacherCertificat: true}
+  )
+}
+
 // function getFichiersActivite(params) {
 //   return connexionClient.emitBlocking('grosfichiers/getActivite', params)
 // }
@@ -293,7 +301,7 @@ async function supprimerCallbackTranscodageProgres(fuuid) {
 // Exposer methodes du Worker
 expose({
     ...ConnexionClient, 
-    getClesFichiers,
+    getDocuments, getClesFichiers,
     getFavoris, getRecents, getContenuCollection,
     creerCollection, toggleFavoris, retirerDocumentsCollection, supprimerDocuments,
     decrireFichier, decrireCollection,

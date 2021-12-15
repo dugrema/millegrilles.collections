@@ -30,6 +30,10 @@ export function challenge(socket, params) {
     return socket.amqpdao.pki.formatterMessage(reponse, 'challenge', {ajouterCertificat: true})
 }
 
+export function getDocuments(socket, params) {
+    return transmettreRequete(socket, params, 'documentsParTuuid')
+}
+
 export function getFavoris(socket, params) {
     return transmettreRequete(socket, params, 'favoris')
 }
@@ -72,6 +76,10 @@ export function decrireFichier(socket, params) {
 
 export function decrireCollection(socket, params) {
     return transmettreCommande(socket, params, 'decrireCollection')
+}
+
+export function recupererDocuments(socket, params) {
+    return transmettreCommande(socket, params, 'recupererDocuments')
 }
 
 async function transmettreRequete(socket, params, action, opts) {
