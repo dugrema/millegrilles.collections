@@ -62,6 +62,10 @@ export function retirerDocuments(socket, params) {
     return transmettreCommande(socket, params, 'retirerDocumentsCollection')
 }
 
+export function supprimerDocuments(socket, params) {
+    return transmettreCommande(socket, params, 'supprimerDocuments')
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

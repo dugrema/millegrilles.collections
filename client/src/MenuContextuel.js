@@ -45,8 +45,8 @@ export function MenuContextuelFichier(props) {
 
     }, [fichier, workers, usager])
 
+    const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
     const retirerAction = useCallback( () => retirerMultiple(workers, fermerContextuel, [fichier.fileId], cuuid), [workers, fermerContextuel, fichier, cuuid] )
-    const supprimerAction = useCallback( () => supprimerFichier(workers, fermerContextuel, fichier, showSupprimerModalOuvrir), [workers, fermerContextuel, fichier, showSupprimerModalOuvrir] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
     const renommerAction = useCallback( () => renommer(fermerContextuel, showRenommerModalOuvrir), [fermerContextuel, showRenommerModalOuvrir] )
@@ -79,7 +79,7 @@ export function MenuContextuelRepertoire(props) {
         () => retirerCollection(workers, fermerContextuel, repertoire, cuuid), 
         [workers, fermerContextuel, repertoire, cuuid]
     )
-    const supprimerAction = useCallback( () => supprimerCollection(workers, fermerContextuel, repertoire, showSupprimerModalOuvrir), [workers, fermerContextuel, repertoire, showSupprimerModalOuvrir] )
+    const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
     const favorisAction = useCallback( () => toggleFavoris(workers, fermerContextuel, cuuid, repertoire), [workers, fermerContextuel, repertoire, cuuid] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
@@ -107,8 +107,8 @@ export function MenuContextuelMultiselect(props) {
         showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, showInfoModalOuvrir,
     } = props
 
+    const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
     const retirerAction = useCallback( () => retirerMultiple(workers, fermerContextuel, selection, cuuid), [workers, fermerContextuel, selection, cuuid] )
-    const supprimerAction = useCallback( () => supprimerMultiple(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, selection] )
     const favorisAction = useCallback( () => toggleFavorisMultiples(workers, fermerContextuel, cuuid, fichiers, selection), [workers, fermerContextuel, fichiers, selection, cuuid] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
@@ -129,9 +129,7 @@ export function MenuContextuelMultiselect(props) {
     )
 }
 
-function supprimerFichier(workers, fermer, fichier, showSupprimerModalOuvrir) {
-    const { fileId } = fichier
-    console.debug("Supprimer fichier %s", fileId)
+function supprimerDocuments(fermer, showSupprimerModalOuvrir) {
     showSupprimerModalOuvrir()
     fermer()
 }
@@ -164,13 +162,6 @@ function retirerCollection(workers, fermer, collection, cuuid) {
     fermer()
 }
 
-function supprimerCollection(workers, fermer, collection, showSupprimerModalOuvrir) {
-    const { folderId } = collection
-    console.debug("Supprimer collection %s", folderId)
-    showSupprimerModalOuvrir()
-    fermer()
-}
-
 function retirerMultiple(workers, fermer, selection, cuuid) {
 
     const connexion = workers.connexion
@@ -194,11 +185,6 @@ function retirerMultiple(workers, fermer, selection, cuuid) {
         connexion.toggleFavoris(commande)
     }
 
-    fermer()
-}
-
-function supprimerMultiple(fermer, selection) {
-    console.debug("Supprimer selection %O", selection)
     fermer()
 }
 

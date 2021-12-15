@@ -4,12 +4,26 @@ import Modal from 'react-bootstrap/Modal'
 
 export function SupprimerModal(props) {
 
-    const { show, fermer, cuuid, fichiers, selection } = props
+    const { workers, show, fermer, fichiers, selection } = props
 
-    const supprimer = useCallback( () => {
-        console.debug("SUPRIMER")
+    const supprimer = useCallback( async () => {
+        console.debug("SUPRIMER %O", selection)
+
+        const connexion = workers.connexion
+
+        try {
+            const reponse = await connexion.supprimerDocuments(selection)
+            if(reponse.ok === false) {
+                console.error("Erreur suppression documents %O : %s", selection, reponse.message)
+            }
+        } catch(err) {
+            console.error("Erreur suppression documents %O : %O", selection, err)
+        }
+
         fermer()
-    }, [fermer])
+    }, [fermer, selection])
+
+    if(!selection || selection.length === 0) return ''
 
     return (
         <Modal show={show} onHide={fermer}>

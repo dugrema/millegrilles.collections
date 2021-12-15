@@ -72,27 +72,29 @@ function retirerDocumentsCollection(cuuid, tuuids) {
   )
 }
 
-// function retirerDocumentsCollection(transaction) {
-//   return connexionClient.emitBlocking(
-//     'grosfichiers/retirerDocuments',
-//     transaction,
-//     {domaine: 'GrosFichiers', action: 'retirerDocumentsCollection', attacherCertificat: true}
-//   )
-// }
+function supprimerDocuments(tuuids) {
+  return ConnexionClient.emitBlocking(
+    'supprimerDocuments',
+    {tuuids},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerDocuments', attacherCertificat: true}
+  )
+}
 
+function decrireFichier(tuuid, params) {
+  return ConnexionClient.emitBlocking(
+    'decrireFichier',
+    {...params, tuuid},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireFichier', attacherCertificat: true}
+  )
+}
 
-// function creerCollection(transaction) {
-//   return connexionClient.emitBlocking(
-//     'grosfichiers/creerCollection',
-//     transaction,
-//     {domaine: 'GrosFichiers', action: 'nouvelleCollection', attacherCertificat: true}
-//   )
-// }
-
-
-// function getClesChiffrage() {
-//   return connexionClient.emitBlocking('grosfichiers/getClesChiffrage')
-// }
+function decrireCollection(tuuid, params) {
+  return ConnexionClient.emitBlocking(
+    'decrireCollection',
+    {...params, tuuid},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireCollection', attacherCertificat: true}
+  )
+}
 
 // function getFichiersActivite(params) {
 //   return connexionClient.emitBlocking('grosfichiers/getActivite', params)
@@ -293,7 +295,8 @@ expose({
     ...ConnexionClient, 
     getClesFichiers,
     getFavoris, getRecents, getContenuCollection,
-    creerCollection, toggleFavoris, retirerDocumentsCollection,
+    creerCollection, toggleFavoris, retirerDocumentsCollection, supprimerDocuments,
+    decrireFichier, decrireCollection,
 
     // Event listeners
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,
