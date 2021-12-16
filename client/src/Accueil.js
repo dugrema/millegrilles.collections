@@ -175,11 +175,11 @@ function NavigationFavoris(props) {
             <input {...getInputProps()} />
 
             <Row>
-                <Col xs={12} md={6} lg={7}>
+                <Col xs={12} lg={7}>
                     <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
                 </Col>
 
-                <Col xs={12} md={6} lg={5} className="buttonbars">
+                <Col xs={12} lg={5} className="buttonbars">
                     <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                     <BoutonsUpload 
                         cuuid={cuuidCourant}
