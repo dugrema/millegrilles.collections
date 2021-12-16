@@ -228,7 +228,7 @@ function toggleFavoris(workers, fermer, cuuid, collection) {
 
     const connexion = workers.connexion
 
-    if(cuuid) {
+    // if(cuuid) {
         console.debug("Toggle favoris %O", collection)
         if(collection.favoris === true) {
             // Desactiver favoris
@@ -237,10 +237,10 @@ function toggleFavoris(workers, fermer, cuuid, collection) {
             // Activer favoris
             connexion.toggleFavoris({[collection.folderId]: true})
         }
-    } else {
-        console.debug("Retirer favoris %O", collection)
-        connexion.toggleFavoris({[collection.folderId]: false})
-    }
+    // } else {
+    //     console.debug("Retirer favoris %O", collection)
+    //     connexion.toggleFavoris({[collection.folderId]: false})
+    // }
 
     fermer()
 }
