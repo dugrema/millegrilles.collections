@@ -43,7 +43,7 @@ function createObjectStores(db, oldVersion) {
 }
 
 export async function saveThumbnailDechiffre(hachage_bytes, blob) {
-    const db = await openDB(DB_NAME, {upgrade: true})
+    const db = await ouvrirDB({upgrade: true})
   
     // Preparer une cle secrete non-exportable
     const data = { hachage_bytes, blob, date: new Date() }
@@ -56,7 +56,7 @@ export async function saveThumbnailDechiffre(hachage_bytes, blob) {
 }
 
 export async function getThumbnail(hachage_bytes) {
-    const db = await openDB(DB_NAME, {upgrade: true})
+    const db = await ouvrirDB({upgrade: true})
     const store = db.transaction(STORE_THUMBNAILS, 'readonly').objectStore(STORE_THUMBNAILS)
     return store.get(hachage_bytes)
 }
