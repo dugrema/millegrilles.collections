@@ -28,11 +28,7 @@ function Menu(props) {
                 </Nav.Link>
             </Nav.Item>
 
-            <Nav.Item>
-                <Nav.Link title="Corbeille" onClick={()=>setPage('Corbeille')}>
-                    <i className="fa fa-trash-o" /> {' '} Corbeille
-                </Nav.Link>
-            </Nav.Item>
+            <DropDownRequetes {...props} />
 
             <Nav.Item>
                 <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
@@ -40,7 +36,7 @@ function Menu(props) {
                 </Nav.Link>
             </Nav.Item>
 
-            <DropDown {...props} />
+            <DropDownUsager {...props} />
 
         </Navbar.Collapse>
 
@@ -54,7 +50,21 @@ function Menu(props) {
 
 export default Menu
 
-function DropDown(props) {
+function DropDownRequetes(props) {
+
+  const { setPage } = props
+
+  return (
+      <NavDropdown title="Requetes" id="basic-nav-dropdown-requetes" drop="down" className="menu-item">
+        <NavDropdown.Item title="Corbeille" onClick={()=>setPage('Corbeille')}>
+          <i className="fa fa-trash-o" /> {' '} Corbeille
+        </NavDropdown.Item>
+      </NavDropdown>
+  )
+
+}
+
+function DropDownUsager(props) {
 
     const nomUsager = props.usager?props.usager.nomUsager:''
   
@@ -66,10 +76,10 @@ function DropDown(props) {
           <NavDropdown.Item>
             <i className="fa fa-language" /> {' '} Changer Langue
           </NavDropdown.Item>
-          <NavDropdown.Item>
+          <NavDropdown.Item href="/millegrilles">
             <i className="fa fa-home" /> {' '} Portail
           </NavDropdown.Item>
-          <NavDropdown.Item>
+          <NavDropdown.Item href="/fermer">
             <i className="fa fa-close" /> {' '} Deconnecter
           </NavDropdown.Item>
         </NavDropdown>
