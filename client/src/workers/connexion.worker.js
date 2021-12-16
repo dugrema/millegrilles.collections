@@ -116,6 +116,31 @@ function recupererDocuments(tuuids) {
   )
 }
 
+function copierVersCollection(cuuid, tuuids) {
+  return ConnexionClient.emitBlocking(
+    'copierVersCollection',
+    {cuuid, inclure_tuuids: tuuids},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterFichiersCollection', attacherCertificat: true}
+  )
+}
+
+function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
+  return ConnexionClient.emitBlocking(
+    'deplacerFichiersCollection',
+    {cuuid_origine, cuuid_destination, inclure_tuuids: tuuids},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'deplacerFichiersCollection', attacherCertificat: true}
+  )
+}
+
+// function ajouterDocumentsDansCollection(transaction) {
+//   return connexionClient.emitBlocking(
+//     'grosfichiers/ajouterDocumentsDansCollection',
+//     transaction,
+//     {domaine: 'GrosFichiers', action: 'ajouterFichiersCollection', attacherCertificat: true}
+//   )
+// }
+
+
 // function recupererDocuments(tuuidSelectionnes) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/recupererDocuments',
@@ -327,6 +352,7 @@ expose({
     creerCollection, toggleFavoris, 
     recupererDocuments, retirerDocumentsCollection, supprimerDocuments,
     decrireFichier, decrireCollection,
+    copierVersCollection, deplacerFichiersCollection,
 
     // Event listeners
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

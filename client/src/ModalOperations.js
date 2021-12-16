@@ -6,14 +6,14 @@ import Modal from 'react-bootstrap/Modal'
 import Col from 'react-bootstrap/Col'
 import Row from 'react-bootstrap/Row'
 
-import { FormatteurTaille, FormatterDate, Thumbnail } from '@dugrema/millegrilles.reactjs'
+import { FormatteurTaille, FormatterDate, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
 
 export function SupprimerModal(props) {
 
     const { workers, show, fermer, fichiers, selection } = props
 
     const supprimer = useCallback( () => {
-        console.debug("SUPRIMER %O", selection)
+        // console.debug("SUPRIMER %O", selection)
 
         const connexion = workers.connexion
 
@@ -51,12 +51,52 @@ export function SupprimerModal(props) {
 
 export function CopierModal(props) {
 
-    const { show, fermer, cuuid, fichiers, selection } = props
+    const { workers, show, fermer, favoris, selection } = props
+    const { connexion } = workers
+
+    const [ path, setPath ] = useState([])
 
     const copier = useCallback( () => {
-        console.debug("COPIER")
-        fermer()
-    }, [fermer])
+        const tuuidSelectionne = path.length>0?path[path.length-1]:''
+
+        if(tuuidSelectionne) {
+            connexion.copierVersCollection(tuuidSelectionne, selection)
+                .then(reponse=>{
+                    // console.debug("Reponse copierVersCollection : %O", reponse)
+                    if(reponse.ok === false) {
+                        console.error("Erreur copierVersCollection : %O", reponse.message)
+                    } else {
+                        fermer()
+                    }
+                })
+                .catch(err=>{
+                    console.error("Erreur copierVersCollection : %O", err)
+                })
+        } else {
+            // Ajouter au favoris?
+            console.error("Erreur copierVersCollection - aucune collection selectionnee")
+        }
+    }, [connexion, selection, path, fermer])
+
+    const actionPath = useCallback( cuuidpath => {
+        // console.debug("Set path : %O", cuuidpath)
+        setPath(cuuidpath)
+    }, [setPath])
+
+    const loadCollection = useCallback( cuuid => {
+        if(!cuuid) {
+            // Root, utiliser favoris
+            // console.debug("CopierModalFAVORIS : %O", favoris)
+            return Promise.resolve(favoris)
+        } else {
+            return connexion.getContenuCollection(cuuid)
+                .then(reponse=>{
+                    // console.debug("Reponse contenu collection: %O", reponse)
+                    const docs = reponse.documents.filter(item=>!item.fuuid_v_courante)
+                    return docs
+                })
+        }
+    }, [connexion, favoris])
 
     return (
         <Modal show={show} onHide={fermer}>
@@ -64,10 +104,10 @@ export function CopierModal(props) {
                 Copier
             </Modal.Header>
 
-            <p> ...  navigation ... </p>
+            <FilePicker setPath={actionPath} loadCollection={loadCollection} />
 
             <Modal.Footer>
-                <Button onClick={copier}>Copier</Button>
+                <Button onClick={copier} disabled={path.length===0}>Copier</Button>
             </Modal.Footer>
         </Modal>
     )
@@ -75,26 +115,67 @@ export function CopierModal(props) {
 
 export function DeplacerModal(props) {
 
-    const { show, fermer, cuuid, fichiers, selection } = props
+    const { workers, show, fermer, favoris, cuuid, selection } = props
+    const { connexion } = workers
+
+    const [ path, setPath ] = useState([])
 
     const deplacer = useCallback( () => {
-        console.debug("DEPLACER")
-        fermer()
-    }, [fermer])
+        const tuuidSelectionne = path.length>0?path[path.length-1]:''
+
+        if(tuuidSelectionne) {
+            connexion.deplacerFichiersCollection(cuuid, tuuidSelectionne, selection)
+                .then(reponse=>{
+                    console.debug("Reponse deplacerFichiersCollection : %O", reponse)
+                    if(reponse.ok === false) {
+                        console.error("Erreur deplacerFichiersCollection : %O", reponse.message)
+                    } else {
+                        fermer()
+                    }
+                })
+                .catch(err=>{
+                    console.error("Erreur deplacerFichiersCollection : %O", err)
+                })
+        } else {
+            // Ajouter au favoris?
+            console.error("Erreur deplacerFichiersCollection - aucune collection selectionnee")
+        }
+    }, [connexion, cuuid, selection, path, fermer])
+
+    const actionPath = useCallback( cuuidpath => {
+        // console.debug("Set path : %O", cuuidpath)
+        setPath(cuuidpath)
+    }, [setPath])
+
+    const loadCollection = useCallback( cuuid => {
+        if(!cuuid) {
+            // Root, utiliser favoris
+            // console.debug("CopierModalFAVORIS : %O", favoris)
+            return Promise.resolve(favoris)
+        } else {
+            return connexion.getContenuCollection(cuuid)
+                .then(reponse=>{
+                    // console.debug("Reponse contenu collection: %O", reponse)
+                    const docs = reponse.documents.filter(item=>!item.fuuid_v_courante)
+                    return docs
+                })
+        }
+    }, [connexion, favoris])
 
     return (
-        <Modal show={show} onHide={fermer}>
+        <Modal show={show} onHide={fermer} className="modal-picklist">
             <Modal.Header closeButton={true}>
-                Decplacer
+                Deplacer
             </Modal.Header>
 
-            <p> ...  navigation ... </p>
+            <FilePicker setPath={actionPath} loadCollection={loadCollection} />
 
             <Modal.Footer>
-                <Button onClick={deplacer}>Deplacer</Button>
+                <Button onClick={deplacer} disabled={path.length===0}>Deplacer</Button>
             </Modal.Footer>
         </Modal>
     )
+
 }
 
 export function InfoModal(props) {

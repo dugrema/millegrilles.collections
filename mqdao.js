@@ -86,6 +86,14 @@ export function recupererDocuments(socket, params) {
     return transmettreCommande(socket, params, 'recupererDocuments')
 }
 
+export function copierVersCollection(socket, params) {
+    return transmettreCommande(socket, params, 'ajouterFichiersCollection')
+}
+
+export function deplacerFichiersCollection(socket, params) {
+    return transmettreCommande(socket, params, 'deplacerFichiersCollection')
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

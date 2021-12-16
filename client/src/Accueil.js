@@ -245,7 +245,7 @@ function NavigationFavoris(props) {
             <CopierModal 
                 show={showCopierModal} 
                 fermer={showCopierModalFermer}
-                fichiers={liste}
+                favoris={favoris}
                 selection={selection}
                 workers={workers}
             />
@@ -253,7 +253,8 @@ function NavigationFavoris(props) {
             <DeplacerModal 
                 show={showDeplacerModal} 
                 fermer={showDeplacerModalFermer}
-                fichiers={liste}
+                favoris={favoris}
+                cuuid={cuuidCourant}
                 selection={selection}
                 workers={workers}
             />

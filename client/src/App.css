@@ -6,3 +6,8 @@
 .info-labels > DIV {
     padding-bottom: 0.4rem;
 }
+
+.modal-picklist .container {
+    height: 70vh;
+    overflow-y: auto;
+}
