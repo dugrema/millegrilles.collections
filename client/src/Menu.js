@@ -1,7 +1,12 @@
+import { useCallback, useState } from 'react'
+
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
 import Badge from 'react-bootstrap/Badge'
+import Button from 'react-bootstrap/Button'
 import NavDropdown from 'react-bootstrap/NavDropdown'
+import Form from 'react-bootstrap/Form'
+import FormControl from 'react-bootstrap/FormControl'
 
 import { IconeConnexion } from '@dugrema/millegrilles.reactjs'
 
@@ -9,7 +14,7 @@ function Menu(props) {
 
     // console.debug("!!! Menu Proppys : %O", props)
 
-    const { showTransfertModal, setPage } = props
+    const { showTransfertModal, setPage, paramsRecherche, setParamsRecherche } = props
 
     return (
       <Navbar collapseOnSelect expand="md">
@@ -19,7 +24,13 @@ function Menu(props) {
               Collections
           </Nav.Link>
         </Navbar.Brand>
-       
+
+        <Nav.Item>
+            <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
+                <LabelTransfert {...props} />
+            </Nav.Link>
+        </Nav.Item>
+
         <Navbar.Collapse id="responsive-navbar-menu">
 
             <Nav.Item>
@@ -30,11 +41,11 @@ function Menu(props) {
 
             <DropDownRequetes {...props} />
 
-            <Nav.Item>
-                <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
-                    <LabelTransfert {...props} />
-                </Nav.Link>
-            </Nav.Item>
+            <Search 
+              paramsRecherche={paramsRecherche}
+              setParamsRecherche={setParamsRecherche}
+              setPage={setPage}
+            />
 
             <DropDownUsager {...props} />
 
@@ -49,6 +60,43 @@ function Menu(props) {
 }
 
 export default Menu
+
+function Search(props) {
+
+  const { setParamsRecherche, setPage } = props
+
+  const [ paramsStr, setParamsStr ] = useState('')
+
+  const changerParams = useCallback( event => {
+    const value = event.currentTarget.value
+    setParamsStr(value)
+  }, [setParamsStr])
+
+  const chercherAction = useCallback( event => {
+    event.stopPropagation()
+    event.preventDefault()
+
+    if(paramsStr) {
+      setParamsRecherche(paramsStr)
+      setPage("Recherche")
+    }
+
+  }, [paramsStr, setPage, setParamsRecherche])
+
+  return (
+    <Form className="d-flex" onSubmit={chercherAction}>
+      <FormControl
+        type="search"
+        placeholder="Search"
+        className="me-2"
+        aria-label="Search"
+        value={paramsStr}
+        onChange={changerParams}
+      />
+      <Button variant="outline-secondary" disabled={!paramsStr} onClick={chercherAction}>Recherche</Button>
+    </Form>
+  )
+}
 
 function DropDownRequetes(props) {
 
@@ -123,16 +171,22 @@ function LabelTransfert(props) {
   else if(uploadsResultat.succes>0) variantUpload = 'success'
 
   return (
-    <>
+    <div className="transfer-labels">
 
-      <i className="fa fa-upload" />
-      <Badge pill bg={variantUpload}>{pctUpload}%</Badge>
+      <div>
+        <i className="fa fa-upload" />
+        {' '}
+        <Badge pill bg={variantUpload}>{pctUpload}%</Badge>
+      </div>
 
       {' '}
 
-      <i className="fa fa-download" />
-      <Badge pill bg={variantDownload}>{pctDownload}%</Badge>
+      <div>
+        <i className="fa fa-download" />
+        {' '}
+        <Badge pill bg={variantDownload}>{pctDownload}%</Badge>
+      </div>
 
-    </>
+    </div>
   )
 }

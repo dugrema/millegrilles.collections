@@ -15,6 +15,7 @@ import Menu from './Menu'
 import Accueil from './Accueil'
 import Recents from './Recents'
 import Corbeille from './Corbeille'
+import Recherche from './Recherche'
 
 function App() {
   
@@ -24,6 +25,7 @@ function App() {
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [etatTransfert, setEtatTransfert] = useState('')
   const [page, setPage] = useState('Accueil')
+  const [paramsRecherche, setParamsRecherche] = useState('')
 
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
@@ -75,6 +77,8 @@ function App() {
           showTransfertModal={showTransfertModalOuvrir}
           etatTransfert={etatTransfert}
           setPage={setPage}
+          paramsRecherche={paramsRecherche}
+          setParamsRecherche={setParamsRecherche}
         />
       </HeaderApplication>
 
@@ -87,6 +91,7 @@ function App() {
             page={page}
             evenementCollection={evenementCollection}
             evenementFichier={evenementFichier}
+            paramsRecherche={paramsRecherche}
           />
         </Suspense>
       </Container>
@@ -133,6 +138,7 @@ function Contenu(props) {
   switch(props.page) {
     case 'Recents': Page = Recents; break
     case 'Corbeille': Page = Corbeille; break
+    case 'Recherche': Page = Recherche; break
     default: Page = Accueil;
   }
 

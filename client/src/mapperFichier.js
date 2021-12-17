@@ -16,7 +16,7 @@ const Icones = {
 export { Icones }
 
 export function mapper(row, workers) {
-    const { tuuid, nom, date_creation, duree, fuuid_v_courante, version_courante, favoris } = row
+    const { tuuid, nom, supprime, date_creation, duree, fuuid_v_courante, version_courante, favoris } = row
 
     // console.debug("!!! MAPPER %O", row)
 
@@ -95,6 +95,7 @@ export function mapper(row, workers) {
         // folderId: tuuid,
         ...ids,
         nom,
+        supprime, 
         taille: taille_fichier,
         dateAjout: date_version || date_creation,
         mimetype: ids.folderId?'Repertoire':mimetype_fichier,
@@ -106,6 +107,93 @@ export function mapper(row, workers) {
         fuuid: fuuid_v_courante,
         version_courante,
         favoris,
+    }
+}
+
+export function mapperRecherche(row, workers) {
+    const { 
+        fuuid, tuuid, nom, supprime, favoris, date_creation, date_version, 
+        // mimetype, taille, 
+        thumb_data, thumb_hachage_bytes,
+        version_courante,
+        score,
+    } = row
+
+    // console.debug("!!! MAPPER %O", row)
+
+    let mimetype_fichier = '',
+        taille_fichier = ''
+
+    let thumbnailIcon = '',
+        ids = {},
+        thumbnailLoader = null
+    if(!fuuid) {
+        ids.folderId = tuuid  // Collection, tuuid est le folderId
+        thumbnailIcon = Icones.ICONE_FOLDER
+    } else {
+        const { mimetype, date_fichier, taille, images, video } = version_courante
+        mimetype_fichier = mimetype
+        taille_fichier = taille
+        ids.fileId = tuuid    // Fichier, tuuid est le fileId
+        ids.fuuid = fuuid
+        const mimetypeBase = mimetype.split('/').shift()
+
+        if(workers && thumb_data && thumb_hachage_bytes) {
+            let loader = null
+            if (thumb_data) {
+                // console.debug("!!! Loader thumbnail chiffre : %O", thumbnail)
+                loader = loadThumbnailChiffre(thumb_hachage_bytes, workers, {dataChiffre: thumb_data})
+            }
+            thumbnailLoader = {
+                load: async (setSrc, opts) => {
+                    if(loader) {
+                        try {
+                            await loader.load(setSrc)
+                        } catch(err) {
+                            console.error("Erreur chargement mini thumbnail pour image %s : %O", tuuid, err)
+                        }
+                    }
+                },
+                unload: () => {
+                    if(loader) loader.unload()
+                }
+            }
+        }
+
+        if(mimetype === 'application/pdf') {
+            thumbnailIcon = ICONE_FICHIER_PDF
+        } else if(mimetypeBase === 'image') {
+            thumbnailIcon = ICONE_FICHIER_IMAGE
+        } else if(mimetypeBase === 'video') {
+            thumbnailIcon = ICONE_FICHIER_VIDEO
+        } else if(mimetypeBase === 'audio') {
+            thumbnailIcon = ICONE_FICHIER_AUDIO
+        } else if(mimetypeBase === 'application/text') {
+            thumbnailIcon = ICONE_FICHIER_TEXT
+        } else if(mimetypeBase === 'application/zip') {
+            thumbnailIcon = ICONE_FICHIER_ZIP
+        } else { 
+            thumbnailIcon = ICONE_FICHIER
+        }
+    }
+
+    return {
+        // fileId: tuuid,
+        // folderId: tuuid,
+        ...ids,
+        nom,
+        supprime, 
+        taille: taille_fichier,
+        dateAjout: date_version || date_creation,
+        mimetype: ids.folderId?'Repertoire':mimetype_fichier,
+        // thumbnailSrc,
+        thumbnailLoader,
+        thumbnailIcon,
+        thumbnailCaption: nom,
+        version_courante,
+        fuuid,
+        favoris,
+        score,
     }
 }
 

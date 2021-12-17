@@ -11,3 +11,17 @@
     height: 70vh;
     overflow-y: auto;
 }
+
+.transfer-labels {
+    white-space: nowrap;
+}
+
+/*
+.transfer-labels DIV {
+    display: inline-block;
+}
+*/
+
+.navbar .nav-link {
+    white-space: nowrap;
+}

@@ -132,6 +132,16 @@ function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
   )
 }
 
+function rechercheIndex(mots_cles, from_idx, size) {
+  from_idx = from_idx?from_idx:0
+  size = size?size:50
+  return ConnexionClient.emitBlocking(
+    'rechercheIndex',
+    {mots_cles, from_idx, size},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'rechercheIndex', attacherCertificat: true}
+  )
+}
+
 // function ajouterDocumentsDansCollection(transaction) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/ajouterDocumentsDansCollection',
@@ -353,6 +363,7 @@ expose({
     recupererDocuments, retirerDocumentsCollection, supprimerDocuments,
     decrireFichier, decrireCollection,
     copierVersCollection, deplacerFichiersCollection,
+    rechercheIndex,
 
     // Event listeners
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

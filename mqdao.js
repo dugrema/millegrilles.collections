@@ -58,6 +58,10 @@ export function getPermissionCle(socket, params) {
     return transmettreRequete(socket, params, 'getPermission')
 }
 
+export function rechercheIndex(socket, params) {
+    return transmettreRequete(socket, params, 'rechercheIndex')
+}
+
 export function creerCollection(socket, params) {
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }

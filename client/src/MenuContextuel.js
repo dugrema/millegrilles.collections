@@ -67,6 +67,62 @@ export function MenuContextuelFichier(props) {
     )
 }
 
+export function MenuContextuelFichierRecherche(props) {
+    const { 
+        workers, fichier, contextuel, fermerContextuel, showPreview, usager,
+        showSupprimerModalOuvrir, showCopierModalOuvrir, 
+        showInfoModalOuvrir, 
+    } = props
+    const { transfertFichiers } = workers
+
+    // Determiner si preview est disponible
+    let previewDisponible = false
+    if(fichier) {
+        const mimetype = fichier.mimetype || '',
+              mimetypeBase = mimetype.split('/').shift()
+        if(mimetype === 'application/pdf' || mimetypeBase === 'image' || mimetypeBase === 'video') {
+            previewDisponible = true
+        }
+    }
+
+    const showPreviewAction = useCallback( event => {
+        if(previewDisponible) showPreview(fichier.fileId)
+        fermerContextuel()
+    }, [fichier, previewDisponible, fermerContextuel])
+
+    const downloadAction = useCallback( async event => {
+        //console.debug("Download fichier %O", fichier)
+        const { fuuid, mimetype, nom: filename, taille} = fichier
+
+        const reponseCle = await workers.connexion.getClesFichiers([fuuid], usager)
+        // console.debug("REPONSE CLE pour download : %O", reponseCle)
+        if(reponseCle.code === 1) {
+            // Permis
+            const {cle, iv, tag, format} = reponseCle.cles[fuuid]
+            transfertFichiers.down_ajouterDownload(fuuid, {mimetype, filename, taille, passwordChiffre: cle, iv, tag, format})
+                .catch(err=>{console.error("Erreur debut download : %O", err)})
+        } else {
+            console.warn("Cle refusee/erreur (code: %s) pour %s", reponseCle.code, fuuid)
+        }
+
+    }, [fichier, workers, usager])
+
+    const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
+    const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
+    const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
+
+    return (
+        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+            <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={downloadAction}><i className="fa fa-download"/> Download</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
+            <hr/>
+            <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={supprimerAction}><i className="fa fa-trash-o" /> Supprimer</Button></Col></Row>
+        </MenuContextuel>
+    )
+}
+
 export function MenuContextuelRepertoire(props) {
 
     const { 
