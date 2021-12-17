@@ -28,8 +28,6 @@ export function configurerEvenements(socket) {
       { eventName: 'challenge', callback: (params, cb) => traiter(socket, mqdao.challenge, {params, cb}) },
     ],
     listenersPrives: [
-    ],
-    listenersProteges: [
       { eventName: 'getDocuments', callback: (params, cb) => traiter(socket, mqdao.getDocuments, {params, cb}) },
       { eventName: 'getFavoris', callback: (params, cb) => traiter(socket, mqdao.getFavoris, {params, cb}) },
       { eventName: 'getCorbeille', callback: (params, cb) => traiter(socket, mqdao.getCorbeille, {params, cb}) },
@@ -53,6 +51,10 @@ export function configurerEvenements(socket) {
       {eventName: 'ecouterMajCollections', callback: (_, cb) => {mqdao.ecouterMajCollections(socket, cb)}},
       {eventName: 'ecouterTranscodageProgres', callback: (params, cb) => {mqdao.ecouterTranscodageProgres(socket, params, cb)}},
       {eventName: 'retirerTranscodageProgres', callback: (params, cb) => {mqdao.retirerTranscodageProgres(socket, params, cb)}},
+    ],
+    listenersProteges: [
+      // PROTEGE
+      { eventName: 'indexerContenu', callback: (params, cb) => traiter(socket, mqdao.indexerContenu, {params, cb}) },
     ]
   }
 

@@ -14,7 +14,10 @@ function Menu(props) {
 
     // console.debug("!!! Menu Proppys : %O", props)
 
-    const { showTransfertModal, setPage, paramsRecherche, setParamsRecherche } = props
+    const { 
+      setPage, paramsRecherche, setParamsRecherche,
+      showTransfertModal,  
+    } = props
 
     return (
       <Navbar collapseOnSelect expand="md">
@@ -100,12 +103,15 @@ function Search(props) {
 
 function DropDownRequetes(props) {
 
-  const { setPage } = props
+  const { setPage, showReindexerModalOuvrir } = props
 
   return (
       <NavDropdown title="Requetes" id="basic-nav-dropdown-requetes" drop="down" className="menu-item">
         <NavDropdown.Item title="Corbeille" onClick={()=>setPage('Corbeille')}>
           <i className="fa fa-trash-o" /> {' '} Corbeille
+        </NavDropdown.Item>
+        <NavDropdown.Item title="Reindexer" onClick={showReindexerModalOuvrir}>
+          <i className="fa fa-repeat" /> {' '} Reindexer
         </NavDropdown.Item>
       </NavDropdown>
   )

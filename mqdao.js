@@ -1,7 +1,8 @@
 import debugLib from 'debug'
 const debug = debugLib('mqdao')
 
-const L2Prive = '2.prive'
+const L2Prive = '2.prive',
+      L3Protege = '3.protege'
 
 const DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
@@ -98,15 +99,20 @@ export function deplacerFichiersCollection(socket, params) {
     return transmettreCommande(socket, params, 'deplacerFichiersCollection')
 }
 
+export function indexerContenu(socket, params) {
+    return transmettreCommande(socket, params, 'indexerContenu', {exchange: L3Protege})
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
+    const exchange = opts.exchange || L2Prive
     try {
         verifierMessage(params, domaine, action)
         return await socket.amqpdao.transmettreRequete(
             domaine, 
             params, 
-            {action, exchange: L2Prive, noformat: true, decoder: true}
+            {action, exchange, noformat: true, decoder: true}
         )
     } catch(err) {
         console.error("mqdao.transmettreRequete ERROR : %O", err)
@@ -117,12 +123,13 @@ async function transmettreRequete(socket, params, action, opts) {
 async function transmettreCommande(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
+    const exchange = opts.exchange || L2Prive
     try {
         verifierMessage(params, domaine, action)
         return await socket.amqpdao.transmettreCommande(
             domaine, 
             params, 
-            {action, exchange: L2Prive, noformat: true, decoder: true}
+            {action, exchange, noformat: true, decoder: true}
         )
     } catch(err) {
         console.error("mqdao.transmettreCommande ERROR : %O", err)

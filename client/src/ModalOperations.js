@@ -401,3 +401,37 @@ export function RenommerModal(props) {
         </Modal>
     )
 }
+
+
+export function ReindexerModal(props) {
+
+    const { workers, show, fermer } = props
+    const { connexion } = workers
+
+    const lancer = useCallback(event=>{
+        const reset = true
+        connexion.indexerContenu(reset)
+            .then(reponse=>{
+                if(reponse.ok === false) {
+                    console.error("ReindexerModal Reponse erreur : %O", reponse.message)
+                } else {
+                    fermer()
+                }
+            })
+            .catch(err=>{
+                console.error("ReindexerModal erreur : %O", err)
+            })
+    }, [connexion, fermer])
+
+    return (
+        <Modal show={show} onHide={fermer}>
+            <Modal.Header closeButton={true}>
+                Reindexer pour la recherche
+            </Modal.Header>
+            <Modal.Footer>
+                <Button onClick={lancer}>Lancer</Button>
+            </Modal.Footer>
+        </Modal>
+    )
+
+}

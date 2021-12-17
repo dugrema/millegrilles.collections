@@ -142,6 +142,16 @@ function rechercheIndex(mots_cles, from_idx, size) {
   )
 }
 
+// Fonctions delegues
+
+function indexerContenu(reset) {
+  return ConnexionClient.emitBlocking(
+    'indexerContenu',
+    {reset},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'indexerContenu', attacherCertificat: true}
+  )
+}
+
 // function ajouterDocumentsDansCollection(transaction) {
 //   return connexionClient.emitBlocking(
 //     'grosfichiers/ajouterDocumentsDansCollection',
@@ -357,6 +367,8 @@ async function supprimerCallbackTranscodageProgres(fuuid) {
 // Exposer methodes du Worker
 expose({
     ...ConnexionClient, 
+
+    // Requetes et commandes privees
     getDocuments, getClesFichiers,
     getFavoris, getCorbeille, getRecents, getContenuCollection,
     creerCollection, toggleFavoris, 
@@ -365,8 +377,11 @@ expose({
     copierVersCollection, deplacerFichiersCollection,
     rechercheIndex,
 
-    // Event listeners
+    // Event listeners prives
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,
     enregistrerCallbackTranscodageProgres, supprimerCallbackTranscodageProgres,
+
+    // Commandes delegue
+    indexerContenu,
 
 })

@@ -8,6 +8,7 @@ import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 
 import TransfertModal from './TransfertModal'
+import { ReindexerModal } from './ModalOperations'
 
 import './App.css'
 
@@ -23,15 +24,20 @@ function App() {
   const [usager, setUsager] = useState('')
   const [etatConnexion, setEtatConnexion] = useState(false)
   const [showTransfertModal, setShowTransfertModal] = useState(false)
+  const [showReindexerModal, setShowReidexerModal] = useState(false)
   const [etatTransfert, setEtatTransfert] = useState('')
   const [page, setPage] = useState('Accueil')
   const [paramsRecherche, setParamsRecherche] = useState('')
 
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
+  const showReindexerModalOuvrir = useCallback(()=>{ setShowReidexerModal(true) }, [setShowReidexerModal])
+  const showReindexerModalFermer = useCallback(()=>{ setShowReidexerModal(false) }, [setShowReidexerModal])
 
   const [evenementFichier, setEvenementFichier] = useState('')
   const [evenementCollection, setEvenementCollection] = useState('')
+
+  const delegue = true  // TODO - verifier si cert est delegue
 
   // Chargement des proprietes et workers
   useEffect(()=>{
@@ -79,6 +85,7 @@ function App() {
           setPage={setPage}
           paramsRecherche={paramsRecherche}
           setParamsRecherche={setParamsRecherche}
+          showReindexerModalOuvrir={showReindexerModalOuvrir}
         />
       </HeaderApplication>
 
@@ -105,6 +112,12 @@ function App() {
         fermer={showTransfertModalFermer} 
         workers={workers}
         setEtatTransfert={setEtatTransfert}
+      />
+
+      <ReindexerModal
+        show={delegue && showReindexerModal}
+        fermer={showReindexerModalFermer}
+        workers={workers}
       />
 
     </LayoutApplication>
