@@ -8,6 +8,8 @@ import Row from 'react-bootstrap/Row'
 
 import { FormatteurTaille, FormatterDate, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
 
+import { ConversionVideo } from './OperationsVideo'
+
 export function SupprimerModal(props) {
 
     const { workers, show, fermer, fichiers, selection } = props
@@ -179,7 +181,7 @@ export function DeplacerModal(props) {
 }
 
 export function InfoModal(props) {
-    const { workers, show, fermer, cuuid, fichiers, selection } = props
+    const { workers, show, fermer, cuuid, fichiers, selection, support, downloadAction } = props
     const { connexion } = workers
 
     let tuuidSelectionne = null,
@@ -231,9 +233,11 @@ export function InfoModal(props) {
             <Modal.Body>
                 <Body
                     workers={workers}
+                    support={support}
                     cuuid={cuuid}
                     valueItem={docSelectionne}
                     value={doc}
+                    downloadAction={downloadAction}
                 />
             </Modal.Body>
 
@@ -247,6 +251,8 @@ function InfoVide(props) {
 
 function InfoFichier(props) {
     console.debug("InfoFichier PROPPYS : %O", props)
+
+    const { workers, support, downloadAction } = props
 
     const valueItem = props.valueItem || {}
     const thumbnailIcon = valueItem.thumbnailIcon,
@@ -285,6 +291,13 @@ function InfoFichier(props) {
                     </Row>
                 </Col>
             </Row>
+
+            <ConversionVideo 
+                workers={workers}
+                fichier={fichier} 
+                support={support}
+                downloadAction={downloadAction}
+            />
         </div>
     )
 }

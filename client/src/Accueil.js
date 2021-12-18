@@ -24,7 +24,7 @@ function Accueil(props) {
 
     // console.debug("Accueil props : %O", props)
 
-    const { workers, etatConnexion, evenementCollection, evenementFichier, usager } = props
+    const { workers, etatConnexion, evenementCollection, evenementFichier, usager, downloadAction } = props
     const [ favoris, setFavoris ] = useState('')
 
     useEffect(()=>{ if(etatConnexion) chargerFavoris(workers, setFavoris) }, [workers, etatConnexion, setFavoris])
@@ -49,6 +49,7 @@ function Accueil(props) {
                 evenementFichier={evenementFichier}
                 evenementCollection={evenementCollection}
                 usager={usager}
+                downloadAction={downloadAction}
             />
         </>
     )
@@ -59,7 +60,7 @@ export default Accueil
 
 function NavigationFavoris(props) {
 
-    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection, usager } = props
+    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection, usager, downloadAction } = props
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -217,6 +218,7 @@ function NavigationFavoris(props) {
                 showInfoModalOuvrir={showInfoModalOuvrir}
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
                 cuuid={cuuidCourant}
+                downloadAction={downloadAction}
             />
 
             <PreviewFichiers 
@@ -265,6 +267,8 @@ function NavigationFavoris(props) {
                 fichiers={liste}
                 selection={selection}
                 workers={workers}
+                support={support}
+                downloadAction={downloadAction}
             />
 
             <RenommerModal

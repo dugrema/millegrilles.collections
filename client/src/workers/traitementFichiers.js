@@ -102,9 +102,11 @@ export function resLoader(fichier, typeRessource, opts) {
     if(typeRessource === 'video') {
         // Charger video pleine resolution
         const {video} = version_courante
-        const labelVideo = trouverLabelVideo(Object.keys(video), opts)
-        // console.debug("Label video trouve : '%s'", labelVideo)
-        selection = video[labelVideo]
+        if(video) {
+            const labelVideo = trouverLabelVideo(Object.keys(video), opts)
+            // console.debug("Label video trouve : '%s'", labelVideo)
+            selection = video[labelVideo]
+        }
     } else if(typeRessource === 'original') {
         // Charger contenu original
         selection = {version_courante, fuuid: fichier.fuuid}

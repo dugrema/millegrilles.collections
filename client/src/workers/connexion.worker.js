@@ -3,7 +3,8 @@ import { expose } from 'comlink'
 import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
 
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
-      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
+      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles',
+      CONST_DOMAINE_FICHIERS = 'fichiers'
 
 function getFavoris() {
   return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
@@ -139,6 +140,14 @@ function rechercheIndex(mots_cles, from_idx, size) {
     'rechercheIndex',
     {mots_cles, from_idx, size},
     {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'rechercheIndex', attacherCertificat: true}
+  )
+}
+
+function transcoderVideo(commande) {
+  return ConnexionClient.emitBlocking(
+    'transcoderVideo',
+    commande,
+    {domaine: CONST_DOMAINE_FICHIERS, action: 'transcoderVideo', attacherCertificat: true}
   )
 }
 
@@ -375,7 +384,7 @@ expose({
     recupererDocuments, retirerDocumentsCollection, supprimerDocuments,
     decrireFichier, decrireCollection,
     copierVersCollection, deplacerFichiersCollection,
-    rechercheIndex,
+    rechercheIndex, transcoderVideo,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

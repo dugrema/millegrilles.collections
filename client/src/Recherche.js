@@ -12,7 +12,7 @@ import { mapperRecherche, onContextMenu } from './mapperFichier'
 import { detecterSupport } from './fonctionsFichiers'
 
 function Recherche(props) {
-    const { workers, etatConnexion, usager, paramsRecherche } = props
+    const { workers, etatConnexion, usager, paramsRecherche, downloadAction } = props
     const [ paramsCourant, setParamsCourant ] = useState('')
     const [ hits, setHits ] = useState('')
     const [ enCours, setEnCours ] = useState(true)
@@ -51,6 +51,7 @@ function Recherche(props) {
                 paramsRecherche={paramsCourant}
                 enCours={enCours}
                 favoris={favoris}
+                downloadAction={downloadAction}
             />
         </>
     )
@@ -60,7 +61,7 @@ export default Recherche
 
 function NavigationRecherche(props) {
 
-    const { workers, hits, usager, enCours, favoris } = props
+    const { workers, hits, usager, enCours, favoris, downloadAction } = props
 
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ selection, setSelection ] = useState('')
@@ -139,6 +140,7 @@ function NavigationRecherche(props) {
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 showCopierModalOuvrir={showCopierModalOuvrir}
                 showInfoModalOuvrir={showInfoModalOuvrir}
+                downloadAction={downloadAction}
             />
 
             <PreviewFichiers 

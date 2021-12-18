@@ -5,7 +5,8 @@ const L2Prive = '2.prive',
       L3Protege = '3.protege'
 
 const DOMAINE_GROSFICHIERS = 'GrosFichiers',
-      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
+      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles',
+      CONST_DOMAINE_FICHIERS = 'fichiers'
 
 const ROUTING_KEYS_FICHIERS = [
     'evenement.grosfichiers.majFichier',
@@ -103,6 +104,13 @@ export function indexerContenu(socket, params) {
     return transmettreCommande(socket, params, 'indexerContenu', {exchange: L3Protege})
 }
 
+export function transcoderVideo(socket, params) {
+    return transmettreCommande(
+        socket, params, 'transcoderVideo', 
+        {exchange: L3Protege, domaine: CONST_DOMAINE_FICHIERS, nowait: true}
+    )
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
@@ -124,12 +132,13 @@ async function transmettreCommande(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
     const exchange = opts.exchange || L2Prive
+    const nowait = opts.nowait
     try {
         verifierMessage(params, domaine, action)
         return await socket.amqpdao.transmettreCommande(
             domaine, 
             params, 
-            {action, exchange, noformat: true, decoder: true}
+            {action, exchange, noformat: true, decoder: true, nowait}
         )
     } catch(err) {
         console.error("mqdao.transmettreCommande ERROR : %O", err)
