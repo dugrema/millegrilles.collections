@@ -34,12 +34,44 @@ function App() {
   const showReindexerModalOuvrir = useCallback(()=>{ setShowReidexerModal(true) }, [setShowReidexerModal])
   const showReindexerModalFermer = useCallback(()=>{ setShowReidexerModal(false) }, [setShowReidexerModal])
 
-  const [evenementFichier, setEvenementFichier] = useState('')
-  const [evenementCollection, setEvenementCollection] = useState('')
+  const [evenementFichier, _setEvenementFichier] = useState('')
+  const [evenementCollection, _setEvenementCollection] = useState('')
 
   const delegue = true  // TODO - verifier si cert est delegue
 
   const { connexion, transfertFichiers } = workers
+
+  const downloadAction = useCallback( fichier => {
+    //console.debug("Download fichier %O", fichier)
+    const { fuuid, mimetype, nom: filename, taille } = fichier
+
+    connexion.getClesFichiers([fuuid], usager)
+      .then(reponseCle=>{
+        // console.debug("REPONSE CLE pour download : %O", reponseCle)
+        if(reponseCle.code === 1) {
+          // Permis
+          const {cle, iv, tag, format} = reponseCle.cles[fuuid]
+          transfertFichiers.down_ajouterDownload(fuuid, {mimetype, filename, taille, passwordChiffre: cle, iv, tag, format})
+              .catch(err=>{console.error("Erreur debut download : %O", err)})
+          } else {
+              console.warn("Cle refusee/erreur (code: %s) pour %s", reponseCle.code, fuuid)
+          }
+      })
+      .catch(err=>{
+        console.error("Erreur declenchement download fichier : %O", err)
+      })
+
+  }, [connexion, transfertFichiers, usager])
+
+  const setEvenementFichier = useCallback(param=>{
+    _setEvenementFichier(param)
+    _setEvenementFichier('')
+  }, [_setEvenementFichier])
+
+  const setEvenementCollection = useCallback(param=>{
+    _setEvenementCollection(param)
+    _setEvenementCollection('')
+  }, [_setEvenementCollection])
 
   // Chargement des proprietes et workers
   useEffect(()=>{
@@ -73,29 +105,7 @@ function App() {
       }))
         .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
   }, [etatConnexion])
-
-  const downloadAction = useCallback( fichier => {
-    //console.debug("Download fichier %O", fichier)
-    const { fuuid, mimetype, nom: filename, taille } = fichier
-
-    connexion.getClesFichiers([fuuid], usager)
-      .then(reponseCle=>{
-        // console.debug("REPONSE CLE pour download : %O", reponseCle)
-        if(reponseCle.code === 1) {
-          // Permis
-          const {cle, iv, tag, format} = reponseCle.cles[fuuid]
-          transfertFichiers.down_ajouterDownload(fuuid, {mimetype, filename, taille, passwordChiffre: cle, iv, tag, format})
-              .catch(err=>{console.error("Erreur debut download : %O", err)})
-          } else {
-              console.warn("Cle refusee/erreur (code: %s) pour %s", reponseCle.code, fuuid)
-          }
-      })
-      .catch(err=>{
-        console.error("Erreur declenchement download fichier : %O", err)
-      })
-
-  }, [connexion, transfertFichiers, usager])
-
+  
   return (
     <LayoutApplication>
       

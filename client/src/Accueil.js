@@ -31,12 +31,15 @@ function Accueil(props) {
 
     useEffect(()=>{
         if(!evenementCollection || !evenementCollection.message) return 
+
+        console.debug("ACCUEIL(top) Message evenementCollection: %O", evenementCollection)
+
         // Empecher cycle
         const message = evenementCollection.message
-        if(message.favoris) {
+        //if(message.favoris) {
             // C'est un favoris, on recharge la liste au complet
             chargerFavoris(workers, setFavoris)
-        }
+        //}
     }, [evenementCollection, workers, chargerFavoris, setFavoris])
 
     return (
@@ -167,6 +170,11 @@ function NavigationFavoris(props) {
 
     useEffect(()=>{
         if(cuuidCourant) {
+            if(evenementCollection) {
+                console.debug("ACCUEIL.NavigationFavoris Message evenementCollection: %O", evenementCollection)
+            } else if(evenementFichier) {
+                console.debug("ACCUEIL.NavigationFavoris Message evenementFichier: %O", evenementFichier)
+            }
             chargerCollection(workers, cuuidCourant, setListe)
         }
     }, [cuuidCourant, chargerCollection, evenementFichier, evenementCollection])

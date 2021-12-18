@@ -104,7 +104,7 @@ export function resLoader(fichier, typeRessource, opts) {
         const {video} = version_courante
         if(video) {
             const labelVideo = trouverLabelVideo(Object.keys(video), opts)
-            // console.debug("Label video trouve : '%s'", labelVideo)
+            console.debug("Label video trouve : '%s'", labelVideo)
             selection = video[labelVideo]
         }
     } else if(typeRessource === 'original') {
@@ -138,11 +138,12 @@ export function resLoader(fichier, typeRessource, opts) {
     }
 
     if(selection) {
-        const fuuid = selection.hachage || selection.fuuid
+        const fuuid = selection.hachage || selection.fuuid_video || selection.fuuid
         if(!fuuid) {
             console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
             return false
         }
+        console.debug("Charger video selection %O", selection)
         const urlBlob = getFichierChiffre(fuuid)
             .then(blob=>URL.createObjectURL(blob))
             .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
