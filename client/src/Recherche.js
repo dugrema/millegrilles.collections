@@ -25,8 +25,8 @@ function Recherche(props) {
     }, [paramsRecherche, setParamsCourant, setHits])
 
     useEffect(()=>{ 
-        if(etatConnexion) {
-            console.debug("Recherche avec %O", paramsCourant)
+        if(etatConnexion && paramsCourant) {
+            // console.debug("Recherche avec %O", paramsCourant)
             setEnCours(true)
             effectuerRecherche(workers, paramsCourant, setHits)
                 .finally(()=>{ setEnCours(false) })
@@ -35,7 +35,7 @@ function Recherche(props) {
 
     useEffect(()=>{ if(etatConnexion) chargerFavoris(workers, setFavoris) }, [workers, etatConnexion, setFavoris])
 
-    console.debug("!!! HITS : %O", hits)
+    // console.debug("!!! HITS : %O", hits)
 
     return (
         <>
@@ -189,16 +189,16 @@ function AucunsResultats(props) {
 }
 
 async function effectuerRecherche(workers, params, setHits) {
-    console.debug("Effectuer recherche (%O)", params)
+    // console.debug("Effectuer recherche (%O)", params)
     const { connexion } = workers
     try {
         const message = await connexion.rechercheIndex(params.mots_cles, params.from_idx, params.size)
         if(message.ok === true) {
-            console.debug("Resultat recherche : %O", message)
+            // console.debug("Resultat recherche : %O", message)
 
             const recents = message.hits || {}
             const listeMappee = preprarerDonnees(recents, workers)
-            console.debug("Recents mappes : %O", recents)
+            // console.debug("Recents mappes : %O", recents)
 
             // setParamsCourant({mots_cles, from_idx: 0, taille: 50})
             setHits(listeMappee)
@@ -269,12 +269,12 @@ function FormatteurScore(props) {
 }
 
 async function chargerFavoris(workers, setFavoris) {
-    console.debug("Charger favoris")
+    // console.debug("Charger favoris")
     const { connexion } = workers
     try {
         const messageFavoris = await connexion.getFavoris()
         const favoris = messageFavoris.favoris || {}
-        console.debug("Favoris recus : %O", favoris)
+        // console.debug("Favoris recus : %O", favoris)
         setFavoris(favoris)
     } catch(err) {
         console.error("Erreur chargement favoris : %O", err)

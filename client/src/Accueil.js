@@ -22,7 +22,7 @@ import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
 function Accueil(props) {
 
-    console.debug("Accueil props : %O", props)
+    // console.debug("Accueil props : %O", props)
 
     const { workers, etatConnexion, evenementCollection, evenementFichier, usager } = props
     const [ favoris, setFavoris ] = useState('')
@@ -465,12 +465,12 @@ function MenuContextuelFavoris(props) {
 
 
 async function chargerFavoris(workers, setFavoris) {
-    console.debug("Charger favoris")
+    // console.debug("Charger favoris")
     const { connexion } = workers
     try {
         const messageFavoris = await connexion.getFavoris()
         const favoris = messageFavoris.favoris || {}
-        console.debug("Favoris recus : %O", favoris)
+        // console.debug("Favoris recus : %O", favoris)
         setFavoris(favoris)
     } catch(err) {
         console.error("Erreur chargement favoris : %O", err)
