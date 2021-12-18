@@ -186,7 +186,7 @@ export async function ecouterTranscodageProgres(socket, params, cb) {
 }
 
 export async function retirerTranscodageProgres(socket, params, cb) {
-    const routingKey = [`2.prive.evenement.fichiers.${params.fuuid}.transcodageProgres`]
+    const routingKeys = [`2.prive/evenement.fichiers.${params.fuuid}.transcodageProgres`]
     socket.unsubscribe({routingKeys})
     if(cb) cb(true)
 }

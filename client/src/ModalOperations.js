@@ -181,7 +181,7 @@ export function DeplacerModal(props) {
 }
 
 export function InfoModal(props) {
-    const { workers, show, fermer, cuuid, fichiers, selection, support, downloadAction } = props
+    const { workers, etatConnexion, show, fermer, cuuid, fichiers, selection, support, downloadAction, evenementFichier } = props
     const { connexion } = workers
 
     let tuuidSelectionne = null,
@@ -203,7 +203,9 @@ export function InfoModal(props) {
     const [doc, setDoc] = useState('')
 
     useEffect(()=>{
+        console.debug("!!! !!! Update fichier : %O", evenementFichier)
         if(!show || !connexion || !tuuidSelectionne) return
+        if(evenementFichier && evenementFichier.tuuid !== tuuidSelectionne) return  // Update autre fichier
         console.debug("Charger document '%s' ", tuuidSelectionne)
         connexion.getDocuments([tuuidSelectionne])
             .then(reponse => {
@@ -215,7 +217,7 @@ export function InfoModal(props) {
             .catch(err=>{
                 console.error("Erreur getDocument %s : %O", tuuidSelectionne, err)
             })
-    }, [show, connexion, tuuidSelectionne, setDoc])
+    }, [show, connexion, tuuidSelectionne, setDoc, evenementFichier])
 
     let Body = InfoVide
     if(!docSelectionne) {
@@ -238,6 +240,8 @@ export function InfoModal(props) {
                     valueItem={docSelectionne}
                     value={doc}
                     downloadAction={downloadAction}
+                    etatConnexion={etatConnexion}
+                    evenementFichier={evenementFichier}
                 />
             </Modal.Body>
 
@@ -252,7 +256,7 @@ function InfoVide(props) {
 function InfoFichier(props) {
     console.debug("InfoFichier PROPPYS : %O", props)
 
-    const { workers, support, downloadAction } = props
+    const { workers, etatConnexion, support, downloadAction, evenementFichier } = props
 
     const valueItem = props.valueItem || {}
     const thumbnailIcon = valueItem.thumbnailIcon,
@@ -297,6 +301,8 @@ function InfoFichier(props) {
                 fichier={fichier} 
                 support={support}
                 downloadAction={downloadAction}
+                etatConnexion={etatConnexion}
+                evenementFichier={evenementFichier}
             />
         </div>
     )

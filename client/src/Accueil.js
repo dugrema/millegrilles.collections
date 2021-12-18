@@ -240,6 +240,7 @@ function NavigationFavoris(props) {
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
                 cuuid={cuuidCourant}
                 downloadAction={downloadAction}
+                etatConnexion={etatConnexion}
             />
 
             <PreviewFichiers 
@@ -290,6 +291,8 @@ function NavigationFavoris(props) {
                 workers={workers}
                 support={support}
                 downloadAction={downloadAction}
+                etatConnexion={etatConnexion}
+                evenementFichier={evenementFichier}
             />
 
             <RenommerModal

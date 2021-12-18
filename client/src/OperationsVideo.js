@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { proxy } from 'comlink'
 
-import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
+import { FormatteurTaille, isTouchEnabled } from '@dugrema/millegrilles.reactjs'
 
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
@@ -46,16 +47,65 @@ const BITRATES_AUDIO = [
   {label: "128 kbps", value: 128000},
 ]
 
+const evenementTranscodage = proxy(event=>{
+  console.debug("Evenement transcodage : %O", event)
+  if(_updateTranscodage) {
+    const message = event.message || {}
+    const resolution = message.height
+    const mimetype = message.mimetype
+    const bitrate = message.videoBitrate
+  
+    const cle = [mimetype, resolution, bitrate].join(';')
+    const params = {
+      passe: message.passe, 
+      pctProgres: message.pctProgres,
+      fuuid: message.fuuid,
+      resolution,
+      mimetype,
+      bitrate
+    }
+    delete params['en-tete']
+    delete params.signature
+  
+    _updateTranscodage(cle, params)
+  }
+})
+
+var _updateTranscodage = null
+
 export function ConversionVideo(props) {
 
-    const { workers, support, downloadAction } = props
+    const { workers, support, downloadAction, etatConnexion, evenementFichier } = props
+    const { connexion } = workers
 
     const fichier = props.fichier || {}
     const versionCourante = fichier.version_courante || {}
     const mimetype = versionCourante.mimetype || ''
     const mimetypeBase = mimetype.split('/').shift()
     
-    const [transcodage, setTranscodage] = useState('')
+    const [transcodage, setTranscodage] = useState({})
+
+    _updateTranscodage = useCallback((key, params) => {
+      const nouveauTranscodage = {...transcodage, [key]: params}
+      console.debug("!!! Nouveau transcodage : %O", nouveauTranscodage)
+      setTranscodage(nouveauTranscodage)
+    }, [transcodage, setTranscodage])
+
+    useEffect(()=>{
+      console.debug("!!! ConversionVideo props : %O", fichier)
+      if(fichier && connexion && etatConnexion) {
+        const fuuid = fichier.fuuid_v_courante
+        // const versionCourante = fichier.version_courante || {}
+        if(fuuid) {
+          console.debug("Ecouter transcodage %s", fuuid)
+          connexion.enregistrerCallbackTranscodageProgres(fuuid, evenementTranscodage)
+          return () => {
+            console.debug("Arreter ecoute %s", fuuid)
+            connexion.supprimerCallbackTranscodageProgres(fuuid)
+          }
+        }
+      }
+    }, [fichier, connexion, etatConnexion, evenementTranscodage])
 
     if(mimetypeBase !== 'video') return ''
 
@@ -64,11 +114,12 @@ export function ConversionVideo(props) {
             <h2>Conversion video</h2>
             <FormConversionVideo 
                 workers={workers}
-                fichier={fichier} 
-                transcodage={transcodage}
-                setTranscodageVideo={setTranscodage}
+                fichier={fichier}
+                updateTranscodage={_updateTranscodage}
             />
+
             <Videos 
+              transcodage={transcodage}
               workers={workers}
               fichier={fichier}
               support={support}
@@ -80,7 +131,7 @@ export function ConversionVideo(props) {
 
 function FormConversionVideo(props) {
 
-    const { workers, fichier, transcodage, setTranscodageVideo } = props
+    const { workers, fichier, updateTranscodage } = props
 
     const [codecVideo, setCodecVideo] = useState('h264')
     const [codecAudio, setCodecAudio] = useState('aac')
@@ -106,7 +157,7 @@ function FormConversionVideo(props) {
         workers,
         fichier,
         {codecVideo, codecAudio, resolutionVideo, bitrateVideo, bitrateAudio},
-        setTranscodageVideo
+        updateTranscodage
       )
     }
   
@@ -138,13 +189,6 @@ function FormConversionVideo(props) {
             </ul>
           </Col>
 
-        </Row>
-
-        <Row>
-          {props.transcodage?
-            <TranscodageEnCours transcodage={transcodage} />
-            :''
-          }
         </Row>
 
       </>
@@ -181,7 +225,7 @@ function SelectGroup(props) {
 }
 
 function convertirVideo(workers, fichier, params, setTranscodageVideo) {
-    // console.debug("Convertir video %O", params)
+    console.debug("Convertir video %O", params)
 
     const commande = {
         tuuid: fichier.tuuid,
@@ -196,13 +240,13 @@ function convertirVideo(workers, fichier, params, setTranscodageVideo) {
     }
 
     // console.debug("Commande conversion : %O", commande)
-    const cle = [commande.mimetype, params.resolutionVideo].join(';')
+    const cle = [commande.mimetype, params.resolutionVideo, params.bitrateVideo].join(';')
     setTranscodageVideo(
         cle,
         {
-        mimetype: commande.mimetype,
-        height: params.resolutionVideo,
-        pctProgres: 0,
+          mimetype: commande.mimetype,
+          resolution: params.resolutionVideo,
+          pctProgres: 0,
         }
     )
 
@@ -215,7 +259,7 @@ function convertirVideo(workers, fichier, params, setTranscodageVideo) {
 }
 
 function Videos(props) {
-  const { fichier, support, downloadAction } = props
+  const { fichier, support, downloadAction, transcodage } = props
   const versionCourante = fichier.version_courante || {}
   const videos = versionCourante.video || {}
 
@@ -225,19 +269,21 @@ function Videos(props) {
 
   return (
     <>
-    <h3>Formats disponibles</h3>
-    {videosTries.map(video=>{
-      return (
-        <AfficherLigneFormatVideo 
-          key={video.hachage}
-          fichier={fichier}
-          video={video}
-          playVideo={props.playVideo}
-          support={support} 
-          downloadAction={downloadAction}
-        />
-      )
-    })}
+      <h3>Formats disponibles</h3>
+      {videosTries.map(video=>{
+        return (
+          <AfficherLigneFormatVideo 
+            key={video.hachage}
+            fichier={fichier}
+            video={video}
+            playVideo={props.playVideo}
+            support={support} 
+            downloadAction={downloadAction}
+          />
+        )
+      })}
+
+      <TranscodageEnCours transcodage={transcodage} />
     </>
   )
 }
@@ -258,36 +304,49 @@ function sortVideos(a, b) {
 
 function TranscodageEnCours(props) {
 
-  const elems = []
-  for(let key in props.transcodage) {
-    const value = props.transcodage[key]
-    const resolution = key.split(';').pop()
-    elems.push(
-      <Row key={key}>
-        <Col>{value.mimetype.split('/').pop()}</Col>
-        <Col>{resolution}</Col>
-        <Col md={3}>
-          <ProgressBar now={value.pctProgres} />
-        </Col>
-        <Col>
-          {value.pctProgres}%
-        </Col>
-      </Row>
-    )
-  }
+  console.debug("!! !! Transcodage en cours PROPPYS : %O", props)
+
+  const { transcodage } = props
+
+  if(!transcodage) return ''
+
+  const transcodageFiltre = Object.values(transcodage).filter(item=>item.pctProgres!==100)
+  transcodageFiltre.sort(triCleTranscodage)
+
+  console.debug("Transcodage filtre : %O", transcodageFiltre)
 
   return (
     <>
-      <h3>Transcodage en cours</h3>
-      {elems}
+      {transcodageFiltre.map((video, idx)=>(
+        <Row key={idx}>
+          <Col xs={12} md={3}>{video.mimetype.split('/').pop()}</Col>
+          <Col xs={12} md={3}>{video.resolution}p</Col>
+          <Col xs={10} md={5}>
+            <ProgressBar now={video.pctProgres} />
+          </Col>
+          <Col xs={2} md={1}>
+            {video.pctProgres}%
+          </Col>
+        </Row>
+      ))}
     </>
   )
+}
+
+function triCleTranscodage(a,b) {
+  const compMimetype = a.mimetype.localeCompare(b.mimetype)
+  if(compMimetype !== 0) return compMimetype
+
+  const compResolution = b.resolution - a.resolution
+  if(compResolution !==0) return compResolution
+
+  return b.bitrate - a.bitrate
 }
 
 function AfficherLigneFormatVideo(props) {
   const { fichier, video, support, downloadAction } = props
 
-  console.debug("!!!! AfficherLigneFormatVideo %O", props)
+  // console.debug("!!!! AfficherLigneFormatVideo %O", props)
 
   const download = useCallback(event => {
     console.debug("Downloader fichier %O", props)
