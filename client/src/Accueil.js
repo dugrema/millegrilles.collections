@@ -35,11 +35,16 @@ function Accueil(props) {
         console.debug("ACCUEIL(top) Message evenementCollection: %O", evenementCollection)
 
         // Empecher cycle
-        const message = evenementCollection.message
-        //if(message.favoris) {
-            // C'est un favoris, on recharge la liste au complet
+        const message = evenementCollection.message || {}
+        let trigger = true
+        // if(message.favoris === true || message.tuuid) {
+        //     // C'est un favoris, on recharge la liste au complet
+        // }
+
+        if(trigger) {
+            console.debug("ACCUEIL(top) reload favoris sur evenement")
             chargerFavoris(workers, setFavoris)
-        //}
+        }
     }, [evenementCollection, workers, chargerFavoris, setFavoris])
 
     return (
@@ -169,14 +174,22 @@ function NavigationFavoris(props) {
     }, [openDropzone])
 
     useEffect(()=>{
-        if(cuuidCourant) {
-            if(evenementCollection) {
-                console.debug("ACCUEIL.NavigationFavoris Message evenementCollection: %O", evenementCollection)
-            } else if(evenementFichier) {
-                console.debug("ACCUEIL.NavigationFavoris Message evenementFichier: %O", evenementFichier)
-            }
+        if(evenementCollection && evenementCollection.message) {
+            console.debug("ACCUEIL.NavigationFavoris Message evenementCollection: %O", evenementCollection)
+        } else if(evenementFichier && evenementFichier.message) {
+            console.debug("ACCUEIL.NavigationFavoris Message evenementFichier: %O", evenementFichier)
+        }
+
+        let trigger = false
+        const message = evenementCollection?evenementCollection.message:'' || evenementFichier?evenementFichier.message:{}
+        const cuuids = message.cuuids || []
+        trigger = cuuids && cuuids.includes(cuuidCourant)
+
+        if(trigger) {
+            console.debug("ACCUEIL.NavigationFavoris reload sur evenement")
             chargerCollection(workers, cuuidCourant, setListe)
         }
+
     }, [cuuidCourant, chargerCollection, evenementFichier, evenementCollection])
 
     return (

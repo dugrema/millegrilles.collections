@@ -34,7 +34,7 @@ export async function getThumbnail(fuuid, opts) {
 
 export async function getFichierChiffre(fuuid, opts) {
     opts = opts || {}
-    const { dataChiffre } = opts
+    const { dataChiffre, mimetype } = opts
     const { connexion, chiffrage } = _workers
 
     // Recuperer la cle de fichier
@@ -82,7 +82,7 @@ export async function getFichierChiffre(fuuid, opts) {
         // console.debug("Dechiffrer le fichier %O avec cle %O", abFichier, cleFichier)
         const ab = await chiffrage.dechiffrerSubtle(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
         // console.debug("Resultat dechiffrage : %O", ab)
-        const blob = new Blob([ab])
+        const blob = new Blob([ab], {type: mimetype})
         return blob
     }
 
@@ -139,12 +139,13 @@ export function resLoader(fichier, typeRessource, opts) {
 
     if(selection) {
         const fuuid = selection.hachage || selection.fuuid_video || selection.fuuid
+        const mimetype = selection.mimetype || version_courante.mimetype || fichier.mimetype
         if(!fuuid) {
             console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
             return false
         }
-        console.debug("Charger video selection %O", selection)
-        const urlBlob = getFichierChiffre(fuuid)
+        console.debug("Charger video selection %O, mimetype: %O", selection, mimetype)
+        const urlBlob = getFichierChiffre(fuuid, {mimetype})
             .then(blob=>URL.createObjectURL(blob))
             .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
 
