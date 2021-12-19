@@ -279,21 +279,23 @@ function InfoFichier(props) {
                 </Col>
                 <Col xs={12} md={8} className="text-hardwrap info-labels">
                     <Row>
-                        <Col xs={12} md={2}>Nom</Col>
-                        <Col xs={12} md={10}>{nom}</Col>
+                        <Col xs={12} md={3}>Nom</Col>
+                        <Col xs={12} md={9}>{nom}</Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={2}>Type</Col>
-                        <Col xs={12} md={10}>{mimetype}</Col>
+                        <Col xs={12} md={3}>Type</Col>
+                        <Col xs={12} md={9}>{mimetype}</Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={2}>Taille</Col>
-                        <Col xs={12} md={10}><FormatteurTaille value={taille} /></Col>
+                        <Col xs={12} md={3}>Taille</Col>
+                        <Col xs={12} md={9}><FormatteurTaille value={taille} /></Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={2}>Date</Col>
-                        <Col xs={12} md={10}><FormatterDate value={derniereModification} /></Col>
+                        <Col xs={12} md={3}>Date</Col>
+                        <Col xs={12} md={9}><FormatterDate value={derniereModification} /></Col>
                     </Row>
+
+                    <InfoMedia fichier={fichier} />
                 </Col>
             </Row>
 
@@ -307,6 +309,37 @@ function InfoFichier(props) {
                 usager={usager}
             />
         </div>
+    )
+}
+
+function InfoMedia(props) {
+    const fichier = props.fichier || {}
+    const versionCourante = fichier.version_courante
+
+    console.debug("Info videos fichier %O : %O", fichier)
+
+    if(!versionCourante) return ''
+
+    const infoRows = []
+    if(versionCourante.height && versionCourante.width) {
+        infoRows.push({label: 'Dimension', value: '' + versionCourante.height + 'x' + versionCourante.width})
+    } else if(versionCourante.height || versionCourante.width) {
+        const resolution = Math.min([versionCourante.height, versionCourante.width].filter(item=>!isNaN(item))) || ''
+        infoRows.push({label: 'Resolution', value: resolution?resolution+'p':''})
+    }
+    if(versionCourante.anime) {
+        infoRows.push({label: 'Anime', value: 'Oui'})
+    }
+
+    return (
+        <>
+            {infoRows.map(item=>(
+                <Row key={item.label}>
+                    <Col xs={12} md={3}>{item.label}</Col>
+                    <Col xs={12} md={9}>{item.value}</Col>
+                </Row>
+            ))}
+        </>
     )
 }
 

@@ -34,7 +34,7 @@ export async function getThumbnail(fuuid, opts) {
 
 export async function getFichierChiffre(fuuid, opts) {
     opts = opts || {}
-    const { dataChiffre, mimetype } = opts
+    const { dataChiffre, mimetype, controller, progress } = opts
     const { connexion, chiffrage } = _workers
 
     // Recuperer la cle de fichier
@@ -65,14 +65,20 @@ export async function getFichierChiffre(fuuid, opts) {
             // Convertir de multibase en array
             return multibase.decode(dataChiffre)
         } else {
+            // const controller = new AbortController();
+            const signal = controller?controller.signal:null
+
             // Recuperer le fichier
             const reponse = await axios({
                 method: 'GET',
                 url: `/fichiers/${fuuid}`,
                 responseType: 'arraybuffer',
-                timeout: 5000,
+                // timeout: 120000,
+                progress,
+                signal,
             })
             // console.debug("!!! Reponse axios : %O", reponse)
+            
             return reponse.data
         }
     }
@@ -94,31 +100,35 @@ export async function getFichierChiffre(fuuid, opts) {
 */
 export function resLoader(fichier, typeRessource, opts) {
     opts = opts || {}
-    const {fileId, version_courante} = fichier
-
-    // console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
+    const { fileId } = fichier
+    const versionCourante = fichier.version_courante || {}
+    const { anime } = versionCourante
+    console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
 
     let selection = ''
     if(typeRessource === 'video') {
         // Charger video pleine resolution
-        const {video} = version_courante
+        const {video} = versionCourante
         if(video) {
             const labelVideo = trouverLabelVideo(Object.keys(video), opts)
             console.debug("Label video trouve : '%s'", labelVideo)
             selection = video[labelVideo]
         }
-    } else if(typeRessource === 'original') {
-        // Charger contenu original
-        selection = {version_courante, fuuid: fichier.fuuid}
     } else if(typeRessource === 'image') {
         // Charger image pleine resolution
-        const images = version_courante.images
-        const labelImage = trouverLabelImage(Object.keys(images), opts)
-        // console.debug("Label image trouve : '%s'", labelImage)
-        selection = images[labelImage]
+        const mimetype = versionCourante.mimetype
+        if(anime && mimetype.startsWith('image/')) {
+            // Pas un video et anime
+            selection = {versionCourante, fuuid: fichier.fuuid}
+        } else {
+            const images = versionCourante.images
+            const labelImage = trouverLabelImage(Object.keys(images), opts)
+            // console.debug("Label image trouve : '%s'", labelImage)
+            selection = images[labelImage]
+        }
     } else if(typeRessource === 'poster') {
         // Charger poster (fallback image pleine resolution)
-        const images = version_courante.images
+        const images = versionCourante.images
         if(images.poster) selection = images.poster
         else {
             const labelImage = trouverLabelImage(Object.keys(images), opts)
@@ -127,7 +137,7 @@ export function resLoader(fichier, typeRessource, opts) {
         }
     } else if(typeRessource === 'thumbnail') {
         // Charger thumbnail (fallback image poster, sinon pleine resolution)
-        const images = version_courante.images
+        const images = versionCourante.images
         if(images.thumbnail) selection = images.thumbnail
         else if(images.poster) selection = images.poster
         else {
@@ -135,21 +145,28 @@ export function resLoader(fichier, typeRessource, opts) {
             // console.debug("Label image trouve : '%s'", labelImage)
             selection = images[labelImage]
         }
+    } else if(typeRessource === 'original') {
+        // Charger contenu original
+        selection = {versionCourante, fuuid: fichier.fuuid}
     }
 
     if(selection) {
-        const fuuid = selection.hachage || selection.fuuid_video || selection.fuuid
-        const mimetype = selection.mimetype || version_courante.mimetype || fichier.mimetype
+        const fuuid = selection.fuuid_video || selection.hachage || selection.fuuid
+        const mimetype = selection.mimetype || versionCourante.mimetype || fichier.mimetype
         if(!fuuid) {
             console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
-            return false
+            throw new Error(`Aucun fuuid trouve pour file_id: ${fileId}`)
         }
-        console.debug("Charger video selection %O, mimetype: %O", selection, mimetype)
-        const urlBlob = getFichierChiffre(fuuid, {mimetype})
+        console.debug("Charger video selection %O, mimetype: %O, fuuid video: %s", selection, mimetype, fuuid)
+        const controller = new AbortController()
+        const urlBlob = getFichierChiffre(fuuid, {mimetype, controller})
             .then(blob=>URL.createObjectURL(blob))
-            .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
+            // .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
 
-        return { srcPromise: urlBlob, clean: ()=>clean(urlBlob) }
+        return { srcPromise: urlBlob, clean: ()=>{
+            try { controller.abort() } catch(err) {console.debug("Erreur annulation getFichierChiffre : %O", err)}
+            clean(urlBlob) 
+        }}
     }
 
     return false

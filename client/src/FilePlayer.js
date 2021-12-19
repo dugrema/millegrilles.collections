@@ -34,10 +34,13 @@ export default PreviewFichiers
 
 function preparerPreviews(tuuidSelectionne, liste, support) {
 
+    console.debug("!!! PreparerPreviews %s : %O", tuuidSelectionne, liste)
+
     const optionsLoader = {supporteWebm: support.webm, supporteWebp: support.webp}
 
     const fichierSelectionne = liste.filter(item=>item.fileId===tuuidSelectionne).pop()
-    const mimetypeSelectionne = fichierSelectionne.mimetype || '',
+    const versionCourante = fichierSelectionne.version_courante || {}
+    const mimetypeSelectionne = versionCourante.mimetype || '',
           mimetypeBase = mimetypeSelectionne.split('/').shift()
 
     if(mimetypeBase === 'video') {
@@ -53,7 +56,7 @@ function mapFichier(item, optionsLoader) {
     return {
         ...item,
         tuuid: item.fileId,
-        loader: typeRessource => resLoader(item, typeRessource, optionsLoader)
+        loader: (typeRessource, opts) => resLoader(item, typeRessource, optionsLoader)
     }
 }
 
