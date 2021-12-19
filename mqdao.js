@@ -101,13 +101,13 @@ export function deplacerFichiersCollection(socket, params) {
 }
 
 export function indexerContenu(socket, params) {
-    return transmettreCommande(socket, params, 'indexerContenu', {exchange: L3Protege})
+    return transmettreCommande(socket, params, 'indexerContenu')
 }
 
 export function transcoderVideo(socket, params) {
     return transmettreCommande(
         socket, params, 'transcoderVideo', 
-        {exchange: L3Protege, domaine: CONST_DOMAINE_FICHIERS, nowait: true}
+        {domaine: CONST_DOMAINE_FICHIERS, nowait: true}
     )
 }
 

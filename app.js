@@ -17,7 +17,7 @@ export default async function app(params) {
     const {server, socketIo, amqpdao: amqpdaoInst} = await server5(
         app,
         configurerEvenements,
-        {pathApp: '/collections', verifierAutorisation}
+        {pathApp: '/collections', verifierAutorisation, exchange: '2.prive'}
     )
 
     socketIo.use((socket, next)=>{
