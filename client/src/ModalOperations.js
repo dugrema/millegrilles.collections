@@ -181,7 +181,7 @@ export function DeplacerModal(props) {
 }
 
 export function InfoModal(props) {
-    const { workers, etatConnexion, show, fermer, cuuid, fichiers, selection, support, downloadAction, evenementFichier } = props
+    const { workers, etatConnexion, show, fermer, cuuid, fichiers, selection, support, downloadAction, evenementFichier, usager } = props
     const { connexion } = workers
 
     let tuuidSelectionne = null,
@@ -242,6 +242,7 @@ export function InfoModal(props) {
                     downloadAction={downloadAction}
                     etatConnexion={etatConnexion}
                     evenementFichier={evenementFichier}
+                    usager={usager}
                 />
             </Modal.Body>
 
@@ -256,7 +257,7 @@ function InfoVide(props) {
 function InfoFichier(props) {
     console.debug("InfoFichier PROPPYS : %O", props)
 
-    const { workers, etatConnexion, support, downloadAction, evenementFichier } = props
+    const { workers, etatConnexion, support, downloadAction, evenementFichier, usager } = props
 
     const valueItem = props.valueItem || {}
     const thumbnailIcon = valueItem.thumbnailIcon,
@@ -303,6 +304,7 @@ function InfoFichier(props) {
                 downloadAction={downloadAction}
                 etatConnexion={etatConnexion}
                 evenementFichier={evenementFichier}
+                usager={usager}
             />
         </div>
     )

@@ -71,11 +71,12 @@ const evenementTranscodage = proxy(event=>{
   }
 })
 
+// Utilise pour traiter messages workers (proxy callback)
 var _updateTranscodage = null
 
 export function ConversionVideo(props) {
 
-    const { workers, support, downloadAction, etatConnexion, evenementFichier } = props
+    const { workers, support, downloadAction, etatConnexion, evenementFichier, usager } = props
     const { connexion } = workers
 
     const fichier = props.fichier || {}
@@ -116,6 +117,7 @@ export function ConversionVideo(props) {
                 workers={workers}
                 fichier={fichier}
                 updateTranscodage={_updateTranscodage}
+                usager={usager}
             />
 
             <Videos 
@@ -131,7 +133,7 @@ export function ConversionVideo(props) {
 
 function FormConversionVideo(props) {
 
-    const { workers, fichier, updateTranscodage } = props
+    const { workers, fichier, updateTranscodage, usager } = props
 
     const [codecVideo, setCodecVideo] = useState('h264')
     const [codecAudio, setCodecAudio] = useState('aac')
@@ -157,8 +159,10 @@ function FormConversionVideo(props) {
         workers,
         fichier,
         {codecVideo, codecAudio, resolutionVideo, bitrateVideo, bitrateAudio},
-        updateTranscodage
+        updateTranscodage,
+        {usager}
       )
+      .catch(err=>{console.error("Erreur debut transcodage video : %O", err)})
     }
   
     return (
@@ -224,38 +228,52 @@ function SelectGroup(props) {
   )
 }
 
-function convertirVideo(workers, fichier, params, setTranscodageVideo) {
-    console.debug("Convertir video %O", params)
+async function convertirVideo(workers, fichier, params, setTranscodageVideo, opts) {
+  opts = opts || {}
+  console.debug("Convertir video %O (opts: %O)", params, opts)
+  const { connexion } = workers
 
-    const commande = {
-        tuuid: fichier.tuuid,
-        fuuid: fichier.fuuid_v_courante,
-        ...params,
-    }
+  const usager = opts.usager || {},
+        extensions = usager || {},
+        delegationGlobale = extensions.delegationGlobale
 
-    if(params.codecVideo === 'vp9') {
-        commande.mimetype = 'video/webm'
-    } else if(params.codecVideo === 'h264') {
-        commande.mimetype = 'video/mp4'
-    }
+  const commande = {
+      tuuid: fichier.tuuid,
+      fuuid: fichier.fuuid_v_courante,
+      ...params,
+  }
 
-    // console.debug("Commande conversion : %O", commande)
-    const cle = [commande.mimetype, params.resolutionVideo, params.bitrateVideo].join(';')
-    setTranscodageVideo(
-        cle,
-        {
-          mimetype: commande.mimetype,
-          resolution: params.resolutionVideo,
-          pctProgres: 0,
-        }
-    )
+  if(params.codecVideo === 'vp9') {
+      commande.mimetype = 'video/webm'
+  } else if(params.codecVideo === 'h264') {
+      commande.mimetype = 'video/mp4'
+  }
 
+  // console.debug("Commande conversion : %O", commande)
+  const cle = [commande.mimetype, params.resolutionVideo, params.bitrateVideo].join(';')
+  setTranscodageVideo(
+      cle,
+      {
+        mimetype: commande.mimetype,
+        resolution: params.resolutionVideo,
+        pctProgres: 0,
+      }
+  )
+
+  if(delegationGlobale) {
     // Ajouter permission de dechiffrage
     commande.permission_duree = 30 * 60  // 30 minutes
     commande.permission_hachage_bytes = [fichier.fuuid_v_courante]
+  } else {
+    // Recuperer une permission
+    const permission = await connexion.getPermission([commande.fuuid])
+    commande.permission = permission
+  }
 
-    const connexionWorker = workers.connexion
-    connexionWorker.transcoderVideo(commande)
+  console.debug("Commande transcodage : %O", commande)
+
+  const connexionWorker = workers.connexion
+  connexionWorker.transcoderVideo(commande)
 }
 
 function Videos(props) {

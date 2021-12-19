@@ -48,6 +48,21 @@ async function getClesFichiers(fuuids, usager, opts) {
   return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
 }
 
+async function getPermission(fuuids) {
+  // Test pour delegation
+  // const extensions = usager || {}
+  // const delegationGlobale = extensions.delegationGlobale
+  // let permission = null
+  // if(!delegationGlobale) {}
+
+  // On doit demander une permission en premier
+  const params = { fuuids }
+  const permission = await ConnexionClient.emitBlocking('getPermissionCle', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
+  console.debug("Permission recue : %O", permission)
+
+  return permission
+}
+
 function creerCollection(nomCollection, opts) {
   opts = opts || {}
   const params = {nom: nomCollection}
@@ -233,7 +248,7 @@ expose({
     recupererDocuments, retirerDocumentsCollection, supprimerDocuments,
     decrireFichier, decrireCollection,
     copierVersCollection, deplacerFichiersCollection,
-    rechercheIndex, transcoderVideo,
+    rechercheIndex, transcoderVideo, getPermission,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,

@@ -293,6 +293,7 @@ function NavigationFavoris(props) {
                 downloadAction={downloadAction}
                 etatConnexion={etatConnexion}
                 evenementFichier={evenementFichier}
+                usager={usager}
             />
 
             <RenommerModal
