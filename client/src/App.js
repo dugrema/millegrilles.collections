@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, Suspense } from 'react'
 import { proxy } from 'comlink'
 
 import Container from 'react-bootstrap/Container'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 
-import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrema/millegrilles.reactjs'
+import { LayoutApplication, HeaderApplication, FooterApplication, styles as stylesCommuns } from '@dugrema/millegrilles.reactjs'
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 
@@ -28,6 +30,7 @@ function App() {
   const [etatTransfert, setEtatTransfert] = useState('')
   const [page, setPage] = useState('Accueil')
   const [paramsRecherche, setParamsRecherche] = useState('')
+  const [idmg, setIdmg] = useState('')
 
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
@@ -88,6 +91,8 @@ function App() {
     if(workers) {
       if(workers.connexion) {
         connecter(workers, setUsager, setEtatConnexion)
+          .then(infoConnexion=>{console.debug("Info connexion : %O", infoConnexion)})
+          .catch(err=>{console.debug("Erreur de connexion")})
       }
     }
   }, [workers, setUsager, setEtatConnexion])
@@ -104,7 +109,12 @@ function App() {
         setEvenementCollection(data)
       }))
         .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
-  }, [etatConnexion])
+
+      workers.chiffrage.getIdmgLocal().then(idmg=>{
+        console.debug("IDMG local chiffrage : %O", idmg)
+        setIdmg(idmg)
+      })
+  }, [etatConnexion, setIdmg])
   
   return (
     <LayoutApplication>
@@ -139,7 +149,7 @@ function App() {
       </Container>
 
       <FooterApplication>
-        <Footer workers={workers} />
+        <Footer workers={workers} idmg={idmg} />
       </FooterApplication>
 
       <TransfertModal 
@@ -172,7 +182,7 @@ async function importerWorkers(setWorkers) {
 
 async function connecter(workers, setUsager, setEtatConnexion) {
   const { connecter: connecterWorker } = await import('./workers/connecter')
-  await connecterWorker(workers, setUsager, setEtatConnexion)
+  return connecterWorker(workers, setUsager, setEtatConnexion)
 }
 
 function initDb() {
@@ -195,6 +205,9 @@ function Contenu(props) {
 
 function Footer(props) {
   return (
-    <p>Footer</p>
+    <div className={stylesCommuns.centre}>
+      <Row><Col>{props.idmg}</Col></Row>
+      <Row><Col>Collections de MilleGrilles</Col></Row>
+    </div>
   )
 }

@@ -16,7 +16,7 @@ export async function connecter(workers, setUsagerState, setEtatConnexion) {
         setEtatConnexion(etat)
     })
     await connexion.setCallbacks(setEtatConnexionCb, setUsagerCb)
-    await connexion.connecter(location.href)
+    return connexion.connecter(location.href)
 }
 
 async function setUsager(workers, nomUsager, setUsagerState, opts) {
