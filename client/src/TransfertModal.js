@@ -100,10 +100,13 @@ async function downloadCache(fuuid, opts) {
     if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
     // console.debug("Download fichier : %s = %O", fuuid, opts)
     const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-    const cacheFichier = await cacheTmp.match(fuuid)
+    const cacheFichier = await cacheTmp.match('/'+fuuid)
     // console.debug("Cache fichier : %O", cacheFichier)
-
-    promptSaveFichier(await cacheFichier.blob(), opts)
+    if(cacheFichier) {
+        promptSaveFichier(await cacheFichier.blob(), opts)
+    } else {
+        console.warn("Fichier '%s' non present dans le cache", fuuid)
+    }
 }
 
 function promptSaveFichier(blob, opts) {
