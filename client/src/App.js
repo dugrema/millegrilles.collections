@@ -84,7 +84,7 @@ function App() {
     ])
       .then(()=>{ console.debug("Chargement de l'application complete") })
       .catch(err=>{console.error("Erreur chargement application : %O", err)})
-  }, [])
+  }, [setWorkers])
 
   useEffect(()=>{
     setWorkersTraitementFichiers(workers)
