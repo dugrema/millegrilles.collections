@@ -5,13 +5,14 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
-import { LayoutApplication, HeaderApplication, FooterApplication, styles as stylesCommuns } from '@dugrema/millegrilles.reactjs'
+import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrema/millegrilles.reactjs'
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 
 import TransfertModal from './TransfertModal'
 import { ReindexerModal } from './ModalOperations'
 
+import stylesCommuns from '@dugrema/millegrilles.reactjs/dist/index.css'
 import './App.css'
 
 import Menu from './Menu'
