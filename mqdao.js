@@ -1,5 +1,4 @@
-import debugLib from 'debug'
-const debug = debugLib('mqdao')
+const debug = require('debug')('mqdao')
 
 const L2Prive = '2.prive',
       L3Protege = '3.protege'
@@ -21,7 +20,7 @@ const ROUTING_KEYS_COLLECTIONS = [
 // ...ROUTING_KEYS_COLLECTIONS,
 // ]
       
-export function challenge(socket, params) {
+function challenge(socket, params) {
     // Repondre avec un message signe
     const reponse = {
         reponse: params.challenge,
@@ -32,79 +31,79 @@ export function challenge(socket, params) {
     return socket.amqpdao.pki.formatterMessage(reponse, 'challenge', {ajouterCertificat: true})
 }
 
-export function getDocuments(socket, params) {
+function getDocuments(socket, params) {
     return transmettreRequete(socket, params, 'documentsParTuuid')
 }
 
-export function getFavoris(socket, params) {
+function getFavoris(socket, params) {
     return transmettreRequete(socket, params, 'favoris')
 }
 
-export function getCorbeille(socket, params) {
+function getCorbeille(socket, params) {
     return transmettreRequete(socket, params, 'getCorbeille')
 }
 
-export function getCollection(socket, params) {
+function getCollection(socket, params) {
     return transmettreRequete(socket, params, 'contenuCollection')
 }
 
-export function getRecents(socket, params) {
+function getRecents(socket, params) {
     return transmettreRequete(socket, params, 'activiteRecente')
 }
 
-export function getClesFichiers(socket, params) {
+function getClesFichiers(socket, params) {
     return transmettreRequete(socket, params, 'dechiffrage', {domaine: CONST_DOMAINE_MAITREDESCLES})
 }
 
-export function getPermissionCle(socket, params) {
+function getPermissionCle(socket, params) {
     return transmettreRequete(socket, params, 'getPermission')
 }
 
-export function rechercheIndex(socket, params) {
+function rechercheIndex(socket, params) {
     return transmettreRequete(socket, params, 'rechercheIndex')
 }
 
-export function creerCollection(socket, params) {
+function creerCollection(socket, params) {
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }
 
-export function changerFavoris(socket, params) {
+function changerFavoris(socket, params) {
     return transmettreCommande(socket, params, 'changerFavoris')
 }
 
-export function retirerDocuments(socket, params) {
+function retirerDocuments(socket, params) {
     return transmettreCommande(socket, params, 'retirerDocumentsCollection')
 }
 
-export function supprimerDocuments(socket, params) {
+function supprimerDocuments(socket, params) {
     return transmettreCommande(socket, params, 'supprimerDocuments')
 }
 
-export function decrireFichier(socket, params) {
+function decrireFichier(socket, params) {
     return transmettreCommande(socket, params, 'decrireFichier')
 }
 
-export function decrireCollection(socket, params) {
+function decrireCollection(socket, params) {
     return transmettreCommande(socket, params, 'decrireCollection')
 }
 
-export function recupererDocuments(socket, params) {
+function recupererDocuments(socket, params) {
     return transmettreCommande(socket, params, 'recupererDocuments')
 }
 
-export function copierVersCollection(socket, params) {
+function copierVersCollection(socket, params) {
     return transmettreCommande(socket, params, 'ajouterFichiersCollection')
 }
 
-export function deplacerFichiersCollection(socket, params) {
+function deplacerFichiersCollection(socket, params) {
     return transmettreCommande(socket, params, 'deplacerFichiersCollection')
 }
 
-export function indexerContenu(socket, params) {
+function indexerContenu(socket, params) {
     return transmettreCommande(socket, params, 'indexerContenu')
 }
 
-export function transcoderVideo(socket, params) {
+function transcoderVideo(socket, params) {
     return transmettreCommande(
         socket, params, 'transcoderVideo', 
         {domaine: CONST_DOMAINE_FICHIERS, nowait: true}
@@ -155,7 +154,7 @@ function verifierMessage(message, domaine, action) {
     if(actionRecue !== action) throw new Error(`Mismatch action (${actionRecue} !== ${action})"`)
 }
 
-export async function ecouterMajFichiers(socket, cb) {
+async function ecouterMajFichiers(socket, cb) {
     const userId = socket.userId
     debug("ecouterMajFichiers userId : %s", socket.userId)
     const opts = {
@@ -166,7 +165,7 @@ export async function ecouterMajFichiers(socket, cb) {
     socket.subscribe(opts, cb)
 }
 
-export async function ecouterMajCollections(socket, cb) {
+async function ecouterMajCollections(socket, cb) {
     const userId = socket.userId
     debug("ecouterMajCollections userId : %s", socket.userId)
     const opts = {
@@ -177,7 +176,7 @@ export async function ecouterMajCollections(socket, cb) {
     socket.subscribe(opts, cb)
 }
 
-export async function ecouterTranscodageProgres(socket, params, cb) {
+async function ecouterTranscodageProgres(socket, params, cb) {
     const opts = {
         routingKeys: [`evenement.fichiers.${params.fuuid}.transcodageProgres`],
         exchange: [L2Prive],
@@ -185,8 +184,18 @@ export async function ecouterTranscodageProgres(socket, params, cb) {
     socket.subscribe(opts, cb)
 }
 
-export async function retirerTranscodageProgres(socket, params, cb) {
+async function retirerTranscodageProgres(socket, params, cb) {
     const routingKeys = [`2.prive/evenement.fichiers.${params.fuuid}.transcodageProgres`]
     socket.unsubscribe({routingKeys})
     if(cb) cb(true)
+}
+
+module.exports = {
+    challenge, getDocuments, getFavoris, getCorbeille, getCollection, getRecents,
+    getClesFichiers, getPermissionCle, rechercheIndex, creerCollection, changerFavoris, 
+    retirerDocuments, supprimerDocuments, decrireFichier, decrireCollection, 
+    ecouterMajFichiers, ecouterMajCollections, ecouterTranscodageProgres, 
+    retirerTranscodageProgres, 
+    recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
+    indexerContenu, transcoderVideo,
 }

@@ -1,8 +1,8 @@
 // Gestion evenements socket.io pour /millegrilles
-import debugLib from 'debug'
-import * as mqdao from './mqdao.js'
+const debug = require('debug')('appSocketIo')
+const mqdao = require('./mqdao.js')
 
-const debug = debugLib('appSocketIo')
+// const debug = debugLib('appSocketIo')
 
 const routingKeysPrive = [
   'appSocketio.nodejs',  // Juste pour trouver facilement sur exchange - debug
@@ -21,7 +21,7 @@ const EVENEMENTS_SUPPORTES = [
   ...ROUTING_KEYS_COLLECTIONS,
 ]
 
-export function configurerEvenements(socket) {
+function configurerEvenements(socket) {
 
   return {
     listenersPublics: [
@@ -65,3 +65,5 @@ async function traiter(socket, methode, {params, cb}) {
   const reponse = await methode(socket, params)
   if(cb) cb(reponse)
 }
+
+module.exports = { configurerEvenements }

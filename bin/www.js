@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import debugLib from 'debug'
-import app from '../app.js'
+const debug = require('debug')('www')
+const app = require('../app.js')
 
-const debug = debugLib('www')
+// const debug = debugLib('www')
 debug("Demarrer server5")
 
 // Initialiser le serveur

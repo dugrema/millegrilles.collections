@@ -1,9 +1,9 @@
-import debugLib from 'debug'
-import express from 'express'
+const debug = require('debug')('collections')
+const express = require('express')
 
-const debug = debugLib('collections');
+// const debug = debugLib('collections');
 
-export default (amqpdao, opts) => {
+function app(amqpdao, opts) {
     if(!opts) opts = {}
     const idmg = amqpdao.pki.idmg
 
@@ -62,3 +62,5 @@ function cacheRes(req, res, next) {
 
     next()
 }
+
+module.exports = app
