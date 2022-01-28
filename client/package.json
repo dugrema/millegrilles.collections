@@ -1,12 +1,11 @@
 {
   "name": "millegriles.collection-client",
-  "version": "2021.1.0",
+  "version": "2022.0.0",
   "private": true,
   "proxy": "https://localhost:3037",
   "homepage": "/collections",
   "dependencies": {
-    "@dugrema/millegrilles.reactjs": "git+ssh://git.maceroc.com/git/millegrilles.reactjs#2021.1.0",
-    "@dugrema/millegrilles.utiljs": "git+ssh://git.maceroc.com/git/millegrilles.utiljs#2021.1.0",
+    "@dugrema/millegrilles.reactjs": "git+ssh://git.maceroc.com/git/millegrilles.reactjs#2022.0.0",
     "@rescripts/cli": "^0.0.16",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
@@ -15,15 +14,15 @@
     "comlink": "^4.3.1",
     "font-awesome": "^4.7.0",
     "react": "^17.0.2",
-    "react-bootstrap": "^2.0.3",
+    "react-bootstrap": "^2.1.1",
     "react-dom": "^17.0.2",
-    "react-scripts": "4.0.3",
+    "react-scripts": "^4",
     "rescript-worker-loader": "^1.0.4",
     "worker-loader": "^3.0.8"
   },
   "devDependencies": {
     "@babel/plugin-syntax-object-rest-spread": "^7.8.3",
-    "webpack": "~4.44.2"
+    "webpack": "^4"
   },
   "scripts": {
     "start": "export WDS_SOCKET_PATH=/collections/sockjs-node && rescripts start",
