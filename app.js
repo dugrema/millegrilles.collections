@@ -1,15 +1,15 @@
 const debug = require('debug')('app')
 const express = require('express')
 
-const { server5 } = require('@dugrema/millegrilles.nodejs')
-const { forgecommon } = require('@dugrema/millegrilles.utiljs')
+const { server5 } = require('@dugrema/millegrilles.nodejs/src/server5')
+const { extraireExtensionsMillegrille } = require('@dugrema/millegrilles.utiljs/src/forgecommon')
 
 const { configurerEvenements } = require('./appSocketIo.js')
 const routeCollections = require('./routes/collections.js')
 const mqdao = require('./mqdao.js')
 
 // const debug = debugLib('app')
-const { extraireExtensionsMillegrille } = forgecommon
+// const { extraireExtensionsMillegrille } = forgecommon
 
 async function app(params) {
     debug("Server app params %O", params)

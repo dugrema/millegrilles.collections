@@ -21,11 +21,10 @@ export async function connecter(workers, setUsagerState, setEtatConnexion) {
 
 async function setUsager(workers, nomUsager, setUsagerState, opts) {
     opts = opts || {}
-    console.debug("setUsager '%s'", nomUsager)
-    const { getUsager, utiljs } = await import('@dugrema/millegrilles.reactjs')
-    console.debug("utiljs : %O", utiljs)
+    // console.debug("setUsager '%s'", nomUsager)
+    const { getUsager, forgecommon } = await import('@dugrema/millegrilles.reactjs')
     const { pki } = await import('@dugrema/node-forge')
-    const { extraireExtensionsMillegrille } = utiljs.forgecommon
+    const { extraireExtensionsMillegrille } = forgecommon
     const usager = await getUsager(nomUsager)
     // console.debug("Usager info : %O", usager)
     
@@ -38,6 +37,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
 
         // Initialiser le CertificateStore
         await chiffrage.initialiserCertificateStore(caPem, {isPEM: true, DEBUG: false})
+
         await x509.init(caPem)
 
         // Init cles privees
@@ -51,6 +51,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
 
         await transfertFichiers.up_setCertificatCa(caPem)
         await transfertFichiers.down_setCertificatCa(caPem)
+
     } else {
         console.warn("Pas de certificat pour l'usager '%s'", usager)
     }
