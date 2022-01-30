@@ -30,9 +30,9 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
     // console.debug("Usager info : %O", usager)
     
     if(usager && usager.certificat) {
-        const { connexion, chiffrage, x509 } = workers
-        const fullchain = usager.certificat
-        const caPem = [...fullchain].pop()
+        const { connexion, chiffrage, x509, transfertFichiers } = workers
+        const fullchain = usager.certificat,
+              caPem = usager.ca
 
         const certificatPem = fullchain.join('')
 
@@ -48,6 +48,9 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         const extensions = extraireExtensionsMillegrille(certForge)
 
         setUsagerState({nomUsager, fullchain, extensions})
+
+        await transfertFichiers.up_setCertificatCa(caPem)
+        await transfertFichiers.down_setCertificatCa(caPem)
     } else {
         console.warn("Pas de certificat pour l'usager '%s'", usager)
     }
