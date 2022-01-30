@@ -40,16 +40,13 @@ export async function getFichierChiffre(fuuid, opts) {
     // Recuperer la cle de fichier
     const cleFichierFct = async () => {
         let cleFichier = await getCleDechiffree(fuuid)
-        // console.debug("!!! getThumbnail cleFichier : %O", cleFichier)
         if(cleFichier) return cleFichier
 
         const reponse = await connexion.getClesFichiers([fuuid])
-        // console.debug("Recuperation cle fichier %O", reponse)
 
         cleFichier = reponse.cles[fuuid]
-        const cleSecrete = await chiffrage.preparerCleSecreteSubtle(cleFichier.cle, cleFichier.iv)
+        const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
         cleFichier.cleSecrete = cleSecrete
-        // console.debug("Cle secrete fichier %O", cleFichier)
 
         // Sauvegarder la cle pour reutilisation
         saveCleDechiffree(fuuid, cleSecrete, cleFichier)
@@ -85,11 +82,14 @@ export async function getFichierChiffre(fuuid, opts) {
 
     var [cleFichier, abFichier] = await Promise.all([cleFichierFct(), fichierFct()])
     if(cleFichier && abFichier) {
-        // console.debug("Dechiffrer le fichier %O avec cle %O", abFichier, cleFichier)
-        const ab = await chiffrage.dechiffrerSubtle(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
-        // console.debug("Resultat dechiffrage : %O", ab)
-        const blob = new Blob([ab], {type: mimetype})
-        return blob
+        try {
+            const ab = await chiffrage.chiffrage.dechiffrer(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
+            const blob = new Blob([ab], {type: mimetype})
+            return blob
+        } catch(err) {
+            console.error("Erreur dechiffrage traitementFichiers : %O", err)
+            throw err
+        }
     }
 
     console.error("Erreur chargement image %s (erreur recuperation cle ou download)", fuuid)
