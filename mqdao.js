@@ -55,8 +55,8 @@ function getClesFichiers(socket, params) {
     return transmettreRequete(socket, params, 'dechiffrage', {domaine: CONST_DOMAINE_MAITREDESCLES})
 }
 
-function getPermissionCle(socket, params) {
-    return transmettreRequete(socket, params, 'getPermission')
+function getPermissionCles(socket, params) {
+    return transmettreRequete(socket, params, 'getClesFichiers')
 }
 
 function rechercheIndex(socket, params) {
@@ -192,7 +192,7 @@ async function retirerTranscodageProgres(socket, params, cb) {
 
 module.exports = {
     challenge, getDocuments, getFavoris, getCorbeille, getCollection, getRecents,
-    getClesFichiers, getPermissionCle, rechercheIndex, creerCollection, changerFavoris, 
+    getClesFichiers, getPermissionCles, rechercheIndex, creerCollection, changerFavoris, 
     retirerDocuments, supprimerDocuments, decrireFichier, decrireCollection, 
     ecouterMajFichiers, ecouterMajCollections, ecouterTranscodageProgres, 
     retirerTranscodageProgres, 

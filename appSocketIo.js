@@ -35,7 +35,7 @@ function configurerEvenements(socket) {
       { eventName: 'getRecents', callback: (params, cb) => traiter(socket, mqdao.getRecents, {params, cb}) },
       { eventName: 'getClesFichiers', callback: (params, cb) => traiter(socket, mqdao.getClesFichiers, {params, cb}) },
       { eventName: 'creerCollection', callback: (params, cb) => traiter(socket, mqdao.creerCollection, {params, cb}) },
-      { eventName: 'getPermissionCle', callback: (params, cb) => traiter(socket, mqdao.getPermissionCle, {params, cb}) },
+      { eventName: 'getPermissionCles', callback: (params, cb) => traiter(socket, mqdao.getPermissionCles, {params, cb}) },
       { eventName: 'changerFavoris', callback: (params, cb) => traiter(socket, mqdao.changerFavoris, {params, cb}) },
       { eventName: 'retirerDocuments', callback: (params, cb) => traiter(socket, mqdao.retirerDocuments, {params, cb}) },
       { eventName: 'supprimerDocuments', callback: (params, cb) => traiter(socket, mqdao.supprimerDocuments, {params, cb}) },

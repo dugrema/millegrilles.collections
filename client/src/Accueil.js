@@ -22,7 +22,7 @@ import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
 function Accueil(props) {
 
-    // console.debug("Accueil props : %O", props)
+    console.debug("Accueil props : %O", props)
 
     const { workers, etatConnexion, evenementCollection, evenementFichier, usager, downloadAction } = props
     const [ favoris, setFavoris ] = useState('')
@@ -507,7 +507,7 @@ async function chargerFavoris(workers, setFavoris) {
 }
 
 async function chargerCollection(workers, cuuid, setListe, usager) {
-    // console.debug("Charger collection %s", cuuid)
+    console.debug("Charger collection %s", cuuid)
     const { connexion } = workers
     const reponse = await connexion.getContenuCollection(cuuid)
     // console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
@@ -537,16 +537,17 @@ async function chargerCollection(workers, cuuid, setListe, usager) {
     }
 
     if(fuuidsInconnus.length > 0) {
+        console.debug("Get cles manquantes pour fuuids %O", fuuidsInconnus)
         connexion.getClesFichiers(fuuidsInconnus, usager)
             .then(async reponse=>{
                 // console.debug("Reponse dechiffrage cles : %O", reponse)
 
                 for await (const fuuid of Object.keys(reponse.cles)) {
                     const cleFichier = reponse.cles[fuuid]
-                    // console.debug("Dechiffrer cle %O", cleFichier)
+                    console.debug("Dechiffrer cle %O", cleFichier)
                     const cleSecrete = await workers.chiffrage.preparerCleSecreteSubtle(cleFichier.cle, cleFichier.iv)
                     cleFichier.cleSecrete = cleSecrete
-                    // console.debug("Cle secrete fichier %O", cleFichier)
+                    console.debug("Cle secrete fichier %O", cleFichier)
                     saveCleDechiffree(fuuid, cleSecrete, cleFichier)
                         .catch(err=>{
                             console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
