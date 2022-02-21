@@ -122,14 +122,14 @@ export function resLoader(fichier, typeRessource, opts) {
             // Pas un video et anime
             selection = {versionCourante, fuuid: fichier.fuuid}
         } else {
-            const images = versionCourante.images
+            const images = versionCourante.images || {}
             const labelImage = trouverLabelImage(Object.keys(images), opts)
             // console.debug("Label image trouve : '%s'", labelImage)
             selection = images[labelImage]
         }
     } else if(typeRessource === 'poster') {
         // Charger poster (fallback image pleine resolution)
-        const images = versionCourante.images
+        const images = versionCourante.images || {}
         if(images.poster) selection = images.poster
         else {
             const labelImage = trouverLabelImage(Object.keys(images), opts)
@@ -138,7 +138,7 @@ export function resLoader(fichier, typeRessource, opts) {
         }
     } else if(typeRessource === 'thumbnail') {
         // Charger thumbnail (fallback image poster, sinon pleine resolution)
-        const images = versionCourante.images
+        const images = versionCourante.images || {}
         if(images.thumbnail) selection = images.thumbnail
         else if(images.poster) selection = images.poster
         else {
