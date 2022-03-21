@@ -17,9 +17,11 @@
   "license": "MIT",
   "dependencies": {
     "@dugrema/millegrilles.nodejs": "https://github.com/dugrema/millegrilles.nodejs.git#2022.2",
-    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2022.2",
-    "axios": "^0.24.0",
-    "debug": "^4.3.3",
     "express": "^4.17.2"
+  },
+  "peerDependencies": {
+    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2022.2",
+    "axios": "^0",
+    "debug": "^4"
   }
 }
