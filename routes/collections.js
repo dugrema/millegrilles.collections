@@ -22,7 +22,7 @@ function app(amqpdao, opts) {
 
     const route = express.Router()
     route.get('/collections/info.json', routeInfo)
-    route.all('/collections/fichiers/*', routeCollectionsFichiers(amqpdao, fichierUploadUrl, opts))
+    route.use(routeCollectionsFichiers(amqpdao, fichierUploadUrl, opts))
     ajouterStaticRoute(route)
 
     debug("Route /collections de Collections est initialisee")
@@ -36,10 +36,10 @@ function ajouterStaticRoute(route) {
     var folderStatic =
         process.env.MG_GROSFICHIERS_STATIC_RES ||
         process.env.MG_STATIC_RES ||
-        'static/collections'
+        'static'
 
-    route.get('*', cacheRes, express.static(folderStatic))
-    debug("Route %s pour grosfichiers initialisee", folderStatic)
+    route.get('/collections(/*)?', cacheRes, express.static(folderStatic))
+    debug("Route %s pour collections initialisee", folderStatic)
 }
 
 function routeInfo(req, res) {
