@@ -1,5 +1,6 @@
-const debug = require('debug')('collections')
+const debug = require('debug')('routes:collections')
 const express = require('express')
+const routeCollectionsFichiers = require('./collectionsFichiers.js')
 
 // const debug = debugLib('collections');
 
@@ -10,7 +11,9 @@ function app(amqpdao, opts) {
     debug("IDMG: %s, AMQPDAO : %s", idmg, amqpdao !== undefined)
 
     const route = express.Router()
-    route.get('/info.json', routeInfo)
+
+    route.get('/collections/info.json', routeInfo)
+    route.all('/collections/fichiers/*', routeCollectionsFichiers(amqpdao, opts))
     ajouterStaticRoute(route)
 
     debug("Route /collections de Collections est initialisee")

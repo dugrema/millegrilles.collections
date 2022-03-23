@@ -8,12 +8,10 @@ const { configurerEvenements } = require('./appSocketIo.js')
 const routeCollections = require('./routes/collections.js')
 const mqdao = require('./mqdao.js')
 
-// const debug = debugLib('app')
-// const { extraireExtensionsMillegrille } = forgecommon
-
 async function app(params) {
     debug("Server app params %O", params)
     const app = express()
+
     const {server, socketIo, amqpdao: amqpdaoInst} = await server6(
         app,
         configurerEvenements,
@@ -28,11 +26,9 @@ async function app(params) {
     // Inserer les routes apres l'initialisation, permet d'avoir le middleware
     // attache avant (app.use comme le logging morgan, injection amqpdao, etc.)
     const route = express.Router()
-    app.use('/collections', route)
-    route.use((req, res, next)=>{
-      req.mqdao = mqdao
-      next()
-    })
+    app.all('/collections(/*)?', route)
+
+    route.use((req, _res, next)=>{ req.mqdao = mqdao; next(); })
     route.use(routeCollections(amqpdaoInst))
 
     return server
@@ -44,7 +40,6 @@ function verifierAutorisation(socket, securite, certificatForge) {
 
     const extensions = extraireExtensionsMillegrille(certificatForge)
     console.debug("!!! www.verifierAutorisation extensions %O", extensions)
-
 
     if(['proprietaire', 'delegue'].includes(extensions.delegationGlobale)) {
         // Deleguation globale donne tous les acces
