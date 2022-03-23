@@ -10,10 +10,19 @@ function app(amqpdao, opts) {
 
     debug("IDMG: %s, AMQPDAO : %s", idmg, amqpdao !== undefined)
 
-    const route = express.Router()
+    let fichierUploadUrl = process.env['MG_CONSIGNATION_URL']
+    if(fichierUploadUrl) {
+        new URL(fichierUploadUrl)  // Validation du format
+    } else {
+        // Mettre url par defaut pour upload sur instance protegee (MQ_HOST, port 443)
+        const hostMQ = process.env['MQ_HOST']
+        const urlConsignation = new URL(`https://${hostMQ}/fichiers_transfert`)
+        fichierUploadUrl = ''+urlConsignation
+    }
 
+    const route = express.Router()
     route.get('/collections/info.json', routeInfo)
-    route.all('/collections/fichiers/*', routeCollectionsFichiers(amqpdao, opts))
+    route.all('/collections/fichiers/*', routeCollectionsFichiers(amqpdao, fichierUploadUrl, opts))
     ajouterStaticRoute(route)
 
     debug("Route /collections de Collections est initialisee")

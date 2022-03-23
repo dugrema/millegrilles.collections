@@ -12,7 +12,7 @@ async function app(params) {
     debug("Server app params %O", params)
     const app = express()
 
-    const {server, socketIo, amqpdao: amqpdaoInst} = await server6(
+    const {server, socketIo, amqpdao: amqpdaoInst, urlHost } = await server6(
         app,
         configurerEvenements,
         {pathApp: '/collections', verifierAutorisation, exchange: '2.prive'}
@@ -28,8 +28,12 @@ async function app(params) {
     const route = express.Router()
     app.all('/collections(/*)?', route)
 
+    const opts = {
+        urlHost,
+    }
+
     route.use((req, _res, next)=>{ req.mqdao = mqdao; next(); })
-    route.use(routeCollections(amqpdaoInst))
+    route.use(routeCollections(amqpdaoInst, opts))
 
     return server
 }
@@ -39,7 +43,7 @@ function verifierAutorisation(socket, securite, certificatForge) {
     let prive = false, protege = false
 
     const extensions = extraireExtensionsMillegrille(certificatForge)
-    console.debug("!!! www.verifierAutorisation extensions %O", extensions)
+    // debug("www.verifierAutorisation extensions %O", extensions)
 
     if(['proprietaire', 'delegue'].includes(extensions.delegationGlobale)) {
         // Deleguation globale donne tous les acces
@@ -58,26 +62,6 @@ function verifierAutorisation(socket, securite, certificatForge) {
             prive = true
         }
     }
-    
-    // if(securite === '3.protege') {
-    //     // Deleguation globale donne tous les acces
-    //     if(['proprietaire', 'delegue'].includes(extensions.delegationGlobale)) {
-    //         debug("Usager proprietaire, acces 3.protege OK")
-    //         prive = true
-    //         protege = true
-    //     }
-
-    //     // Delegation au domaine coupdoeil
-    //     if(extensions.delegationsDomaines.includes('collections')) {
-    //         debug("Usager delegue domaine coupdoeil, acces 3.protege OK")
-    //         prive = true
-    //         protege = true
-    //     }
-
-    //     debug("Usager acces 3.protege refuse")
-    // } else if(securite === '2.prive') {
-
-    // }
     
     return {prive, protege}
 }

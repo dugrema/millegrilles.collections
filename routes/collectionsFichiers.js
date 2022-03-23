@@ -4,12 +4,12 @@ const bodyParser = require('body-parser')
 
 const backingStore = require('@dugrema/millegrilles.nodejs/src/fichiersTransfertBackingstore')
 
-function init(amqpdao, opts) {
+function init(amqpdao, fichierUploadUrl, opts) {
     opts = opts || {}
 
-    const fichierUploadUrl = opts.consignationFichiersUrl || '/fichiers'
+    debug("collectionsFichiers url upload consignation : %s", fichierUploadUrl)
 
-    backingStore.configurerThreadPutFichiersConsignation('/fichiers', amqpdao)
+    backingStore.configurerThreadPutFichiersConsignation(fichierUploadUrl, amqpdao)
 
     const route = express.Router()
 
