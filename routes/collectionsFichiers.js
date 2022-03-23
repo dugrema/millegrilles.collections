@@ -6,7 +6,11 @@ const backingStore = require('@dugrema/millegrilles.nodejs/src/fichiersTransfert
 
 function init(amqpdao, opts) {
     opts = opts || {}
-    
+
+    const fichierUploadUrl = opts.consignationFichiersUrl || '/fichiers'
+
+    backingStore.configurerThreadPutFichiersConsignation('/fichiers', amqpdao)
+
     const route = express.Router()
 
     route.use((req, res, next)=>{
