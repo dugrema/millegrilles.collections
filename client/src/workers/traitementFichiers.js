@@ -1,6 +1,6 @@
 import axios from 'axios'
 import multibase from 'multibase'
-import { saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs/src/dbUsager'
+import { usagerDao } from '@dugrema/millegrilles.reactjs'
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { getThumbnail as getIdbThumbnail, saveThumbnailDechiffre } from '../idbCollections'
 
@@ -40,7 +40,7 @@ export async function getFichierChiffre(fuuid, opts) {
 
     // Recuperer la cle de fichier
     const cleFichierFct = async () => {
-        let cleFichier = await getCleDechiffree(fuuid)
+        let cleFichier = await usagerDao.getCleDechiffree(fuuid)
         if(cleFichier) return cleFichier
 
         const reponse = await connexion.getClesFichiers([fuuid])
@@ -50,7 +50,7 @@ export async function getFichierChiffre(fuuid, opts) {
         cleFichier.cleSecrete = cleSecrete
 
         // Sauvegarder la cle pour reutilisation
-        saveCleDechiffree(fuuid, cleSecrete, cleFichier)
+        usagerDao.saveCleDechiffree(fuuid, cleSecrete, cleFichier)
             .catch(err=>{
                 console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
             })

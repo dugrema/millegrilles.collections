@@ -11,7 +11,7 @@ import Modal from 'react-bootstrap/Modal'
 import { useDropzone } from 'react-dropzone'
 
 import { 
-    ListeFichiers, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
+    ListeFichiers, FormatteurTaille, FormatterDate, usagerDao,
 } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
@@ -532,7 +532,7 @@ async function chargerCollection(workers, cuuid, setListe, usager) {
     // Verifier les cles qui sont deja connues
     let fuuidsInconnus = []
     for await (const fuuid of fuuidsImages) {
-        const cleFichier = await getCleDechiffree(fuuid)
+        const cleFichier = await usagerDao.getCleDechiffree(fuuid)
         if(!cleFichier) fuuidsInconnus.push(fuuid)
     }
 
@@ -548,7 +548,7 @@ async function chargerCollection(workers, cuuid, setListe, usager) {
                     const cleSecrete = await workers.chiffrage.preparerCleSecreteSubtle(cleFichier.cle, cleFichier.iv)
                     cleFichier.cleSecrete = cleSecrete
                     console.debug("Cle secrete fichier %O", cleFichier)
-                    saveCleDechiffree(fuuid, cleSecrete, cleFichier)
+                    usagerDao.saveCleDechiffree(fuuid, cleSecrete, cleFichier)
                         .catch(err=>{
                             console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
                         })

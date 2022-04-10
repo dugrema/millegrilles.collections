@@ -1,5 +1,4 @@
 import { expose } from 'comlink'
-// import { ConnexionClient, saveCleDechiffree, getCleDechiffree } from '@dugrema/millegrilles.reactjs'
 import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
 
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
@@ -48,12 +47,6 @@ function getClesFichiers(fuuids, usager, opts) {
 }
 
 async function getPermission(fuuids) {
-  // Test pour delegation
-  // const extensions = usager || {}
-  // const delegationGlobale = extensions.delegationGlobale
-  // let permission = null
-  // if(!delegationGlobale) {}
-
   // On doit demander une permission en premier
   const params = { fuuids }
   const permission = await ConnexionClient.emitBlocking('getPermissionCle', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
@@ -183,6 +176,8 @@ function indexerContenu(reset) {
 //     {domaine: 'GrosFichiers', action: 'completerPreviews', attacherCertificat: true}
 //   )
 // }
+
+// Listeners
 
 async function enregistrerCallbackMajFichier(cb) {
   ConnexionClient.socketOn('evenement.grosfichiers.majFichier', cb)
