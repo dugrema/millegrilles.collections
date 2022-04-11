@@ -179,39 +179,65 @@ function indexerContenu(reset) {
 
 // Listeners
 
-async function enregistrerCallbackMajFichier(cb) {
-  ConnexionClient.socketOn('evenement.grosfichiers.majFichier', cb)
-  const resultat = await ConnexionClient.emitBlocking('ecouterMajFichiers', {}, {noformat: true})
-  if(!resultat) {
-    throw new Error("Erreur enregistrerCallbackMajFichier")
-  }
+function enregistrerCallbackMajFichier(params, cb) { 
+  params = params || {}
+  return ConnexionClient.subscribe('enregistrerCallbackMajFichier', cb, params)
 }
 
-async function enregistrerCallbackMajCollection(cb) {
-  ConnexionClient.socketOn('evenement.grosfichiers.majCollection', cb)
-  const resultat = await ConnexionClient.emitBlocking('ecouterMajCollections', {}, {noformat: true})
-  if(!resultat) {
-    throw new Error("Erreur enregistrerCallbackMajFichier")
-  }
+function retirerCallbackMajFichier(params, cb) { 
+  params = params || {}
+  return ConnexionClient.unsubscribe('retirerCallbackMajFichier', cb, params) 
 }
 
-async function enregistrerCallbackTranscodageProgres(fuuid, cb) {
-  console.debug("!!! enregistrerCallbackTranscodageProgres fuuid %s", fuuid)
-  ConnexionClient.socketOn('evenement.fichiers.transcodageProgres', cb)
-  const resultat = await ConnexionClient.emitBlocking('ecouterTranscodageProgres', {fuuid}, {noformat: true})
-  if(!resultat) {
-    throw new Error("Erreur enregistrerCallbackMajFichier")
-  }
+// async function enregistrerCallbackMajFichier(cb) {
+//   ConnexionClient.socketOn('evenement.grosfichiers.majFichier', cb)
+//   const resultat = await ConnexionClient.emitBlocking('ecouterMajFichiers', {}, {noformat: true})
+//   if(!resultat) {
+//     throw new Error("Erreur enregistrerCallbackMajFichier")
+//   }
+// }
+
+function enregistrerCallbackMajCollection(cb) { 
+  return ConnexionClient.subscribe('enregistrerCallbackMajCollection', cb) 
 }
 
-async function supprimerCallbackTranscodageProgres(fuuid) {
-  console.debug("!!! supprimerCallbackTranscodageProgres fuuid %s", fuuid)
-  ConnexionClient.socketOff('evenement.fichiers.transcodageProgres')
-  const resultat = await ConnexionClient.emitBlocking('retirerTranscodageProgres', {fuuid}, {noformat: true})
-  if(!resultat) {
-    throw new Error("Erreur enregistrerCallbackMajFichier")
-  }
+function retirerCallbackMajCollection(cb) { 
+  return ConnexionClient.unsubscribe('retirerCallbackMajCollection', cb) 
 }
+
+// async function enregistrerCallbackMajCollection(cb) {
+//   ConnexionClient.socketOn('evenement.grosfichiers.majCollection', cb)
+//   const resultat = await ConnexionClient.emitBlocking('ecouterMajCollections', {}, {noformat: true})
+//   if(!resultat) {
+//     throw new Error("Erreur enregistrerCallbackMajFichier")
+//   }
+// }
+
+function enregistrerCallbackTranscodageProgres(cb) { 
+  return ConnexionClient.subscribe('enregistrerCallbackTranscodageProgres', cb) 
+}
+
+function retirerCallbackTranscodageProgres(cb) { 
+  return ConnexionClient.unsubscribe('retirerCallbackTranscodageProgres', cb) 
+}
+
+// async function enregistrerCallbackTranscodageProgres(fuuid, cb) {
+//   console.debug("!!! enregistrerCallbackTranscodageProgres fuuid %s", fuuid)
+//   ConnexionClient.socketOn('evenement.fichiers.transcodageProgres', cb)
+//   const resultat = await ConnexionClient.emitBlocking('ecouterTranscodageProgres', {fuuid}, {noformat: true})
+//   if(!resultat) {
+//     throw new Error("Erreur enregistrerCallbackMajFichier")
+//   }
+// }
+
+// async function supprimerCallbackTranscodageProgres(fuuid) {
+//   console.debug("!!! supprimerCallbackTranscodageProgres fuuid %s", fuuid)
+//   ConnexionClient.socketOff('evenement.fichiers.transcodageProgres')
+//   const resultat = await ConnexionClient.emitBlocking('retirerTranscodageProgres', {fuuid}, {noformat: true})
+//   if(!resultat) {
+//     throw new Error("Erreur enregistrerCallbackMajFichier")
+//   }
+// }
 
 // comlinkExpose({
 //   ...ConnexionClient,
@@ -245,8 +271,9 @@ expose({
     rechercheIndex, transcoderVideo, getPermission,
 
     // Event listeners prives
-    enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,
-    enregistrerCallbackTranscodageProgres, supprimerCallbackTranscodageProgres,
+    enregistrerCallbackMajFichier, retirerCallbackMajFichier,
+    enregistrerCallbackMajCollection, retirerCallbackMajCollection,
+    enregistrerCallbackTranscodageProgres, retirerCallbackTranscodageProgres,
 
     // Commandes delegue
     indexerContenu,

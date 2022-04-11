@@ -179,6 +179,6 @@ async function clean(urlBlobPromise) {
         // console.debug("Cleanup blob %s", urlBlob)
         URL.revokeObjectURL(urlBlob)
     } catch(err) {
-        console.warn("Erreur cleanup URL Blob")
+        console.debug("Erreur cleanup URL Blob : %O", err)
     }
 }

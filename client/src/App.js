@@ -26,6 +26,7 @@ function App() {
   const [workers, setWorkers] = useState('')
   const [usager, setUsager] = useState('')
   const [etatConnexion, setEtatConnexion] = useState(false)
+  const [formatteurPret, setFormatteurPret] = useState(false)
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [showReindexerModal, setShowReidexerModal] = useState(false)
   const [etatTransfert, setEtatTransfert] = useState('')
@@ -44,6 +45,7 @@ function App() {
   const delegue = true  // TODO - verifier si cert est delegue
 
   const { connexion, transfertFichiers } = workers
+  const etatAuthentifie = usager && formatteurPret
 
   const downloadAction = useCallback( fichier => {
     //console.debug("Download fichier %O", fichier)
@@ -91,31 +93,38 @@ function App() {
     setWorkersTraitementFichiers(workers)
     if(workers) {
       if(workers.connexion) {
-        connecter(workers, setUsager, setEtatConnexion)
+        connecter(workers, setUsager, setEtatConnexion, setFormatteurPret)
           .then(infoConnexion=>{console.debug("Info connexion : %O", infoConnexion)})
-          .catch(err=>{console.debug("Erreur de connexion")})
+          .catch(err=>{console.debug("Erreur de connexion : %O", err)})
       }
     }
-  }, [workers, setUsager, setEtatConnexion])
+  }, [workers, setUsager, setEtatConnexion, setFormatteurPret])
 
   useEffect(()=>{
-      if(!etatConnexion) return 
-      workers.connexion.enregistrerCallbackMajFichier(proxy(data=>{
-        // console.debug("callbackMajFichier data: %O", data)
-        setEvenementFichier(data)
-      }))
-        .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
-      workers.connexion.enregistrerCallbackMajCollection(proxy(data=>{
-        // console.debug("callbackMajCollection data: %O", data)
-        setEvenementCollection(data)
-      }))
-        .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
 
-      workers.chiffrage.getIdmgLocal().then(idmg=>{
-        console.debug("IDMG local chiffrage : %O", idmg)
-        setIdmg(idmg)
-      })
-  }, [etatConnexion, setIdmg])
+      const setEvenementFichierProxy = proxy(setEvenementFichier)
+
+      if(etatAuthentifie) {
+        workers.connexion.enregistrerCallbackMajFichier({tuuid: 'abcd-1234'}, setEvenementFichierProxy)
+          .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
+        // workers.connexion.enregistrerCallbackMajCollection(proxy(setEvenementCollection))
+        //   .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
+
+        workers.chiffrage.getIdmgLocal().then(idmg=>{
+          console.debug("IDMG local chiffrage : %O", idmg)
+          setIdmg(idmg)
+        })
+
+        return () => {
+          // Cleanup
+          workers.connexion.retirerCallbackMajFichier(setEvenementFichierProxy)
+            .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
+          // workers.connexion.retirerCallbackMajCollection(proxy(setEvenementCollection))
+          //   .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
+        }
+      }
+
+  }, [etatAuthentifie, setIdmg])
   
   return (
     <LayoutApplication>
@@ -140,6 +149,7 @@ function App() {
             workers={workers} 
             usager={usager}
             etatConnexion={etatConnexion} 
+            etatAuthentifie={etatAuthentifie}
             page={page}
             evenementCollection={evenementCollection}
             evenementFichier={evenementFichier}
@@ -181,9 +191,9 @@ async function importerWorkers(setWorkers) {
   setWorkers(workers)
 }
 
-async function connecter(workers, setUsager, setEtatConnexion) {
+async function connecter(workers, setUsager, setEtatConnexion, setFormatteurPret) {
   const { connecter: connecterWorker } = await import('./workers/connecter')
-  return connecterWorker(workers, setUsager, setEtatConnexion)
+  return connecterWorker(workers, setUsager, setEtatConnexion, setFormatteurPret)
 }
 
 function initDb() {

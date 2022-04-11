@@ -24,10 +24,12 @@ function Accueil(props) {
 
     console.debug("Accueil props : %O", props)
 
-    const { workers, etatConnexion, evenementCollection, evenementFichier, usager, downloadAction } = props
+    const { workers, etatConnexion, etatAuthentifie, evenementCollection, evenementFichier, usager, downloadAction } = props
     const [ favoris, setFavoris ] = useState('')
 
-    useEffect(()=>{ if(etatConnexion) chargerFavoris(workers, setFavoris) }, [workers, etatConnexion, setFavoris])
+    useEffect(()=>{ 
+        if(etatConnexion && etatAuthentifie) chargerFavoris(workers, setFavoris) 
+    }, [workers, etatConnexion, etatAuthentifie, setFavoris])
 
     useEffect(()=>{
         if(!evenementCollection || !evenementCollection.message) return 

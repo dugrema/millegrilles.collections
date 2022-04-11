@@ -4,23 +4,6 @@ const mqdao = require('./mqdao.js')
 
 // const debug = debugLib('appSocketIo')
 
-const routingKeysPrive = [
-  'appSocketio.nodejs',  // Juste pour trouver facilement sur exchange - debug
-]
-
-const ROUTING_KEYS_FICHIERS = [
-  'evenement.grosfichiers.majFichier',
-]
-
-const ROUTING_KEYS_COLLECTIONS = [
-  'evenement.grosfichiers.majCollection',
-]
-
-const EVENEMENTS_SUPPORTES = [
-  ...ROUTING_KEYS_FICHIERS,
-  ...ROUTING_KEYS_COLLECTIONS,
-]
-
 function configurerEvenements(socket) {
 
   return {
@@ -48,13 +31,16 @@ function configurerEvenements(socket) {
       { eventName: 'transcoderVideo', callback: (params, cb) => traiter(socket, mqdao.transcoderVideo, {params, cb}) },
 
       // Evenements
-      {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},
-      {eventName: 'ecouterMajCollections', callback: (_, cb) => {mqdao.ecouterMajCollections(socket, cb)}},
-      {eventName: 'ecouterTranscodageProgres', callback: (params, cb) => {mqdao.ecouterTranscodageProgres(socket, params, cb)}},
-      {eventName: 'retirerTranscodageProgres', callback: (params, cb) => {mqdao.retirerTranscodageProgres(socket, params, cb)}},
+      // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},
+      // {eventName: 'ecouterMajCollections', callback: (_, cb) => {mqdao.ecouterMajCollections(socket, cb)}},
+      // {eventName: 'ecouterTranscodageProgres', callback: (params, cb) => {mqdao.ecouterTranscodageProgres(socket, params, cb)}},
+      // {eventName: 'retirerTranscodageProgres', callback: (params, cb) => {mqdao.retirerTranscodageProgres(socket, params, cb)}},
+
     ],
     listenersProteges: [
       // PROTEGE
+      {eventName: 'enregistrerCallbackMajFichier', callback: (params, cb) => {ecouterEvenementsActivationFingerprint(socket, params, cb)}},
+      {eventName: 'retirerCallbackMajFichier', callback: (params, cb) => {retirerEvenementsActivationFingerprint(socket, params, cb)}},
       { eventName: 'indexerContenu', callback: (params, cb) => traiter(socket, mqdao.indexerContenu, {params, cb}) },
     ]
   }
@@ -64,6 +50,43 @@ function configurerEvenements(socket) {
 async function traiter(socket, methode, {params, cb}) {
   const reponse = await methode(socket, params)
   if(cb) cb(reponse)
+}
+
+const CONST_ROUTINGKEYS_MAJFICHIER = ['evenement.grosfichiers.majFichier']
+
+const mapperActivationFingerprint = {
+  exchanges: ['2.prive'],
+  routingKeyTest: /^evenement\.grosfichiers\.majFichier$/,
+  mapRoom: (message, _rk, _exchange) => {
+    const tuuid = message.tuuid
+    if(tuuid) {
+      return `2.prive/evenement.grosfichiers.majFichier/${tuuid}`
+    }
+  }
+}
+
+function ecouterEvenementsActivationFingerprint(socket, params, cb) {
+  const tuuid = params.tuuid
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
+    exchanges: ['2.prive'],
+    roomParam: tuuid,
+    mapper: mapperActivationFingerprint,
+  }
+
+  debug("ecouterEvenementsActivationFingerprint : %O", opts)
+  socket.subscribe(opts, cb)
+}
+
+function retirerEvenementsActivationFingerprint(socket, params, cb) {
+  const tuuid = params.tuuid
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
+    exchanges: ['2.prive'],
+    roomParam: tuuid,
+  }
+  debug("retirerEvenementsActivationFingerprint sur %O", opts)
+  socket.unsubscribe(opts, cb)
 }
 
 module.exports = { configurerEvenements }

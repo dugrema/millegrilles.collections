@@ -43,12 +43,12 @@ function preparerPreviews(tuuidSelectionne, liste, support) {
     const mimetypeSelectionne = versionCourante.mimetype || '',
           mimetypeBase = mimetypeSelectionne.split('/').shift()
 
-    if(mimetypeBase === 'video') {
+    if(mimetypeBase === 'image') {
+        // Mode carousel d'images
+        return liste.filter(filtrerTypesPreview).map(item=>mapFichier(item, optionsLoader))
+    } else {
         // Mode video player - 1 seul fichier
         return [mapFichier(fichierSelectionne, optionsLoader)]
-    } else {
-        // Mode carousel
-        return liste.filter(filtrerTypesPreview).map(item=>mapFichier(item, optionsLoader))
     }
 }
 
@@ -65,7 +65,7 @@ function filtrerTypesPreview(item) {
         const mimetype = item.mimetype.toLowerCase(),
               mimetypeBase = mimetype.split('/').shift()
         
-        if(mimetype === 'application/pdf') return true
+        // if(mimetype === 'application/pdf') return true
         if(mimetypeBase === 'image') return true
     }
     return false
