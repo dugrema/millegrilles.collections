@@ -13,22 +13,22 @@ export function setWorkers(workers) {
 export async function getThumbnail(fuuid, opts) {
     opts = opts || {}
 
-    // Verifier si le thumbnail est deja dans collections.thumbnails
-    try {
-        const thumbnailCache = await getIdbThumbnail(fuuid)
-        if(thumbnailCache && thumbnailCache.blob) {
-            // console.debug("!!! Thumbnail cache : %O", thumbnailCache)
-            return thumbnailCache.blob
-        }
-    } catch(err) {
-        console.error('Erreur chargement thumbnail fichier %s', fuuid)
-    }
+    // // Verifier si le thumbnail est deja dans collections.thumbnails
+    // try {
+    //     const thumbnailCache = await getIdbThumbnail(fuuid)
+    //     if(thumbnailCache && thumbnailCache.blob) {
+    //         // console.debug("!!! Thumbnail cache : %O", thumbnailCache)
+    //         return thumbnailCache.blob
+    //     }
+    // } catch(err) {
+    //     console.error('Erreur chargement thumbnail fichier %s', fuuid)
+    // }
 
     const blob = await getFichierChiffre(fuuid, opts)
-    if(blob) {
-        // console.debug("Sauvegarder le thumbnail dechiffre : %O", blob)
-        saveThumbnailDechiffre(fuuid, blob)
-    }
+    // if(blob) {
+    //     // console.debug("Sauvegarder le thumbnail dechiffre : %O", blob)
+    //     saveThumbnailDechiffre(fuuid, blob)
+    // }
 
     return blob
 }

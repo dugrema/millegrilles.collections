@@ -144,6 +144,7 @@ function NavigationRecherche(props) {
             />
 
             <PreviewFichiers 
+                workers={workers}
                 showPreview={showPreview} 
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
