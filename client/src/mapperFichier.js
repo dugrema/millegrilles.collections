@@ -1,3 +1,5 @@
+import {loadImageChiffree, imageResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
+
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>
 const ICONE_FICHIER = <i className="fa fa-file fa-lg"/>
 const ICONE_FICHIER_PDF = <i className="fa fa-file-pdf-o fa-lg"/>
@@ -13,6 +15,8 @@ const Icones = {
     ICONE_FICHIER_VIDEO, ICONE_FICHIER_TEXT, ICONE_FICHIER_ZIP, ICONE_QUESTION,
 }
 
+const CONST_TIMEOUT_THUMBNAIL_BLOB = 15000  // Duree d'attente avant cleanup d'un blob de thumbnail (pour reutilisation)
+
 export { Icones }
 
 export function mapper(row, workers) {
@@ -26,7 +30,8 @@ export function mapper(row, workers) {
 
     let thumbnailIcon = '',
         ids = {},
-        thumbnailLoader = null
+        miniThumbnailLoader = null,
+        smallThumbnailLoader = null
     if(!version_courante) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
@@ -41,36 +46,10 @@ export function mapper(row, workers) {
         if(workers && images) {
             const thumbnail = images.thumb || images.thumbnail,
                   small = images.small || images.poster
-            let miniLoader = null, smallLoader
-            if(thumbnail) {
-                if (thumbnail.data_chiffre) {
-                    // console.debug("!!! Loader thumbnail chiffre : %O", thumbnail)
-                    miniLoader = loadThumbnailChiffre(thumbnail.hachage, workers, {dataChiffre: thumbnail.data_chiffre})
-                }
+            if(thumbnail && thumbnail.data_chiffre) {
+                miniThumbnailLoader = loadImageChiffree(workers.traitementFichiers, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
             }
-            // if(small) {
-            //     smallLoader = loadThumbnailChiffre(small.hachage, workers)
-            // }
-            thumbnailLoader = {
-                load: async (setSrc, opts) => {
-                    let loadSmall = (opts.mini?false:true)
-                    try {
-                        await miniLoader.load(setSrc)
-                    } catch(err) {
-                        console.error("Erreur chargement mini thumbnail pour image %s : %O", tuuid, err)
-                        loadSmall = true  // Tenter de charger small en remplacement
-                    }
-
-                    if(loadSmall) {
-                        smallLoader = loadThumbnailChiffre(small.hachage, workers)
-                        await smallLoader.load(setSrc)
-                    }
-                },
-                unload: () => {
-                    if(miniLoader) miniLoader.unload()
-                    if(smallLoader) smallLoader.unload()
-                }
-            }
+            if(small) smallThumbnailLoader = imageResourceLoader(workers.traitementFichiers, thumbnail, small.hachage)
         }
 
         if(mimetype === 'application/pdf') {
@@ -100,9 +79,12 @@ export function mapper(row, workers) {
         dateAjout: date_version || date_creation,
         mimetype: ids.folderId?'Repertoire':mimetype_fichier,
         // thumbnailSrc,
-        thumbnailLoader,
-        thumbnailIcon,
-        thumbnailCaption: nom,
+        thumbnail: {
+            miniLoader: miniThumbnailLoader,
+            smallLoader: smallThumbnailLoader,
+            thumbnailIcon,
+            thumbnailCaption: nom,
+        },
         duree,
         fuuid: fuuid_v_courante,
         version_courante,
@@ -126,7 +108,7 @@ export function mapperRecherche(row, workers) {
 
     let thumbnailIcon = '',
         ids = {},
-        thumbnailLoader = null
+        miniThumbnailLoader = null
     if(!fuuid) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
@@ -140,23 +122,8 @@ export function mapperRecherche(row, workers) {
 
         if(workers && thumb_data && thumb_hachage_bytes) {
             let loader = null
-            if (thumb_data) {
-                // console.debug("!!! Loader thumbnail chiffre : %O", thumbnail)
-                loader = loadThumbnailChiffre(thumb_hachage_bytes, workers, {dataChiffre: thumb_data})
-            }
-            thumbnailLoader = {
-                load: async (setSrc, opts) => {
-                    if(loader) {
-                        try {
-                            await loader.load(setSrc)
-                        } catch(err) {
-                            console.error("Erreur chargement mini thumbnail pour image %s : %O", tuuid, err)
-                        }
-                    }
-                },
-                unload: () => {
-                    if(loader) loader.unload()
-                }
+            if(thumb_hachage_bytes && thumb_data) {
+                miniThumbnailLoader = loadImageChiffree(workers.traitementFichiers, thumb_hachage_bytes, {dataChiffre: thumb_data})
             }
         }
 
@@ -187,9 +154,14 @@ export function mapperRecherche(row, workers) {
         dateAjout: date_version || date_creation,
         mimetype: ids.folderId?'Repertoire':mimetype_fichier,
         // thumbnailSrc,
-        thumbnailLoader,
-        thumbnailIcon,
-        thumbnailCaption: nom,
+        // thumbnailLoader,
+        // thumbnailIcon,
+        // thumbnailCaption: nom,
+        thumbnail: {
+            miniLoader: miniThumbnailLoader,
+            thumbnailIcon,
+            thumbnailCaption: nom,
+        },
         version_courante,
         fuuid,
         favoris,
@@ -207,30 +179,118 @@ export function onContextMenu(event, value, setContextuel) {
     setContextuel(params)
 }
 
-function loadThumbnailChiffre(fuuid, workers, opts) {
-    // console.debug("!!! loadThumbnailChiffre workers : %O", workers)
-    const { traitementFichiers } = workers
-    const blobPromise = traitementFichiers.getThumbnail(fuuid, opts)
-        .then(blob=>{
-            // console.debug("!!! BLOB cree : %O", blob)
-            return URL.createObjectURL(blob)
-        })
-        .catch(err=>{
-            console.error("Erreur creation blob thumbnail %s : %O", fuuid, err)
-        })
+// // Charge un thumbnail/image. 
+// // Utilise un cache/timer pour reutiliser le blob si l'image est chargee/dechargee rapidement.
+// function loadImageChiffree(workers, fuuid, opts) {
+//     opts = opts || {}
+//     const { traitementFichiers } = workers
+//     const { delay } = opts
+
+//     let blobPromise = null
+//     let timeoutCleanup = null
     
-    return {
-        load: async setSrc => {
-            opts = opts || {}
-            const urlBlob = await blobPromise
-            // console.debug("!!! Blob charger pour thumbnail %s (opts: %O)", fuuid, opts)
-            setSrc(urlBlob)
-        },
-        unload: async () => {
-            // console.debug("Unload thumbnail %s", fuuid)
-            const urlBlob = await blobPromise
-            // console.debug("Cleanup URL blob : %O", urlBlob)
-            if(urlBlob) URL.revokeObjectURL(urlBlob)
-        }
-    }
-}
+//     return {
+//         load: async setSrc => {
+//             opts = opts || {}
+
+//             if(!blobPromise) {
+//                 console.debug("Reload blob pour %s", fuuid)
+//                 blobPromise = reloadThumbnail(traitementFichiers.getThumbnail, fuuid, opts)
+//             } else if(timeoutCleanup) {
+//                 console.debug("Reutilisation blob pour thumbnail %s", fuuid)
+//                 clearTimeout(timeoutCleanup)
+//                 timeoutCleanup = null
+//             }
+
+//             try {
+//                 var urlBlob = await blobPromise
+//                 // console.debug("!!! Blob charger pour thumbnail %s (opts: %O)", fuuid, opts)
+
+//                 if(delay) await new Promise(resolve=>(setTimeout(resolve, 2000)))
+
+//                 if(setSrc) setSrc(urlBlob)
+//                 return urlBlob
+//             } catch(err) {
+//                 // Cleanup
+//                 blobPromise = null
+//                 if(urlBlob) URL.revokeObjectURL(urlBlob)
+//                 throw err
+//             }
+//         },
+//         unload: async () => {
+//             console.debug("Unload thumbnail %s", fuuid)
+//             if(blobPromise) {
+//                 try {
+//                     const urlBlob = await blobPromise
+//                     // console.debug("Cleanup URL blob : %O", urlBlob)
+//                     if(urlBlob) {
+//                         timeoutCleanup = setTimeout(()=>{
+//                             console.debug("Cleanup blob pour %s", fuuid)
+//                             URL.revokeObjectURL(urlBlob)
+//                             blobPromise = null  // Vider promise, permet un reload
+//                             timeoutCleanup = null
+//                         }, CONST_TIMEOUT_THUMBNAIL_BLOB)
+//                     }
+//                 } catch(err) {
+//                     console.debug("Erreur nettoyage blob %s : %O", fuuid, err) 
+//                 }
+//             }
+//         }
+//     }
+// }
+
+// async function reloadThumbnail(getThumbnail, fuuid, opts) {
+//     const blob = await getThumbnail(fuuid, opts)
+//     return URL.createObjectURL(blob)
+// }
+
+// // Genere un loader concurrentiel qui affiche le premier de mini/small et tente
+// // d'afficher small lorsqu'il est pret
+// function imageResourceLoader(workers, thumbnail, imageFuuid) {
+//     const thumbnailFuuid = thumbnail.hachage
+
+//     // Preparation du mini-thumbnail (pour fallback ou attente de download) et de l'image pleine grandeur
+//     const miniLoader = loadImageChiffree(workers, thumbnailFuuid, {dataChiffre: thumbnail.data_chiffre})
+//     const imageLoader = loadImageChiffree(workers, imageFuuid)
+
+//     const loader = {
+//         load: async setSrc => {
+
+//             const miniPromise = miniLoader.load()
+//             const imagePromise = imageLoader.load()
+
+//             // Charger le premier blob qui est pret
+//             try {
+//                 const blobPret = await Promise.any([imagePromise, miniPromise])
+//                 setSrc(blobPret)
+
+//                 // Attendre que le blob de l'image complete soit pret, puis afficher
+//                 // Note : aucun effet si le premier blob pret etait l'image
+//                 try {
+//                     const blobImage = await imagePromise
+//                     setSrc(blobImage)
+//                 } catch(err) {
+//                     if(err && err.response && err.response.status === 404) {
+//                         console.warn("Image %s inconnue (404)", imageFuuid)
+//                     } else {
+//                         console.debug("Erreur chargement de l'image %s : %O", imageFuuid, err)
+//                     }
+//                 }
+    
+//             } catch(err) {
+//                 // Aucune image n'a charge
+//                 console.error("Erreur chargement image %O", err)
+
+//                 // Tenter de trouver un blob valide
+//                 const blobPret = await Promise.race([miniPromise, imagePromise])
+//                 setSrc(blobPret)
+//             }
+//         },
+//         unload: () => {
+//             miniLoader.unload().catch(err=>console.debug("Erreur unload mini thumbnail %s", thumbnailFuuid))
+//             imageLoader.unload().catch(err=>console.debug("Erreur unload image %s", imageFuuid))
+//         }
+//     }
+
+//     return loader
+// }
