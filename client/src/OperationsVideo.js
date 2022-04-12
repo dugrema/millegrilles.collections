@@ -264,10 +264,6 @@ async function convertirVideo(workers, fichier, params, setTranscodageVideo, opt
     // Ajouter permission de dechiffrage
     commande.permission_duree = 30 * 60  // 30 minutes
     commande.permission_hachage_bytes = [fichier.fuuid_v_courante]
-  } else {
-    // Recuperer une permission
-    const permission = await connexion.getPermission([commande.fuuid])
-    commande.permission = permission
   }
 
   console.debug("Commande transcodage : %O", commande)
@@ -285,13 +281,15 @@ function Videos(props) {
 
   const videosTries = Object.values(videos).sort(sortVideos)
 
+  console.debug("Videos tries : %O", videosTries)
+
   return (
     <>
       <h3>Formats disponibles</h3>
       {videosTries.map(video=>{
         return (
           <AfficherLigneFormatVideo 
-            key={video.hachage}
+            key={video.fuuid_video}
             fichier={fichier}
             video={video}
             playVideo={props.playVideo}

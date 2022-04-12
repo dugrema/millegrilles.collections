@@ -1,4 +1,5 @@
-import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
+import {loadFichierChiffre, fileResourceLoader, imageResourceLoader, videoResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
+import {supporteFormatWebp, supporteFormatWebm} from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>
 const ICONE_FICHIER = <i className="fa fa-file fa-lg"/>
@@ -17,6 +18,9 @@ const Icones = {
 
 const CONST_TIMEOUT_THUMBNAIL_BLOB = 15000  // Duree d'attente avant cleanup d'un blob de thumbnail (pour reutilisation)
 
+const supporteWebm = supporteFormatWebm(),
+      supporteWebp = supporteFormatWebp()
+
 export { Icones }
 
 export function mapper(row, workers) {
@@ -32,7 +36,9 @@ export function mapper(row, workers) {
         ids = {},
         miniThumbnailLoader = null,
         smallThumbnailLoader = null,
-        loader = null
+        loader = null,
+        imageLoader = null,
+        videoLoader = null
     if(!version_courante) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
@@ -55,6 +61,12 @@ export function mapper(row, workers) {
                     miniThumbnailLoader = loadFichierChiffre(getFichierChiffre, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
                 }
                 if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, {thumbnail})
+
+                imageLoader = imageResourceLoader(getFichierChiffre, images, {supporteWebp})
+
+                if(video) {
+                    videoLoader = videoResourceLoader(getFichierChiffre, video, {supporteWebm})
+                }
             }
             
             // Loader du fichier source (principal), supporte thumbnail pour chargement
@@ -95,6 +107,8 @@ export function mapper(row, workers) {
             thumbnailCaption: nom,
         },
         loader,
+        imageLoader,
+        videoLoader,
         duree,
         fuuid: fuuid_v_courante,
         version_courante,

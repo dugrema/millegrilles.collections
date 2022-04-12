@@ -258,7 +258,8 @@ function InfoFichier(props) {
 
     const valueItem = props.valueItem || {}
     const thumbnail = valueItem.thumbnail || {}
-    const {thumbnailIcon, smallLoader} = thumbnail
+    const {thumbnailIcon} = thumbnail
+    const imageLoader = valueItem.imageLoader
 
     const fichier = props.value || {}
     const nom = valueItem.nom
@@ -270,7 +271,7 @@ function InfoFichier(props) {
         <div>
             <Row>
                 <Col xs={12} md={4}>
-                    <Thumbnail loader={smallLoader} placeholder={thumbnailIcon}>
+                    <Thumbnail loader={imageLoader} placeholder={thumbnailIcon}>
                         <span></span>
                     </Thumbnail>
                 </Col>
