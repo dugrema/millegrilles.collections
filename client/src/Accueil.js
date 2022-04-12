@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 
 import Breadcrumb from 'react-bootstrap/Breadcrumb'
 import Row from 'react-bootstrap/Row'
@@ -55,7 +55,8 @@ function Accueil(props) {
             <NavigationFavoris 
                 favoris={favoris} 
                 workers={workers} 
-                etatConnexion={etatConnexion}
+                etatConnexion={etatAuthentifie}
+                etatAuthentifie={etatAuthentifie}
                 evenementFichier={evenementFichier}
                 evenementCollection={evenementCollection}
                 usager={usager}
@@ -89,7 +90,8 @@ function NavigationFavoris(props) {
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ isListeComplete, setListeComplete ] = useState(false)
     
-    const triColonnes = colonnes?colonnes.tri||{}:{}
+    // Extraire tri pour utiliser comme trigger pour useEffect
+    const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
 
     // Callbacks
     const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
@@ -183,8 +185,7 @@ function NavigationFavoris(props) {
         openDropzone()
     }, [openDropzone])
 
-    const suivantCb = useCallback(event=>{
-        console.debug("!!! Call suivant, liste actuelle : %O", liste)
+    const suivantCb = useCallback(()=>{
         if(!cuuidCourant) {
             // Favoris - on n'a pas de suivant pour favoris
         } else if(etatConnexion) {

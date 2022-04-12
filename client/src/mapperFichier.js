@@ -1,4 +1,4 @@
-import {loadImageChiffree, imageResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
+import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
 
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>
 const ICONE_FICHIER = <i className="fa fa-file fa-lg"/>
@@ -31,7 +31,8 @@ export function mapper(row, workers) {
     let thumbnailIcon = '',
         ids = {},
         miniThumbnailLoader = null,
-        smallThumbnailLoader = null
+        smallThumbnailLoader = null,
+        loader = null
     if(!version_courante) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
@@ -43,13 +44,21 @@ export function mapper(row, workers) {
         ids.fileId = tuuid    // Fichier, tuuid est le fileId
         const mimetypeBase = mimetype.split('/').shift()
 
-        if(workers && images) {
-            const thumbnail = images.thumb || images.thumbnail,
-                  small = images.small || images.poster
-            if(thumbnail && thumbnail.data_chiffre) {
-                miniThumbnailLoader = loadImageChiffree(workers.traitementFichiers, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
+        if(workers && workers.traitementFichiers) {
+            const getFichierChiffre = workers.traitementFichiers.getFichierChiffre
+
+            // Thumbnails pour navigation
+            if(images || video) {
+                const thumbnail = images.thumb || images.thumbnail,
+                    small = images.small || images.poster
+                if(thumbnail && thumbnail.data_chiffre) {
+                    miniThumbnailLoader = loadFichierChiffre(getFichierChiffre, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
+                }
+                if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, {thumbnail})
             }
-            if(small) smallThumbnailLoader = imageResourceLoader(workers.traitementFichiers, thumbnail, small.hachage)
+            
+            // Loader du fichier source (principal), supporte thumbnail pour chargement
+            loader = loadFichierChiffre(getFichierChiffre, fuuid_v_courante)
         }
 
         if(mimetype === 'application/pdf') {
@@ -85,6 +94,7 @@ export function mapper(row, workers) {
             thumbnailIcon,
             thumbnailCaption: nom,
         },
+        loader,
         duree,
         fuuid: fuuid_v_courante,
         version_courante,
@@ -123,7 +133,7 @@ export function mapperRecherche(row, workers) {
         if(workers && thumb_data && thumb_hachage_bytes) {
             let loader = null
             if(thumb_hachage_bytes && thumb_data) {
-                miniThumbnailLoader = loadImageChiffree(workers.traitementFichiers, thumb_hachage_bytes, {dataChiffre: thumb_data})
+                miniThumbnailLoader = loadFichierChiffre(workers.traitementFichiers, thumb_hachage_bytes, {dataChiffre: thumb_data})
             }
         }
 

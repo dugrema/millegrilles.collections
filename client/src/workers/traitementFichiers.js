@@ -10,11 +10,11 @@ export function setWorkers(workers) {
     _workers = workers
 }
 
-export async function getThumbnail(fuuid, opts) {
-    opts = opts || {}
-    const blob = await getFichierChiffre(fuuid, opts)
-    return blob
-}
+// export async function getThumbnail(fuuid, opts) {
+//     opts = opts || {}
+//     const blob = await getFichierChiffre(fuuid, opts)
+//     return blob
+// }
 
 export async function getFichierChiffre(fuuid, opts) {
     opts = opts || {}
@@ -83,6 +83,7 @@ export async function getFichierChiffre(fuuid, opts) {
    Retourne { src } qui peut etre un url ou un blob. 
 */
 export function resLoader(fichier, typeRessource, opts) {
+    console.debug("Res loader fichier %s : typeRessource %O, opts %O", fichier, typeRessource, opts)
     opts = opts || {}
     const { fileId } = fichier
     const versionCourante = fichier.version_courante || {}

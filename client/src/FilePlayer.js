@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 
 import { ModalViewer } from '@dugrema/millegrilles.reactjs'
 import {trouverLabelImage} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
-import {loadImageChiffree, imageResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
+import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
 
 import { resLoader } from './workers/traitementFichiers.js'
 
 function PreviewFichiers(props) {
+    console.debug("PreviewFichiers proppies : %O", props)
 
     const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview, support } = props
 
@@ -22,6 +23,8 @@ function PreviewFichiers(props) {
             setListe([])
         }
     }, [workers, tuuidSelectionne, fichiers, showPreview, support, setListe] )
+
+    console.debug("PreviewFichiers liste : %O", liste)
 
     return (
         <ModalViewer 
@@ -50,16 +53,17 @@ function preparerPreviews(workers, tuuidSelectionne, liste, support) {
         // Mode carousel d'images
         return liste.filter(filtrerTypesPreview).map(item=>mapImage(workers, item, optionsLoader))
     } else {
-        // Mode video player - 1 seul fichier
+        // Mode lecteur fichier / video player - 1 seul fichier
         return [mapFichier(fichierSelectionne, optionsLoader)]
     }
 }
 
 function mapFichier(item, optionsLoader) {
+    optionsLoader = optionsLoader || {}
     return {
         ...item,
         tuuid: item.fileId,
-        loader: (typeRessource, opts) => resLoader(item, typeRessource, optionsLoader)
+        // loader: (typeRessource, opts) => resLoader(item, typeRessource, {...optionsLoader, ...opts})
     }
 }
 
@@ -78,9 +82,9 @@ function mapImage(workers, item, optionsLoader) {
     let loader = ''
     if(image && image.hachage) {
         const imageFuuid = image.hachage
-        loader = imageResourceLoader(traitementFichiersWorker, thumbnail, imageFuuid)
+        loader = fileResourceLoader(traitementFichiersWorker.getFichierChiffre, imageFuuid, {thumbnail})
     } else if(thumbnail && thumbnail.hachage && thumbnail.data_chiffre) {
-        loader = loadImageChiffree(traitementFichiersWorker, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
+        loader = loadFichierChiffre(traitementFichiersWorker.getFichierChiffre, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
     } else {
         console.debug("Aucune information d'image pour %O", item)
         return null
@@ -89,7 +93,6 @@ function mapImage(workers, item, optionsLoader) {
     return {
         ...item,
         tuuid: item.fileId,
-        // loader: (typeRessource, opts) => resLoader(item, typeRessource, optionsLoader)
         loader,
     }
 }
