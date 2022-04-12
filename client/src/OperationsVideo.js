@@ -97,7 +97,7 @@ export function ConversionVideo(props) {
       if(fichier && connexion && etatConnexion) {
         const fuuid = fichier.fuuid_v_courante
         // const versionCourante = fichier.version_courante || {}
-        if(fuuid) {
+        if(fuuid && fichier.video) {
           console.debug("Ecouter transcodage %s", fuuid)
           connexion.enregistrerCallbackTranscodageProgres(fuuid, evenementTranscodage)
           return () => {
