@@ -89,6 +89,8 @@ function NavigationFavoris(props) {
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ isListeComplete, setListeComplete ] = useState(false)
     
+    const triColonnes = colonnes?colonnes.tri||{}:{}
+
     // Callbacks
     const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
     const showSupprimerModalFermer = useCallback(()=>{ setShowSupprimerModal(false) }, [setShowSupprimerModal])
@@ -144,16 +146,16 @@ function NavigationFavoris(props) {
         if(!favoris || !etatConnexion) return  // Rien a faire
         if(!cuuidCourant) {
             // Utiliser liste de favoris
-            setListe( preprarerDonnees(favoris, workers, {trier: trierNom}) )
+            setListe( preprarerDonnees(favoris, workers, {tri: triColonnes}) )
         } else if(etatConnexion) {
-            chargerCollection(workers, cuuidCourant, usager)
+            chargerCollection(workers, cuuidCourant, usager, {tri: triColonnes})
                 .then(resultat=>{
                     setListe(resultat.data)
                     setListeComplete(resultat.estComplet)
                 })
                 .catch(erreurCb)
         }
-    }, [workers, usager, etatConnexion, favoris, setListe, cuuidCourant, setListeComplete, erreurCb])
+    }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, erreurCb])
     
     // Detect support divers de l'appareil/navigateur
     useEffect(()=>detecterSupport(setSupport), [setSupport])
@@ -186,7 +188,7 @@ function NavigationFavoris(props) {
         if(!cuuidCourant) {
             // Favoris - on n'a pas de suivant pour favoris
         } else if(etatConnexion) {
-            chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit: 20})
+            chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit: 20, tri: triColonnes})
                 .then(resultat=>{
                     console.debug("!!! Resultat call suivant : %O", resultat)
                     setListe(resultat.data)
@@ -194,7 +196,25 @@ function NavigationFavoris(props) {
                 })
                 .catch(erreurCb)
         }
-    }, [workers, liste, cuuidCourant, etatConnexion, usager, setListe, setListeComplete, erreurCb])
+    }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
+
+    const enteteOnClickCb = useCallback(colonne=>{
+        console.debug("Click entete nom colonne : %s", colonne)
+        const triCourant = {...colonnes.tri}
+        const colonnesCourant = {...colonnes}
+        const colonneCourante = triCourant.colonne
+        let ordre = triCourant.ordre || 1
+        if(colonne === colonneCourante) {
+            // Toggle direction
+            ordre = ordre * -1
+        } else {
+            ordre = 1
+        }
+        colonnesCourant.tri = {colonne, ordre}
+        console.debug("Sort key maj : %O", colonnesCourant)
+        setColonnes(colonnesCourant)
+        // setListe([])  // Reset la liste
+    }, [colonnes, setColonnes, setListe])
 
     useEffect(()=>{
         if(evenementCollection && evenementCollection.message) {
@@ -247,9 +267,7 @@ function NavigationFavoris(props) {
                 onDoubleClick={onDoubleClick}
                 onContextMenu={(event, value)=>onContextMenu(event, value, setContextuel)}
                 onSelection={onSelectionLignes}
-                onClickEntete={colonne=>{
-                    // console.debug("Entete click : %s", colonne)
-                }}
+                onClickEntete={enteteOnClickCb}
                 suivantCb={(!cuuidCourant||isListeComplete)?'':suivantCb}
             />
 
@@ -463,6 +481,7 @@ function BoutonsUpload(props) {
 }
 
 function preparerColonnes() {
+
     const params = {
         ordreColonnes: ['nom', 'taille', 'mimetype', 'dateAjout', 'boutonDetail'],
         paramsColonnes: {
@@ -486,12 +505,70 @@ function trierNom(a, b) {
     return nomA.localeCompare(nomB)
 }
 
+function trierTaille(a, b) {
+    const nomA = a.nom?a.nom:'',
+          nomB = b.nom?b.nom:''
+    const tailleA = a.taille?a.taille:0,
+          tailleB = b.taille?b.taille:0
+    if(tailleA !== tailleB) {
+        return tailleA - tailleB
+    }
+    if(nomA === nomB) return 0
+    if(!nomA) return 1
+    if(!nomB) return -1
+    return nomA.localeCompare(nomB)
+}
+
+function trierDateAjout(a, b) {
+    const nomA = a.nom?a.nom:'',
+          nomB = b.nom?b.nom:''
+    const dateAjoutA = a.dateAjout?a.dateAjout:0,
+          dateAjoutB = b.dateAjout?b.dateAjout:0
+    if(dateAjoutA !== dateAjoutB) {
+        return dateAjoutA - dateAjoutB
+    }
+    if(nomA === nomB) return 0
+    if(!nomA) return 1
+    if(!nomB) return -1
+    return nomA.localeCompare(nomB)
+}
+
+function trierMimetype(a, b) {
+    const nomA = a.nom?a.nom:'',
+          nomB = b.nom?b.nom:''
+    const mimetypeA = a.mimetype?a.mimetype:'',
+          mimetypeB = b.mimetype?b.mimetype:''
+    if(mimetypeA !== mimetypeB) {
+        if(!mimetypeA) return 1
+        if(!mimetypeB) return -1
+        return mimetypeA.localeCompare(mimetypeB)
+    }
+    if(nomA === nomB) return 0
+    if(!nomA) return 1
+    if(!nomB) return -1
+    return nomA.localeCompare(nomB)
+}
+
 function preprarerDonnees(liste, workers, opts) {
     opts = opts || {}
+    const tri = opts.tri || {}
+
     const listeMappee = liste.map(item=>mapper(item, workers))
 
-    if(opts.trier) {
-        listeMappee.sort(opts.trier)
+    let triFunction = null
+    switch(tri.colonne) {
+        case 'nom': triFunction = trierNom; break
+        case 'taille': triFunction = trierTaille; break
+        case 'mimetype': triFunction = trierMimetype; break
+        case 'dateAjout': triFunction = trierDateAjout; break
+        default: triFunction = null
+    }
+
+    if(triFunction) {
+        listeMappee.sort(triFunction)
+        if(tri.ordre < 0) {
+            listeMappee.reverse()
+        }
     }
 
     return listeMappee
@@ -538,8 +615,23 @@ async function chargerFavoris(workers, setFavoris) {
 
 async function chargerCollection(workers, cuuid, usager, opts) {
     opts = opts || {}
-    const { listeCourante } = opts
+    const { listeCourante, tri } = opts
     const limit = opts.limit || 20
+
+    let sort_keys = null
+    if(tri) {
+        let nomColonne
+        switch(tri.colonne) {
+            case 'nom': nomColonne = 'nom'; break
+            case 'taille': nomColonne = 'version_courante.taille'; break
+            case 'mimetype': nomColonne = 'mimetype'; break
+            case 'dateAjout': nomColonne = '_mg-creation'; break
+        }
+
+        if(nomColonne) {
+            sort_keys = [{colonne: nomColonne, ordre: tri.ordre}]
+        }
+    }
 
     let skip = 0
     if(listeCourante) {
@@ -548,7 +640,7 @@ async function chargerCollection(workers, cuuid, usager, opts) {
 
     console.debug("Charger collection %s (offset: %s)", cuuid, skip)
     const { connexion, chiffrage } = workers
-    const reponse = await connexion.getContenuCollection(cuuid, {skip, limit})
+    const reponse = await connexion.getContenuCollection(cuuid, {skip, limit, sort_keys})
     // console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
     const { documents } = reponse
 
