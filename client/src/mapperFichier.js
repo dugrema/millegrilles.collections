@@ -16,10 +16,11 @@ const Icones = {
     ICONE_FICHIER_VIDEO, ICONE_FICHIER_TEXT, ICONE_FICHIER_ZIP, ICONE_QUESTION,
 }
 
-const CONST_TIMEOUT_THUMBNAIL_BLOB = 15000  // Duree d'attente avant cleanup d'un blob de thumbnail (pour reutilisation)
-
-const supporteWebm = supporteFormatWebm(),
-      supporteWebp = supporteFormatWebp()
+// Detection format media
+const supporteWebm = supporteFormatWebm()
+let supporteWebp = false
+supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.warn("Erreur detection webp : %O", err))
+console.debug("Support webm : %O", supporteWebm)
 
 export { Icones }
 
