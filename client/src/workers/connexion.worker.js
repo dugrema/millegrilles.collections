@@ -17,8 +17,9 @@ function getRecents(params) {
   return ConnexionClient.emitBlocking('getRecents', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
 
-function getContenuCollection(tuuidsDocuments) {
-  const params = {tuuid_collection: tuuidsDocuments}
+function getContenuCollection(tuuidsDocuments, opts) {
+  opts = opts || {}
+  const params = {...opts, tuuid_collection: tuuidsDocuments}
   return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
 }
 

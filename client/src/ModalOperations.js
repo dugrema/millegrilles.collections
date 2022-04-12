@@ -128,7 +128,7 @@ export function DeplacerModal(props) {
         if(tuuidSelectionne) {
             connexion.deplacerFichiersCollection(cuuid, tuuidSelectionne, selection)
                 .then(reponse=>{
-                    console.debug("Reponse deplacerFichiersCollection : %O", reponse)
+                    // console.debug("Reponse deplacerFichiersCollection : %O", reponse)
                     if(reponse.ok === false) {
                         console.error("Erreur deplacerFichiersCollection : %O", reponse.message)
                     } else {
@@ -203,13 +203,12 @@ export function InfoModal(props) {
     const [doc, setDoc] = useState('')
 
     useEffect(()=>{
-        console.debug("!!! !!! Update fichier : %O", evenementFichier)
         if(!show || !connexion || !tuuidSelectionne) return
         if(evenementFichier && evenementFichier.tuuid !== tuuidSelectionne) return  // Update autre fichier
-        console.debug("Charger document '%s' ", tuuidSelectionne)
+        // console.debug("Charger document '%s' ", tuuidSelectionne)
         connexion.getDocuments([tuuidSelectionne])
             .then(reponse => {
-                console.debug("Reponse getDoc %s = %O", tuuidSelectionne, reponse)
+                // console.debug("Reponse getDoc %s = %O", tuuidSelectionne, reponse)
                 if(reponse.ok !== false) {
                     setDoc(reponse.fichiers[0])
                 }
@@ -255,8 +254,6 @@ function InfoVide(props) {
 }
 
 function InfoFichier(props) {
-    console.debug("InfoFichier PROPPYS : %O", props)
-
     const { workers, etatConnexion, support, downloadAction, evenementFichier, usager } = props
 
     const valueItem = props.valueItem || {}
@@ -316,7 +313,7 @@ function InfoMedia(props) {
     const fichier = props.fichier || {}
     const versionCourante = fichier.version_courante
 
-    console.debug("Info videos fichier %O : %O", fichier)
+    // console.debug("Info videos fichier %O : %O", fichier)
 
     if(!versionCourante) return ''
 
@@ -344,8 +341,6 @@ function InfoMedia(props) {
 }
 
 function InfoCollection(props) {
-    console.debug("InfoCollection PROPPYS : %O", props)
-
     const valueItem = props.valueItem || {}
     const thumbnailIcon = valueItem.thumbnailIcon
     const fichier = props.value || {}
@@ -397,7 +392,7 @@ export function RenommerModal(props) {
         event.preventDefault()
         event.stopPropagation()
         
-        console.debug("Appliquer a %s", tuuidSelectionne)
+        // console.debug("Appliquer a %s", tuuidSelectionne)
         try {
             let reponse = null
             if(docSelectionne.fileId) {

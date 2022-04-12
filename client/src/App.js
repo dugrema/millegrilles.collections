@@ -5,7 +5,7 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
-import { LayoutApplication, HeaderApplication, FooterApplication } from '@dugrema/millegrilles.reactjs'
+import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout } from '@dugrema/millegrilles.reactjs'
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 
@@ -33,6 +33,10 @@ function App() {
   const [page, setPage] = useState('Accueil')
   const [paramsRecherche, setParamsRecherche] = useState('')
   const [idmg, setIdmg] = useState('')
+
+  // Message d'erreur global
+  const [ erreur, setErreur ] = useState('')
+  const erreurCb = useCallback((err, message)=>setErreur({err, message}), [setErreur])
 
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
@@ -144,6 +148,8 @@ function App() {
       </HeaderApplication>
 
       <Container>
+        <AlertTimeout variant="danger" titre="Erreur" delay={30000} value={erreur} setValue={setErreur} />
+
         <Suspense fallback={<Attente />}>
           <Contenu 
             workers={workers} 
@@ -155,6 +161,7 @@ function App() {
             evenementFichier={evenementFichier}
             paramsRecherche={paramsRecherche}
             downloadAction={downloadAction}
+            erreurCb={erreurCb}
           />
         </Suspense>
       </Container>

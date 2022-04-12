@@ -22,7 +22,7 @@ import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 
 function Accueil(props) {
 
-    console.debug("Accueil props : %O", props)
+    // console.debug("Accueil props : %O", props)
 
     const { workers, etatConnexion, etatAuthentifie, evenementCollection, evenementFichier, usager, downloadAction } = props
     const [ favoris, setFavoris ] = useState('')
@@ -37,7 +37,7 @@ function Accueil(props) {
         console.debug("ACCUEIL(top) Message evenementCollection: %O", evenementCollection)
 
         // Empecher cycle
-        const message = evenementCollection.message || {}
+        //const message = evenementCollection.message || {}
         let trigger = true
         // if(message.favoris === true || message.tuuid) {
         //     // C'est un favoris, on recharge la liste au complet
@@ -47,7 +47,7 @@ function Accueil(props) {
             console.debug("ACCUEIL(top) reload favoris sur evenement")
             chargerFavoris(workers, setFavoris)
         }
-    }, [evenementCollection, workers, chargerFavoris, setFavoris])
+    }, [evenementCollection, workers, setFavoris])
 
     return (
         <>
@@ -70,7 +70,7 @@ export default Accueil
 
 function NavigationFavoris(props) {
 
-    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection, usager, downloadAction } = props
+    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection, usager, downloadAction, erreurCb } = props
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -87,6 +87,7 @@ function NavigationFavoris(props) {
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
+    const [ isListeComplete, setListeComplete ] = useState(false)
     
     // Callbacks
     const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
@@ -116,7 +117,7 @@ function NavigationFavoris(props) {
             // Determiner le type de fichier
             showPreviewAction(value.fileId)
         }
-    }, [liste, setCuuidCourant, setTuuidSelectionne, breadcrumb, setBreadcrumb, showPreviewAction])
+    }, [liste, setCuuidCourant, breadcrumb, setBreadcrumb, showPreviewAction])
 
     const onSelectionLignes = useCallback(selection=>{setSelection(selection)}, [setSelection])
     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
@@ -145,9 +146,14 @@ function NavigationFavoris(props) {
             // Utiliser liste de favoris
             setListe( preprarerDonnees(favoris, workers, {trier: trierNom}) )
         } else if(etatConnexion) {
-            chargerCollection(workers, cuuidCourant, setListe, usager)
+            chargerCollection(workers, cuuidCourant, usager)
+                .then(resultat=>{
+                    setListe(resultat.data)
+                    setListeComplete(resultat.estComplet)
+                })
+                .catch(erreurCb)
         }
-    }, [workers, etatConnexion, favoris, setListe, cuuidCourant])
+    }, [workers, usager, etatConnexion, favoris, setListe, cuuidCourant, setListeComplete, erreurCb])
     
     // Detect support divers de l'appareil/navigateur
     useEffect(()=>detecterSupport(setSupport), [setSupport])
@@ -167,13 +173,28 @@ function NavigationFavoris(props) {
     }, [workers, cuuidCourant])
 
     const dzHook = useDropzone({onDrop})
-    const {getRootProps, getInputProps, isDragActive, open: openDropzone} = dzHook
+    const {getRootProps, getInputProps, open: openDropzone} = dzHook
 
     const uploaderFichiersAction = useCallback(event=>{
         event.stopPropagation()
         event.preventDefault()
         openDropzone()
     }, [openDropzone])
+
+    const suivantCb = useCallback(event=>{
+        console.debug("!!! Call suivant, liste actuelle : %O", liste)
+        if(!cuuidCourant) {
+            // Favoris - on n'a pas de suivant pour favoris
+        } else if(etatConnexion) {
+            chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit: 20})
+                .then(resultat=>{
+                    console.debug("!!! Resultat call suivant : %O", resultat)
+                    setListe(resultat.data)
+                    setListeComplete(resultat.estComplet)
+                })
+                .catch(erreurCb)
+        }
+    }, [workers, liste, cuuidCourant, etatConnexion, usager, setListe, setListeComplete, erreurCb])
 
     useEffect(()=>{
         if(evenementCollection && evenementCollection.message) {
@@ -187,12 +208,17 @@ function NavigationFavoris(props) {
         const cuuids = message.cuuids || []
         trigger = cuuids && cuuids.includes(cuuidCourant)
 
-        if(trigger) {
-            console.debug("ACCUEIL.NavigationFavoris reload sur evenement")
-            chargerCollection(workers, cuuidCourant, setListe)
-        }
+        // if(trigger) {
+        //     console.debug("ACCUEIL.NavigationFavoris reload sur evenement")
+        //     chargerCollection(workers, cuuidCourant, usager)
+        //         .then(resultat=>{
+        //             setListe(resultat.data)
+        //             setListeComplete(resultat.estComplet)
+        //         })
+        //         .catch(erreurCb)
+        // }
 
-    }, [cuuidCourant, chargerCollection, evenementFichier, evenementCollection])
+    }, [workers, usager, cuuidCourant, evenementFichier, evenementCollection, setListe, setListeComplete, erreurCb])
 
     return (
         <div {...getRootProps({onClick: onClickBack})}>
@@ -224,6 +250,7 @@ function NavigationFavoris(props) {
                 onClickEntete={colonne=>{
                     // console.debug("Entete click : %s", colonne)
                 }}
+                suivantCb={(!cuuidCourant||isListeComplete)?'':suivantCb}
             />
 
             <MenuContextuelFavoris 
@@ -339,7 +366,7 @@ function ModalCreerRepertoire(props) {
             .catch(err=>{
                 console.error("Erreur creation collection : %O", err)
             })
-    }, [connexion, nomCollection, cuuid, setNomCollection])
+    }, [connexion, nomCollection, cuuid, setNomCollection, fermer])
 
     return (
         <Modal show={show} onHide={fermer}>
@@ -509,10 +536,19 @@ async function chargerFavoris(workers, setFavoris) {
     }
 }
 
-async function chargerCollection(workers, cuuid, setListe, usager) {
-    console.debug("Charger collection %s", cuuid)
-    const { connexion } = workers
-    const reponse = await connexion.getContenuCollection(cuuid)
+async function chargerCollection(workers, cuuid, usager, opts) {
+    opts = opts || {}
+    const { listeCourante } = opts
+    const limit = opts.limit || 20
+
+    let skip = 0
+    if(listeCourante) {
+        skip = listeCourante.length
+    }
+
+    console.debug("Charger collection %s (offset: %s)", cuuid, skip)
+    const { connexion, chiffrage } = workers
+    const reponse = await connexion.getContenuCollection(cuuid, {skip, limit})
     // console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
     const { documents } = reponse
 
@@ -540,15 +576,15 @@ async function chargerCollection(workers, cuuid, setListe, usager) {
     }
 
     if(fuuidsInconnus.length > 0) {
-        console.debug("Get cles manquantes pour fuuids %O", fuuidsInconnus)
+        // console.debug("Get cles manquantes pour fuuids %O", fuuidsInconnus)
         connexion.getClesFichiers(fuuidsInconnus, usager)
             .then(async reponse=>{
-                // console.debug("Reponse dechiffrage cles : %O", reponse)
+                console.debug("Reponse dechiffrage cles : %O", reponse)
 
                 for await (const fuuid of Object.keys(reponse.cles)) {
                     const cleFichier = reponse.cles[fuuid]
                     console.debug("Dechiffrer cle %O", cleFichier)
-                    const cleSecrete = await workers.chiffrage.preparerCleSecreteSubtle(cleFichier.cle, cleFichier.iv)
+                    const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
                     cleFichier.cleSecrete = cleSecrete
                     console.debug("Cle secrete fichier %O", cleFichier)
                     usagerDao.saveCleDechiffree(fuuid, cleSecrete, cleFichier)
@@ -563,9 +599,18 @@ async function chargerCollection(workers, cuuid, setListe, usager) {
         // console.debug("Toutes les cles sont deja chargees")
     }
 
+    let liste = listeCourante || [],
+        estComplet = false
     if(documents) {
-        const donnees = preprarerDonnees(documents, workers)
-        console.debug("chargerCollection donnees : %O", donnees)
-        setListe( donnees )
+        const nouveauxFichiers = preprarerDonnees(documents, workers)
+        if(nouveauxFichiers.length === 0) {
+            // Aucuns fichiers ajoutes, on a la liste au complet
+            estComplet = true
+        }
+        console.debug("chargerCollection donnees recues : %O", nouveauxFichiers)
+        // setListe( data )
+        liste = [...liste, ...nouveauxFichiers]  // Concatener
     }
+
+    return {data: liste, estComplet}
 }

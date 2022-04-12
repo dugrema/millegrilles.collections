@@ -5,7 +5,7 @@ const CONST_APP_URL = 'collections/socket.io'
 export async function connecter(workers, setUsagerState, setEtatConnexion, setEtatFormatteurMessage) {
     const { connexion } = workers
   
-    console.debug("Set callbacks connexion worker")
+    // console.debug("Set callbacks connexion worker")
     const location = new URL(window.location.href)
     location.pathname = CONST_APP_URL
     console.info("Connecter a %O", location.href)
@@ -25,7 +25,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
     const { pki } = await import('@dugrema/node-forge')
     const { extraireExtensionsMillegrille } = forgecommon
     const usager = await usagerDao.getUsager(nomUsager)
-    console.debug("Usager info : %O", usager)
+    // console.debug("Usager info : %O", usager)
     
     if(usager && usager.certificat) {
         const { connexion, chiffrage, x509, transfertFichiers } = workers
@@ -50,7 +50,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         await transfertFichiers.down_setCertificatCa(caPem)
 
         const reponseAuthentifier = await workers.connexion.authentifier()
-        console.debug("Reponse authentifier : %O", reponseAuthentifier)
+        // console.debug("Reponse authentifier : %O", reponseAuthentifier)
         if(!reponseAuthentifier || reponseAuthentifier.protege !== true) { // throw new Error("Echec authentification (protege=false)")
             console.error("Erreur authentification : reponseAuthentifier = %O", reponseAuthentifier)
             return
