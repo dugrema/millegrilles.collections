@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { proxy } from 'comlink'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -102,11 +101,11 @@ function App() {
 
   useEffect(()=>{
 
-      const setEvenementFichierProxy = proxy(setEvenementFichier)
+      // const setEvenementFichierProxy = proxy(setEvenementFichier)
 
       if(etatAuthentifie) {
-        workers.connexion.enregistrerCallbackMajFichier({tuuid: 'abcd-1234'}, setEvenementFichierProxy)
-          .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
+        // workers.connexion.enregistrerCallbackMajFichier({tuuid: 'abcd-1234'}, setEvenementFichierProxy)
+        //   .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
         // workers.connexion.enregistrerCallbackMajCollection(proxy(setEvenementCollection))
         //   .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
 
@@ -117,8 +116,8 @@ function App() {
 
         return () => {
           // Cleanup
-          workers.connexion.retirerCallbackMajFichier(setEvenementFichierProxy)
-            .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
+          // workers.connexion.retirerCallbackMajFichier(setEvenementFichierProxy)
+          //  .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
           // workers.connexion.retirerCallbackMajCollection(proxy(setEvenementCollection))
           //   .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
         }

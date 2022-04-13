@@ -66,11 +66,11 @@ const mapperActivationFingerprint = {
 }
 
 function ecouterEvenementsActivationFingerprint(socket, params, cb) {
-  const tuuid = params.tuuid
+  const tuuids = params.tuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
     exchanges: ['2.prive'],
-    roomParam: tuuid,
+    roomParam: tuuids,
     mapper: mapperActivationFingerprint,
   }
 
@@ -79,11 +79,11 @@ function ecouterEvenementsActivationFingerprint(socket, params, cb) {
 }
 
 function retirerEvenementsActivationFingerprint(socket, params, cb) {
-  const tuuid = params.tuuid
+  const tuuids = params.tuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
     exchanges: ['2.prive'],
-    roomParam: tuuid,
+    roomParam: tuuids,
   }
   debug("retirerEvenementsActivationFingerprint sur %O", opts)
   socket.unsubscribe(opts, cb)

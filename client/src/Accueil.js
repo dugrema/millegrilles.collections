@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { proxy as comlinkProxy } from 'comlink'
 
 import Breadcrumb from 'react-bootstrap/Breadcrumb'
 import Row from 'react-bootstrap/Row'
@@ -71,7 +72,7 @@ export default Accueil
 
 function NavigationFavoris(props) {
 
-    const { favoris, workers, etatConnexion, evenementFichier, evenementCollection, usager, downloadAction, erreurCb } = props
+    const { workers, etatConnexion, etatAuthentifie, favoris, usager, downloadAction, erreurCb } = props
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -89,6 +90,8 @@ function NavigationFavoris(props) {
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ isListeComplete, setListeComplete ] = useState(false)
+
+    const [ evenementFichier, addEvenementFichier ] = useState('')  // Pipeline d'evenements fichier
     
     // Extraire tri pour utiliser comme trigger pour useEffect
     const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
@@ -104,6 +107,13 @@ function NavigationFavoris(props) {
     const showInfoModalFermer = useCallback(()=>{ setShowInfoModal(false) }, [setShowInfoModal])
     const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
     const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
+
+    // Creer les proxy pour communication evenements
+    const evenementFichierCb = useMemo(()=>{
+        if(!addEvenementFichier) return
+        const proxyCb = comlinkProxy(evenement=>addEvenementFichier(evenement))
+        return proxyCb
+    }, [addEvenementFichier])
 
     const showPreviewAction = useCallback( async tuuid => {
         await setTuuidSelectionne(tuuid)
@@ -216,29 +226,48 @@ function NavigationFavoris(props) {
         setColonnes(colonnesCourant)
     }, [colonnes, setColonnes])
 
+    // useEffect(()=>{
+    //     if(evenementCollection && evenementCollection.message) {
+    //         console.debug("ACCUEIL.NavigationFavoris Message evenementCollection: %O", evenementCollection)
+    //     } else if(evenementFichier && evenementFichier.message) {
+    //         console.debug("ACCUEIL.NavigationFavoris Message evenementFichier: %O", evenementFichier)
+    //     }
+
+    //     // let trigger = false
+    //     // const message = evenementCollection?evenementCollection.message:'' || evenementFichier?evenementFichier.message:{}
+    //     // const cuuids = message.cuuids || []
+    //     // trigger = cuuids && cuuids.includes(cuuidCourant)
+
+    //     // if(trigger) {
+    //     //     console.debug("ACCUEIL.NavigationFavoris reload sur evenement")
+    //     //     chargerCollection(workers, cuuidCourant, usager)
+    //     //         .then(resultat=>{
+    //     //             setListe(resultat.data)
+    //     //             setListeComplete(resultat.estComplet)
+    //     //         })
+    //     //         .catch(erreurCb)
+    //     // }
+
+    // }, [workers, usager, cuuidCourant, evenementFichier, evenementCollection, setListe, setListeComplete, erreurCb])
+
     useEffect(()=>{
-        if(evenementCollection && evenementCollection.message) {
-            console.debug("ACCUEIL.NavigationFavoris Message evenementCollection: %O", evenementCollection)
-        } else if(evenementFichier && evenementFichier.message) {
-            console.debug("ACCUEIL.NavigationFavoris Message evenementFichier: %O", evenementFichier)
+        if(!evenementFichierCb) return
+        if(liste && etatConnexion && etatAuthentifie) {
+            enregistrerEvenementsFichiers(workers, liste, evenementFichierCb)
+                .catch(err=>console.warn("Erreur enregistrement listeners majFichier : %O", err))
+            return () => {
+                retirerEvenementsFichiers(workers, liste, evenementFichierCb)
+                    .catch(err=>console.debug("Erreur retrait listeners majFichier : %O", err))
+            }
         }
+    }, [workers, liste, etatConnexion, etatAuthentifie, evenementFichierCb])
 
-        // let trigger = false
-        // const message = evenementCollection?evenementCollection.message:'' || evenementFichier?evenementFichier.message:{}
-        // const cuuids = message.cuuids || []
-        // trigger = cuuids && cuuids.includes(cuuidCourant)
-
-        // if(trigger) {
-        //     console.debug("ACCUEIL.NavigationFavoris reload sur evenement")
-        //     chargerCollection(workers, cuuidCourant, usager)
-        //         .then(resultat=>{
-        //             setListe(resultat.data)
-        //             setListeComplete(resultat.estComplet)
-        //         })
-        //         .catch(erreurCb)
-        // }
-
-    }, [workers, usager, cuuidCourant, evenementFichier, evenementCollection, setListe, setListeComplete, erreurCb])
+    useEffect(()=>{
+        if(evenementFichier) {
+            console.debug("Traitement evenement fichier : %O", evenementFichier)
+        }
+        addEvenementFichier('')  // Vider liste evenements
+    }, [liste, evenementFichier, addEvenementFichier])
 
     return (
         <div {...getRootProps({onClick: onClickBack})}>
@@ -340,7 +369,6 @@ function NavigationFavoris(props) {
                 support={support}
                 downloadAction={downloadAction}
                 etatConnexion={etatConnexion}
-                evenementFichier={evenementFichier}
                 usager={usager}
             />
 
@@ -706,4 +734,24 @@ async function chargerCollection(workers, cuuid, usager, opts) {
     }
 
     return {data: liste, estComplet}
+}
+
+async function enregistrerEvenementsFichiers(workers, liste, callback) {
+    const { connexion } = workers
+    try {
+        const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
+        await connexion.enregistrerCallbackMajFichier({tuuids}, callback)
+    } catch (err) {
+        console.error("Erreur enregistrerCallbackMajFichier : %O", err)
+    }
+}
+
+async function retirerEvenementsFichiers(workers, liste, callback) {
+    const { connexion } = workers
+    try {
+        const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
+        const resultat = await connexion.retirerCallbackMajFichier({tuuids}, callback)
+    } catch (err) {
+        console.error("Erreur retirerEvenementsFichiers : %O", err)
+    }
 }

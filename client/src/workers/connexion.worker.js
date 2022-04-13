@@ -190,14 +190,6 @@ function retirerCallbackMajFichier(params, cb) {
   return ConnexionClient.unsubscribe('retirerCallbackMajFichier', cb, params) 
 }
 
-// async function enregistrerCallbackMajFichier(cb) {
-//   ConnexionClient.socketOn('evenement.grosfichiers.majFichier', cb)
-//   const resultat = await ConnexionClient.emitBlocking('ecouterMajFichiers', {}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-// }
-
 function enregistrerCallbackMajCollection(cb) { 
   return ConnexionClient.subscribe('enregistrerCallbackMajCollection', cb) 
 }
