@@ -39,9 +39,11 @@ function configurerEvenements(socket) {
     ],
     listenersProteges: [
       // PROTEGE
-      {eventName: 'enregistrerCallbackMajFichier', callback: (params, cb) => {ecouterEvenementsActivationFingerprint(socket, params, cb)}},
-      {eventName: 'retirerCallbackMajFichier', callback: (params, cb) => {retirerEvenementsActivationFingerprint(socket, params, cb)}},
-      { eventName: 'indexerContenu', callback: (params, cb) => traiter(socket, mqdao.indexerContenu, {params, cb}) },
+      {eventName: 'enregistrerCallbackMajFichier', callback: (params, cb) => {enregistrerCallbackMajFichier(socket, params, cb)}},
+      {eventName: 'retirerCallbackMajFichier', callback: (params, cb) => {retirerCallbackMajFichier(socket, params, cb)}},
+      {eventName: 'enregistrerCallbackMajCollections', callback: (params, cb) => {enregistrerCallbackMajCollections(socket, params, cb)}},
+      {eventName: 'retirerCallbackMajCollections', callback: (params, cb) => {retirerCallbackMajCollections(socket, params, cb)}},
+      {eventName: 'indexerContenu', callback: (params, cb) => traiter(socket, mqdao.indexerContenu, {params, cb})},
     ]
   }
 
@@ -54,7 +56,7 @@ async function traiter(socket, methode, {params, cb}) {
 
 const CONST_ROUTINGKEYS_MAJFICHIER = ['evenement.grosfichiers.majFichier']
 
-const mapperActivationFingerprint = {
+const mapperMajFichiers = {
   exchanges: ['2.prive'],
   routingKeyTest: /^evenement\.grosfichiers\.majFichier$/,
   mapRoom: (message, _rk, _exchange) => {
@@ -65,27 +67,64 @@ const mapperActivationFingerprint = {
   }
 }
 
-function ecouterEvenementsActivationFingerprint(socket, params, cb) {
+function enregistrerCallbackMajFichier(socket, params, cb) {
   const tuuids = params.tuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
     exchanges: ['2.prive'],
     roomParam: tuuids,
-    mapper: mapperActivationFingerprint,
+    mapper: mapperMajFichiers,
   }
 
-  debug("ecouterEvenementsActivationFingerprint : %O", opts)
+  debug("enregistrerCallbackMajFichier : %O", opts)
   socket.subscribe(opts, cb)
 }
 
-function retirerEvenementsActivationFingerprint(socket, params, cb) {
+function retirerCallbackMajFichier(socket, params, cb) {
   const tuuids = params.tuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
     exchanges: ['2.prive'],
     roomParam: tuuids,
   }
-  debug("retirerEvenementsActivationFingerprint sur %O", opts)
+  debug("retirerCallbackMajFichier sur %O", opts)
+  socket.unsubscribe(opts, cb)
+}
+
+const CONST_ROUTINGKEYS_MAJCOLLECTION = ['evenement.grosfichiers.majCollection']
+
+const mapperMajCollection = {
+  exchanges: ['2.prive'],
+  routingKeyTest: /^evenement\.grosfichiers\.majCollection$/,
+  mapRoom: (message, _rk, _exchange) => {
+    const cuuid = message.cuuid
+    if(cuuid) {
+      return `2.prive/evenement.grosfichiers.majCollection/${cuuid}`
+    }
+  }
+}
+
+function enregistrerCallbackMajCollections(socket, params, cb) {
+  const cuuids = params.cuuids
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION,
+    exchanges: ['2.prive'],
+    roomParam: cuuids,
+    mapper: mapperMajCollection,
+  }
+
+  debug("enregistrerCallbackMajFichier : %O", opts)
+  socket.subscribe(opts, cb)
+}
+
+function retirerCallbackMajCollections(socket, params, cb) {
+  const cuuids = params.cuuids
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION, 
+    exchanges: ['2.prive'],
+    roomParam: cuuids,
+  }
+  debug("retirerCallbackMajFichier sur %O", opts)
   socket.unsubscribe(opts, cb)
 }
 

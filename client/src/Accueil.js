@@ -91,7 +91,11 @@ function NavigationFavoris(props) {
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ isListeComplete, setListeComplete ] = useState(false)
 
-    const [ evenementFichier, addEvenementFichier ] = useState('')  // Pipeline d'evenements fichier
+    // Event handling
+    const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
+    const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
+    const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
+    const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
     
     // Extraire tri pour utiliser comme trigger pour useEffect
     const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
@@ -107,13 +111,6 @@ function NavigationFavoris(props) {
     const showInfoModalFermer = useCallback(()=>{ setShowInfoModal(false) }, [setShowInfoModal])
     const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
     const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
-
-    // Creer les proxy pour communication evenements
-    const evenementFichierCb = useMemo(()=>{
-        if(!addEvenementFichier) return
-        const proxyCb = comlinkProxy(evenement=>addEvenementFichier(evenement))
-        return proxyCb
-    }, [addEvenementFichier])
 
     const showPreviewAction = useCallback( async tuuid => {
         await setTuuidSelectionne(tuuid)
@@ -268,6 +265,28 @@ function NavigationFavoris(props) {
         }
         addEvenementFichier('')  // Vider liste evenements
     }, [liste, evenementFichier, addEvenementFichier])
+
+    useEffect(()=>{
+        const {connexion} = workers
+        if(!evenementCollectionCb) return
+        if(liste && etatConnexion && etatAuthentifie) {
+            const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
+            if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
+            connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
+                .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+            return () => {
+                connexion.retirerCallbackMajCollections({cuuids}, evenementCollectionCb)
+                    .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+            }
+        }
+    }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
+
+    useEffect(()=>{
+        if(evenementCollection) {
+            console.debug("Traitement evenement collection : %O", evenementCollection)
+        }
+        addEvenementCollection('')  // Vider liste evenements
+    }, [cuuidCourant, favoris, liste, evenementCollection, addEvenementCollection])
 
     return (
         <div {...getRootProps({onClick: onClickBack})}>
@@ -750,7 +769,7 @@ async function retirerEvenementsFichiers(workers, liste, callback) {
     const { connexion } = workers
     try {
         const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
-        const resultat = await connexion.retirerCallbackMajFichier({tuuids}, callback)
+        await connexion.retirerCallbackMajFichier({tuuids}, callback)
     } catch (err) {
         console.error("Erreur retirerEvenementsFichiers : %O", err)
     }

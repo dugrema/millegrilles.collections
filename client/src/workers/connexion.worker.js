@@ -190,21 +190,15 @@ function retirerCallbackMajFichier(params, cb) {
   return ConnexionClient.unsubscribe('retirerCallbackMajFichier', cb, params) 
 }
 
-function enregistrerCallbackMajCollection(cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajCollection', cb) 
+function enregistrerCallbackMajCollections(params, cb) { 
+  params = params || {}
+  return ConnexionClient.subscribe('enregistrerCallbackMajCollections', cb, params) 
 }
 
-function retirerCallbackMajCollection(cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajCollection', cb) 
+function retirerCallbackMajCollections(params, cb) { 
+  params = params || {}
+  return ConnexionClient.unsubscribe('retirerCallbackMajCollections', cb, params) 
 }
-
-// async function enregistrerCallbackMajCollection(cb) {
-//   ConnexionClient.socketOn('evenement.grosfichiers.majCollection', cb)
-//   const resultat = await ConnexionClient.emitBlocking('ecouterMajCollections', {}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-// }
 
 function enregistrerCallbackTranscodageProgres(cb) { 
   return ConnexionClient.subscribe('enregistrerCallbackTranscodageProgres', cb) 
@@ -265,7 +259,7 @@ expose({
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,
-    enregistrerCallbackMajCollection, retirerCallbackMajCollection,
+    enregistrerCallbackMajCollections, retirerCallbackMajCollections,
     enregistrerCallbackTranscodageProgres, retirerCallbackTranscodageProgres,
 
     // Commandes delegue
