@@ -181,31 +181,28 @@ function indexerContenu(reset) {
 // Listeners
 
 function enregistrerCallbackMajFichier(params, cb) { 
-  params = params || {}
   return ConnexionClient.subscribe('enregistrerCallbackMajFichier', cb, params)
 }
 
 function retirerCallbackMajFichier(params, cb) { 
-  params = params || {}
   return ConnexionClient.unsubscribe('retirerCallbackMajFichier', cb, params) 
 }
 
 function enregistrerCallbackMajCollections(params, cb) { 
-  params = params || {}
   return ConnexionClient.subscribe('enregistrerCallbackMajCollections', cb, params) 
 }
 
 function retirerCallbackMajCollections(params, cb) { 
-  params = params || {}
   return ConnexionClient.unsubscribe('retirerCallbackMajCollections', cb, params) 
 }
 
-function enregistrerCallbackTranscodageProgres(cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackTranscodageProgres', cb) 
+function enregistrerCallbackTranscodageProgres(params, cb) { 
+  console.debug("enregistrerCallbackTranscodageProgres params : %O", params)
+  return ConnexionClient.subscribe('enregistrerCallbackTranscodageVideo', cb, params) 
 }
 
-function retirerCallbackTranscodageProgres(cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackTranscodageProgres', cb) 
+function retirerCallbackTranscodageProgres(params, cb) { 
+  return ConnexionClient.unsubscribe('retirerCallbackTranscodageVideo', cb, params) 
 }
 
 // async function enregistrerCallbackTranscodageProgres(fuuid, cb) {

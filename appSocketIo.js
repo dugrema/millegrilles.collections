@@ -39,10 +39,12 @@ function configurerEvenements(socket) {
     ],
     listenersProteges: [
       // PROTEGE
-      {eventName: 'enregistrerCallbackMajFichier', callback: (params, cb) => {enregistrerCallbackMajFichier(socket, params, cb)}},
-      {eventName: 'retirerCallbackMajFichier', callback: (params, cb) => {retirerCallbackMajFichier(socket, params, cb)}},
-      {eventName: 'enregistrerCallbackMajCollections', callback: (params, cb) => {enregistrerCallbackMajCollections(socket, params, cb)}},
-      {eventName: 'retirerCallbackMajCollections', callback: (params, cb) => {retirerCallbackMajCollections(socket, params, cb)}},
+      {eventName: 'enregistrerCallbackMajFichier', callback: (params, cb) => mqdao.enregistrerCallbackMajFichier(socket, params, cb)},
+      {eventName: 'retirerCallbackMajFichier', callback: (params, cb) => mqdao.retirerCallbackMajFichier(socket, params, cb)},
+      {eventName: 'enregistrerCallbackMajCollections', callback: (params, cb) => mqdao.enregistrerCallbackMajCollections(socket, params, cb)},
+      {eventName: 'retirerCallbackMajCollections', callback: (params, cb) => mqdao.retirerCallbackMajCollections(socket, params, cb)},
+      {eventName: 'enregistrerCallbackTranscodageVideo', callback: (params, cb) => mqdao.enregistrerCallbackTranscodageVideo(socket, params, cb)},
+      {eventName: 'retirerCallbackTranscodageVideo', callback: (params, cb) => mqdao.retirerCallbackTranscodageVideo(socket, params, cb)},
       {eventName: 'indexerContenu', callback: (params, cb) => traiter(socket, mqdao.indexerContenu, {params, cb})},
     ]
   }
@@ -54,78 +56,78 @@ async function traiter(socket, methode, {params, cb}) {
   if(cb) cb(reponse)
 }
 
-const CONST_ROUTINGKEYS_MAJFICHIER = ['evenement.grosfichiers.majFichier']
+// const CONST_ROUTINGKEYS_MAJFICHIER = ['evenement.grosfichiers.majFichier']
 
-const mapperMajFichiers = {
-  exchanges: ['2.prive'],
-  routingKeyTest: /^evenement\.grosfichiers\.majFichier$/,
-  mapRoom: (message, _rk, _exchange) => {
-    const tuuid = message.tuuid
-    if(tuuid) {
-      return `2.prive/evenement.grosfichiers.majFichier/${tuuid}`
-    }
-  }
-}
+// const mapperMajFichiers = {
+//   exchanges: ['2.prive'],
+//   routingKeyTest: /^evenement\.grosfichiers\.majFichier$/,
+//   mapRoom: (message, _rk, _exchange) => {
+//     const tuuid = message.tuuid
+//     if(tuuid) {
+//       return `2.prive/evenement.grosfichiers.majFichier/${tuuid}`
+//     }
+//   }
+// }
 
-function enregistrerCallbackMajFichier(socket, params, cb) {
-  const tuuids = params.tuuids
-  const opts = { 
-    routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
-    exchanges: ['2.prive'],
-    roomParam: tuuids,
-    mapper: mapperMajFichiers,
-  }
+// function enregistrerCallbackMajFichier(socket, params, cb) {
+//   const tuuids = params.tuuids
+//   const opts = { 
+//     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
+//     exchanges: ['2.prive'],
+//     roomParam: tuuids,
+//     mapper: mapperMajFichiers,
+//   }
 
-  debug("enregistrerCallbackMajFichier : %O", opts)
-  socket.subscribe(opts, cb)
-}
+//   debug("enregistrerCallbackMajFichier : %O", opts)
+//   socket.subscribe(opts, cb)
+// }
 
-function retirerCallbackMajFichier(socket, params, cb) {
-  const tuuids = params.tuuids
-  const opts = { 
-    routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
-    exchanges: ['2.prive'],
-    roomParam: tuuids,
-  }
-  debug("retirerCallbackMajFichier sur %O", opts)
-  socket.unsubscribe(opts, cb)
-}
+// function retirerCallbackMajFichier(socket, params, cb) {
+//   const tuuids = params.tuuids
+//   const opts = { 
+//     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
+//     exchanges: ['2.prive'],
+//     roomParam: tuuids,
+//   }
+//   debug("retirerCallbackMajFichier sur %O", opts)
+//   socket.unsubscribe(opts, cb)
+// }
 
-const CONST_ROUTINGKEYS_MAJCOLLECTION = ['evenement.grosfichiers.majCollection']
+// const CONST_ROUTINGKEYS_MAJCOLLECTION = ['evenement.grosfichiers.majCollection']
 
-const mapperMajCollection = {
-  exchanges: ['2.prive'],
-  routingKeyTest: /^evenement\.grosfichiers\.majCollection$/,
-  mapRoom: (message, _rk, _exchange) => {
-    const cuuid = message.cuuid
-    if(cuuid) {
-      return `2.prive/evenement.grosfichiers.majCollection/${cuuid}`
-    }
-  }
-}
+// const mapperMajCollection = {
+//   exchanges: ['2.prive'],
+//   routingKeyTest: /^evenement\.grosfichiers\.majCollection$/,
+//   mapRoom: (message, _rk, _exchange) => {
+//     const cuuid = message.cuuid
+//     if(cuuid) {
+//       return `2.prive/evenement.grosfichiers.majCollection/${cuuid}`
+//     }
+//   }
+// }
 
-function enregistrerCallbackMajCollections(socket, params, cb) {
-  const cuuids = params.cuuids
-  const opts = { 
-    routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION,
-    exchanges: ['2.prive'],
-    roomParam: cuuids,
-    mapper: mapperMajCollection,
-  }
+// function enregistrerCallbackMajCollections(socket, params, cb) {
+//   const cuuids = params.cuuids
+//   const opts = { 
+//     routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION,
+//     exchanges: ['2.prive'],
+//     roomParam: cuuids,
+//     mapper: mapperMajCollection,
+//   }
 
-  debug("enregistrerCallbackMajFichier : %O", opts)
-  socket.subscribe(opts, cb)
-}
+//   debug("enregistrerCallbackMajFichier : %O", opts)
+//   socket.subscribe(opts, cb)
+// }
 
-function retirerCallbackMajCollections(socket, params, cb) {
-  const cuuids = params.cuuids
-  const opts = { 
-    routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION, 
-    exchanges: ['2.prive'],
-    roomParam: cuuids,
-  }
-  debug("retirerCallbackMajFichier sur %O", opts)
-  socket.unsubscribe(opts, cb)
-}
+// function retirerCallbackMajCollections(socket, params, cb) {
+//   const cuuids = params.cuuids
+//   const opts = { 
+//     routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION, 
+//     exchanges: ['2.prive'],
+//     roomParam: cuuids,
+//   }
+//   debug("retirerCallbackMajFichier sur %O", opts)
+//   socket.unsubscribe(opts, cb)
+// }
 
 module.exports = { configurerEvenements }

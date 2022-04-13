@@ -47,66 +47,113 @@ const BITRATES_AUDIO = [
   {label: "128 kbps", value: 128000},
 ]
 
-const evenementTranscodage = proxy(event=>{
-  console.debug("Evenement transcodage : %O", event)
-  if(_updateTranscodage) {
-    const message = event.message || {}
-    const resolution = message.height
-    const mimetype = message.mimetype
-    const bitrate = message.videoBitrate
+// const evenementTranscodage = proxy(event=>{
+//   console.debug("Evenement transcodage : %O", event)
+//   if(_updateTranscodage) {
+//     const message = event.message || {}
+//     const resolution = message.height
+//     const mimetype = message.mimetype
+//     const bitrate = message.videoBitrate
   
-    const cle = [mimetype, resolution, bitrate].join(';')
-    const params = {
-      passe: message.passe, 
-      pctProgres: message.pctProgres,
-      fuuid: message.fuuid,
-      resolution,
-      mimetype,
-      bitrate
-    }
-    delete params['en-tete']
-    delete params.signature
+//     const cle = [mimetype, resolution, bitrate].join(';')
+//     const params = {
+//       passe: message.passe, 
+//       pctProgres: message.pctProgres,
+//       fuuid: message.fuuid,
+//       resolution,
+//       mimetype,
+//       bitrate
+//     }
+//     delete params['en-tete']
+//     delete params.signature
   
-    _updateTranscodage(cle, params)
+//     _updateTranscodage(cle, params)
+//   }
+// })
+
+function parseEvenementTranscodage(evenement) {
+  const message = evenement.message || {}
+  const resolution = message.height
+  const mimetype = message.mimetype
+  const bitrate = message.videoBitrate
+
+  const cle = [mimetype, resolution, bitrate].join(';')
+  const params = {
+    passe: message.passe, 
+    pctProgres: message.pctProgres,
+    fuuid: message.fuuid,
+    resolution,
+    mimetype,
+    bitrate
   }
-})
+  delete params['en-tete']
+  delete params.signature
+
+  return [cle, params]
+}
 
 // Utilise pour traiter messages workers (proxy callback)
-var _updateTranscodage = null
+// var _updateTranscodage = null
 
 export function ConversionVideo(props) {
+  console.debug("ConversionVideo proppies : %O", props)
 
-    const { workers, support, downloadAction, etatConnexion, usager } = props
-    const { connexion } = workers
+    const { workers, support, downloadAction, etatConnexion, etatAuthentifie, usager } = props
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const versionCourante = fichier.version_courante || {}
+    const fuuid = fichier.fuuid_v_courante
     const mimetype = versionCourante.mimetype || ''
     const mimetypeBase = mimetype.split('/').shift()
     
-    const [transcodage, setTranscodage] = useState({})
-
-    _updateTranscodage = useCallback((key, params) => {
-      const nouveauTranscodage = {...transcodage, [key]: params}
-      console.debug("!!! Nouveau transcodage : %O", nouveauTranscodage)
-      setTranscodage(nouveauTranscodage)
-    }, [transcodage, setTranscodage])
+    const [transcodage, setTranscodage] = useState('')
+    const [evenementTranscodage, addEvenementTranscodage] = useState('')
+    const evenementTranscodageCb = useMemo(()=>proxy(addEvenementTranscodage), [addEvenementTranscodage])
 
     useEffect(()=>{
-      console.debug("!!! ConversionVideo props : %O", fichier)
-      if(fichier && connexion && etatConnexion) {
-        const fuuid = fichier.fuuid_v_courante
-        // const versionCourante = fichier.version_courante || {}
-        if(fuuid && fichier.video) {
-          console.debug("Ecouter transcodage %s", fuuid)
-          connexion.enregistrerCallbackTranscodageProgres(fuuid, evenementTranscodage)
-          return () => {
-            console.debug("Arreter ecoute %s", fuuid)
-            connexion.supprimerCallbackTranscodageProgres(fuuid)
-          }
+      console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
+      const {connexion} = workers
+      if(etatConnexion && etatAuthentifie) {
+        connexion.enregistrerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
+          .catch(err=>console.error("Erreur enregistrement evenements transcodage : %O", err))
+        return () => {
+          connexion.retirerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
+            .catch(err=>console.error("Erreur retrait evenements transcodage : %O", err))
         }
       }
-    }, [fichier, connexion, etatConnexion])
+    }, [workers, fuuid, etatConnexion, etatAuthentifie, evenementTranscodageCb])
+
+    useEffect(()=>{
+      if(evenementTranscodage) {
+        console.debug("Traiter evenement transcodage : %O", evenementTranscodage)
+        const [cle, params] = parseEvenementTranscodage(evenementTranscodage)
+        setTranscodage({...transcodage, [cle]: params})
+
+        addEvenementTranscodage('')  // Clear
+      }
+    }, [transcodage, evenementTranscodage, addEvenementTranscodage, setTranscodage])
+
+    // _updateTranscodage = useCallback((key, params) => {
+    //   const nouveauTranscodage = {...transcodage, [key]: params}
+    //   console.debug("!!! Nouveau transcodage : %O", nouveauTranscodage)
+    //   setTranscodage(nouveauTranscodage)
+    // }, [transcodage, setTranscodage])
+
+    // useEffect(()=>{
+    //   console.debug("!!! ConversionVideo props : %O", fichier)
+    //   if(fichier && connexion && etatConnexion) {
+    //     const fuuid = fichier.fuuid_v_courante
+    //     // const versionCourante = fichier.version_courante || {}
+    //     if(fuuid && fichier.video) {
+    //       console.debug("Ecouter transcodage %s", fuuid)
+    //       connexion.enregistrerCallbackTranscodageProgres(fuuid, evenementTranscodage)
+    //       return () => {
+    //         console.debug("Arreter ecoute %s", fuuid)
+    //         connexion.supprimerCallbackTranscodageProgres(fuuid)
+    //       }
+    //     }
+    //   }
+    // }, [fichier, connexion, etatConnexion])
 
     if(mimetypeBase !== 'video') return ''
 
@@ -116,7 +163,7 @@ export function ConversionVideo(props) {
             <FormConversionVideo 
                 workers={workers}
                 fichier={fichier}
-                updateTranscodage={_updateTranscodage}
+                setTranscodage={setTranscodage}
                 usager={usager}
             />
 
@@ -133,7 +180,7 @@ export function ConversionVideo(props) {
 
 function FormConversionVideo(props) {
 
-    const { workers, fichier, updateTranscodage, usager } = props
+    const { workers, fichier, setTranscodage, usager, erreurCb } = props
 
     const [codecVideo, setCodecVideo] = useState('h264')
     const [codecAudio, setCodecAudio] = useState('aac')
@@ -159,10 +206,11 @@ function FormConversionVideo(props) {
         workers,
         fichier,
         {codecVideo, codecAudio, resolutionVideo, bitrateVideo, bitrateAudio},
-        updateTranscodage,
+        erreurCb,
         {usager}
       )
-      .catch(err=>{console.error("Erreur debut transcodage video : %O", err)})
+      .then(setTranscodage)
+      .catch(err=>erreurCb(err, "Erreur de preparation pour le transcodage du video"))
     }
   
     return (
@@ -228,9 +276,10 @@ function SelectGroup(props) {
   )
 }
 
-async function convertirVideo(workers, fichier, params, setTranscodageVideo, opts) {
+async function convertirVideo(workers, fichier, params, erreurCb, opts) {
   opts = opts || {}
   console.debug("Convertir video %O (opts: %O)", params, opts)
+  const { connexion } = workers
 
   const usager = opts.usager || {},
         extensions = usager || {},
@@ -250,7 +299,7 @@ async function convertirVideo(workers, fichier, params, setTranscodageVideo, opt
 
   // console.debug("Commande conversion : %O", commande)
   const cle = [commande.mimetype, params.resolutionVideo, params.bitrateVideo].join(';')
-  setTranscodageVideo(
+  const infoTranscodage = (
       cle,
       {
         mimetype: commande.mimetype,
@@ -266,9 +315,10 @@ async function convertirVideo(workers, fichier, params, setTranscodageVideo, opt
   }
 
   console.debug("Commande transcodage : %O", commande)
+  connexion.transcoderVideo(commande)
+    .catch(err=>erreurCb(err, 'Erreur demarrage du transcodage de video'))
 
-  const connexionWorker = workers.connexion
-  connexionWorker.transcoderVideo(commande)
+  return infoTranscodage
 }
 
 function Videos(props) {
@@ -332,9 +382,11 @@ function TranscodageEnCours(props) {
 
   return (
     <>
-      {transcodageFiltre.map((video, idx)=>(
+      {transcodageFiltre.filter(item=>item&&item.mimetype).map((video, idx)=>{
+        const mimetype = video.mimetype || ''
+      return (
         <Row key={idx}>
-          <Col xs={12} md={3}>{video.mimetype.split('/').pop()}</Col>
+          <Col xs={12} md={3}>{mimetype.split('/').pop()}</Col>
           <Col xs={12} md={3}>{video.resolution}p</Col>
           <Col xs={10} md={5}>
             <ProgressBar now={video.pctProgres} />
@@ -343,13 +395,21 @@ function TranscodageEnCours(props) {
             {video.pctProgres}%
           </Col>
         </Row>
-      ))}
+      )})}
     </>
   )
 }
 
 function triCleTranscodage(a,b) {
-  const compMimetype = a.mimetype.localeCompare(b.mimetype)
+  if(a===b) return 0
+  if(!a) return 1
+  if(!b) return -1
+  const mimetypeA = a.mimetype,
+        mimetypeB = b.mimetype
+  if(mimetypeA === mimetypeB) return 0
+  if(!mimetypeA) return 1
+  if(!mimetypeB) return -1
+  const compMimetype = mimetypeA.localeCompare(mimetypeB)
   if(compMimetype !== 0) return compMimetype
 
   const compResolution = b.resolution - a.resolution

@@ -1,25 +1,11 @@
 const debug = require('debug')('mqdao')
 
-const L2Prive = '2.prive',
-      L3Protege = '3.protege'
+const L2Prive = '2.prive'
 
 const DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles',
       CONST_DOMAINE_FICHIERS = 'fichiers'
 
-const ROUTING_KEYS_FICHIERS = [
-    'evenement.grosfichiers.majFichier',
-]
-
-const ROUTING_KEYS_COLLECTIONS = [
-    'evenement.grosfichiers.majCollection',
-]
-
-// const EVENEMENTS_SUPPORTES = [
-// ...ROUTING_KEYS_FICHIERS,
-// ...ROUTING_KEYS_COLLECTIONS,
-// ]
-      
 function challenge(socket, params) {
     // Repondre avec un message signe
     const reponse = {
@@ -154,48 +140,130 @@ function verifierMessage(message, domaine, action) {
     if(actionRecue !== action) throw new Error(`Mismatch action (${actionRecue} !== ${action})"`)
 }
 
-async function ecouterMajFichiers(socket, cb) {
-    const userId = socket.userId
-    debug("ecouterMajFichiers userId : %s", socket.userId)
-    const opts = {
-        routingKeys: ROUTING_KEYS_FICHIERS,
-        exchange: [L2Prive],
-        userId,
+// Listeners
+
+const CONST_ROUTINGKEYS_MAJFICHIER = ['evenement.grosfichiers.majFichier']
+
+const mapperMajFichiers = {
+  exchanges: ['2.prive'],
+  routingKeyTest: /^evenement\.grosfichiers\.majFichier$/,
+  mapRoom: (message, _rk, _exchange) => {
+    const tuuid = message.tuuid
+    if(tuuid) {
+      return `2.prive/evenement.grosfichiers.majFichier/${tuuid}`
     }
-    socket.subscribe(opts, cb)
+  }
 }
 
-async function ecouterMajCollections(socket, cb) {
-    const userId = socket.userId
-    debug("ecouterMajCollections userId : %s", socket.userId)
-    const opts = {
-        routingKeys: ROUTING_KEYS_COLLECTIONS,
-        exchange: [L2Prive],
-        userId,
-    }
-    socket.subscribe(opts, cb)
+function enregistrerCallbackMajFichier(socket, params, cb) {
+  const tuuids = params.tuuids
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
+    exchanges: ['2.prive'],
+    roomParam: tuuids,
+    mapper: mapperMajFichiers,
+  }
+
+  debug("enregistrerCallbackMajFichier : %O", opts)
+  socket.subscribe(opts, cb)
 }
 
-async function ecouterTranscodageProgres(socket, params, cb) {
-    const opts = {
-        routingKeys: [`evenement.fichiers.${params.fuuid}.transcodageProgres`],
-        exchange: [L2Prive],
-    }
-    socket.subscribe(opts, cb)
+function retirerCallbackMajFichier(socket, params, cb) {
+  const tuuids = params.tuuids
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
+    exchanges: ['2.prive'],
+    roomParam: tuuids,
+  }
+  debug("retirerCallbackMajFichier sur %O", opts)
+  socket.unsubscribe(opts, cb)
 }
 
-async function retirerTranscodageProgres(socket, params, cb) {
-    const routingKeys = [`2.prive/evenement.fichiers.${params.fuuid}.transcodageProgres`]
-    socket.unsubscribe({routingKeys})
-    if(cb) cb(true)
+const CONST_ROUTINGKEYS_MAJCOLLECTION = ['evenement.grosfichiers.majCollection']
+
+const mapperMajCollection = {
+  exchanges: ['2.prive'],
+  routingKeyTest: /^evenement\.grosfichiers\.majCollection$/,
+  mapRoom: (message, _rk, _exchange) => {
+    const cuuid = message.cuuid
+    if(cuuid) {
+      return `2.prive/evenement.grosfichiers.majCollection/${cuuid}`
+    }
+  }
 }
+
+function enregistrerCallbackMajCollections(socket, params, cb) {
+  const cuuids = params.cuuids
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION,
+    exchanges: ['2.prive'],
+    roomParam: cuuids,
+    mapper: mapperMajCollection,
+  }
+
+  debug("enregistrerCallbackMajFichier : %O", opts)
+  socket.subscribe(opts, cb)
+}
+
+function retirerCallbackMajCollections(socket, params, cb) {
+  const cuuids = params.cuuids
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION, 
+    exchanges: ['2.prive'],
+    roomParam: cuuids,
+  }
+  debug("retirerCallbackMajFichier sur %O", opts)
+  socket.unsubscribe(opts, cb)
+}
+
+
+const CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO = ['evenement.fichiers._FUUID_.transcodageProgres']
+
+function enregistrerCallbackTranscodageVideo(socket, params, cb) {
+  const { fuuid } = params
+  const routingKeys = CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO.map(item=>item.replace('_FUUID_', fuuid))
+  const opts = { 
+    routingKeys,
+    exchanges: ['2.prive'],
+  }
+
+  debug("enregistrerCallbackTranscodageVideo : %O", opts)
+  socket.subscribe(opts, cb)
+}
+
+function retirerCallbackTranscodageVideo(socket, params, cb) {
+    const { fuuid } = params
+    const routingKeys = CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO.map(item=>item.replace('_FUUID_', fuuid))
+  const opts = { 
+    routingKeys,
+    exchanges: ['2.prive'],
+  }
+  debug("retirerCallbackTranscodageVideo sur %O", opts)
+  socket.unsubscribe(opts, cb)
+}
+
+// async function ecouterTranscodageProgres(socket, params, cb) {
+//     const opts = {
+//         routingKeys: [`evenement.fichiers.${params.fuuid}.transcodageProgres`],
+//         exchange: [L2Prive],
+//     }
+//     socket.subscribe(opts, cb)
+// }
+
+// async function retirerTranscodageProgres(socket, params, cb) {
+//     const routingKeys = [`2.prive/evenement.fichiers.${params.fuuid}.transcodageProgres`]
+//     socket.unsubscribe({routingKeys})
+//     if(cb) cb(true)
+// }
 
 module.exports = {
     challenge, getDocuments, getFavoris, getCorbeille, getCollection, getRecents,
     getClesFichiers, getPermissionCles, rechercheIndex, creerCollection, changerFavoris, 
     retirerDocuments, supprimerDocuments, decrireFichier, decrireCollection, 
-    ecouterMajFichiers, ecouterMajCollections, ecouterTranscodageProgres, 
-    retirerTranscodageProgres, 
+    enregistrerCallbackMajFichier, retirerCallbackMajFichier,
+    enregistrerCallbackMajCollections, retirerCallbackMajCollections,
+    enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
+
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,
 }

@@ -336,6 +336,7 @@ function NavigationFavoris(props) {
                 cuuid={cuuidCourant}
                 downloadAction={downloadAction}
                 etatConnexion={etatConnexion}
+                etatAuthentifie={etatAuthentifie}
             />
 
             <PreviewFichiers 
@@ -388,6 +389,7 @@ function NavigationFavoris(props) {
                 support={support}
                 downloadAction={downloadAction}
                 etatConnexion={etatConnexion}
+                etatAuthentifie={etatAuthentifie}
                 usager={usager}
             />
 

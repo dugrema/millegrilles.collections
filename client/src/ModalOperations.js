@@ -180,7 +180,11 @@ export function DeplacerModal(props) {
 }
 
 export function InfoModal(props) {
-    const { workers, etatConnexion, show, fermer, cuuid, fichiers, selection, support, downloadAction, evenementFichier, usager } = props
+    const { 
+        workers, etatConnexion, etatAuthentifie, 
+        show, fermer, cuuid, fichiers, selection, support, downloadAction, 
+        usager 
+    } = props
     const { connexion } = workers
 
     let tuuidSelectionne = null,
@@ -203,7 +207,6 @@ export function InfoModal(props) {
 
     useEffect(()=>{
         if(!show || !connexion || !tuuidSelectionne) return
-        if(evenementFichier && evenementFichier.tuuid !== tuuidSelectionne) return  // Update autre fichier
         // console.debug("Charger document '%s' ", tuuidSelectionne)
         connexion.getDocuments([tuuidSelectionne])
             .then(reponse => {
@@ -215,7 +218,7 @@ export function InfoModal(props) {
             .catch(err=>{
                 console.error("Erreur getDocument %s : %O", tuuidSelectionne, err)
             })
-    }, [show, connexion, tuuidSelectionne, setDoc, evenementFichier])
+    }, [show, connexion, tuuidSelectionne, setDoc])
 
     let Body = InfoVide
     if(!docSelectionne) {
@@ -239,7 +242,7 @@ export function InfoModal(props) {
                     value={doc}
                     downloadAction={downloadAction}
                     etatConnexion={etatConnexion}
-                    evenementFichier={evenementFichier}
+                    etatAuthentifie={etatAuthentifie}
                     usager={usager}
                 />
             </Modal.Body>
@@ -253,7 +256,7 @@ function InfoVide(props) {
 }
 
 function InfoFichier(props) {
-    const { workers, etatConnexion, support, downloadAction, evenementFichier, usager } = props
+    const { workers, etatConnexion, etatAuthentifie, support, downloadAction, usager } = props
 
     const valueItem = props.valueItem || {}
     const thumbnail = valueItem.thumbnail || {}
@@ -302,7 +305,7 @@ function InfoFichier(props) {
                 support={support}
                 downloadAction={downloadAction}
                 etatConnexion={etatConnexion}
-                evenementFichier={evenementFichier}
+                etatAuthentifie={etatAuthentifie}
                 usager={usager}
             />
         </div>
