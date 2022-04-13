@@ -76,9 +76,11 @@ function NavigationFavoris(props) {
     // Event handling
     const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
     const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
+    const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
     const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
     const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
-    
+    const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
+
     // Extraire tri pour utiliser comme trigger pour useEffect
     const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
 
@@ -231,19 +233,21 @@ function NavigationFavoris(props) {
 
     useEffect(()=>{
         if(!evenementFichierCb) return
-        if(liste && etatConnexion && etatAuthentifie) {
-            enregistrerEvenementsFichiers(workers, liste, evenementFichierCb)
+        if(cuuidCourant && etatConnexion && etatAuthentifie) {
+            enregistrerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners majFichier : %O", err))
             return () => {
-                retirerEvenementsFichiers(workers, liste, evenementFichierCb)
+                retirerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
                     .catch(err=>console.debug("Erreur retrait listeners majFichier : %O", err))
             }
         }
-    }, [workers, liste, etatConnexion, etatAuthentifie, evenementFichierCb])
+    }, [workers, cuuidCourant, etatConnexion, etatAuthentifie, evenementFichierCb])
 
     useEffect(()=>{
-        if(evenementFichier) mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
-        addEvenementFichier('')  // Vider liste evenements
+        if(evenementFichier) {
+            mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
+            addEvenementFichier('')  // Vider liste evenements
+        }
     }, [workers, liste, evenementFichier, cuuidCourant, setListe, addEvenementFichier])
 
     useEffect(()=>{
@@ -262,9 +266,33 @@ function NavigationFavoris(props) {
     }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
 
     useEffect(()=>{
-        if(evenementCollection) mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe)
-        addEvenementCollection('')  // Vider liste evenements
+        if(evenementCollection) {
+            mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe)
+            addEvenementCollection('')  // Vider liste evenements
+        }
     }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
+
+    useEffect(()=>{
+        const {connexion} = workers
+        if(!evenementContenuCollectionCb) return
+        if(cuuidCourant && etatConnexion && etatAuthentifie) {
+            connexion.enregistrerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
+                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu collection : %O", err))
+            return () => {
+                connexion.retirerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
+                    .catch(err=>console.warn("Erreur retirer listeners maj contenu collection : %O", err))
+            }
+        }
+
+    }, [workers, cuuidCourant, evenementContenuCollectionCb])
+
+    useEffect(()=>{
+        if(evenementContenuCollection) {
+            console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
+            mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection)
+            addEvenementContenuCollection('')
+        }
+    }, [workers, evenementContenuCollection, addEvenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection])
 
     return (
         <div {...getRootProps({onClick: onClickBack})}>
@@ -735,21 +763,21 @@ async function chargerCollection(workers, cuuid, usager, opts) {
     return {data: liste, estComplet}
 }
 
-async function enregistrerEvenementsFichiers(workers, liste, callback) {
+async function enregistrerEvenementsFichiersCollection(workers, cuuid, callback) {
     const { connexion } = workers
     try {
-        const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
-        await connexion.enregistrerCallbackMajFichier({tuuids}, callback)
+        // const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
+        await connexion.enregistrerCallbackMajFichierCollection({cuuids: [cuuid]}, callback)
     } catch (err) {
         console.error("Erreur enregistrerCallbackMajFichier : %O", err)
     }
 }
 
-async function retirerEvenementsFichiers(workers, liste, callback) {
+async function retirerEvenementsFichiersCollection(workers, cuuid, callback) {
     const { connexion } = workers
     try {
-        const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
-        await connexion.retirerCallbackMajFichier({tuuids}, callback)
+        // const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
+        await connexion.retirerCallbackMajFichierCollection({cuuids: [cuuid]}, callback)
     } catch (err) {
         console.error("Erreur retirerEvenementsFichiers : %O", err)
     }
@@ -776,6 +804,11 @@ function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, 
             }
             return item
         })
+
+    if(evenementFichier.nouveau) {
+        listeMaj.push(mapper(message, workers))
+    }
+
     setListe(listeMaj)
 }
 
@@ -787,10 +820,47 @@ function mapperEvenementCollection(evenementCollection, favoris, liste, setFavor
         if(item.tuuid === cuuid) return {...item, nom}
         return item
     })
+
     const listeMaj = liste.map(item=>{
         if(item.tuuid === cuuid) return {...item, nom}
         return item
     })
+
     setFavoris(favorisMaj)
     setListe(listeMaj)
+}
+
+async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection) {
+    console.debug("Mapper evenement contenu collection : %O, liste : %O", evenementContenuCollection, liste)
+    const message = evenementContenuCollection.message
+    const retires = message.retires || []
+    const listeMaj = liste
+        .filter(item=>{
+            // Detecter retrait/supprime
+            const tuuidItem = item.fileId || item.folderId
+            if(retires.includes(tuuidItem)) {
+                return false  // Retirer l'item
+            }
+            return true  // Conserver item
+        })
+
+    // Maj liste (retraits)
+    setListe(listeMaj)
+
+    // Determiner si on a des ajouts. Traitement va etre async, on utilise le meme
+    // mecanisme d'ajout que pour les evenements d'ajout de fichiers / collections.
+    let tuuids = []
+    if(message.fichiers_ajoutes) tuuids = [...tuuids, ...message.fichiers_ajoutes]
+    if(message.collections_ajoutees) tuuids = [...tuuids, ...message.collections_ajoutees]
+    const { connexion } = workers
+    if(tuuids.length > 0) {
+        const reponseDocuments = await connexion.getDocuments(tuuids)
+        const fichiers = reponseDocuments.fichiers
+        if(fichiers) {
+            console.debug("Reponse charger tuuids : %O", fichiers)
+            fichiers.forEach(doc=>{
+                addEvenementFichier({nouveau: true, message: doc})
+            })
+        }
+    }
 }

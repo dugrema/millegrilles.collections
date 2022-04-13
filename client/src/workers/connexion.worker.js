@@ -188,12 +188,28 @@ function retirerCallbackMajFichier(params, cb) {
   return ConnexionClient.unsubscribe('retirerCallbackMajFichier', cb, params) 
 }
 
+function enregistrerCallbackMajFichierCollection(params, cb) { 
+  return ConnexionClient.subscribe('enregistrerCallbackMajFichierCollection', cb, params)
+}
+
+function retirerCallbackMajFichierCollection(params, cb) { 
+  return ConnexionClient.unsubscribe('retirerCallbackMajFichierCollection', cb, params) 
+}
+
 function enregistrerCallbackMajCollections(params, cb) { 
   return ConnexionClient.subscribe('enregistrerCallbackMajCollections', cb, params) 
 }
 
 function retirerCallbackMajCollections(params, cb) { 
   return ConnexionClient.unsubscribe('retirerCallbackMajCollections', cb, params) 
+}
+
+function enregistrerCallbackMajContenuCollection(params, cb) { 
+  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, params)
+}
+
+function retirerCallbackMajContenuCollection(params, cb) { 
+  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, params) 
 }
 
 function enregistrerCallbackTranscodageProgres(params, cb) { 
@@ -258,6 +274,8 @@ expose({
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,
     enregistrerCallbackMajCollections, retirerCallbackMajCollections,
     enregistrerCallbackTranscodageProgres, retirerCallbackTranscodageProgres,
+    enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
+    enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
 
     // Commandes delegue
     indexerContenu,

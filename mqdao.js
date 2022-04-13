@@ -179,6 +179,41 @@ function retirerCallbackMajFichier(socket, params, cb) {
   socket.unsubscribe(opts, cb)
 }
 
+const mapperMajFichiersCollection = {
+    exchanges: ['2.prive'],
+    routingKeyTest: /^evenement\.grosfichiers\.majFichier$/,
+    mapRoom: (message, _rk, _exchange) => {
+      const cuuids = message.cuuids
+      if(cuuids) {
+        return cuuids.map(tuuid=>`2.prive/evenement.grosfichiers.majFichier/${tuuid}`)
+      }
+    }
+}
+  
+function enregistrerCallbackMajFichierCollection(socket, params, cb) {
+    const cuuids = params.cuuids
+    const opts = { 
+      routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
+      exchanges: ['2.prive'],
+      roomParam: cuuids,
+      mapper: mapperMajFichiersCollection,
+    }
+  
+    debug("enregistrerCallbackMajFichierCollection : %O", opts)
+    socket.subscribe(opts, cb)
+}
+  
+function retirerCallbackMajFichierCollection(socket, params, cb) {
+    const cuuids = params.cuuids
+    const opts = { 
+      routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
+      exchanges: ['2.prive'],
+      roomParam: cuuids,
+    }
+    debug("retirerCallbackMajFichierCollection sur %O", opts)
+    socket.unsubscribe(opts, cb)
+}
+
 const CONST_ROUTINGKEYS_MAJCOLLECTION = ['evenement.grosfichiers.majCollection']
 
 const mapperMajCollection = {
@@ -216,6 +251,28 @@ function retirerCallbackMajCollections(socket, params, cb) {
   socket.unsubscribe(opts, cb)
 }
 
+const CONST_ROUTINGKEYS_MAJ_CONTENU_COLLECTION = ['evenement.grosfichiers._CUUID_.majContenuCollection']
+
+function enregistrerCallbackMajContenuCollection(socket, params, cb) {
+  const cuuid = params.cuuid
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJ_CONTENU_COLLECTION.map(rk=>rk.replace('_CUUID_', cuuid)),
+    exchanges: ['2.prive'],
+  }
+
+  debug("enregistrerCallbackMajContenuCollection : %O", opts)
+  socket.subscribe(opts, cb)
+}
+
+function retirerCallbackMajContenuCollection(socket, params, cb) {
+  const cuuid = params.cuuid
+  const opts = { 
+    routingKeys: CONST_ROUTINGKEYS_MAJ_CONTENU_COLLECTION.map(rk=>rk.replace('_CUUID_', cuuid)),
+    exchanges: ['2.prive'],
+  }
+  debug("retirerCallbackMajContenuCollection sur %O", opts)
+  socket.unsubscribe(opts, cb)
+}
 
 const CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO = ['evenement.fichiers._FUUID_.transcodageProgres']
 
@@ -263,6 +320,8 @@ module.exports = {
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,
     enregistrerCallbackMajCollections, retirerCallbackMajCollections,
     enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
+    enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
+    enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
 
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,

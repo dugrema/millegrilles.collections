@@ -41,8 +41,12 @@ function configurerEvenements(socket) {
       // PROTEGE
       {eventName: 'enregistrerCallbackMajFichier', callback: (params, cb) => mqdao.enregistrerCallbackMajFichier(socket, params, cb)},
       {eventName: 'retirerCallbackMajFichier', callback: (params, cb) => mqdao.retirerCallbackMajFichier(socket, params, cb)},
+      {eventName: 'enregistrerCallbackMajFichierCollection', callback: (params, cb) => mqdao.enregistrerCallbackMajFichierCollection(socket, params, cb)},
+      {eventName: 'retirerCallbackMajFichierCollection', callback: (params, cb) => mqdao.retirerCallbackMajFichierCollection(socket, params, cb)},
       {eventName: 'enregistrerCallbackMajCollections', callback: (params, cb) => mqdao.enregistrerCallbackMajCollections(socket, params, cb)},
       {eventName: 'retirerCallbackMajCollections', callback: (params, cb) => mqdao.retirerCallbackMajCollections(socket, params, cb)},
+      {eventName: 'enregistrerCallbackMajContenuCollection', callback: (params, cb) => mqdao.enregistrerCallbackMajContenuCollection(socket, params, cb)},
+      {eventName: 'retirerCallbackMajContenuCollection', callback: (params, cb) => mqdao.retirerCallbackMajContenuCollection(socket, params, cb)},
       {eventName: 'enregistrerCallbackTranscodageVideo', callback: (params, cb) => mqdao.enregistrerCallbackTranscodageVideo(socket, params, cb)},
       {eventName: 'retirerCallbackTranscodageVideo', callback: (params, cb) => mqdao.retirerCallbackTranscodageVideo(socket, params, cb)},
       {eventName: 'indexerContenu', callback: (params, cb) => traiter(socket, mqdao.indexerContenu, {params, cb})},
