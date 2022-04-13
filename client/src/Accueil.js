@@ -191,7 +191,7 @@ function NavigationFavoris(props) {
         } else if(etatConnexion) {
             chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit: 20, tri: triColonnes})
                 .then(resultat=>{
-                    console.debug("!!! Resultat call suivant : %O", resultat)
+                    // console.debug("!!! Resultat call suivant : %O", resultat)
                     setListe(resultat.data)
                     setListeComplete(resultat.estComplet)
                 })
@@ -214,8 +214,7 @@ function NavigationFavoris(props) {
         colonnesCourant.tri = {colonne, ordre}
         console.debug("Sort key maj : %O", colonnesCourant)
         setColonnes(colonnesCourant)
-        // setListe([])  // Reset la liste
-    }, [colonnes, setColonnes, setListe])
+    }, [colonnes, setColonnes])
 
     useEffect(()=>{
         if(evenementCollection && evenementCollection.message) {
@@ -224,10 +223,10 @@ function NavigationFavoris(props) {
             console.debug("ACCUEIL.NavigationFavoris Message evenementFichier: %O", evenementFichier)
         }
 
-        let trigger = false
-        const message = evenementCollection?evenementCollection.message:'' || evenementFichier?evenementFichier.message:{}
-        const cuuids = message.cuuids || []
-        trigger = cuuids && cuuids.includes(cuuidCourant)
+        // let trigger = false
+        // const message = evenementCollection?evenementCollection.message:'' || evenementFichier?evenementFichier.message:{}
+        // const cuuids = message.cuuids || []
+        // trigger = cuuids && cuuids.includes(cuuidCourant)
 
         // if(trigger) {
         //     console.debug("ACCUEIL.NavigationFavoris reload sur evenement")
@@ -627,6 +626,7 @@ async function chargerCollection(workers, cuuid, usager, opts) {
             case 'taille': nomColonne = 'version_courante.taille'; break
             case 'mimetype': nomColonne = 'mimetype'; break
             case 'dateAjout': nomColonne = '_mg-creation'; break
+            default: nomColonne = null
         }
 
         if(nomColonne) {
@@ -639,7 +639,7 @@ async function chargerCollection(workers, cuuid, usager, opts) {
         skip = listeCourante.length
     }
 
-    console.debug("Charger collection %s (offset: %s)", cuuid, skip)
+    // console.debug("Charger collection %s (offset: %s)", cuuid, skip)
     const { connexion, chiffrage } = workers
     const reponse = await connexion.getContenuCollection(cuuid, {skip, limit, sort_keys})
     // console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
@@ -700,7 +700,7 @@ async function chargerCollection(workers, cuuid, usager, opts) {
             // Aucuns fichiers ajoutes, on a la liste au complet
             estComplet = true
         }
-        console.debug("chargerCollection donnees recues : %O", nouveauxFichiers)
+        // console.debug("chargerCollection donnees recues : %O", nouveauxFichiers)
         // setListe( data )
         liste = [...liste, ...nouveauxFichiers]  // Concatener
     }

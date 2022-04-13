@@ -4,10 +4,8 @@ import { ModalViewer } from '@dugrema/millegrilles.reactjs'
 import {trouverLabelImage} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
 
-import { resLoader } from './workers/traitementFichiers.js'
-
 function PreviewFichiers(props) {
-    console.debug("PreviewFichiers proppies : %O", props)
+    // console.debug("PreviewFichiers proppies : %O", props)
 
     const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview, support } = props
 
@@ -16,7 +14,7 @@ function PreviewFichiers(props) {
     useEffect(()=>{
         if(showPreview) {
             const liste = preparerPreviews(workers, tuuidSelectionne, fichiers, support)
-            console.debug("Liste fichiers pour previews : %O", liste)
+            // console.debug("Liste fichiers pour previews : %O", liste)
             setListe(liste)
         } else {
             // Vider la liste
@@ -24,7 +22,7 @@ function PreviewFichiers(props) {
         }
     }, [workers, tuuidSelectionne, fichiers, showPreview, support, setListe] )
 
-    console.debug("PreviewFichiers liste : %O", liste)
+    // console.debug("PreviewFichiers liste : %O", liste)
 
     return (
         <ModalViewer 
@@ -39,8 +37,6 @@ function PreviewFichiers(props) {
 export default PreviewFichiers
 
 function preparerPreviews(workers, tuuidSelectionne, liste, support) {
-
-    console.debug("!!! PreparerPreviews %s : %O", tuuidSelectionne, liste)
 
     const optionsLoader = {supporteWebm: support.webm, supporteWebp: support.webp}
 
@@ -73,10 +69,10 @@ function mapImage(workers, item, optionsLoader) {
 
     const version_courante = item.version_courante || {}
     const images = version_courante.images || {}
-    console.debug("Trouver labels images : %O", images)
+    // console.debug("Trouver labels images : %O", images)
     const labelImage = trouverLabelImage(Object.keys(images), {supporteWebp: true})
     const image = images[labelImage]
-    console.debug("Label trouve : %s, image : %O", labelImage, image)
+    // console.debug("Label trouve : %s, image : %O", labelImage, image)
     const thumbnail = images.thumbnail || images.thumb
 
     let loader = ''

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { proxy } from 'comlink'
 
-import { FormatteurTaille, isTouchEnabled } from '@dugrema/millegrilles.reactjs'
+import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
@@ -76,10 +76,10 @@ var _updateTranscodage = null
 
 export function ConversionVideo(props) {
 
-    const { workers, support, downloadAction, etatConnexion, evenementFichier, usager } = props
+    const { workers, support, downloadAction, etatConnexion, usager } = props
     const { connexion } = workers
 
-    const fichier = props.fichier || {}
+    const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const versionCourante = fichier.version_courante || {}
     const mimetype = versionCourante.mimetype || ''
     const mimetypeBase = mimetype.split('/').shift()
@@ -106,7 +106,7 @@ export function ConversionVideo(props) {
           }
         }
       }
-    }, [fichier, connexion, etatConnexion, evenementTranscodage])
+    }, [fichier, connexion, etatConnexion])
 
     if(mimetypeBase !== 'video') return ''
 
@@ -231,7 +231,6 @@ function SelectGroup(props) {
 async function convertirVideo(workers, fichier, params, setTranscodageVideo, opts) {
   opts = opts || {}
   console.debug("Convertir video %O (opts: %O)", params, opts)
-  const { connexion } = workers
 
   const usager = opts.usager || {},
         extensions = usager || {},
@@ -365,7 +364,7 @@ function AfficherLigneFormatVideo(props) {
   // console.debug("!!!! AfficherLigneFormatVideo %O", props)
 
   const download = useCallback(event => {
-    console.debug("Downloader fichier %O", props)
+    console.debug("Downloader fichier %O", fichier)
 
     const extension = video.mimetype.split('/').pop().toLowerCase()
     const resolutionListe = [video.height, video.width].filter(item=>!isNaN(item))

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 import { 
-    ListeFichiers, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
+    ListeFichiers, 
 } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
@@ -71,7 +71,7 @@ function NavigationRecents(props) {
             // Determiner le type de fichier
             showPreviewAction(value.fileId)
         }
-    }, [recents, setTuuidSelectionne, showPreviewAction])
+    }, [showPreviewAction])
 
     const onSelectionLignes = useCallback(selection=>{setSelection(selection)}, [setSelection])
     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])

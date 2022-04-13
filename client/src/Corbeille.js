@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 import { 
-    ListeFichiers, FormatteurTaille, FormatterDate, saveCleDechiffree, getCleDechiffree,
+    ListeFichiers, FormatteurTaille, FormatterDate, 
 } from '@dugrema/millegrilles.reactjs'
 
 import { mapper, onContextMenu } from './mapperFichier'
@@ -18,7 +18,7 @@ function Corbeille(props) {
     useEffect(()=>{
         if(!etatConnexion) return
         chargerCorbeille(connexion, setCorbeille)
-    }, [etatConnexion, setCorbeille, chargerCorbeille])
+    }, [connexion, etatConnexion, setCorbeille])
 
     useEffect(()=>{
         if(!evenementCollection || !evenementCollection.message) return 
@@ -28,7 +28,7 @@ function Corbeille(props) {
             // C'est un favoris, on recharge la liste au complet
             chargerCorbeille(workers, setCorbeille)
         }
-    }, [evenementCollection, workers, setCorbeille, chargerCorbeille])
+    }, [evenementCollection, workers, setCorbeille])
 
     return (
         <div>
@@ -68,7 +68,7 @@ function NavigationCorbeille(props) {
 
     const onDoubleClick = useCallback((event, value)=>{
         window.getSelection().removeAllRanges()
-    })
+    }, [])
 
     const fermerContextuel = useCallback(()=>{
         setContextuel(false)

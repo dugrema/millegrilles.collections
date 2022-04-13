@@ -11,7 +11,6 @@ export function MenuContextuelFichier(props) {
         showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
         showInfoModalOuvrir, showRenommerModalOuvrir, downloadAction,
     } = props
-    const { transfertFichiers } = workers
 
     // Determiner si preview est disponible
     let previewDisponible = false
@@ -33,7 +32,7 @@ export function MenuContextuelFichier(props) {
     const showPreviewAction = useCallback( event => {
         if(previewDisponible) showPreview(fichier.fileId)
         fermerContextuel()
-    }, [fichier, previewDisponible, fermerContextuel])
+    }, [fichier, previewDisponible, fermerContextuel, showPreview])
 
     const downloadEvent = useCallback( async event => {
         //console.debug("Download fichier %O", fichier)
@@ -65,7 +64,7 @@ export function MenuContextuelFichier(props) {
 
 export function MenuContextuelFichierRecherche(props) {
     const { 
-        workers, fichier, contextuel, fermerContextuel, showPreview,
+        fichier, contextuel, fermerContextuel, showPreview,
         showSupprimerModalOuvrir, showCopierModalOuvrir, 
         showInfoModalOuvrir, downloadAction,
     } = props
@@ -87,7 +86,7 @@ export function MenuContextuelFichierRecherche(props) {
     const showPreviewAction = useCallback( event => {
         if(previewDisponible) showPreview(fichier.fileId)
         fermerContextuel()
-    }, [fichier, previewDisponible, fermerContextuel])
+    }, [fichier, previewDisponible, fermerContextuel, showPreview])
 
     const downloadEvent = useCallback( async event => {
         //console.debug("Download fichier %O", fichier)
@@ -148,7 +147,7 @@ export function MenuContextuelMultiselect(props) {
 
     const { 
         workers, fichiers, selection, contextuel, fermerContextuel, cuuid,
-        showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, showInfoModalOuvrir,
+        showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
     } = props
 
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )

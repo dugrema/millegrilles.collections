@@ -12,12 +12,11 @@ import { ConversionVideo } from './OperationsVideo'
 
 export function SupprimerModal(props) {
 
-    const { workers, show, fermer, fichiers, selection } = props
+    const { workers, show, fermer, selection } = props
+    const connexion = workers.connexion
 
     const supprimer = useCallback( () => {
         // console.debug("SUPRIMER %O", selection)
-
-        const connexion = workers.connexion
 
         connexion.supprimerDocuments(selection)
         .then(reponse=>{
@@ -32,7 +31,7 @@ export function SupprimerModal(props) {
             fermer()
         })
         
-    }, [fermer, selection])
+    }, [connexion, fermer, selection])
 
     if(!selection || selection.length === 0) return ''
 
@@ -412,7 +411,7 @@ export function RenommerModal(props) {
         }
 
         fermer()
-    }, [connexion, tuuidSelectionne, docSelectionne, nom])
+    }, [connexion, docSelectionne, nom, fermer])
 
     const changerNom = useCallback(event=>{
         const { value } = event.currentTarget

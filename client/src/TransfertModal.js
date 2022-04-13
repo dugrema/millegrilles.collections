@@ -207,6 +207,7 @@ function EtatDownload(props) {
                     )
                 }
 
+                return ''
             })}
         </>
     )
@@ -311,7 +312,7 @@ function EtatUpload(props) {
 
     // console.debug("EtatUpload : %O", props)
 
-    const { workers, etat, supprimerTousAction } = props
+    const { workers, etat } = props
     const { transfertFichiers } = workers
 
     const annulerUploadAction = useCallback( event => {
@@ -356,6 +357,7 @@ function EtatUpload(props) {
                 if(item.status === 4) {
                     return <UploadErreur key={item.correlation} value={item} supprimer={supprimerUploadAction} />
                 }
+                return ''
             })}
         </>
     )

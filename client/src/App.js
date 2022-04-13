@@ -44,7 +44,8 @@ function App() {
   const showReindexerModalFermer = useCallback(()=>{ setShowReidexerModal(false) }, [setShowReidexerModal])
 
   const [evenementFichier, _setEvenementFichier] = useState('')
-  const [evenementCollection, _setEvenementCollection] = useState('')
+  // const [evenementCollection, setEvenementCollection] = useState('')
+  const evenementCollection = ''  // TODO - Fix evenements
 
   const delegue = true  // TODO - verifier si cert est delegue
 
@@ -78,11 +79,6 @@ function App() {
     _setEvenementFichier('')
   }, [_setEvenementFichier])
 
-  const setEvenementCollection = useCallback(param=>{
-    _setEvenementCollection(param)
-    _setEvenementCollection('')
-  }, [_setEvenementCollection])
-
   // Chargement des proprietes et workers
   useEffect(()=>{
     Promise.all([
@@ -98,7 +94,7 @@ function App() {
     if(workers) {
       if(workers.connexion) {
         connecter(workers, setUsager, setEtatConnexion, setFormatteurPret)
-          .then(infoConnexion=>{console.debug("Info connexion : %O", infoConnexion)})
+          // .then(infoConnexion=>{console.debug("Info connexion : %O", infoConnexion)})
           .catch(err=>{console.debug("Erreur de connexion : %O", err)})
       }
     }
@@ -115,7 +111,7 @@ function App() {
         //   .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
 
         workers.chiffrage.getIdmgLocal().then(idmg=>{
-          console.debug("IDMG local chiffrage : %O", idmg)
+          // console.debug("IDMG local chiffrage : %O", idmg)
           setIdmg(idmg)
         })
 
@@ -128,7 +124,7 @@ function App() {
         }
       }
 
-  }, [etatAuthentifie, setIdmg])
+  }, [workers, etatAuthentifie, setIdmg, setEvenementFichier])
   
   return (
     <LayoutApplication>

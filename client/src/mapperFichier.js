@@ -20,7 +20,7 @@ const Icones = {
 const supporteWebm = supporteFormatWebm()
 let supporteWebp = false
 supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.warn("Erreur detection webp : %O", err))
-console.debug("Support webm : %O", supporteWebm)
+// console.debug("Support webm : %O", supporteWebm)
 
 export { Icones }
 
@@ -55,7 +55,7 @@ export function mapper(row, workers) {
             const getFichierChiffre = workers.traitementFichiers.getFichierChiffre
 
             // Thumbnails pour navigation
-            if(images || video) {
+            if(images) {
                 const thumbnail = images.thumb || images.thumbnail,
                     small = images.small || images.poster
                 if(thumbnail && thumbnail.data_chiffre) {
@@ -64,12 +64,12 @@ export function mapper(row, workers) {
                 if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, {thumbnail})
 
                 imageLoader = imageResourceLoader(getFichierChiffre, images, {supporteWebp})
-
-                if(video) {
-                    videoLoader = videoResourceLoader(getFichierChiffre, video, {supporteWebm})
-                }
             }
-            
+
+            if(video) {
+                videoLoader = videoResourceLoader(getFichierChiffre, video, {supporteWebm})
+            }
+        
             // Loader du fichier source (principal), supporte thumbnail pour chargement
             loader = loadFichierChiffre(getFichierChiffre, fuuid_v_courante)
         }
@@ -138,7 +138,7 @@ export function mapperRecherche(row, workers) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
     } else {
-        const { mimetype, date_fichier, taille, images, video } = version_courante
+        const { mimetype, taille } = version_courante
         mimetype_fichier = mimetype
         taille_fichier = taille
         ids.fileId = tuuid    // Fichier, tuuid est le fileId
@@ -146,7 +146,6 @@ export function mapperRecherche(row, workers) {
         const mimetypeBase = mimetype.split('/').shift()
 
         if(workers && thumb_data && thumb_hachage_bytes) {
-            let loader = null
             if(thumb_hachage_bytes && thumb_data) {
                 miniThumbnailLoader = loadFichierChiffre(workers.traitementFichiers, thumb_hachage_bytes, {dataChiffre: thumb_data})
             }
