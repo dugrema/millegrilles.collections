@@ -185,7 +185,7 @@ const mapperMajCollection = {
   exchanges: ['2.prive'],
   routingKeyTest: /^evenement\.grosfichiers\.majCollection$/,
   mapRoom: (message, _rk, _exchange) => {
-    const cuuid = message.cuuid
+    const cuuid = message.tuuid
     if(cuuid) {
       return `2.prive/evenement.grosfichiers.majCollection/${cuuid}`
     }

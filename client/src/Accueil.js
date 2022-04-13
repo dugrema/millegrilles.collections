@@ -25,41 +25,23 @@ function Accueil(props) {
 
     // console.debug("Accueil props : %O", props)
 
-    const { workers, etatConnexion, etatAuthentifie, evenementCollection, evenementFichier, usager, downloadAction } = props
+    const { workers, etatConnexion, etatAuthentifie, evenementFichier, usager, downloadAction } = props
     const [ favoris, setFavoris ] = useState('')
 
     useEffect(()=>{ 
         if(etatConnexion && etatAuthentifie) chargerFavoris(workers, setFavoris) 
     }, [workers, etatConnexion, etatAuthentifie, setFavoris])
 
-    useEffect(()=>{
-        if(!evenementCollection || !evenementCollection.message) return 
-
-        console.debug("ACCUEIL(top) Message evenementCollection: %O", evenementCollection)
-
-        // Empecher cycle
-        //const message = evenementCollection.message || {}
-        let trigger = true
-        // if(message.favoris === true || message.tuuid) {
-        //     // C'est un favoris, on recharge la liste au complet
-        // }
-
-        if(trigger) {
-            console.debug("ACCUEIL(top) reload favoris sur evenement")
-            chargerFavoris(workers, setFavoris)
-        }
-    }, [evenementCollection, workers, setFavoris])
-
     return (
         <>
             <h1>Collections</h1>
             <NavigationFavoris 
                 favoris={favoris} 
+                setFavoris={setFavoris}
                 workers={workers} 
                 etatConnexion={etatAuthentifie}
                 etatAuthentifie={etatAuthentifie}
                 evenementFichier={evenementFichier}
-                evenementCollection={evenementCollection}
                 usager={usager}
                 downloadAction={downloadAction}
             />
@@ -72,7 +54,7 @@ export default Accueil
 
 function NavigationFavoris(props) {
 
-    const { workers, etatConnexion, etatAuthentifie, favoris, usager, downloadAction, erreurCb } = props
+    const { workers, etatConnexion, etatAuthentifie, favoris, usager, downloadAction, setFavoris, erreurCb } = props
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -260,11 +242,9 @@ function NavigationFavoris(props) {
     }, [workers, liste, etatConnexion, etatAuthentifie, evenementFichierCb])
 
     useEffect(()=>{
-        if(evenementFichier) {
-            console.debug("Traitement evenement fichier : %O", evenementFichier)
-        }
+        if(evenementFichier) mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
         addEvenementFichier('')  // Vider liste evenements
-    }, [liste, evenementFichier, addEvenementFichier])
+    }, [workers, liste, evenementFichier, cuuidCourant, setListe, addEvenementFichier])
 
     useEffect(()=>{
         const {connexion} = workers
@@ -282,11 +262,9 @@ function NavigationFavoris(props) {
     }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
 
     useEffect(()=>{
-        if(evenementCollection) {
-            console.debug("Traitement evenement collection : %O", evenementCollection)
-        }
+        if(evenementCollection) mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe)
         addEvenementCollection('')  // Vider liste evenements
-    }, [cuuidCourant, favoris, liste, evenementCollection, addEvenementCollection])
+    }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
 
     return (
         <div {...getRootProps({onClick: onClickBack})}>
@@ -775,4 +753,44 @@ async function retirerEvenementsFichiers(workers, liste, callback) {
     } catch (err) {
         console.error("Erreur retirerEvenementsFichiers : %O", err)
     }
+}
+
+function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe) {
+    console.debug("Mapper evenement fichier : %O, liste : %O", evenementFichier, liste)
+    const message = evenementFichier.message
+    const tuuid = message.tuuid
+    const listeMaj = liste
+        .filter(item=>{
+            // Detecter retrait/supprime
+            const tuuidItem = item.fileId
+            if(tuuidItem === tuuid) {
+                if(message.supprime === true) return false  // Fichier supprime
+                if(!message.cuuids.includes(cuuidCourant)) return false  // Fichier retire de la collection
+            }
+            return true  // Conserver le fichier
+        })
+        .map(item=>{
+            const tuuidItem = item.fileId
+            if(tuuidItem === tuuid) {
+                return mapper(message, workers)
+            }
+            return item
+        })
+    setListe(listeMaj)
+}
+
+function mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe) {
+    const message = evenementCollection.message
+    const cuuid = message.tuuid
+    const { nom } = message
+    const favorisMaj = favoris.map(item=>{
+        if(item.tuuid === cuuid) return {...item, nom}
+        return item
+    })
+    const listeMaj = liste.map(item=>{
+        if(item.tuuid === cuuid) return {...item, nom}
+        return item
+    })
+    setFavoris(favorisMaj)
+    setListe(listeMaj)
 }
