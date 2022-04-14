@@ -17,6 +17,7 @@ export function setWorkers(workers) {
 // }
 
 export async function getFichierChiffre(fuuid, opts) {
+    console.debug("!!! getFichierChiffre %s opts %O", fuuid, opts)
     opts = opts || {}
     const { dataChiffre, mimetype, controller, progress } = opts
     const { connexion, chiffrage } = _workers
@@ -68,6 +69,7 @@ export async function getFichierChiffre(fuuid, opts) {
     if(cleFichier && abFichier) {
         try {
             const ab = await chiffrage.chiffrage.dechiffrer(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
+            console.debug("!!!! blob %s mimetype %s", fuuid, mimetype)
             const blob = new Blob([ab], {type: mimetype})
             return blob
         } catch(err) {

@@ -77,10 +77,11 @@ function mapImage(workers, item, optionsLoader) {
 
     let loader = ''
     if(image && image.hachage) {
-        const imageFuuid = image.hachage
-        loader = fileResourceLoader(traitementFichiersWorker.getFichierChiffre, imageFuuid, {thumbnail})
+        const imageFuuid = image.hachage,
+              imageMimetype = image.mimetype
+        loader = fileResourceLoader(traitementFichiersWorker.getFichierChiffre, imageFuuid, imageMimetype, {thumbnail})
     } else if(thumbnail && thumbnail.hachage && thumbnail.data_chiffre) {
-        loader = loadFichierChiffre(traitementFichiersWorker.getFichierChiffre, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
+        loader = loadFichierChiffre(traitementFichiersWorker.getFichierChiffre, thumbnail.hachage, thumbnail.mimetype, {dataChiffre: thumbnail.data_chiffre})
     } else {
         console.debug("Aucune information d'image pour %O", item)
         return null

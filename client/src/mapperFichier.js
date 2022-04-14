@@ -59,9 +59,9 @@ export function mapper(row, workers) {
                 const thumbnail = images.thumb || images.thumbnail,
                     small = images.small || images.poster
                 if(thumbnail && thumbnail.data_chiffre) {
-                    miniThumbnailLoader = loadFichierChiffre(getFichierChiffre, thumbnail.hachage, {dataChiffre: thumbnail.data_chiffre})
+                    miniThumbnailLoader = loadFichierChiffre(getFichierChiffre, thumbnail.hachage, thumbnail.mimetype, {dataChiffre: thumbnail.data_chiffre})
                 }
-                if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, {thumbnail})
+                if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, small.mimetype, {thumbnail})
 
                 imageLoader = imageResourceLoader(getFichierChiffre, images, {supporteWebp})
             }
@@ -71,7 +71,7 @@ export function mapper(row, workers) {
             }
         
             // Loader du fichier source (principal), supporte thumbnail pour chargement
-            loader = loadFichierChiffre(getFichierChiffre, fuuid_v_courante)
+            loader = loadFichierChiffre(getFichierChiffre, fuuid_v_courante, mimetype)
         }
 
         if(mimetype === 'application/pdf') {
@@ -147,7 +147,7 @@ export function mapperRecherche(row, workers) {
 
         if(workers && thumb_data && thumb_hachage_bytes) {
             if(thumb_hachage_bytes && thumb_data) {
-                miniThumbnailLoader = loadFichierChiffre(workers.traitementFichiers, thumb_hachage_bytes, {dataChiffre: thumb_data})
+                miniThumbnailLoader = loadFichierChiffre(workers.traitementFichiers, thumb_hachage_bytes, 'image/jpeg', {dataChiffre: thumb_data})
             }
         }
 
