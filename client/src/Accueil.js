@@ -284,7 +284,7 @@ function NavigationFavoris(props) {
             }
         }
 
-    }, [workers, cuuidCourant, evenementContenuCollectionCb])
+    }, [workers, etatConnexion, etatAuthentifie, cuuidCourant, evenementContenuCollectionCb])
 
     useEffect(()=>{
         if(evenementContenuCollection) {
