@@ -36,7 +36,14 @@ export function chargerWorkers() {
 
     const urlLocal = new URL(window.location.href)
     urlLocal.pathname = '/collections/fichiers'
-    transfertFichiers.down_setUrlDownload(urlLocal.href)
+    const downloadHref = urlLocal.href
+    console.debug("Download path : %O", downloadHref)
+    transfertFichiers.down_setUrlDownload(downloadHref)
+    
+    urlLocal.pathname = '/collections/upload'
+    const uploadHref = urlLocal.href
+    console.debug("Upload path : %O", uploadHref)
+    transfertFichiers.up_setPathServeur('/collections/upload')
 
     return workers
 }

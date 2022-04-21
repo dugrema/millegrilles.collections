@@ -13,27 +13,27 @@ function init(amqpdao, fichierUploadUrl, opts) {
 
     const route = express.Router()
 
-    route.use((req, res, next)=>{
-        debug("REQ collectionsFichiers url : %s", req.url)
-        next()
-    })
+    // route.use((req, res, next)=>{
+    //     debug("REQ collectionsFichiers url : %s", req.url)
+    //     next()
+    // })
 
     // Download (GET)
     route.get('/collections/fichiers/verifier', verifierAutorisationFichier)
 
     // Reception fichiers (PUT)
     const middlewareRecevoirFichier = backingStore.middlewareRecevoirFichier(opts)
-    route.put('/collections/fichiers/:correlation/:position', middlewareRecevoirFichier)
+    route.put('/collections/upload/:correlation/:position', middlewareRecevoirFichier)
 
     // Verification fichiers (POST)
     const middlewareReadyFichier = backingStore.middlewareReadyFichier(amqpdao, opts)
-    route.post('/collections/fichiers/:correlation', bodyParser.json(), middlewareReadyFichier)
+    route.post('/collections/upload/:correlation', bodyParser.json(), middlewareReadyFichier)
 
     // Cleanup
     const middlewareDeleteStaging = backingStore.middlewareDeleteStaging(opts)
-    route.delete('/collections/fichiers/:correlation', middlewareDeleteStaging)
+    route.delete('/collections/upload/:correlation', middlewareDeleteStaging)
 
-    debug("Route /collections/fichiers initialisee")
+    debug("Route /collections/upload initialisee")
     
     return route
 }
