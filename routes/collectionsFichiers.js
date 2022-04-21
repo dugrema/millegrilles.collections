@@ -18,6 +18,9 @@ function init(amqpdao, fichierUploadUrl, opts) {
         next()
     })
 
+    // Download (GET)
+    route.get('/collections/fichiers/verifier', verifierAutorisationFichier)
+
     // Reception fichiers (PUT)
     const middlewareRecevoirFichier = backingStore.middlewareRecevoirFichier(opts)
     route.put('/collections/fichiers/:correlation/:position', middlewareRecevoirFichier)
@@ -33,6 +36,12 @@ function init(amqpdao, fichierUploadUrl, opts) {
     debug("Route /collections/fichiers initialisee")
     
     return route
+}
+
+function verifierAutorisationFichier(req, res) {
+    // TODO : valider acces de l'usager au fichier
+    // console.debug("REQ Params, sec : %O", req)
+    return res.sendStatus(200)
 }
 
 module.exports = init

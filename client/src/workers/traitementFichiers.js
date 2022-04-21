@@ -17,7 +17,7 @@ export function setWorkers(workers) {
 // }
 
 export async function getFichierChiffre(fuuid, opts) {
-    console.debug("!!! getFichierChiffre %s opts %O", fuuid, opts)
+    // console.debug("!!! getFichierChiffre %s !!! opts %O", fuuid, opts)
     opts = opts || {}
     const { dataChiffre, mimetype, controller, progress } = opts
     const { connexion, chiffrage } = _workers
@@ -53,7 +53,7 @@ export async function getFichierChiffre(fuuid, opts) {
             // Recuperer le fichier
             const reponse = await axios({
                 method: 'GET',
-                url: `/fichiers/${fuuid}`,
+                url: `/collections/fichiers/${fuuid}`,
                 responseType: 'arraybuffer',
                 // timeout: 120000,
                 progress,
@@ -69,7 +69,7 @@ export async function getFichierChiffre(fuuid, opts) {
     if(cleFichier && abFichier) {
         try {
             const ab = await chiffrage.chiffrage.dechiffrer(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
-            console.debug("!!!! blob %s mimetype %s", fuuid, mimetype)
+            // console.debug("!!!! blob %s mimetype %s", fuuid, mimetype)
             const blob = new Blob([ab], {type: mimetype})
             return blob
         } catch(err) {
@@ -85,12 +85,12 @@ export async function getFichierChiffre(fuuid, opts) {
    Retourne { src } qui peut etre un url ou un blob. 
 */
 export function resLoader(fichier, typeRessource, opts) {
-    console.debug("Res loader fichier %s : typeRessource %O, opts %O", fichier, typeRessource, opts)
+    // console.debug("Res loader fichier %s : typeRessource %O, opts %O", fichier, typeRessource, opts)
     opts = opts || {}
     const { fileId } = fichier
     const versionCourante = fichier.version_courante || {}
     const { anime } = versionCourante
-    console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
+    // console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
 
     let selection = ''
     if(typeRessource === 'video') {
@@ -98,7 +98,7 @@ export function resLoader(fichier, typeRessource, opts) {
         const {video} = versionCourante
         if(video) {
             const labelVideo = trouverLabelVideo(Object.keys(video), opts)
-            console.debug("Label video trouve : '%s'", labelVideo)
+            // console.debug("Label video trouve : '%s'", labelVideo)
             selection = video[labelVideo]
         }
     } else if(typeRessource === 'image') {
@@ -144,7 +144,7 @@ export function resLoader(fichier, typeRessource, opts) {
             console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
             throw new Error(`Aucun fuuid trouve pour file_id: ${fileId}`)
         }
-        console.debug("Charger video selection %O, mimetype: %O, fuuid video: %s", selection, mimetype, fuuid)
+        // console.debug("Charger video selection %O, mimetype: %O, fuuid video: %s", selection, mimetype, fuuid)
         const controller = new AbortController()
         const urlBlob = getFichierChiffre(fuuid, {mimetype, controller})
             .then(blob=>URL.createObjectURL(blob))

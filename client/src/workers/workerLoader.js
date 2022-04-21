@@ -35,7 +35,7 @@ export function chargerWorkers() {
     transfertFichiers.up_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/up worker : %O", err))
 
     const urlLocal = new URL(window.location.href)
-    urlLocal.pathname = '/fichiers'
+    urlLocal.pathname = '/collections/fichiers'
     transfertFichiers.down_setUrlDownload(urlLocal.href)
 
     return workers
