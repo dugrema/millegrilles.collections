@@ -44,7 +44,7 @@ export function mapper(row, workers) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
     } else {
-        const { mimetype, date_fichier, taille, images, video } = version_courante
+        const { anime, mimetype, date_fichier, taille, images, video } = version_courante
         mimetype_fichier = mimetype
         date_version = date_fichier
         taille_fichier = taille
@@ -63,7 +63,7 @@ export function mapper(row, workers) {
                 }
                 if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, small.mimetype, {thumbnail})
 
-                imageLoader = imageResourceLoader(getFichierChiffre, images, {supporteWebp})
+                imageLoader = imageResourceLoader(getFichierChiffre, images, {anime, supporteWebp, fuuid: fuuid_v_courante, mimetype})
             }
 
             if(video) {
