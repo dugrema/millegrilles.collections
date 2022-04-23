@@ -636,7 +636,7 @@ function MenuContextuelFavoris(props) {
 
     if(!contextuel.show) return ''
 
-    console.debug("!!! Selection : %s, FICHIERS : %O", selection, fichiers)
+    // console.debug("!!! Selection : %s, FICHIERS : %O", selection, fichiers)
 
     if( selection && selection.length > 1 ) {
         return <MenuContextuelMultiselect {...props} />
