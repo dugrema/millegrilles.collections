@@ -33,10 +33,12 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
             transfertFichiers.up_setCertificat(certificat)
             transfertFichiers.up_ajouterFichiersUpload(acceptedFiles, params)
                 .catch(err=>{
-                    console.error("Erreur preparation upload fichiers : %O", err)
+                    if(erreurCb) erreurCb(err, "Erreur durant la preparation d'upload du fichier")
+                    else console.error("Erreur preparation upload fichiers : %O", err)
                 })
         } else {
-            console.error("Erreur getCertificatsMaitredescles - aucun certificat recu")
+            if(erreurCb) erreurCb("Erreur durant la preparation d'upload du fichier - aucuns certificat serveur recu")
+            else console.error("Erreur getCertificatsMaitredescles - aucun certificat recu")
         }
     } catch(err) {
         if(erreurCb) erreurCb(err, "Erreur durant la preparation d'upload du fichier")

@@ -4,11 +4,11 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
-import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout } from '@dugrema/millegrilles.reactjs'
+import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout, TransfertModal } from '@dugrema/millegrilles.reactjs'
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 
-import TransfertModal from './TransfertModal'
+// import TransfertModal from './TransfertModal'
 import { ReindexerModal } from './ModalOperations'
 
 import stylesCommuns from '@dugrema/millegrilles.reactjs/dist/index.css'
@@ -42,8 +42,6 @@ function App() {
   const showReindexerModalOuvrir = useCallback(()=>{ setShowReidexerModal(true) }, [setShowReidexerModal])
   const showReindexerModalFermer = useCallback(()=>{ setShowReidexerModal(false) }, [setShowReidexerModal])
 
-  const [evenementFichier, _setEvenementFichier] = useState('')
-  // const [evenementCollection, setEvenementCollection] = useState('')
   const evenementCollection = ''  // TODO - Fix evenements
 
   const delegue = true  // TODO - verifier si cert est delegue
@@ -98,7 +96,7 @@ function App() {
       if(etatAuthentifie) {
         workers.chiffrage.getIdmgLocal().then(idmg=>setIdmg(idmg))
         // Preload certificat maitre des cles
-        workers.connexion.getCertificatsMaitredescles().catch(err=>erreur.console("Erreur preload certificat maitre des cles"))
+        workers.connexion.getCertificatsMaitredescles().catch(err=>console.error("Erreur preload certificat maitre des cles : %O", err))
       }
   }, [workers, etatAuthentifie, setIdmg])
   
@@ -130,7 +128,6 @@ function App() {
             etatAuthentifie={etatAuthentifie}
             page={page}
             evenementCollection={evenementCollection}
-            evenementFichier={evenementFichier}
             paramsRecherche={paramsRecherche}
             downloadAction={downloadAction}
             erreurCb={erreurCb}
