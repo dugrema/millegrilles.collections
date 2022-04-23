@@ -25,7 +25,7 @@ function Accueil(props) {
 
     // console.debug("Accueil props : %O", props)
 
-    const { workers, etatConnexion, etatAuthentifie, evenementFichier, usager, downloadAction } = props
+    const { workers, etatConnexion, etatAuthentifie, evenementFichier, usager, downloadAction, erreurCb } = props
     const [ favoris, setFavoris ] = useState('')
 
     useEffect(()=>{ 
@@ -44,6 +44,7 @@ function Accueil(props) {
                 evenementFichier={evenementFichier}
                 usager={usager}
                 downloadAction={downloadAction}
+                erreurCb={erreurCb}
             />
         </>
     )
@@ -164,8 +165,8 @@ function NavigationFavoris(props) {
             console.error("Cuuid non selectionne (favoris actif)")
             return
         }
-        uploaderFichiers(workers, cuuidCourant, acceptedFiles)
-    }, [workers, cuuidCourant])
+        uploaderFichiers(workers, cuuidCourant, acceptedFiles, {erreurCb})
+    }, [workers, cuuidCourant, erreurCb])
 
     const dzHook = useDropzone({onDrop})
     const {getRootProps, getInputProps, open: openDropzone} = dzHook

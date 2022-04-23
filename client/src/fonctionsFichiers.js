@@ -13,24 +13,34 @@ export async function detecterSupport(setSupport) {
     setSupport(support)
 }
 
-export async function uploaderFichiers(workers, cuuid, acceptedFiles) {
-    console.debug("Uploader vers '%s' fichiers : %O", cuuid, acceptedFiles)
+export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
+    opts = opts || {}
+    const { erreurCb } = opts
 
-    const { transfertFichiers, connexion } = workers
+    try {
+        console.debug("Uploader vers '%s' fichiers : %O", cuuid, acceptedFiles)
 
-    const params = {}
-    if(cuuid) params.cuuid = cuuid
+        const { transfertFichiers, connexion } = workers
 
-    // S'assurer d'avoir un certificat de maitre des cles
-    const cert = await connexion.getCertificatsMaitredescles()
-    const { certificat } = cert
+        const params = {}
+        if(cuuid) params.cuuid = cuuid
 
-    if(certificat) {
-        transfertFichiers.up_setCertificat(certificat)
-        transfertFichiers.up_ajouterFichiersUpload(acceptedFiles, params)
-            .catch(err=>{console.error("Erreur preparation upload fichiers : %O", err)})
-    } else {
-        console.error("Erreur getCertificatsMaitredescles - aucun certificat recu")
+        // S'assurer d'avoir un certificat de maitre des cles
+        const cert = await connexion.getCertificatsMaitredescles()
+        const { certificat } = cert
+
+        if(certificat) {
+            transfertFichiers.up_setCertificat(certificat)
+            transfertFichiers.up_ajouterFichiersUpload(acceptedFiles, params)
+                .catch(err=>{
+                    console.error("Erreur preparation upload fichiers : %O", err)
+                })
+        } else {
+            console.error("Erreur getCertificatsMaitredescles - aucun certificat recu")
+        }
+    } catch(err) {
+        if(erreurCb) erreurCb(err, "Erreur durant la preparation d'upload du fichier")
+        else console.error("Erreur durant la preparation d'upload du fichier : %O", err)
     }
     
 }

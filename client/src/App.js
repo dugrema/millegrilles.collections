@@ -73,11 +73,6 @@ function App() {
 
   }, [connexion, transfertFichiers, usager])
 
-  const setEvenementFichier = useCallback(param=>{
-    _setEvenementFichier(param)
-    _setEvenementFichier('')
-  }, [_setEvenementFichier])
-
   // Chargement des proprietes et workers
   useEffect(()=>{
     Promise.all([
@@ -100,30 +95,12 @@ function App() {
   }, [workers, setUsager, setEtatConnexion, setFormatteurPret])
 
   useEffect(()=>{
-
-      // const setEvenementFichierProxy = proxy(setEvenementFichier)
-
       if(etatAuthentifie) {
-        // workers.connexion.enregistrerCallbackMajFichier({tuuid: 'abcd-1234'}, setEvenementFichierProxy)
-        //   .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
-        // workers.connexion.enregistrerCallbackMajCollection(proxy(setEvenementCollection))
-        //   .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
-
-        workers.chiffrage.getIdmgLocal().then(idmg=>{
-          // console.debug("IDMG local chiffrage : %O", idmg)
-          setIdmg(idmg)
-        })
-
-        return () => {
-          // Cleanup
-          // workers.connexion.retirerCallbackMajFichier(setEvenementFichierProxy)
-          //  .catch(err=>{console.error("Erreur enregistrerCallbackMajFichier : %O", err)})
-          // workers.connexion.retirerCallbackMajCollection(proxy(setEvenementCollection))
-          //   .catch(err=>{console.error("Erreur enregistrerCallbackMajCollection : %O", err)})
-        }
+        workers.chiffrage.getIdmgLocal().then(idmg=>setIdmg(idmg))
+        // Preload certificat maitre des cles
+        workers.connexion.getCertificatsMaitredescles().catch(err=>erreur.console("Erreur preload certificat maitre des cles"))
       }
-
-  }, [workers, etatAuthentifie, setIdmg, setEvenementFichier])
+  }, [workers, etatAuthentifie, setIdmg])
   
   return (
     <LayoutApplication>
