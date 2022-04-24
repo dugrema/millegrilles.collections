@@ -192,7 +192,7 @@ function NavigationFavoris(props) {
     }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
 
     const enteteOnClickCb = useCallback(colonne=>{
-        console.debug("Click entete nom colonne : %s", colonne)
+        // console.debug("Click entete nom colonne : %s", colonne)
         const triCourant = {...colonnes.tri}
         const colonnesCourant = {...colonnes}
         const colonneCourante = triCourant.colonne
@@ -204,7 +204,7 @@ function NavigationFavoris(props) {
             ordre = 1
         }
         colonnesCourant.tri = {colonne, ordre}
-        console.debug("Sort key maj : %O", colonnesCourant)
+        // console.debug("Sort key maj : %O", colonnesCourant)
         setColonnes(colonnesCourant)
     }, [colonnes, setColonnes])
 
@@ -289,7 +289,7 @@ function NavigationFavoris(props) {
 
     useEffect(()=>{
         if(evenementContenuCollection) {
-            console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
+            // console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
             mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection)
             addEvenementContenuCollection('')
         }
@@ -728,14 +728,14 @@ async function chargerCollection(workers, cuuid, usager, opts) {
         // console.debug("Get cles manquantes pour fuuids %O", fuuidsInconnus)
         connexion.getClesFichiers(fuuidsInconnus, usager)
             .then(async reponse=>{
-                console.debug("Reponse dechiffrage cles : %O", reponse)
+                // console.debug("Reponse dechiffrage cles : %O", reponse)
 
                 for await (const fuuid of Object.keys(reponse.cles)) {
                     const cleFichier = reponse.cles[fuuid]
-                    console.debug("Dechiffrer cle %O", cleFichier)
+                    // console.debug("Dechiffrer cle %O", cleFichier)
                     const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
                     cleFichier.cleSecrete = cleSecrete
-                    console.debug("Cle secrete fichier %O", cleFichier)
+                    // console.debug("Cle secrete fichier %O", cleFichier)
                     usagerDao.saveCleDechiffree(fuuid, cleSecrete, cleFichier)
                         .catch(err=>{
                             console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
@@ -785,7 +785,7 @@ async function retirerEvenementsFichiersCollection(workers, cuuid, callback) {
 }
 
 function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe) {
-    console.debug("Mapper evenement fichier : %O, liste : %O", evenementFichier, liste)
+    // console.debug("Mapper evenement fichier : %O, liste : %O", evenementFichier, liste)
     const message = evenementFichier.message
     const tuuid = message.tuuid
     const listeMaj = liste
@@ -832,7 +832,7 @@ function mapperEvenementCollection(evenementCollection, favoris, liste, setFavor
 }
 
 async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection) {
-    console.debug("Mapper evenement contenu collection : %O, liste : %O", evenementContenuCollection, liste)
+    // console.debug("Mapper evenement contenu collection : %O, liste : %O", evenementContenuCollection, liste)
     const message = evenementContenuCollection.message
     const retires = message.retires || []
     const listeMaj = liste
@@ -858,7 +858,7 @@ async function mapperEvenementContenuCollection(workers, evenementContenuCollect
         const reponseDocuments = await connexion.getDocuments(tuuids)
         const fichiers = reponseDocuments.fichiers
         if(fichiers) {
-            console.debug("Reponse charger tuuids : %O", fichiers)
+            // console.debug("Reponse charger tuuids : %O", fichiers)
             fichiers.forEach(doc=>{
                 addEvenementFichier({nouveau: true, message: doc})
             })

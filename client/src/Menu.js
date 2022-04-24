@@ -12,8 +12,6 @@ import { IconeConnexion } from '@dugrema/millegrilles.reactjs'
 
 function Menu(props) {
 
-    // console.debug("!!! Menu Proppys : %O", props)
-
     const { 
       setPage, paramsRecherche, setParamsRecherche,
       showTransfertModal,  
@@ -142,7 +140,6 @@ function DropDownUsager(props) {
 }
 
 function LabelTransfert(props) {
-
   const { etatTransfert } = props
   const download = etatTransfert.download || {}
   const downloads = download.downloads || []
