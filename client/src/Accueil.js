@@ -8,6 +8,7 @@ import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
+import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { useDropzone } from 'react-dropzone'
 
@@ -527,12 +528,30 @@ function preparerColonnes() {
             'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
             'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
-            'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterDate, xs: 5, lg: 2},
+            'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
             'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
         tri: {colonne: 'nom', ordre: 1},
     }
     return params
+}
+
+function FormatterColonneDate(props) {
+    const data = props.data || {}
+    const { upload } = data
+    if(upload) {
+        if( upload.status === 1 ) {
+            return <span>En attente</span>
+        } else if( upload.status === 2 ) {
+            const taille = data.size || data.taille
+            const pct = Math.min(Math.round(upload.position / taille * 100)) || 0
+            return <ProgressBar now={pct} label={pct + '%'} />
+        } else {
+            return <span>En cours de traitement</span>
+        }
+    } else {
+        return <FormatterDate value={props.value} />   
+    }
 }
 
 function trierNom(a, b) {
@@ -768,7 +787,6 @@ async function retirerEvenementsFichiersCollection(workers, cuuid, callback) {
 }
 
 function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe) {
-    console.debug("Mapper evenement fichier : %O, liste : %O", evenementFichier, liste)
     const message = evenementFichier.message
     const tuuid = message.tuuid
     const tuuidsInclus = {}
@@ -807,14 +825,16 @@ function mapperUploadFichier(workers, evenement, liste, cuuidCourant, setListe) 
 
     let trouve = false
 
-    const fichierUpload = mapperUpload(uploadEnCours)
+    const fichierUpload = mapperUpload(uploadEnCours, evenement)
 
     // Upload en cours, mettre a jour le fichier dans la liste avec progres
     liste = liste.map(item=>{
         const itemId = item.fileId || item.folderId
         if(itemId !== fichierUpload.correlation) return item
+
         trouve = true
-        item = {...item, ...fichierUpload}
+        const upload = { position: uploadEnCours.position, status: uploadEnCours.status }
+        item = {...item, ...fichierUpload, upload}
         return item
     })
 
@@ -865,14 +885,17 @@ function mapperUploadFichier(workers, evenement, liste, cuuidCourant, setListe) 
     setListe(liste)
 }
 
-function mapperUpload(uploadFichier) {
-    const { status, position, size, transaction, correlation } = uploadFichier || {}
+function mapperUpload(uploadFichier, evenement) {
+    evenement = evenement || {}
+    const correlation = evenement.encours || uploadFichier.correlation
+    const status = evenement.status || uploadFichier.status
+    const position = evenement.loadedBytes || uploadFichier.position
+    const { size, transaction } = uploadFichier || {}
     const { cuuid, mimetype, nom, dateFichier } = transaction || {}
     return { tuuid: correlation, status, position, size, transaction, correlation, mimetype, nom, cuuid, dateFichier }
 }
 
 function mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe) {
-    console.debug("Evenement collection : %O", evenementCollection)
     const message = evenementCollection.message
     const cuuid = message.tuuid
     const { nom } = message
@@ -891,7 +914,6 @@ function mapperEvenementCollection(evenementCollection, favoris, liste, setFavor
 }
 
 async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection) {
-    console.debug("Mapper evenement contenu collection : %O, liste : %O", evenementContenuCollection, liste)
     const message = evenementContenuCollection.message
     const retires = message.retires || []
     const listeMaj = liste

@@ -25,7 +25,7 @@ supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.wa
 export { Icones }
 
 export function mapper(row, workers) {
-    const { tuuid, nom, supprime, date_creation, duree, fuuid_v_courante, version_courante, favoris } = row
+    const { tuuid, nom, supprime, date_creation, duree, fuuid_v_courante, version_courante, mimetype, favoris } = row
 
     // console.debug("!!! MAPPER %O", row)
 
@@ -40,7 +40,7 @@ export function mapper(row, workers) {
         loader = null,
         imageLoader = null,
         videoLoader = null
-    if(!fuuid_v_courante) {
+    if(!mimetype) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
     } else {
@@ -91,6 +91,11 @@ export function mapper(row, workers) {
         }
     }
 
+    let upload = null
+    if(row.status) {
+        upload = { status: row.status, position: row.position }
+    }
+
     return {
         // fileId: tuuid,
         // folderId: tuuid,
@@ -100,7 +105,15 @@ export function mapper(row, workers) {
         taille: taille_fichier,
         dateAjout: date_version || date_creation,
         mimetype: ids.folderId?'Repertoire':mimetype_fichier,
-        // thumbnailSrc,
+        duree,
+        fuuid: fuuid_v_courante,
+        version_courante,
+        favoris,
+
+        // Upload
+        upload,
+
+        // Loaders
         thumbnail: {
             miniLoader: miniThumbnailLoader,
             smallLoader: smallThumbnailLoader,
@@ -110,10 +123,6 @@ export function mapper(row, workers) {
         loader,
         imageLoader,
         videoLoader,
-        duree,
-        fuuid: fuuid_v_courante,
-        version_courante,
-        favoris,
     }
 }
 

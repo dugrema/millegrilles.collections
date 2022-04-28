@@ -101,7 +101,6 @@ function App() {
   }, [workers, etatAuthentifie, setIdmg])
   
   useEffect(()=>{
-    console.debug("Changement etat transfert : %O", etatTransfert)
     const upload = etatTransfert.upload || {}
     const {status, transaction} = upload
     if(etatAuthentifie && status === 5 && transaction) {
@@ -222,7 +221,6 @@ async function emettreAjouterFichier(workers, transaction) {
   delete transactionNettoyee['en-tete']
 
   try {
-    console.debug("Emettre commande ajouterFichier : %O", transactionNettoyee)
     await connexion.ajouterFichier(transactionNettoyee)
   } catch(err) {
     console.debug("Erreur emission evenement ajouterFichier : %O", err)
