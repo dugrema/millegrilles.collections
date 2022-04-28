@@ -25,7 +25,7 @@ function Accueil(props) {
 
     // console.debug("Accueil props : %O", props)
 
-    const { workers, etatConnexion, etatAuthentifie, evenementFichier, usager, downloadAction, erreurCb } = props
+    const { workers, etatConnexion, etatAuthentifie, evenementFichier, usager, downloadAction, etatTransfert, erreurCb } = props
     const [ favoris, setFavoris ] = useState('')
 
     useEffect(()=>{ 
@@ -42,6 +42,7 @@ function Accueil(props) {
                 etatConnexion={etatAuthentifie}
                 etatAuthentifie={etatAuthentifie}
                 evenementFichier={evenementFichier}
+                etatTransfert={etatTransfert}
                 usager={usager}
                 downloadAction={downloadAction}
                 erreurCb={erreurCb}
@@ -55,7 +56,8 @@ export default Accueil
 
 function NavigationFavoris(props) {
 
-    const { workers, etatConnexion, etatAuthentifie, favoris, usager, downloadAction, setFavoris, erreurCb } = props
+    const { workers, etatConnexion, etatAuthentifie, favoris, usager, downloadAction, setFavoris, etatTransfert, erreurCb } = props
+
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -81,6 +83,7 @@ function NavigationFavoris(props) {
     const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
     const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
     const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
+    useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
 
     // Extraire tri pour utiliser comme trigger pour useEffect
     const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
@@ -222,7 +225,11 @@ function NavigationFavoris(props) {
 
     useEffect(()=>{
         if(evenementFichier) {
-            mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
+            if(evenementFichier.upload) {
+                mapperUploadFichier(workers, evenementFichier.upload, liste, cuuidCourant, setListe)
+            } else {
+                mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
+            }
             addEvenementFichier('')  // Vider liste evenements
         }
     }, [workers, liste, evenementFichier, cuuidCourant, setListe, addEvenementFichier])
@@ -790,6 +797,78 @@ function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, 
     }
 
     setListe(listeMaj)
+}
+
+function mapperUploadFichier(workers, evenement, liste, cuuidCourant, setListe) {
+    // Determiner type evenement upload
+    const { complete } = evenement || {}
+    const uploadEnCours = evenement.uploadEnCours || {}
+    const uploadsPending = evenement.uploadsPending || []
+
+    let trouve = false
+
+    const fichierUpload = mapperUpload(uploadEnCours)
+
+    // Upload en cours, mettre a jour le fichier dans la liste avec progres
+    liste = liste.map(item=>{
+        const itemId = item.fileId || item.folderId
+        if(itemId !== fichierUpload.correlation) return item
+        trouve = true
+        item = {...item, ...fichierUpload}
+        return item
+    })
+
+    if(complete) {
+        // Evenement complete (succes, erreur), retirer la correlation d'upload
+        trouve = true  // S'assurer de ne pas ajouter le fichier
+        liste = liste.filter(item=>{
+            const itemId = item.fileId || item.folderId
+            return itemId !== complete
+        })
+    }
+
+    if(cuuidCourant === fichierUpload.cuuid) {
+        if(fichierUpload.correlation && !trouve) {
+            // Mapper le fichier, ajouter a la liste
+            const fichierMappe = mapper(fichierUpload, workers)
+            liste.push(fichierMappe)
+        }
+    }
+
+    const uploadsPendingCorrelation = []
+    uploadsPending.forEach(itemPending=>{
+        uploadsPendingCorrelation.push(itemPending.correlation)
+        const fichierPending = mapperUpload(itemPending)
+        if(fichierPending.cuuid === cuuidCourant) {
+            let trouvePending = false
+            // S'assurer que le fichier est affiche
+            liste = liste.map(item=>{
+                const itemId = item.fileId || item.folderId
+                if(itemId !== fichierPending.correlation) return item
+                trouvePending = true
+                item = {...item, ...fichierPending}
+                return item
+            })
+            if(!trouvePending) {
+                const fichierPendingMappe = mapper(fichierPending, workers)
+                liste.push(fichierPendingMappe)
+            }
+        }
+    })
+
+    // Retirer toutes les anciens pending
+    liste = liste.filter(item=>{
+        if(item.status === 1) return uploadsPendingCorrelation.includes(item.fileId||item.folderId)
+        return true
+    })
+
+    setListe(liste)
+}
+
+function mapperUpload(uploadFichier) {
+    const { status, position, size, transaction, correlation } = uploadFichier || {}
+    const { cuuid, mimetype, nom, dateFichier } = transaction || {}
+    return { tuuid: correlation, status, position, size, transaction, correlation, mimetype, nom, cuuid, dateFichier }
 }
 
 function mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe) {

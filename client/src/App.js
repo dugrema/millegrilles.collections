@@ -137,6 +137,7 @@ function App() {
             etatConnexion={etatConnexion} 
             etatAuthentifie={etatAuthentifie}
             page={page}
+            etatTransfert={etatTransfert}
             evenementCollection={evenementCollection}
             paramsRecherche={paramsRecherche}
             downloadAction={downloadAction}
