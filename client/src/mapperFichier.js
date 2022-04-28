@@ -40,11 +40,11 @@ export function mapper(row, workers) {
         loader = null,
         imageLoader = null,
         videoLoader = null
-    if(!version_courante) {
+    if(!fuuid_v_courante) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
     } else {
-        const { anime, mimetype, date_fichier, taille, images, video } = version_courante
+        const { anime, mimetype, date_fichier, taille, images, video } = version_courante || row
         mimetype_fichier = mimetype
         date_version = date_fichier
         taille_fichier = taille

@@ -96,6 +96,13 @@ function transcoderVideo(socket, params) {
     )
 }
 
+function ajouterFichier(socket, params) {
+  return transmettreCommande(
+      socket, params, 'commandeNouveauFichier', 
+      {domaine: DOMAINE_GROSFICHIERS}
+  )
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
@@ -322,6 +329,7 @@ module.exports = {
     enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
     enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
     enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
+    ajouterFichier,
 
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,

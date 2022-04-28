@@ -100,6 +100,16 @@ function App() {
       }
   }, [workers, etatAuthentifie, setIdmg])
   
+  useEffect(()=>{
+    console.debug("Changement etat transfert : %O", etatTransfert)
+    const upload = etatTransfert.upload || {}
+    const {status, transaction} = upload
+    if(etatAuthentifie && status === 5 && transaction) {
+      emettreAjouterFichier(workers, transaction)
+        .catch(err=>console.error("Erreur emission evenement ajouterFichier : %O", err))
+    }
+  }, [workers, etatAuthentifie, etatTransfert])
+
   return (
     <LayoutApplication>
       
@@ -197,4 +207,23 @@ function Footer(props) {
       <Row><Col>Collections de MilleGrilles</Col></Row>
     </div>
   )
+}
+
+async function emettreAjouterFichier(workers, transaction) {
+  const { connexion } = workers
+  
+  const entete = transaction['en-tete']
+  const tuuid = entete['uuid_transaction']
+
+  const transactionNettoyee = {...transaction, tuuid}
+  delete transactionNettoyee['_certificat']
+  delete transactionNettoyee['_signature']
+  delete transactionNettoyee['en-tete']
+
+  try {
+    console.debug("Emettre commande ajouterFichier : %O", transactionNettoyee)
+    await connexion.ajouterFichier(transactionNettoyee)
+  } catch(err) {
+    console.debug("Erreur emission evenement ajouterFichier : %O", err)
+  }
 }

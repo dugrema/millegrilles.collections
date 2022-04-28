@@ -208,30 +208,6 @@ function NavigationFavoris(props) {
         setColonnes(colonnesCourant)
     }, [colonnes, setColonnes])
 
-    // useEffect(()=>{
-    //     if(evenementCollection && evenementCollection.message) {
-    //         console.debug("ACCUEIL.NavigationFavoris Message evenementCollection: %O", evenementCollection)
-    //     } else if(evenementFichier && evenementFichier.message) {
-    //         console.debug("ACCUEIL.NavigationFavoris Message evenementFichier: %O", evenementFichier)
-    //     }
-
-    //     // let trigger = false
-    //     // const message = evenementCollection?evenementCollection.message:'' || evenementFichier?evenementFichier.message:{}
-    //     // const cuuids = message.cuuids || []
-    //     // trigger = cuuids && cuuids.includes(cuuidCourant)
-
-    //     // if(trigger) {
-    //     //     console.debug("ACCUEIL.NavigationFavoris reload sur evenement")
-    //     //     chargerCollection(workers, cuuidCourant, usager)
-    //     //         .then(resultat=>{
-    //     //             setListe(resultat.data)
-    //     //             setListeComplete(resultat.estComplet)
-    //     //         })
-    //     //         .catch(erreurCb)
-    //     // }
-
-    // }, [workers, usager, cuuidCourant, evenementFichier, evenementCollection, setListe, setListeComplete, erreurCb])
-
     useEffect(()=>{
         if(!evenementFichierCb) return
         if(cuuidCourant && etatConnexion && etatAuthentifie) {
@@ -785,9 +761,10 @@ async function retirerEvenementsFichiersCollection(workers, cuuid, callback) {
 }
 
 function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe) {
-    // console.debug("Mapper evenement fichier : %O, liste : %O", evenementFichier, liste)
+    console.debug("Mapper evenement fichier : %O, liste : %O", evenementFichier, liste)
     const message = evenementFichier.message
     const tuuid = message.tuuid
+    const tuuidsInclus = {}
     const listeMaj = liste
         .filter(item=>{
             // Detecter retrait/supprime
@@ -795,7 +772,9 @@ function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, 
             if(tuuidItem === tuuid) {
                 if(message.supprime === true) return false  // Fichier supprime
                 if(!message.cuuids.includes(cuuidCourant)) return false  // Fichier retire de la collection
+                if(tuuidsInclus[tuuidItem]) return false // Duplicata
             }
+            tuuidsInclus[tuuidItem] = true
             return true  // Conserver le fichier
         })
         .map(item=>{
@@ -806,7 +785,7 @@ function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, 
             return item
         })
 
-    if(evenementFichier.nouveau) {
+    if(!tuuidsInclus[tuuid] && evenementFichier.nouveau) {
         listeMaj.push(mapper(message, workers))
     }
 
@@ -814,6 +793,7 @@ function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, 
 }
 
 function mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe) {
+    console.debug("Evenement collection : %O", evenementCollection)
     const message = evenementCollection.message
     const cuuid = message.tuuid
     const { nom } = message
@@ -832,7 +812,7 @@ function mapperEvenementCollection(evenementCollection, favoris, liste, setFavor
 }
 
 async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection) {
-    // console.debug("Mapper evenement contenu collection : %O, liste : %O", evenementContenuCollection, liste)
+    console.debug("Mapper evenement contenu collection : %O, liste : %O", evenementContenuCollection, liste)
     const message = evenementContenuCollection.message
     const retires = message.retires || []
     const listeMaj = liste

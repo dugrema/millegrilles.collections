@@ -159,6 +159,14 @@ function transcoderVideo(commande) {
   )
 }
 
+function ajouterFichier(commande) {
+  return ConnexionClient.emitBlocking(
+    'ajouterFichier',
+    commande,
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'commandeNouveauFichier', attacherCertificat: true}
+  )
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -269,6 +277,7 @@ expose({
     decrireFichier, decrireCollection,
     copierVersCollection, deplacerFichiersCollection,
     rechercheIndex, transcoderVideo, getPermission,
+    ajouterFichier,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,
