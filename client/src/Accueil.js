@@ -21,26 +21,20 @@ import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } 
 import { mapper, onContextMenu } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
+import { Alert } from 'react-bootstrap'
 
 function Accueil(props) {
 
     // console.debug("Accueil props : %O", props)
 
     const { workers, etatConnexion, etatAuthentifie, evenementFichier, usager, downloadAction, etatTransfert, erreurCb } = props
-    const [ favoris, setFavoris ] = useState('')
-
-    useEffect(()=>{ 
-        if(etatConnexion && etatAuthentifie) chargerFavoris(workers, setFavoris) 
-    }, [workers, etatConnexion, etatAuthentifie, setFavoris])
 
     return (
         <>
             <h1>Collections</h1>
             <NavigationFavoris 
-                favoris={favoris} 
-                setFavoris={setFavoris}
                 workers={workers} 
-                etatConnexion={etatAuthentifie}
+                etatConnexion={etatConnexion}
                 etatAuthentifie={etatAuthentifie}
                 evenementFichier={evenementFichier}
                 etatTransfert={etatTransfert}
@@ -57,8 +51,14 @@ export default Accueil
 
 function NavigationFavoris(props) {
 
-    const { workers, etatConnexion, etatAuthentifie, favoris, usager, downloadAction, setFavoris, etatTransfert, erreurCb } = props
+    const { workers, etatConnexion, etatAuthentifie, usager, downloadAction, etatTransfert, erreurCb } = props
 
+    const userId = useMemo(()=>{
+        if(!usager) return ''
+        return usager.extensions.userId
+    }, [usager])
+
+    const [ favoris, setFavoris ] = useState('')
     const [ colonnes, setColonnes ] = useState('')
     const [ breadcrumb, setBreadcrumb ] = useState([])
     const [ cuuidCourant, setCuuidCourant ] = useState('')
@@ -76,14 +76,17 @@ function NavigationFavoris(props) {
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ isListeComplete, setListeComplete ] = useState(false)
+    const [ chargementListeEnCours, setChargementListeEnCours ] = useState(true)
 
     // Event handling
     const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
     const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
     const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
+    const [ evenementContenuFavoris, addEvenementContenuFavoris ] = useState('')
     const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
     const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
     const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
+    const evenementContenuFavorisCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuFavoris(evenement)), [addEvenementContenuFavoris])
     useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
 
     // Extraire tri pour utiliser comme trigger pour useEffect
@@ -139,21 +142,33 @@ function NavigationFavoris(props) {
     // Preparer format des colonnes
     useEffect(()=>{ setColonnes(preparerColonnes()) }, [setColonnes])
 
+    // Chargement initial des favoris
+    useEffect(()=>{ 
+        if(etatConnexion && etatAuthentifie) {
+            chargerFavoris(workers, setFavoris) 
+                .finally(()=>setChargementListeEnCours(false))
+        }
+    }, [workers, etatConnexion, etatAuthentifie, setFavoris])
+
     // Preparer donnees a afficher dans la liste
     useEffect(()=>{
         if(!favoris || !etatConnexion) return  // Rien a faire
         if(!cuuidCourant) {
             // Utiliser liste de favoris
             setListe( preprarerDonnees(favoris, workers, {tri: triColonnes}) )
-        } else if(etatConnexion) {
-            chargerCollection(workers, cuuidCourant, usager, {tri: triColonnes})
-                .then(resultat=>{
-                    setListe(resultat.data)
-                    setListeComplete(resultat.estComplet)
-                })
-                .catch(erreurCb)
+        } else {
+            setChargementListeEnCours(true)
+                if(etatConnexion) {
+                    chargerCollection(workers, cuuidCourant, usager, {tri: triColonnes})
+                    .then(resultat=>{
+                        setListe(resultat.data)
+                        setListeComplete(resultat.estComplet)
+                    })
+                    .catch(erreurCb)
+                    .finally(()=>{setChargementListeEnCours(false)})
+                }
         }
-    }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, erreurCb])
+    }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, setChargementListeEnCours, erreurCb])
     
     // Detect support divers de l'appareil/navigateur
     useEffect(()=>detecterSupport(setSupport), [setSupport])
@@ -187,7 +202,6 @@ function NavigationFavoris(props) {
         } else if(etatConnexion) {
             chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit: 20, tri: triColonnes})
                 .then(resultat=>{
-                    // console.debug("!!! Resultat call suivant : %O", resultat)
                     setListe(resultat.data)
                     setListeComplete(resultat.estComplet)
                 })
@@ -229,11 +243,15 @@ function NavigationFavoris(props) {
             if(evenementFichier.upload) {
                 mapperUploadFichier(workers, evenementFichier.upload, liste, cuuidCourant, setListe)
             } else {
-                mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
+                if(cuuidCourant) {
+                    mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
+                } else { // Favoris
+                    mapperEvenementFichier(workers, evenementFichier, favoris, cuuidCourant, setFavoris)
+                }
             }
             addEvenementFichier('')  // Vider liste evenements
         }
-    }, [workers, liste, evenementFichier, cuuidCourant, setListe, addEvenementFichier])
+    }, [workers, liste, favoris, evenementFichier, cuuidCourant, setListe, setFavoris, addEvenementFichier])
 
     useEffect(()=>{
         const {connexion} = workers
@@ -241,6 +259,7 @@ function NavigationFavoris(props) {
         if(liste && etatConnexion && etatAuthentifie) {
             const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
             if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
+            // console.debug("enregistrerCallbackMajCollections %O", cuuids)
             connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
             return () => {
@@ -252,10 +271,15 @@ function NavigationFavoris(props) {
 
     useEffect(()=>{
         if(evenementCollection) {
-            mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe)
+            console.debug("Evenement collection : %O", evenementCollection)
+            if(cuuidCourant) {
+                mapperEvenementCollection(evenementCollection, liste, setListe)
+            } else {
+                mapperEvenementCollection(evenementCollection, favoris, setFavoris, {favoris: true})
+            }
             addEvenementCollection('')  // Vider liste evenements
         }
-    }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
+    }, [cuuidCourant, cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
 
     useEffect(()=>{
         const {connexion} = workers
@@ -272,12 +296,34 @@ function NavigationFavoris(props) {
     }, [workers, etatConnexion, etatAuthentifie, cuuidCourant, evenementContenuCollectionCb])
 
     useEffect(()=>{
+        const {connexion} = workers
+        if(!evenementContenuFavorisCb) return
+        if(etatConnexion && etatAuthentifie) {
+            connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
+                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+            return () => {
+                connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
+                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+            }
+        }
+
+    }, [workers, etatConnexion, etatAuthentifie, userId, evenementContenuFavorisCb])
+
+    useEffect(()=>{
         if(evenementContenuCollection) {
             // console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
-            mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection)
+            mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier)
             addEvenementContenuCollection('')
         }
-    }, [workers, evenementContenuCollection, addEvenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection])
+    }, [workers, evenementContenuCollection, addEvenementContenuCollection, liste, setListe, addEvenementFichier])
+
+    useEffect(()=>{
+        if(evenementContenuFavoris) {
+            // console.debug("Recu evenementContenuFavoris : %O", evenementContenuFavoris)
+            mapperEvenementContenuCollection(workers, evenementContenuFavoris, favoris, setFavoris, addEvenementFichier, {favoris: true})
+            addEvenementContenuFavoris('')
+        }
+    }, [workers, evenementContenuFavoris, favoris, setFavoris, addEvenementContenuFavoris, addEvenementFichier])
 
     return (
         <div {...getRootProps({onClick: onClickBack})}>
@@ -309,6 +355,12 @@ function NavigationFavoris(props) {
                 onClickEntete={enteteOnClickCb}
                 suivantCb={(!cuuidCourant||isListeComplete)?'':suivantCb}
             />
+
+            <InformationListe 
+                favoris={favoris}
+                liste={liste} 
+                cuuid={cuuidCourant} 
+                chargementListeEnCours={chargementListeEnCours} />
 
             <MenuContextuelFavoris 
                 workers={props.workers}
@@ -638,8 +690,6 @@ function MenuContextuelFavoris(props) {
 
     if(!contextuel.show) return ''
 
-    // console.debug("!!! Selection : %s, FICHIERS : %O", selection, fichiers)
-
     if( selection && selection.length > 1 ) {
         return <MenuContextuelMultiselect {...props} />
     } else if(selection.length>0) {
@@ -700,7 +750,6 @@ async function chargerCollection(workers, cuuid, usager, opts) {
     // console.debug("Charger collection %s (offset: %s)", cuuid, skip)
     const { connexion, chiffrage } = workers
     const reponse = await connexion.getContenuCollection(cuuid, {skip, limit, sort_keys})
-    // console.debug("!!! Reponse collection %s = %O", cuuid, reponse)
     const { documents } = reponse
 
     // Precharger les cles des images thumbnails, small et posters
@@ -796,7 +845,11 @@ function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, 
             const tuuidItem = item.fileId
             if(tuuidItem === tuuid) {
                 if(message.supprime === true) return false  // Fichier supprime
-                if(!message.cuuids.includes(cuuidCourant)) return false  // Fichier retire de la collection
+                if(cuuidCourant) {
+                    if(!message.cuuids.includes(cuuidCourant)) return false  // Fichier retire de la collection
+                } else { // Favoris
+                    if(message.favoris !== true) return false
+                }
                 if(tuuidsInclus[tuuidItem]) return false // Duplicata
             }
             tuuidsInclus[tuuidItem] = true
@@ -895,25 +948,26 @@ function mapperUpload(uploadFichier, evenement) {
     return { tuuid: correlation, status, position, size, transaction, correlation, mimetype, nom, cuuid, dateFichier }
 }
 
-function mapperEvenementCollection(evenementCollection, favoris, liste, setFavoris, setListe) {
+function mapperEvenementCollection(evenementCollection, liste, setListe, opts) {
+    opts = opts || {}
+    const favoris = opts.favoris || false
+
     const message = evenementCollection.message
     const cuuid = message.tuuid
-    const { nom } = message
-    const favorisMaj = favoris.map(item=>{
-        if(item.tuuid === cuuid) return {...item, nom}
+    const { nom, securite } = message
+    let listeMaj = liste.map(item=>{
+        if(item.tuuid === cuuid) return {...item, nom, securite}
         return item
     })
-
-    const listeMaj = liste.map(item=>{
-        if(item.tuuid === cuuid) return {...item, nom}
-        return item
-    })
-
-    setFavoris(favorisMaj)
+    if(favoris && message.favoris !== true) {
+        listeMaj = liste.filter(item=>item.tuuid !== cuuid)
+    }
     setListe(listeMaj)
 }
 
-async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, addEvenementCollection) {
+async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, opts) {
+    opts = opts || {}
+
     const message = evenementContenuCollection.message
     const retires = message.retires || []
     const listeMaj = liste
@@ -939,10 +993,39 @@ async function mapperEvenementContenuCollection(workers, evenementContenuCollect
         const reponseDocuments = await connexion.getDocuments(tuuids)
         const fichiers = reponseDocuments.fichiers
         if(fichiers) {
-            // console.debug("Reponse charger tuuids : %O", fichiers)
             fichiers.forEach(doc=>{
                 addEvenementFichier({nouveau: true, message: doc})
             })
         }
     }
+}
+
+function InformationListe(props) {
+    const { chargementListeEnCours, favoris, liste, cuuid } = props
+
+    if (chargementListeEnCours) return <p>Chargement en cours...</p>
+
+    if(!cuuid) {
+        const tailleListe = (favoris && favoris.length) || 0
+        if(tailleListe === 0) {
+            return (
+                <div>
+                    <br/>
+                    <Alert>
+                        <Alert.Heading>Aucune collection</Alert.Heading>
+                        <p>
+                            Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
+                        </p>
+                    </Alert>
+                </div>
+            )
+        }
+    } else {
+        const tailleListe = (liste && liste.length) || 0
+        if(tailleListe === 0) {
+            return <p>Aucuns fichiers.</p>
+        }
+    }
+
+    return ''
 }
