@@ -27,6 +27,7 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
 
         // S'assurer d'avoir un certificat de maitre des cles
         const cert = await connexion.getCertificatsMaitredescles()
+        // console.debug("Certificat maitre des cles : %O", cert)
         const { certificat } = cert
 
         if(certificat) {
