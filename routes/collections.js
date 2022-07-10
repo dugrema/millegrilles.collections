@@ -1,6 +1,7 @@
 const debug = require('debug')('routes:collections')
 const express = require('express')
 const routeCollectionsFichiers = require('./collectionsFichiers.js')
+const routeCollectionsStreams = require('./collectionsStreams.js')
 
 // const debug = debugLib('collections');
 
@@ -21,8 +22,12 @@ function app(amqpdao, opts) {
     }
 
     const route = express.Router()
+    route.use((req, res, next)=>{console.debug("Req path %s", req.url); next()})
     route.get('/collections/info.json', routeInfo)
+    route.get('/collections/initSession', initSession)
+    route.get('/collections/streams/*', routeCollectionsStreams(amqpdao, opts))
     route.use(routeCollectionsFichiers(amqpdao, fichierUploadUrl, opts))
+    route.use((req, res, next)=>{console.debug("OUPS, default %s", req.url); next()})
     ajouterStaticRoute(route)
 
     debug("Route /collections de Collections est initialisee")
@@ -50,6 +55,10 @@ function routeInfo(req, res) {
 
     const reponse = {idmgCompte, nomUsager, hostname: host}
     return res.send(reponse)
+}
+
+function initSession(req, res) {
+    return res.sendStatus(200)
 }
 
 function cacheRes(req, res, next) {

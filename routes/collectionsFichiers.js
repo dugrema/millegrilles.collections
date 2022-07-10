@@ -39,9 +39,40 @@ function init(amqpdao, fichierUploadUrl, opts) {
 }
 
 function verifierAutorisationFichier(req, res) {
-    // TODO : valider acces de l'usager au fichier
-    // console.debug("REQ Params, sec : %O", req)
-    return res.sendStatus(200)
+    debug("verifierAutorisationFichier Headers %O", req.headers)
+    //debug("verifierAutorisationFichier Session %O", req.session)
+
+    const uriVideo = req.headers['x-original-uri']
+    const reFuuid = /\/collections\/fichiers\/([A-Za-z0-9]+)(\/.*)?/
+    const matches = reFuuid.exec(uriVideo)
+    debug("Matches : %O", matches)
+
+    if(!matches || matches.length < 1) {
+        debug("verifierAutorisationFichier Mauvais url : %s", req.url)
+        return res.sendStatus(400)
+    }
+
+    const fuuid = matches[1]
+    const userId = req.session.userId
+    debug("Fuuid a charger pour usager %s : %s", userId, fuuid)
+
+    const mq = req.amqpdao
+    const requete = { user_id: userId, fuuids: [fuuid] }
+    mq.transmettreRequete('GrosFichiers', requete, {action: 'verifierAccesFuuids', exchange: '2.prive', attacherCertificat: true})
+        .then(resultat=>{
+            if(resultat.acces_tous === true) {
+                debug("verifierAutorisationFichier Acces stream OK")
+                return res.sendStatus(200)
+            } else {
+                debug("verifierAutorisationFichier Acces stream refuse")
+                return res.sendStatus(403)
+            }
+        })
+        .catch(err=>{
+            debug("verifierAutorisationFichier Erreur verification acces stream : %O", err)
+            return res.sendStatus(500)
+        })
 }
+
 
 module.exports = init
