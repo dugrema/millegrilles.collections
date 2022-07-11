@@ -85,12 +85,28 @@ function App() {
     setWorkersTraitementFichiers(workers)
     if(workers) {
       if(workers.connexion) {
+        setErreur('')
         connecter(workers, setUsager, setEtatConnexion, setFormatteurPret)
-          // .then(infoConnexion=>{console.debug("Info connexion : %O", infoConnexion)})
-          .catch(err=>{console.debug("Erreur de connexion : %O", err)})
+          .then(infoConnexion=>{
+            // const statusConnexion = JSON.stringify(infoConnexion)
+            if(infoConnexion.ok === false) {
+              console.error("Erreur de connexion : %O", infoConnexion)
+              setErreur("Erreur de connexion au serveur : " + infoConnexion.err); 
+            } else {
+              console.debug("Info connexion : %O", infoConnexion)
+            }
+          })
+          .catch(err=>{
+            setErreur('Erreur de connexion. Detail : ' + err); 
+            console.debug("Erreur de connexion : %O", err)
+          })
+      } else {
+        setErreur("Pas de worker de connexion")
       }
+    } else {
+      setErreur("Connexion non initialisee (workers)")
     }
-  }, [workers, setUsager, setEtatConnexion, setFormatteurPret])
+  }, [workers, setUsager, setEtatConnexion, setFormatteurPret, setErreur])
 
   useEffect(()=>{
       if(etatAuthentifie) {
@@ -111,7 +127,7 @@ function App() {
 
   return (
     <LayoutApplication>
-      
+
       <HeaderApplication>
         <Menu 
           workers={workers} 
