@@ -31,27 +31,38 @@ function AfficherVideo(props) {
         const resolutionLocal = Number.parseInt(localStorage.getItem(PLAYER_VIDEORESOLUTION) || '320')
 
         const videoKeys = Object.keys(videos)
-        let options = videoKeys.filter(item=>{
+        let options = videoKeys
+        options.sort(trierLabelsVideos)
+        options = options.filter(item=>{
             const [mimetype, resolution, bitrate] = item.split(';')
             if(mimetype.endsWith('/webm')) {
                 if(!webm) return false
             } else {
                 if(webm) return false
             }
-
-            const resolutionInt = Number.parseInt(resolution)
-            if(resolutionInt > resolutionLocal) return false
-
             return true
         })
-        options.sort(trierLabelsVideos)
-        options.reverse()
-        console.debug("Options selecteur : %O", options)
 
-        const optionSelectionnee = options.pop()
-        console.debug("Option selectionnee : %O", optionSelectionnee)
+        let optionsResolution = options.filter(item=>{
+            const [mimetype, resolution, bitrate] = item.split(';')
+            const resolutionInt = Number.parseInt(resolution)
+            if(resolutionInt > resolutionLocal) return false
+            return true
+        })
+        if(optionsResolution.length > 0) {
+            optionsResolution.reverse()
+            console.debug("Options selecteur : %O", optionsResolution)
 
-        setSelecteur(optionSelectionnee)
+            const optionSelectionnee = optionsResolution.pop()
+            console.debug("Option selectionnee : %O", optionSelectionnee)
+            setSelecteur(optionSelectionnee)
+        } else {
+            // Aucun format disponible en fonction de la resolution. Choisir la plus faible
+            // resolution dans la liste.
+            const optionSelectionnee = options.pop()
+            console.debug("Option selectionnee (resolution plus grande que demandee) : %O", optionSelectionnee)
+            setSelecteur(optionSelectionnee)
+        }
     }, [support, videos, setSelecteur])
 
     useEffect(()=>{
