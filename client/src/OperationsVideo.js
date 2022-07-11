@@ -34,11 +34,13 @@ const VIDEO_RESOLUTIONS = [
 const BITRATES_VIDEO = [
   {label: "250 kbps", value: 250000},
   {label: "500 kbps", value: 500000},
+  {label: "750 kbps", value: 750000},
   {label: "1 mbps", value: 1000000},
   {label: "1.5 mbps", value: 1500000},
   {label: "2.0 mbps", value: 2000000},
   {label: "3.0 mbps", value: 3000000},
   {label: "4.0 mbps", value: 4000000},
+  {label: "6.0 mbps", value: 6000000},
   {label: "8.0 mbps", value: 8000000},
 ]
 
@@ -46,30 +48,6 @@ const BITRATES_AUDIO = [
   {label: "64 kbps", value: 64000},
   {label: "128 kbps", value: 128000},
 ]
-
-// const evenementTranscodage = proxy(event=>{
-//   console.debug("Evenement transcodage : %O", event)
-//   if(_updateTranscodage) {
-//     const message = event.message || {}
-//     const resolution = message.height
-//     const mimetype = message.mimetype
-//     const bitrate = message.videoBitrate
-  
-//     const cle = [mimetype, resolution, bitrate].join(';')
-//     const params = {
-//       passe: message.passe, 
-//       pctProgres: message.pctProgres,
-//       fuuid: message.fuuid,
-//       resolution,
-//       mimetype,
-//       bitrate
-//     }
-//     delete params['en-tete']
-//     delete params.signature
-  
-//     _updateTranscodage(cle, params)
-//   }
-// })
 
 function parseEvenementTranscodage(evenement) {
   const message = evenement.message || {}
@@ -96,7 +74,7 @@ function parseEvenementTranscodage(evenement) {
 // var _updateTranscodage = null
 
 export function ConversionVideo(props) {
-  console.debug("ConversionVideo proppies : %O", props)
+    // console.debug("ConversionVideo proppies : %O", props)
 
     const { workers, support, downloadAction, etatConnexion, etatAuthentifie, usager } = props
 
@@ -111,7 +89,7 @@ export function ConversionVideo(props) {
     const evenementTranscodageCb = useMemo(()=>proxy(addEvenementTranscodage), [addEvenementTranscodage])
 
     useEffect(()=>{
-      console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
+      // console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
       const {connexion} = workers
       if(etatConnexion && etatAuthentifie) {
         connexion.enregistrerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
@@ -125,35 +103,13 @@ export function ConversionVideo(props) {
 
     useEffect(()=>{
       if(evenementTranscodage) {
-        console.debug("Traiter evenement transcodage : %O", evenementTranscodage)
+        // console.debug("Traiter evenement transcodage : %O", evenementTranscodage)
         const [cle, params] = parseEvenementTranscodage(evenementTranscodage)
         setTranscodage({...transcodage, [cle]: params})
 
         addEvenementTranscodage('')  // Clear
       }
     }, [transcodage, evenementTranscodage, addEvenementTranscodage, setTranscodage])
-
-    // _updateTranscodage = useCallback((key, params) => {
-    //   const nouveauTranscodage = {...transcodage, [key]: params}
-    //   console.debug("!!! Nouveau transcodage : %O", nouveauTranscodage)
-    //   setTranscodage(nouveauTranscodage)
-    // }, [transcodage, setTranscodage])
-
-    // useEffect(()=>{
-    //   console.debug("!!! ConversionVideo props : %O", fichier)
-    //   if(fichier && connexion && etatConnexion) {
-    //     const fuuid = fichier.fuuid_v_courante
-    //     // const versionCourante = fichier.version_courante || {}
-    //     if(fuuid && fichier.video) {
-    //       console.debug("Ecouter transcodage %s", fuuid)
-    //       connexion.enregistrerCallbackTranscodageProgres(fuuid, evenementTranscodage)
-    //       return () => {
-    //         console.debug("Arreter ecoute %s", fuuid)
-    //         connexion.supprimerCallbackTranscodageProgres(fuuid)
-    //       }
-    //     }
-    //   }
-    // }, [fichier, connexion, etatConnexion])
 
     if(mimetypeBase !== 'video') return ''
 
@@ -187,7 +143,14 @@ function FormConversionVideo(props) {
     const [resolutionVideo, setResolutionVideo] = useState(240)
     const [bitrateVideo, setBitrateVideo] = useState(250000)
     const [bitrateAudio, setBitrateAudio] = useState(64000)
-  
+
+    const changerCodecVideo = useCallback(event => { 
+      const codec = event.currentTarget.value
+      setCodecVideo(codec)
+      if(codec === 'vp9') setCodecAudio('opus')
+      else setCodecAudio('aac')
+    }, [setCodecVideo, setCodecAudio])
+
     if(!fichier) return ''
     const versionCourante = fichier.version_courante || {}
     if(!versionCourante.mimetype.startsWith('video/')) return ''
@@ -195,8 +158,7 @@ function FormConversionVideo(props) {
 
     const estPret = codecVideo && codecAudio && resolutionVideo && bitrateVideo && bitrateAudio
   
-    const changerCodecVideo = event => { setCodecVideo(event.currentTarget.value) }
-    const changerCodecAudio = event => { setCodecAudio(event.currentTarget.value) }
+    // const changerCodecAudio = event => { setCodecAudio(event.currentTarget.value) }
     const changerResolutionVideo = event => { setResolutionVideo(Number(event.currentTarget.value)) }
     const changerBitrateVideo = event => { setBitrateVideo(Number(event.currentTarget.value)) }
     const changerBitrateAudio = event => { setBitrateAudio(Number(event.currentTarget.value)) }
@@ -221,7 +183,7 @@ function FormConversionVideo(props) {
               <SelectGroup formLabel={'Codec Video'} name={'codecVideo'} value={codecVideo} onChange={changerCodecVideo} options={VIDEO_CODEC} />
               <SelectGroup formLabel={'Resolution Video'} name={'resolutionVideo'} value={resolutionVideo} onChange={changerResolutionVideo} options={VIDEO_RESOLUTIONS} maxValue={resolutionOriginal} />
               <SelectGroup formLabel={'Bitrate Video'} name={'bitrateVideo'} value={bitrateVideo} onChange={changerBitrateVideo} options={BITRATES_VIDEO} />
-              <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} onChange={changerCodecAudio} options={AUDIO_CODEC} />
+              <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
               <SelectGroup formLabel={'Bitrate Audio'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
       
               <Row>
@@ -235,9 +197,7 @@ function FormConversionVideo(props) {
           <Col>
             <p>Notes :</p>
             <ul>
-              <li>H.264 (mp4) devrait etre utilise avec le format audio AAC</li>
               <li>VP9 avec Opus donne une meilleure qualite mais n'est pas supporte par iOS (Apple)</li>
-              <li>Une seule combinaison Codec Video/Resolution Video est supporee a la fois</li>
             </ul>
           </Col>
 
@@ -249,7 +209,7 @@ function FormConversionVideo(props) {
 
 function SelectGroup(props) {
 
-  const { formLabel, name, onChange, value, options, maxValue } = props
+  const { formLabel, name, onChange, value, options, maxValue, disabled } = props
 
   let optionsFiltrees = options
   if(maxValue) {
@@ -263,7 +223,7 @@ function SelectGroup(props) {
           <Form.Label>{formLabel}</Form.Label>
         </Col>
         <Col xs={12} lg={6}>
-          <Form.Select name={name} onChange={onChange} value={value}>
+          <Form.Select name={name} onChange={onChange} value={value} disabled={disabled}>
             {optionsFiltrees.map(reso=>(
               <option key={reso.value} value={''+reso.value}>
                 {reso.label}
@@ -330,11 +290,17 @@ function Videos(props) {
 
   const videosTries = Object.values(videos).sort(sortVideos)
 
-  console.debug("Videos tries : %O", videosTries)
+  // console.debug("Videos tries : %O", videosTries)
 
   return (
     <>
       <h3>Formats disponibles</h3>
+      <Row>
+        <Col xs={1}>Format</Col>
+        <Col xs={2}>Bitrate</Col>
+        <Col xs={3}>Resolution</Col>
+        <Col xs={2}>Taille</Col>
+      </Row>
       {videosTries.map(video=>{
         return (
           <AfficherLigneFormatVideo 
@@ -369,8 +335,6 @@ function sortVideos(a, b) {
 
 function TranscodageEnCours(props) {
 
-  console.debug("!! !! Transcodage en cours PROPPYS : %O", props)
-
   const { transcodage } = props
 
   if(!transcodage) return ''
@@ -378,7 +342,7 @@ function TranscodageEnCours(props) {
   const transcodageFiltre = Object.values(transcodage).filter(item=>item.pctProgres!==100)
   transcodageFiltre.sort(triCleTranscodage)
 
-  console.debug("Transcodage filtre : %O", transcodageFiltre)
+  // console.debug("Transcodage filtre : %O", transcodageFiltre)
 
   return (
     <>
@@ -421,8 +385,6 @@ function triCleTranscodage(a,b) {
 function AfficherLigneFormatVideo(props) {
   const { fichier, video, support, downloadAction } = props
 
-  // console.debug("!!!! AfficherLigneFormatVideo %O", props)
-
   const download = useCallback(event => {
     console.debug("Downloader fichier %O", fichier)
 
@@ -458,11 +420,15 @@ function AfficherLigneFormatVideo(props) {
     }
   }
 
+  const [base, codec] = video.mimetype.split('/')
+  const bitrate = video.bitrate
+
   return (
     <Row>
-      <Col>{video.mimetype.split('/').pop()}</Col>
-      <Col>{video.width} x {video.height}</Col>
-      <Col><FormatteurTaille value={video.taille_fichier} /></Col>
+      <Col xs={1}>{codec}</Col>
+      <Col xs={2}>{bitrate}</Col>
+      <Col xs={3}>{video.width} x {video.height}</Col>
+      <Col xs={2}><FormatteurTaille value={video.taille_fichier} /></Col>
       <Col>
         <Button variant="secondary" onClick={download}>
           <i className="fa fa-download" />

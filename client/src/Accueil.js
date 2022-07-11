@@ -17,6 +17,7 @@ import {
 } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
+import AfficherVideo from './AfficherVideo'
 import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
 import { mapper, onContextMenu } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
@@ -77,6 +78,7 @@ function NavigationFavoris(props) {
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ isListeComplete, setListeComplete ] = useState(false)
     const [ chargementListeEnCours, setChargementListeEnCours ] = useState(true)
+    const [ afficherVideo, setAfficherVideo ] = useState(false)
 
     // Event handling
     const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
@@ -118,7 +120,16 @@ function NavigationFavoris(props) {
             setCuuidCourant(value.folderId)
         } else {
             // Determiner le type de fichier
-            showPreviewAction(value.fileId)
+            const fileItem = liste.filter(item=>item.fileId===value.fileId).pop()
+            const mimetype = fileItem.mimetype || ''
+            console.debug("Choisir tuuid %s (%s) : %O", value.fileId, mimetype, fileItem)
+            if(mimetype.startsWith('video/')) {
+                // Page Video
+                setAfficherVideo(value.fileId)
+            } else {
+                // Preview/carousel
+                showPreviewAction(value.fileId)
+            }
         }
     }, [liste, setCuuidCourant, breadcrumb, setBreadcrumb, showPreviewAction])
 
@@ -344,16 +355,22 @@ function NavigationFavoris(props) {
                 </Col>
             </Row>
 
-            <ListeFichiers 
+            <AffichagePrincipal 
                 modeView={modeView}
                 colonnes={colonnes}
-                rows={liste} 
-                // onClick={onClick} 
+                liste={liste} 
                 onDoubleClick={onDoubleClick}
-                onContextMenu={(event, value)=>onContextMenu(event, value, setContextuel)}
-                onSelection={onSelectionLignes}
+                onContextMenu={onContextMenu}
+                setContextuel={setContextuel}
+                onSelectionLignes={onSelectionLignes}
                 onClickEntete={enteteOnClickCb}
-                suivantCb={(!cuuidCourant||isListeComplete)?'':suivantCb}
+                cuuidCourant={cuuidCourant}
+                isListeComplete={isListeComplete}
+                suivantCb={suivantCb}
+                tuuidSelectionne={tuuidSelectionne}
+                afficherVideo={afficherVideo}
+                setAfficherVideo={setAfficherVideo}
+                support={support}
             />
 
             <InformationListe 
@@ -445,6 +462,48 @@ function NavigationFavoris(props) {
             />
 
         </div>
+    )
+}
+
+function AffichagePrincipal(props) {
+
+    const {
+        modeView, colonnes, liste, cuuidCourant, isListeComplete, tuuidSelectionne, support,
+        onClick, onDoubleClick, onContextMenu, setContextuel, onSelectionLignes, enteteOnClickCb, suivantCb,
+        afficherVideo, setAfficherVideo,
+    } = props
+
+    const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false))
+    const onContextMenuClick = useCallback((event, value)=>{
+        // console.debug("onContextMenuClick event %O, value %O", event, value)
+        onContextMenu(event, value, setContextuel)
+    }, [onContextMenu, setContextuel])
+
+    if(afficherVideo) {
+        // console.debug("AffichagePrincipal PROPPIES : %O", props)
+        const fileItem = liste.filter(item=>item.fileId===afficherVideo).pop()
+        return (
+            <AfficherVideo
+                support={support}
+                fichier={fileItem}
+                tuuidSelectionne={tuuidSelectionne}
+                fermer={fermerAfficherVideo} />
+        )
+    }
+
+    // Default - liste fichiers
+    return (
+        <ListeFichiers 
+            modeView={modeView}
+            colonnes={colonnes}
+            rows={liste} 
+            // onClick={onClick} 
+            onDoubleClick={onDoubleClick}
+            onContextMenu={onContextMenuClick}
+            onSelection={onSelectionLignes}
+            onClickEntete={enteteOnClickCb}
+            suivantCb={(!cuuidCourant||isListeComplete)?'':suivantCb}
+        />
     )
 }
 
