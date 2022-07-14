@@ -32,6 +32,11 @@ function verifierAutorisationStream(req, res) {
     const userId = req.session.userId
     debug("Fuuid a charger pour usager %s : %s", userId, fuuid)
 
+    if(!userId) {
+        console.error("Erreur session, userId manquant sur %s", req.url)
+        return res.sendStatus(400)
+    }
+
     const mq = req.amqpdao
     const requete = { user_id: userId, fuuids: [fuuid] }
     mq.transmettreRequete('GrosFichiers', requete, {action: 'verifierAccesFuuids', exchange: '2.prive', attacherCertificat: true})
