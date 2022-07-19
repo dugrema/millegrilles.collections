@@ -155,7 +155,7 @@ function transcoderVideo(commande) {
   return ConnexionClient.emitBlocking(
     'transcoderVideo',
     commande,
-    {domaine: CONST_DOMAINE_FICHIERS, action: 'transcoderVideo', attacherCertificat: true}
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'transcoderVideo', attacherCertificat: true}
   )
 }
 

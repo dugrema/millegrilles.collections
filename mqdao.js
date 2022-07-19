@@ -92,7 +92,7 @@ function indexerContenu(socket, params) {
 function transcoderVideo(socket, params) {
     return transmettreCommande(
         socket, params, 'transcoderVideo', 
-        {domaine: CONST_DOMAINE_FICHIERS, nowait: true}
+        // {nowait: true}
     )
 }
 

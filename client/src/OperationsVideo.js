@@ -88,6 +88,10 @@ export function ConversionVideo(props) {
     const [evenementTranscodage, addEvenementTranscodage] = useState('')
     const evenementTranscodageCb = useMemo(()=>proxy(addEvenementTranscodage), [addEvenementTranscodage])
 
+    const erreurCb = (err, message) => {
+      console.error("ConversionVideo Erreur %s : %O", message, err)
+    }
+
     useEffect(()=>{
       // console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
       const {connexion} = workers
@@ -121,6 +125,7 @@ export function ConversionVideo(props) {
                 fichier={fichier}
                 setTranscodage={setTranscodage}
                 usager={usager}
+                erreurCb={erreurCb}
             />
 
             <Videos 
@@ -276,6 +281,9 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
 
   console.debug("Commande transcodage : %O", commande)
   connexion.transcoderVideo(commande)
+    .then(reponse=>{
+      console.debug("convertirVideo Reponse commande transcodage : %O", reponse)
+    })
     .catch(err=>erreurCb(err, 'Erreur demarrage du transcodage de video'))
 
   return infoTranscodage
