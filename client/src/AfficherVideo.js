@@ -134,9 +134,10 @@ function SelecteurResolution(props) {
             const [mimetype, resolution, bitrate] = item.split(';')
             if(mimetype.endsWith('/webm')) {
                 if(!webm) return false
-            } else {
-                if(webm) return false
-            }
+            } 
+            // else {
+            //     if(webm) return false
+            // }
 
             return true
         })
