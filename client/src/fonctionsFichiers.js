@@ -32,7 +32,20 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
 
         if(certificat) {
             transfertFichiers.up_setCertificat(certificat)
-            const infoUploads = await transfertFichiers.up_ajouterFichiersUpload(acceptedFiles, params)
+
+            // Mapper fichiers
+            const acceptedFilesMapped = acceptedFiles.map(item=>{
+                const data = {}
+                data.name = item.name
+                data.type = item.type
+                data.size = item.size
+                data.path = item.path
+                data.lastModified = item.lastModified
+                data.object = item
+                return data
+            })
+
+            const infoUploads = await transfertFichiers.up_ajouterFichiersUpload(acceptedFilesMapped, params)
             return infoUploads
         } else {
             if(erreurCb) erreurCb("Erreur durant la preparation d'upload du fichier - aucuns certificat serveur recu")
