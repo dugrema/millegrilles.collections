@@ -13,7 +13,7 @@ const PLAYER_VIDEORESOLUTION = 'player.videoResolution'
 
 function AfficherVideo(props) {
 
-    // console.debug("AfficherVideo PROPPIES : %O", props)
+    console.debug("AfficherVideo PROPPIES : %O", props)
 
     const { support } = props,
           fichier = props.fichier || {},
@@ -21,7 +21,7 @@ function AfficherVideo(props) {
           version_courante = fichier.version_courante || {},
           videos = version_courante.video || {}
 
-    const [selecteur, setSelecteur] = useState('')
+    const [selecteur, setSelecteur] = useState('faible')
     const [srcVideo, setSrcVideo] = useState('')
 
     useEffect(()=>{
@@ -30,43 +30,46 @@ function AfficherVideo(props) {
 
         const resolutionLocal = Number.parseInt(localStorage.getItem(PLAYER_VIDEORESOLUTION) || '320')
 
-        const videoKeys = Object.keys(videos)
-        let options = videoKeys
-        options.sort(trierLabelsVideos)
-        options = options.filter(item=>{
-            const [mimetype, resolution, bitrate] = item.split(';')
-            if(mimetype.endsWith('/webm')) {
-                if(!webm) return false
-            } else {
-                if(webm) return false
-            }
-            return true
-        })
+        // const videoKeys = Object.keys(videos)
+        // let options = videoKeys
+        // options.sort(trierLabelsVideos)
+        // options = options.filter(item=>{
+        //     const [mimetype, codecVideo, resolution, bitrateQuality] = item.split(';')
+        //     if(mimetype.endsWith('/webm') && !webm) return false
+        //     return true
+        // })
 
-        let optionsResolution = options.filter(item=>{
-            const [mimetype, resolution, bitrate] = item.split(';')
-            const resolutionInt = Number.parseInt(resolution)
-            if(resolutionInt > resolutionLocal) return false
-            return true
-        })
-        if(optionsResolution.length > 0) {
-            optionsResolution.reverse()
-            console.debug("Options selecteur : %O", optionsResolution)
+        // let optionsResolution = options.filter(item=>{
+        //     const [mimetype, codecVideo, resolution, bitrateQuality] = item.split(';')
+        //     const resolutionInt = Number.parseInt(resolution)
+        //     if(resolutionInt > resolutionLocal) return false
+        //     return true
+        // })
+        // if(optionsResolution.length > 0) {
+        //     optionsResolution.reverse()
+        //     console.debug("Options selecteur : %O", optionsResolution)
 
-            const optionSelectionnee = optionsResolution.pop()
-            console.debug("Option selectionnee : %O", optionSelectionnee)
-            setSelecteur(optionSelectionnee)
-        } else {
-            // Aucun format disponible en fonction de la resolution. Choisir la plus faible
-            // resolution dans la liste.
-            const optionSelectionnee = options.pop()
-            console.debug("Option selectionnee (resolution plus grande que demandee) : %O", optionSelectionnee)
-            setSelecteur(optionSelectionnee)
-        }
+        //     const optionSelectionnee = optionsResolution.pop()
+        //     if(optionSelectionnee) {
+        //         const optionNombre = ''+Number.parseInt(optionSelectionnee)
+        //         console.debug("Option selectionnee : %O", optionNombre)
+        //         setSelecteur(optionNombre)
+        //     }
+        // } else {
+        //     // Aucun format disponible en fonction de la resolution. Choisir la plus faible
+        //     // resolution dans la liste.
+        //     const optionSelectionnee = options.pop()
+        //     if(optionSelectionnee) {
+        //         const optionNombre = ''+Number.parseInt(optionSelectionnee)
+        //         console.debug("Option selectionnee (resolution plus grande que demandee) : %O", optionNombre)
+        //         setSelecteur(optionNombre)
+        //     }
+        // }
     }, [support, videos, setSelecteur])
 
     useEffect(()=>{
         if(!selecteur) return setSrcVideo('')
+        console.debug("Video utiliser selecteur %s", selecteur)
         fichier.videoLoader.load(selecteur)
             .then(src=>{
                 console.debug("Source video : %O", src)
@@ -92,7 +95,7 @@ function AfficherVideo(props) {
                 
                 <Col md={12} lg={8}>
                     {srcVideo?
-                        <VideoViewer src={srcVideo} height='100%' width='100%' />
+                        <VideoViewer videos={srcVideo} height='100%' width='100%' />
                     :(
                         <div>
                             <p>
@@ -109,7 +112,8 @@ function AfficherVideo(props) {
                     <SelecteurResolution 
                         listeVideos={videos} 
                         support={support}
-                        selecteur={selecteur} setSelecteur={setSelecteur} />
+                        selecteur={selecteur} setSelecteur={setSelecteur} 
+                        videoLoader={fichier.videoLoader} />
                 </Col>
 
             </Row>
@@ -121,27 +125,29 @@ function AfficherVideo(props) {
 export default AfficherVideo
 
 function SelecteurResolution(props) {
-    const { listeVideos, support, selecteur, setSelecteur } = props
+    const { listeVideos, support, selecteur, setSelecteur, videoLoader } = props
 
     const [listeOptions, setListeOptions] = useState([])
 
     useEffect(()=>{
         console.debug("Liste videos : %O", listeVideos)
-        const { webm } = support
+        // const { webm } = support
 
-        const videoKeys = Object.keys(listeVideos)
-        let options = videoKeys.filter(item=>{
-            const [mimetype, resolution, bitrate] = item.split(';')
-            if(mimetype.endsWith('/webm')) {
-                if(!webm) return false
-            } 
-            // else {
-            //     if(webm) return false
-            // }
+        // const videoKeys = Object.keys()
+        //  let options = videoKeys.filter(item=>{
+        //     const [mimetype, codecVideo, resolution, bitrate] = item.split(';')
+        //     if(mimetype.endsWith('/webm')) {
+        //         if(!webm) return false
+        //     } 
+        //     // else {
+        //     //     if(webm) return false
+        //     // }
 
-            return true
-        })
+        //     return true
+        // })
+        const options = videoLoader.getSelecteurs()
         options.sort(trierLabelsVideos)
+
         setListeOptions(options)
 
     }, [listeVideos, setListeOptions])
@@ -149,8 +155,8 @@ function SelecteurResolution(props) {
     const changerSelecteur = useCallback(value=>{
         console.debug("Valeur : %O", value)
         setSelecteur(value)
-        const [mimetype, resolution, bitrate] = value.split(';')
-        localStorage.setItem(PLAYER_VIDEORESOLUTION, ''+resolution)
+        // const [mimetype, resolution, bitrate] = value.split(';')
+        // localStorage.setItem(PLAYER_VIDEORESOLUTION, ''+resolution)
     }, [setSelecteur])
 
     return (
