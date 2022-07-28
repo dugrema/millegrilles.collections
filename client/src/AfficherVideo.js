@@ -23,6 +23,7 @@ function AfficherVideo(props) {
 
     const [selecteur, setSelecteur] = useState('faible')
     const [srcVideo, setSrcVideo] = useState('')
+    const [posterObj, setPosterObj] = useState('')
 
     useEffect(()=>{
         console.debug("Support : %O", support)
@@ -68,6 +69,23 @@ function AfficherVideo(props) {
     }, [support, videos, setSelecteur])
 
     useEffect(()=>{
+        const loaderImage = fichier.imageLoader
+        let imageChargee = null
+        loaderImage.load()
+            .then(image=>{
+                imageChargee = image
+                console.debug("Image poster chargee : %O", image)
+                setPosterObj(image)
+            })
+            .catch(err=>console.error("Erreur chargement poster : %O", err))
+        
+        return () => {
+            console.debug("Revoking blob %O", imageChargee)
+            URL.revokeObjectURL(imageChargee)
+        }
+    }, [fichier, setPosterObj])
+
+    useEffect(()=>{
         if(!selecteur) return setSrcVideo('')
         console.debug("Video utiliser selecteur %s", selecteur)
         fichier.videoLoader.load(selecteur)
@@ -94,8 +112,8 @@ function AfficherVideo(props) {
             <Row>
                 
                 <Col md={12} lg={8}>
-                    {srcVideo?
-                        <VideoViewer videos={srcVideo} height='100%' width='100%' />
+                    {posterObj&&srcVideo?
+                        <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' />
                     :(
                         <div>
                             <p>
