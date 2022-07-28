@@ -25,7 +25,10 @@ supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.wa
 export { Icones }
 
 export function mapper(row, workers) {
-    const { tuuid, nom, supprime, date_creation, duree, fuuid_v_courante, version_courante, mimetype, favoris } = row
+    const version_courante = row.version_courante || {}
+    const { tuuid, nom, supprime, date_creation, fuuid_v_courante, favoris } = row
+    const { anime, date_fichier, taille, images, video, duration, videoCodec } = version_courante || row
+    const mimetype = version_courante.mimetype || row.mimetype
 
     // console.debug("!!! MAPPER %O", row)
 
@@ -44,7 +47,7 @@ export function mapper(row, workers) {
         ids.folderId = tuuid  // Collection, tuuid est le folderId
         thumbnailIcon = Icones.ICONE_FOLDER
     } else {
-        const { anime, mimetype, date_fichier, taille, images, video } = version_courante || row
+        // const { anime, mimetype, date_fichier, taille, images, video } = version_courante || row
         mimetype_fichier = mimetype
         date_version = date_fichier
         taille_fichier = taille
@@ -105,7 +108,7 @@ export function mapper(row, workers) {
         taille: taille_fichier,
         dateAjout: date_version || date_creation,
         mimetype: ids.folderId?'Repertoire':mimetype_fichier,
-        duree,
+        duration, videoCodec,
         fuuid: fuuid_v_courante,
         version_courante,
         favoris,
