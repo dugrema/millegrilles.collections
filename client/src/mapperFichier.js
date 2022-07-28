@@ -70,7 +70,7 @@ export function mapper(row, workers) {
             }
 
             if(video) {
-                videoLoader = videoResourceLoader(getFichierChiffre, video, {supporteWebm})
+                videoLoader = videoResourceLoader(getFichierChiffre, video, {fuuid: fuuid_v_courante, version_courante, supporteWebm})
             }
         
             // Loader du fichier source (principal), supporte thumbnail pour chargement
