@@ -10,38 +10,44 @@ import Row from 'react-bootstrap/Row'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
 const VIDEO_CODEC = [
-  {label: 'H.264 (mp4)', value: "h264"},
+  {label: 'HEVC (mp4)', value: "hevc"},
   {label: 'VP9 (webm)', value: "vp9"},
+  {label: 'H.264 (mp4)', value: "h264"},
 ]
 
 const AUDIO_CODEC = [
-  {label: 'AAC', value: "aac"},
   {label: 'Opus', value: "opus"},
+  {label: 'EAC3', value: "eac3"},
+  {label: 'AAC', value: "aac"},
 ]
 
 const VIDEO_RESOLUTIONS = [
-  {label: "240p", value: 240},
-  {label: "320p", value: 320},
+  {label: "270p", value: 270},
   {label: "360p", value: 360},
   {label: "480p", value: 480},
   {label: "720p", value: 720},
   {label: "1080p", value: 1080},
-  {label: "1440p", value: 1440},
-  {label: "2160p", value: 2160},
-  {label: "4320p", value: 4320},
 ]
 
-const BITRATES_VIDEO = [
-  {label: "250 kbps", value: 250000},
-  {label: "500 kbps", value: 500000},
-  {label: "750 kbps", value: 750000},
-  {label: "1 mbps", value: 1000000},
-  {label: "1.5 mbps", value: 1500000},
-  {label: "2.0 mbps", value: 2000000},
-  {label: "3.0 mbps", value: 3000000},
-  {label: "4.0 mbps", value: 4000000},
-  {label: "6.0 mbps", value: 6000000},
-  {label: "8.0 mbps", value: 8000000},
+// const BITRATES_VIDEO = [
+//   {label: "250 kbps", value: 250000},
+//   {label: "500 kbps", value: 500000},
+//   {label: "750 kbps", value: 750000},
+//   {label: "1 mbps", value: 1000000},
+//   {label: "1.5 mbps", value: 1500000},
+//   {label: "2.0 mbps", value: 2000000},
+//   {label: "3.0 mbps", value: 3000000},
+//   {label: "4.0 mbps", value: 4000000},
+//   {label: "6.0 mbps", value: 6000000},
+//   {label: "8.0 mbps", value: 8000000},
+// ]
+
+const QUALITY_VIDEO = [
+  {label: "Tres Faible (38)", value: 38},
+  {label: "Faible (34)", value: 34},
+  {label: "Moyen (30)", value: 30},
+  {label: "Eleve (27)", value: 27},
+  {label: "Tres eleve (23)", value: 23},
 ]
 
 const BITRATES_AUDIO = [
@@ -51,18 +57,21 @@ const BITRATES_AUDIO = [
 
 function parseEvenementTranscodage(evenement) {
   const message = evenement.message || {}
+  const codec = evenement.codec || {}
   const resolution = message.height
   const mimetype = message.mimetype
-  const bitrate = message.videoBitrate
+  const bitrate_quality = message.quality || message.videoBitrate
 
-  const cle = [mimetype, resolution, bitrate].join(';')
+  const cle = [mimetype, codec, resolution, bitrate_quality].join(';')
   const params = {
     passe: message.passe, 
     pctProgres: message.pctProgres,
     fuuid: message.fuuid,
     resolution,
     mimetype,
-    bitrate
+    codec,
+    bitrate: message.videoBitrate,
+    quality: message.quality,
   }
   delete params['en-tete']
   delete params.signature
@@ -143,16 +152,18 @@ function FormConversionVideo(props) {
 
     const { workers, fichier, setTranscodage, usager, erreurCb } = props
 
-    const [codecVideo, setCodecVideo] = useState('h264')
-    const [codecAudio, setCodecAudio] = useState('aac')
-    const [resolutionVideo, setResolutionVideo] = useState(240)
-    const [bitrateVideo, setBitrateVideo] = useState(250000)
-    const [bitrateAudio, setBitrateAudio] = useState(64000)
+    const [codecVideo, setCodecVideo] = useState('vp9')
+    const [codecAudio, setCodecAudio] = useState('opus')
+    const [resolutionVideo, setResolutionVideo] = useState(360)
+    // const [bitrateVideo, setBitrateVideo] = useState(250000)
+    const [qualityVideo, setQualityVideo] = useState(30)
+    const [bitrateAudio, setBitrateAudio] = useState(128000)
 
     const changerCodecVideo = useCallback(event => { 
       const codec = event.currentTarget.value
       setCodecVideo(codec)
       if(codec === 'vp9') setCodecAudio('opus')
+      else if(codec === 'hevc') setCodecAudio('eac3')
       else setCodecAudio('aac')
     }, [setCodecVideo, setCodecAudio])
 
@@ -161,18 +172,19 @@ function FormConversionVideo(props) {
     if(!versionCourante.mimetype.startsWith('video/')) return ''
     const resolutionOriginal = Math.min([versionCourante.width, versionCourante.height].filter(item=>!isNaN(item)))
 
-    const estPret = codecVideo && codecAudio && resolutionVideo && bitrateVideo && bitrateAudio
+    const estPret = codecVideo && codecAudio && resolutionVideo && qualityVideo && bitrateAudio
   
     // const changerCodecAudio = event => { setCodecAudio(event.currentTarget.value) }
     const changerResolutionVideo = event => { setResolutionVideo(Number(event.currentTarget.value)) }
-    const changerBitrateVideo = event => { setBitrateVideo(Number(event.currentTarget.value)) }
+    // const changerBitrateVideo = event => { setBitrateVideo(Number(event.currentTarget.value)) }
+    const changerQualityVideo = event => { setQualityVideo(Number(event.currentTarget.value)) }
     const changerBitrateAudio = event => { setBitrateAudio(Number(event.currentTarget.value)) }
   
     const convertir = event => {
       convertirVideo(
         workers,
         fichier,
-        {codecVideo, codecAudio, resolutionVideo, bitrateVideo, bitrateAudio},
+        {codecVideo, codecAudio, resolutionVideo, qualityVideo, bitrateAudio, preset: 'slower'},
         erreurCb,
         {usager}
       )
@@ -187,7 +199,7 @@ function FormConversionVideo(props) {
             <Form>
               <SelectGroup formLabel={'Codec Video'} name={'codecVideo'} value={codecVideo} onChange={changerCodecVideo} options={VIDEO_CODEC} />
               <SelectGroup formLabel={'Resolution Video'} name={'resolutionVideo'} value={resolutionVideo} onChange={changerResolutionVideo} options={VIDEO_RESOLUTIONS} maxValue={resolutionOriginal} />
-              <SelectGroup formLabel={'Bitrate Video'} name={'bitrateVideo'} value={bitrateVideo} onChange={changerBitrateVideo} options={BITRATES_VIDEO} />
+              <SelectGroup formLabel={'Qualite Video'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
               <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
               <SelectGroup formLabel={'Bitrate Audio'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
       
@@ -258,7 +270,7 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
 
   if(params.codecVideo === 'vp9') {
       commande.mimetype = 'video/webm'
-  } else if(params.codecVideo === 'h264') {
+  } else if(['h264', 'hevc'].includes(params.codecVideo)) {
       commande.mimetype = 'video/mp4'
   }
 
@@ -305,7 +317,8 @@ function Videos(props) {
       <h3>Formats disponibles</h3>
       <Row>
         <Col xs={1}>Format</Col>
-        <Col xs={2}>Bitrate</Col>
+        <Col xs={1}>Codec</Col>
+        <Col xs={2}>Qualite</Col>
         <Col xs={3}>Resolution</Col>
         <Col xs={2}>Taille</Col>
       </Row>
@@ -330,13 +343,25 @@ function Videos(props) {
 function sortVideos(a, b) {
   const resoA = Math.min(a.height, a.width),
       resoB = Math.min(b.height, b.width),
-      mimetypeA = a.mimetype, mimetypeB = b.mimetype
+      qualityA = a.quality, qualityB = b.quality,
+      // mimetypeA = a.mimetype, mimetypeB = b.mimetype,
+      codecA = a.codec, codecB = b.codec
 
       if(resoA !== resoB) return resoB - resoA
-      if(mimetypeA !== mimetypeB) {
-      if(mimetypeA.endsWith('webm')) return -1
-      if(mimetypeB.endsWith('webm')) return 1
-    }
+      // if(mimetypeA !== mimetypeB) {
+      // if(mimetypeA.endsWith('webm')) return -1
+      // if(mimetypeB.endsWith('webm')) return 1
+      if(codecA !== codecB) {
+        if(codecA === 'vp9') return -1
+        if(codecB === 'vp9') return 1
+        if(codecA === 'hevc') return -1
+        if(codecB === 'hevc') return 1
+      }
+      if(qualityA !== qualityB) {
+        return qualityB - qualityA
+      }
+
+    // }
 
     return 0
 }
@@ -408,6 +433,7 @@ function AfficherLigneFormatVideo(props) {
     const infoDownload = { 
       fuuid: video.fuuid_video,
       mimetype: video.mimetype, 
+      codec: video.codec,
       nom: nomFichier, 
       taille: video.taille_fichier,
     }
@@ -418,35 +444,21 @@ function AfficherLigneFormatVideo(props) {
 
   }, [fichier, video, downloadAction])
 
-  let play = null,
-      webmSupport = support.webm
-
-  if(props.playVideo) {
-    const estFallback = video.mimetype.endsWith('/mp4')
-    if(estFallback || webmSupport) {
-      play = event => {props.playVideo(video)}
-    }
-  }
-
-  const [base, codec] = video.mimetype.split('/')
-  const bitrate = video.bitrate
+  const [base, packageFormat] = video.mimetype.split('/')
+  const bitrate_quality = video.quality || video.bitrate
+  const codec = video.codec
 
   return (
     <Row>
+      <Col xs={1}>{packageFormat}</Col>
       <Col xs={1}>{codec}</Col>
-      <Col xs={2}>{bitrate}</Col>
+      <Col xs={2}>{bitrate_quality}</Col>
       <Col xs={3}>{video.width} x {video.height}</Col>
       <Col xs={2}><FormatteurTaille value={video.taille_fichier} /></Col>
       <Col>
         <Button variant="secondary" onClick={download}>
           <i className="fa fa-download" />
         </Button>
-        {play?
-          <Button variant="secondary" onClick={play}>
-            <i className="fa fa-play" />
-          </Button>
-          :''
-        }
       </Col>
     </Row>
   )
