@@ -302,9 +302,14 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
 }
 
 function Videos(props) {
-  const { fichier, support, downloadAction, transcodage } = props
+  const { workers, fichier, support, downloadAction, transcodage } = props
   const versionCourante = fichier.version_courante || {}
   const videos = versionCourante.video || {}
+
+  const supprimerVideo = useCallback(fuuidVideo=>{
+    console.debug("Supprimer video : %s", fuuidVideo)
+    workers.connexion.supprimerVideo(fuuidVideo)
+  }, [workers])
 
   if(!videos) return ''
 
@@ -331,6 +336,7 @@ function Videos(props) {
             playVideo={props.playVideo}
             support={support} 
             downloadAction={downloadAction}
+            supprimerVideo={supprimerVideo}
           />
         )
       })}
@@ -416,7 +422,7 @@ function triCleTranscodage(a,b) {
 }
 
 function AfficherLigneFormatVideo(props) {
-  const { fichier, video, support, downloadAction } = props
+  const { fichier, video, support, downloadAction, supprimerVideo } = props
 
   const download = useCallback(event => {
     console.debug("Downloader fichier %O", fichier)
@@ -444,6 +450,8 @@ function AfficherLigneFormatVideo(props) {
 
   }, [fichier, video, downloadAction])
 
+  const supprimerVideoCb = useCallback(()=>supprimerVideo(video.fuuid_video), [video, supprimerVideo])
+
   const [base, packageFormat] = video.mimetype.split('/')
   const bitrate_quality = video.quality || video.bitrate
   const codec = video.codec
@@ -458,6 +466,9 @@ function AfficherLigneFormatVideo(props) {
       <Col>
         <Button variant="secondary" onClick={download}>
           <i className="fa fa-download" />
+        </Button>
+        <Button variant="danger" onClick={supprimerVideoCb}>
+          <i className="fa fa-trash" />
         </Button>
       </Col>
     </Row>

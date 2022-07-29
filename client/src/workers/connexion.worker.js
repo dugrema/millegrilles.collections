@@ -167,6 +167,15 @@ function ajouterFichier(commande) {
   )
 }
 
+function supprimerVideo(fuuidVideo) {
+  const commande = {fuuid_video: fuuidVideo}
+  return ConnexionClient.emitBlocking(
+    'supprimerVideo',
+    commande,
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerVideo', attacherCertificat: true}
+  )
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -277,7 +286,7 @@ expose({
     decrireFichier, decrireCollection,
     copierVersCollection, deplacerFichiersCollection,
     rechercheIndex, transcoderVideo, getPermission,
-    ajouterFichier,
+    ajouterFichier, supprimerVideo,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,

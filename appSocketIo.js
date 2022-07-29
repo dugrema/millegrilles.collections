@@ -30,6 +30,7 @@ function configurerEvenements(socket) {
       { eventName: 'rechercheIndex', callback: (params, cb) => traiter(socket, mqdao.rechercheIndex, {params, cb}) },
       { eventName: 'transcoderVideo', callback: (params, cb) => traiter(socket, mqdao.transcoderVideo, {params, cb}) },
       { eventName: 'ajouterFichier', callback: (params, cb) => traiter(socket, mqdao.ajouterFichier, {params, cb}) },
+      { eventName: 'supprimerVideo', callback: (params, cb) => traiter(socket, mqdao.supprimerVideo, {params, cb}) },
 
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},

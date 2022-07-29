@@ -96,6 +96,10 @@ function transcoderVideo(socket, params) {
     )
 }
 
+function supprimerVideo(socket, params) {
+  return transmettreCommande(socket, params, 'supprimerVideo')
+}
+
 function ajouterFichier(socket, params) {
   return transmettreCommande(
       socket, params, 'commandeNouveauFichier', 
@@ -329,7 +333,7 @@ module.exports = {
     enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
     enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
     enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
-    ajouterFichier,
+    ajouterFichier, supprimerVideo,
 
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,
