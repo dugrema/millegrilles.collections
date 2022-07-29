@@ -15,7 +15,7 @@ function AfficherVideo(props) {
 
     console.debug("AfficherVideo PROPPIES : %O", props)
 
-    const { support } = props,
+    const { support, showInfoModalOuvrir } = props,
           fichier = props.fichier || {},
           nomFichier = fichier.nom || '',
           version_courante = fichier.version_courante || {},
@@ -125,8 +125,13 @@ function AfficherVideo(props) {
 
                 <Col>
                     <h3>{nomFichier}</h3>
+                    
                     <Button onClick={props.fermer}>Retour</Button>
-                    <p>Resolution</p>
+
+                    <h3>Operation</h3>
+                    <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>    
+
+                    <h3>Afficher</h3>
                     <SelecteurResolution 
                         listeVideos={videos} 
                         support={support}

@@ -142,13 +142,16 @@ function NavigationFavoris(props) {
 
     const setBreadcrumbIdx = useCallback( idx => {
         // Tronquer la breadcrumb pour revenir a un folder precedent
+        setAfficherVideo(false)
+        setShowInfoModal(false)
+
         const breadcrumbTronquee = breadcrumb.filter((_, idxItem)=>idxItem<=idx)
         setBreadcrumb(breadcrumbTronquee)
 
         // Set nouveau cuuid courant
         if(idx >= 0) setCuuidCourant(breadcrumbTronquee[idx].folderId)
         else setCuuidCourant('')  // Racine des favoris
-    }, [breadcrumb, setBreadcrumb, setCuuidCourant])
+    }, [breadcrumb, setBreadcrumb, setCuuidCourant, setAfficherVideo, setShowInfoModal])
 
     // Preparer format des colonnes
     useEffect(()=>{ setColonnes(preparerColonnes()) }, [setColonnes])
@@ -371,6 +374,7 @@ function NavigationFavoris(props) {
                 afficherVideo={afficherVideo}
                 setAfficherVideo={setAfficherVideo}
                 support={support}
+                showInfoModalOuvrir={showInfoModalOuvrir}
             />
 
             <InformationListe 
@@ -470,7 +474,7 @@ function AffichagePrincipal(props) {
     const {
         modeView, colonnes, liste, cuuidCourant, isListeComplete, tuuidSelectionne, support,
         onClick, onDoubleClick, onContextMenu, setContextuel, onSelectionLignes, enteteOnClickCb, suivantCb,
-        afficherVideo, setAfficherVideo,
+        afficherVideo, setAfficherVideo, showInfoModalOuvrir,
     } = props
 
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false))
@@ -487,7 +491,8 @@ function AffichagePrincipal(props) {
                 support={support}
                 fichier={fileItem}
                 tuuidSelectionne={tuuidSelectionne}
-                fermer={fermerAfficherVideo} />
+                fermer={fermerAfficherVideo} 
+                showInfoModalOuvrir={showInfoModalOuvrir} />
         )
     }
 
