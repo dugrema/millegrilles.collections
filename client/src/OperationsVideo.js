@@ -167,10 +167,14 @@ function FormConversionVideo(props) {
       else setCodecAudio('aac')
     }, [setCodecVideo, setCodecAudio])
 
+    const versionCourante = (fichier?fichier.version_courante:{}) || {}
+    console.debug("Version courante : %O", versionCourante)
+    const dimensionsFichier = [versionCourante.width, versionCourante.height].filter(item=>!isNaN(item))
+    const resolutionOriginal = Math.min(...dimensionsFichier)
+    const maxValueFilterResolution = useCallback(option=>option.value <= resolutionOriginal, [resolutionOriginal])
+
     if(!fichier) return ''
-    const versionCourante = fichier.version_courante || {}
     if(!versionCourante.mimetype.startsWith('video/')) return ''
-    const resolutionOriginal = Math.min([versionCourante.width, versionCourante.height].filter(item=>!isNaN(item)))
 
     const estPret = codecVideo && codecAudio && resolutionVideo && qualityVideo && bitrateAudio
   
@@ -198,7 +202,7 @@ function FormConversionVideo(props) {
           <Col xs={12} lg={6}>
             <Form>
               <SelectGroup formLabel={'Codec Video'} name={'codecVideo'} value={codecVideo} onChange={changerCodecVideo} options={VIDEO_CODEC} />
-              <SelectGroup formLabel={'Resolution Video'} name={'resolutionVideo'} value={resolutionVideo} onChange={changerResolutionVideo} options={VIDEO_RESOLUTIONS} maxValue={resolutionOriginal} />
+              <SelectGroup formLabel={'Resolution Video'} name={'resolutionVideo'} value={resolutionVideo} onChange={changerResolutionVideo} options={VIDEO_RESOLUTIONS} maxValueFilter={maxValueFilterResolution} />
               <SelectGroup formLabel={'Qualite Video'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
               <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
               <SelectGroup formLabel={'Bitrate Audio'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
@@ -226,11 +230,13 @@ function FormConversionVideo(props) {
 
 function SelectGroup(props) {
 
-  const { formLabel, name, onChange, value, options, maxValue, disabled } = props
+  const { formLabel, name, onChange, value, options, maxValueFilter, disabled } = props
+
+  console.debug("SelectGroup options: %O, maxValue: %O", options, maxValueFilter)
 
   let optionsFiltrees = options
-  if(maxValue) {
-    optionsFiltrees = optionsFiltrees.filter(item=>item.value<=maxValue)
+  if(maxValueFilter) {
+    optionsFiltrees = options.filter(item=>maxValueFilter(item))
   }
 
   return (
