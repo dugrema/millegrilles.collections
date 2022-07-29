@@ -6,7 +6,7 @@ import Modal from 'react-bootstrap/Modal'
 import Col from 'react-bootstrap/Col'
 import Row from 'react-bootstrap/Row'
 
-import { FormatteurTaille, FormatterDate, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
+import { FormatteurTaille, FormatterDate, FormatterDuree, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
 
 import { ConversionVideo } from './OperationsVideo'
 
@@ -268,6 +268,7 @@ function InfoFichier(props) {
     const versionCourante = fichier.version_courante || {}
     const { mimetype, taille } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
+    const dateFichier = versionCourante.dateFichier
 
     return (
         <div>
@@ -294,7 +295,10 @@ function InfoFichier(props) {
                         <Col xs={12} md={3}>Date</Col>
                         <Col xs={12} md={9}><FormatterDate value={derniereModification} /></Col>
                     </Row>
-
+                    <Row>
+                        <Col xs={12} md={3}>Date originale</Col>
+                        <Col xs={12} md={9}><FormatterDate value={dateFichier} /></Col>
+                    </Row>
                     <InfoMedia fichier={fichier} />
                 </Col>
             </Row>
@@ -316,19 +320,23 @@ function InfoMedia(props) {
     const fichier = props.fichier || {}
     const versionCourante = fichier.version_courante
 
-    // console.debug("Info videos fichier %O : %O", fichier)
+    console.debug("Info videos fichier %O : %O", fichier)
 
     if(!versionCourante) return ''
 
     const infoRows = []
     if(versionCourante.height && versionCourante.width) {
-        infoRows.push({label: 'Dimension', value: '' + versionCourante.height + 'x' + versionCourante.width})
+        infoRows.push({label: 'Dimension', value: '' + versionCourante.width + ' x ' + versionCourante.height})
     } else if(versionCourante.height || versionCourante.width) {
         const resolution = Math.min([versionCourante.height, versionCourante.width].filter(item=>!isNaN(item))) || ''
         infoRows.push({label: 'Resolution', value: resolution?resolution+'p':''})
     }
     if(versionCourante.anime) {
         infoRows.push({label: 'Anime', value: 'Oui'})
+    }
+    if(versionCourante.duration) {
+        // const dureeStr = Math.floor(versionCourante.duration)
+        infoRows.push({label: 'Duree', value: <FormatterDuree value={versionCourante.duration} />})
     }
 
     return (
