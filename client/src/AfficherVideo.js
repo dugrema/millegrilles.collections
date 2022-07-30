@@ -5,10 +5,12 @@ import Col from 'react-bootstrap/Col'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
 import Form from 'react-bootstrap/Form'
+import Nav from 'react-bootstrap/Nav'
 
 import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 
 import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
+
 
 const PLAYER_VIDEORESOLUTION = 'player.videoResolution'
 
@@ -161,6 +163,8 @@ function AfficherVideo(props) {
 
             </Row>
 
+            <AfficherLiensVideo srcVideo={srcVideo} show={!!genererToken} />
+
         </div>
     )
 }
@@ -215,5 +219,34 @@ function SelecteurResolution(props) {
                 })}
             </DropdownButton>
         </>
+    )
+}
+
+function AfficherLiensVideo(props) {
+    const { show, srcVideo } = props
+
+    if(!show) return ''
+
+    console.debug("VIDEOS : %O", srcVideo)
+
+    return (
+        <div>
+            <h3>Liens video</h3>
+            {srcVideo.map(item=>{
+                return <LienVideo video={item} /> 
+            })}
+        </div>
+    )
+}
+
+function LienVideo(props) {
+    const video = props.video
+    const nomVideo = video.codecVideo || video.mimetype || video.src
+    return (
+        <Row>
+            <Col>
+                <a href={video.src} target="_top">{nomVideo}</a>
+            </Col>
+        </Row>
     )
 }

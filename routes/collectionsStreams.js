@@ -21,13 +21,15 @@ async function verifierAutorisationStream(req, res) {
         const uriVideo = req.headers['x-original-uri']
         const urlVideo = new URL('https://localhost/' + uriVideo)
 
-        const token = urlVideo.searchParams.get('token')
+        // const token = urlVideo.searchParams.get('token')
         debug("urlVideo : %O", urlVideo)
 
-        const reFuuid = /\/collections\/streams\/([A-Za-z0-9]+)(\/.*)?/
+        const reFuuid = /\/collections\/streams\/([A-Za-z0-9]+)(\/([A-Za-z0-9]+))?(\/.*)?/
         const matches = reFuuid.exec(urlVideo.pathname)
         debug("Matches : %O", matches)
         const fuuid = matches[1]
+        let token = null
+        if(matches.length>2) token = matches[3]
 
         const redisClient = req.redisClient
         if(token) {
