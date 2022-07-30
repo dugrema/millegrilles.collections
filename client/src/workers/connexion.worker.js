@@ -176,6 +176,16 @@ function supprimerVideo(fuuidVideo) {
   )
 }
 
+function creerTokenStream(fuuids) {
+  const commande = {fuuids}
+  return ConnexionClient.emitBlocking(
+    'creerTokenStream', 
+    commande, 
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'verifierAccesFuuids', ajouterCertificat: true}
+  )
+}
+
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -286,7 +296,7 @@ expose({
     decrireFichier, decrireCollection,
     copierVersCollection, deplacerFichiersCollection,
     rechercheIndex, transcoderVideo, getPermission,
-    ajouterFichier, supprimerVideo,
+    ajouterFichier, creerTokenStream, supprimerVideo,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,

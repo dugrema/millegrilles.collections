@@ -1,10 +1,15 @@
 const debug = require('debug')('mqdao')
+const { getRandom } = require('@dugrema/millegrilles.utiljs/src/random')
+const { hacher } = require('@dugrema/millegrilles.nodejs/src/hachage')
 
 const L2Prive = '2.prive'
 
 const DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles',
-      CONST_DOMAINE_FICHIERS = 'fichiers'
+      CONST_DOMAINE_FICHIERS = 'fichiers',
+      CONST_TIMEOUT_STREAMTOKEN = 6 * 60 * 60
+
+let _certificatMaitreCles = null
 
 function challenge(socket, params) {
     // Repondre avec un message signe
@@ -105,6 +110,30 @@ function ajouterFichier(socket, params) {
       socket, params, 'commandeNouveauFichier', 
       {domaine: DOMAINE_GROSFICHIERS}
   )
+}
+
+async function getClesChiffrage(socket, params) {
+  let certificatMaitreCles = _certificatMaitreCles
+  if(!certificatMaitreCles) {
+      debug("Requete pour certificat maitre des cles")
+
+      try {
+          certificatMaitreCles = await socket.amqpdao.transmettreRequete(
+              CONST_DOMAINE_MAITREDESCLES, {}, 
+              {action: 'certMaitreDesCles', decoder: true}
+          )
+
+          // TTL
+          setTimeout(()=>{_certificatMaitreCles=null}, 120_000)
+      } catch(err) {
+          console.error("mqdao.transmettreRequete ERROR : %O", err)
+          return {ok: false, err: ''+err}
+      }
+  
+      // certificatMaitreCles = await transmettreRequete(socket, params, 'certMaitreDesCles', {domaine: CONST_DOMAINE_MAITREDESCLES})
+      _certificatMaitreCles = certificatMaitreCles
+  }
+  return certificatMaitreCles
 }
 
 async function transmettreRequete(socket, params, action, opts) {
@@ -310,6 +339,70 @@ function retirerCallbackTranscodageVideo(socket, params, cb) {
   socket.unsubscribe(opts, cb)
 }
 
+async function creerTokenStream(socket, requete) {
+  try {
+    const fuuids = requete.fuuids
+
+    debug("Fuuid a charger : %O", fuuids)
+
+    // const userId = socket.userId
+    // debug("Fuuid a charger pour usager %s : %O", userId, fuuids)
+
+    // Note : la requete est signee par l'usager - meme advenant une erreur session, aucuns probleme.
+    // if(!userId) {
+    //     console.error("creerTokenStream: Erreur session, userId manquant dans session")
+    //     return {ok: false, err: 'Session https invalide'}
+    // }
+
+    // const requete = { user_id: userId, fuuids }
+    // const mq = socket.amqpdao
+    // const resultat = await mq.transmettreRequete('GrosFichiers', requete, {action: 'verifierAccesFuuids'})
+    const resultat = await transmettreRequete(socket, requete, 'verifierAccesFuuids')
+    debug("creerTokenStream Resultat verification acces : %O", resultat)
+    if(resultat.acces_tous === true) {
+        debug("creerTokenStream Acces stream OK")
+        const randomBytes = getRandom(32)
+        const token = (await hacher(randomBytes, {hashingCode: 'blake2s-256', encoding: 'base58btc'})).slice(1)
+        for await (let fuuid of fuuids) {
+          const cleStream = `streamtoken:${fuuid}:${token}`
+          // Conserver token dans Redis
+          const redisClient = socket.redisClient
+          await redisClient.set(cleStream, 'ok', {NX: true, EX: CONST_TIMEOUT_STREAMTOKEN})
+        }
+  
+        return {ok: true, token}
+    } else {
+        debug("creerTokenStream Acces stream refuse")
+        return {ok: false, err: 'Acces refuse'}
+    }
+  } catch(err) {
+      debug("creerTokenStream Erreur verification acces stream : %O", err)
+      return {ok: false, err: ''+err}
+  }
+
+
+  // // Verifier l'autorisation d'acces au stream
+  // const reponse = await transmettreRequete(socket, params, 'verifierPreuve', 
+  //     {domaine: CONST_DOMAINE_MAITREDESCLES, partition: params.partition, noformat: true})
+
+  // debug("Reponse preuve : %O", reponse)
+  // if(reponse.verification && reponse.verification[fuuid] === true) {
+  //     // Creer un token random pour le stream
+  //     const randomBytes = getRandom(32)
+  //     const token = (await hacher(randomBytes, {hashingCode: 'blake2s-256', encoding: 'base58btc'})).slice(1)
+  //     const cleStream = `streamtoken:${fuuid}:${token}`
+  //     const timeoutStream = 2 * 60 * 60
+
+  //     // Conserver token dans Redis
+  //     const redisClient = socket.redisClient
+  //     await redisClient.set(cleStream, 'ok', {NX: true, EX: timeoutStream})
+
+  //     return {token}
+  // } else {
+  //     return {ok: false, err: "Cle refusee ou inconnue"}
+  // }
+}
+
 // async function ecouterTranscodageProgres(socket, params, cb) {
 //     const opts = {
 //         routingKeys: [`evenement.fichiers.${params.fuuid}.transcodageProgres`],
@@ -333,7 +426,7 @@ module.exports = {
     enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
     enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
     enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
-    ajouterFichier, supprimerVideo,
+    ajouterFichier, creerTokenStream, getClesChiffrage, supprimerVideo,
 
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,

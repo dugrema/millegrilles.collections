@@ -1,9 +1,10 @@
-import {useState, useEffect, useCallback} from 'react'
+import {useState, useEffect, useCallback, useMemo} from 'react'
 import Button from 'react-bootstrap/Button'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
+import Form from 'react-bootstrap/Form'
 
 import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 
@@ -18,12 +19,19 @@ function AfficherVideo(props) {
     const { support, showInfoModalOuvrir } = props,
           fichier = props.fichier || {},
           nomFichier = fichier.nom || '',
-          version_courante = fichier.version_courante || {},
-          videos = version_courante.video || {}
+          version_courante = fichier.version_courante || {}
+
+    const videos = useMemo(()=>version_courante.video || {}, [version_courante.video])
 
     const [selecteur, setSelecteur] = useState('faible')
     const [srcVideo, setSrcVideo] = useState('')
     const [posterObj, setPosterObj] = useState('')
+    const [genererToken, setGenererToken] = useState(false)
+
+    const genererTokenToggle = useCallback(()=>{
+        console.debug("Toggle check de %O", genererToken)
+        setGenererToken(!genererToken)
+    }, [genererToken, setGenererToken])
 
     useEffect(()=>{
         console.debug("Support : %O", support)
@@ -66,7 +74,7 @@ function AfficherVideo(props) {
         //         setSelecteur(optionNombre)
         //     }
         // }
-    }, [support, videos, setSelecteur])
+    }, [support, videos, genererToken, setSelecteur])
 
     useEffect(()=>{
         const loaderImage = fichier.imageLoader
@@ -88,7 +96,7 @@ function AfficherVideo(props) {
     useEffect(()=>{
         if(!selecteur) return setSrcVideo('')
         console.debug("Video utiliser selecteur %s", selecteur)
-        fichier.videoLoader.load(selecteur)
+        fichier.videoLoader.load(selecteur, {genererToken})
             .then(src=>{
                 console.debug("Source video : %O", src)
                 setSrcVideo(src)
@@ -96,7 +104,8 @@ function AfficherVideo(props) {
             .catch(err=>{
                 console.error("AfficherVideo erreur chargement video : %O", err)
             })
-    }, [fichier, selecteur, setSrcVideo])
+    }, [fichier, selecteur, genererToken, setSrcVideo])
+
 
     if(!srcVideo) return (
         <>
@@ -129,7 +138,18 @@ function AfficherVideo(props) {
                     <Button onClick={props.fermer}>Retour</Button>
 
                     <h3>Operation</h3>
-                    <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>    
+                    <Row>
+                        <Col>
+                            <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col>
+                            <Form.Check type="switch" id="token-switch" label="Generer token" 
+                                checked={genererToken?true:false} 
+                                onClick={genererTokenToggle} />
+                        </Col>
+                    </Row>
 
                     <h3>Afficher</h3>
                     <SelecteurResolution 

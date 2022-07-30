@@ -15,7 +15,7 @@ async function app(params) {
     const {server, socketIo, amqpdao: amqpdaoInst, urlHost } = await server6(
         app,
         configurerEvenements,
-        {pathApp: '/collections', verifierAutorisation, exchange: '2.prive'}
+        {pathApp: '/collections', verifierAutorisation, verifierAuthentification, exchange: '2.prive'}
     )
 
     socketIo.use((socket, next)=>{
@@ -66,4 +66,20 @@ function verifierAutorisation(socket, securite, certificatForge) {
     return {prive, protege}
 }
 
+function verifierAuthentification(req, res, next) {
+    if(req.url.startsWith('/collections/streams')) {
+        // Bypass pour streams, verification via tokens
+        return next()
+    }
+    
+    const session = req.session
+    if( ! (session.nomUsager && session.userId) ) {
+      debug("verifierAuthentification Acces refuse (nomUsager et userId null)")
+      debugConnexions("Nom usager/userId ne sont pas inclus dans les req.headers : %O", req.headers)
+      res.append('Access-Control-Allow-Origin', '*')  // S'assurer que le message est recu cross-origin
+      return res.sendStatus(403)
+    }
+    next()
+  }
+  
 module.exports = app

@@ -32,6 +32,12 @@ export function mapper(row, workers) {
 
     // console.debug("!!! MAPPER %O", row)
 
+    const creerToken = async fuuids => {
+        if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
+        const reponse = await workers.connexion.creerTokenStream(fuuids)
+        return reponse.token
+    }
+
     let date_version = '', 
         mimetype_fichier = '',
         taille_fichier = ''
@@ -70,7 +76,7 @@ export function mapper(row, workers) {
             }
 
             if(video) {
-                videoLoader = videoResourceLoader(getFichierChiffre, video, {fuuid: fuuid_v_courante, version_courante, supporteWebm})
+                videoLoader = videoResourceLoader(getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante, supporteWebm})
             }
         
             // Loader du fichier source (principal), supporte thumbnail pour chargement

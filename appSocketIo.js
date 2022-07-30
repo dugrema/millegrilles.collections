@@ -31,6 +31,7 @@ function configurerEvenements(socket) {
       { eventName: 'transcoderVideo', callback: (params, cb) => traiter(socket, mqdao.transcoderVideo, {params, cb}) },
       { eventName: 'ajouterFichier', callback: (params, cb) => traiter(socket, mqdao.ajouterFichier, {params, cb}) },
       { eventName: 'supprimerVideo', callback: (params, cb) => traiter(socket, mqdao.supprimerVideo, {params, cb}) },
+      { eventName: 'creerTokenStream', callback: (params, cb) => traiter(socket, mqdao.creerTokenStream, {params, cb}) },
 
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},
