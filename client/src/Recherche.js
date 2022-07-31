@@ -5,10 +5,10 @@ import {
 } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
-import { MenuContextuelFichierRecherche, MenuContextuelMultiselect } from './MenuContextuel'
+import { MenuContextuelFichierRecherche, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { SupprimerModal, CopierModal, InfoModal } from './ModalOperations'
 
-import { mapperRecherche, onContextMenu } from './mapperFichier'
+import { mapperRecherche } from './mapperFichier'
 import { detecterSupport } from './fonctionsFichiers'
 
 function Recherche(props) {

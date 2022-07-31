@@ -332,3 +332,15 @@ function renommer(fermer, showRenommerModalOuvrir) {
     showRenommerModalOuvrir()
     fermer()
 }
+
+export function onContextMenu(event, value, setContextuel) {
+    event.preventDefault()
+    const {clientX, clientY} = event
+
+    const posx = clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+    const posy = clientY + document.body.scrollTop + document.documentElement.scrollTop;
+
+    const params = {show: true, x: posx, y: posy}
+
+    setContextuel(params)
+}

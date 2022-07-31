@@ -211,15 +211,15 @@ export function mapperRecherche(row, workers) {
     }
 }
 
-export function onContextMenu(event, value, setContextuel) {
-    event.preventDefault()
-    const {clientX, clientY} = event
-    // console.debug("ContextMenu %O (%d, %d)", value, clientX, clientY)
+// export function onContextMenu(event, value, setContextuel) {
+//     event.preventDefault()
+//     const {clientX, clientY} = event
+//     // console.debug("ContextMenu %O (%d, %d)", value, clientX, clientY)
 
-    const params = {show: true, x: clientX, y: clientY}
+//     const params = {show: true, x: clientX, y: clientY}
 
-    setContextuel(params)
-}
+//     setContextuel(params)
+// }
 
 // // Charge un thumbnail/image. 
 // // Utilise un cache/timer pour reutiliser le blob si l'image est chargee/dechargee rapidement.

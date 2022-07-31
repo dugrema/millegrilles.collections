@@ -5,10 +5,10 @@ import {
 } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
-import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
+import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { SupprimerModal, CopierModal, InfoModal, RenommerModal } from './ModalOperations'
 
-import { mapper, onContextMenu } from './mapperFichier'
+import { mapper } from './mapperFichier'
 import { detecterSupport } from './fonctionsFichiers'
 
 function Recents(props) {

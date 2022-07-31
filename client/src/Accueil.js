@@ -19,8 +19,8 @@ import {
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
 import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
-import { mapper, onContextMenu } from './mapperFichier'
-import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
+import { mapper } from './mapperFichier'
+import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 import { Alert } from 'react-bootstrap'
 

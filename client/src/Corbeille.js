@@ -4,8 +4,8 @@ import {
     ListeFichiers, FormatteurTaille, FormatterDate, 
 } from '@dugrema/millegrilles.reactjs'
 
-import { mapper, onContextMenu } from './mapperFichier'
-import { MenuContextuelCorbeille } from './MenuContextuel'
+import { mapper } from './mapperFichier'
+import { MenuContextuelCorbeille, onContextMenu } from './MenuContextuel'
 
 
 function Corbeille(props) {
