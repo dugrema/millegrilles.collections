@@ -17,6 +17,18 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
     opts = opts || {}
     const { erreurCb } = opts
 
+    // Pre-validation des fichiers - certains navigateurs ne supportent pas des noms fichiers avec
+    // characteres non ASCII (e.g. Brave sur Linux). Rapportent un nom de fichier vide ("").
+    const fichiersOk = acceptedFiles.filter(item=>item.name)
+    if(fichiersOk.length === 0) {
+        if(erreurCb) erreurCb("Les noms des fichiers ne sont pas supportes par votre navigateur")
+        else console.error("Erreur getCertificatsMaitredescles - aucun certificat recu")
+        return
+    } else if (fichiersOk.length < acceptedFiles.length) {
+        const nomsFichiersOk = fichiersOk.map(item=>item.path).join(', ')
+        if(erreurCb) erreurCb(`Les noms de certains fichiers ne sont pas supportes. Fichiers OK : ${nomsFichiersOk}`)
+    }
+
     try {
         console.debug("Uploader vers '%s' fichiers : %O", cuuid, acceptedFiles)
 
@@ -34,7 +46,7 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
             transfertFichiers.up_setCertificat(certificat)
 
             // Mapper fichiers
-            const acceptedFilesMapped = acceptedFiles.map(item=>{
+            const acceptedFilesMapped = fichiersOk.map(item=>{
                 const data = {}
                 data.name = item.name
                 data.type = item.type
