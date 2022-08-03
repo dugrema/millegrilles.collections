@@ -5,7 +5,6 @@ import Col from 'react-bootstrap/Col'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
 import Form from 'react-bootstrap/Form'
-import Nav from 'react-bootstrap/Nav'
 
 import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 
@@ -16,7 +15,7 @@ const PLAYER_VIDEORESOLUTION = 'player.videoResolution'
 
 function AfficherVideo(props) {
 
-    console.debug("AfficherVideo PROPPIES : %O", props)
+    // console.debug("AfficherVideo PROPPIES : %O", props)
 
     const { support, showInfoModalOuvrir } = props,
           fichier = props.fichier || {},
@@ -34,49 +33,6 @@ function AfficherVideo(props) {
         console.debug("Toggle check de %O", genererToken)
         setGenererToken(!genererToken)
     }, [genererToken, setGenererToken])
-
-    useEffect(()=>{
-        console.debug("Support : %O", support)
-        const { webm } = support
-
-        const resolutionLocal = Number.parseInt(localStorage.getItem(PLAYER_VIDEORESOLUTION) || '320')
-
-        // const videoKeys = Object.keys(videos)
-        // let options = videoKeys
-        // options.sort(trierLabelsVideos)
-        // options = options.filter(item=>{
-        //     const [mimetype, codecVideo, resolution, bitrateQuality] = item.split(';')
-        //     if(mimetype.endsWith('/webm') && !webm) return false
-        //     return true
-        // })
-
-        // let optionsResolution = options.filter(item=>{
-        //     const [mimetype, codecVideo, resolution, bitrateQuality] = item.split(';')
-        //     const resolutionInt = Number.parseInt(resolution)
-        //     if(resolutionInt > resolutionLocal) return false
-        //     return true
-        // })
-        // if(optionsResolution.length > 0) {
-        //     optionsResolution.reverse()
-        //     console.debug("Options selecteur : %O", optionsResolution)
-
-        //     const optionSelectionnee = optionsResolution.pop()
-        //     if(optionSelectionnee) {
-        //         const optionNombre = ''+Number.parseInt(optionSelectionnee)
-        //         console.debug("Option selectionnee : %O", optionNombre)
-        //         setSelecteur(optionNombre)
-        //     }
-        // } else {
-        //     // Aucun format disponible en fonction de la resolution. Choisir la plus faible
-        //     // resolution dans la liste.
-        //     const optionSelectionnee = options.pop()
-        //     if(optionSelectionnee) {
-        //         const optionNombre = ''+Number.parseInt(optionSelectionnee)
-        //         console.debug("Option selectionnee (resolution plus grande que demandee) : %O", optionNombre)
-        //         setSelecteur(optionNombre)
-        //     }
-        // }
-    }, [support, videos, genererToken, setSelecteur])
 
     useEffect(()=>{
         const loaderImage = fichier.imageLoader
