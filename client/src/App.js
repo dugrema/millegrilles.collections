@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -213,7 +213,7 @@ function Contenu(props) {
     default: Page = Accueil;
   }
 
-  return <Page {...props} />
+  return <ErrorBoundary><Page {...props}/></ErrorBoundary>
 }
 
 function Footer(props) {
@@ -240,5 +240,47 @@ async function emettreAjouterFichier(workers, transaction) {
     await connexion.ajouterFichier(transactionNettoyee)
   } catch(err) {
     console.debug("Erreur emission evenement ajouterFichier : %O", err)
+  }
+}
+
+class ErrorBoundary extends React.Component {
+
+  state = {
+    hasError: false,
+    error: '',
+    errorInfo: '',
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI.
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // You can also log the error to an error reporting service
+    console.error("ErrorBoundary Erreur : %O\nInfo: %O", error, errorInfo);
+    this.setState({error, errorInfo})
+  }
+
+  render() {
+    if (this.state.hasError) {
+
+      const errorInfo = this.state.errorInfo || {},
+            stack = errorInfo.stack || errorInfo.componentStack
+
+      // You can render any custom fallback UI
+      return (
+        <div>
+          <h1>Something went wrong.</h1>
+
+          <p>{''+this.state.error}</p>
+
+          <pre>{''+stack}</pre>
+
+        </div>
+      )
+    }
+
+    return this.props.children; 
   }
 }
