@@ -43,17 +43,103 @@ const VIDEO_RESOLUTIONS = [
 // ]
 
 const QUALITY_VIDEO = [
-  {label: "Tres Faible (38)", value: 38},
+  {label: "Tres Faible (37)", value: 37},
   {label: "Faible (34)", value: 34},
+  {label: "Moyen (32)", value: 32},
+  {label: "Moyen (31)", value: 31},
   {label: "Moyen (30)", value: 30},
-  {label: "Eleve (27)", value: 27},
+  {label: "Eleve (28)", value: 28},
+  {label: "Tres eleve (26)", value: 26},
+  {label: "Tres eleve (24)", value: 24},
   {label: "Tres eleve (23)", value: 23},
+  {label: "Tres eleve (22)", value: 22},
 ]
 
 const BITRATES_AUDIO = [
   {label: "64 kbps", value: 64000},
   {label: "128 kbps", value: 128000},
 ]
+
+const PROFILS_VIDEO = {
+  'vp9': {
+    '270': {
+      qualityVideo: 37,
+      codecAudio: 'opus',
+      bitrateAudio: 64000,
+      preset: 'fast',
+    },
+    '360': {
+      qualityVideo: 37,
+      codecAudio: 'opus',
+      bitrateAudio: 64000,
+      preset: 'medium',
+    },
+    '480': {
+      qualityVideo: 34,
+      codecAudio: 'opus',
+      bitrateAudio: 128000,
+      preset: 'medium',
+    },
+    '720': {
+      qualityVideo: 32,
+      codecAudio: 'opus',
+      bitrateAudio: 128000,
+      preset: 'medium',
+    },
+    '1080': {
+      qualityVideo: 31,
+      codecAudio: 'opus',
+      bitrateAudio: 128000,
+      preset: 'slow',
+    },
+  },
+  'hevc': {
+    '270': {
+      qualityVideo: 32,
+      codecAudio: 'eac3',
+      bitrateAudio: 64000,
+      preset: 'fast',
+    },
+    '360': {
+      qualityVideo: 28,
+      codecAudio: 'eac3',
+      bitrateAudio: 64000,
+      preset: 'medium',
+    },
+    '480': {
+      qualityVideo: 26,
+      codecAudio: 'eac3',
+      bitrateAudio: 128000,
+      preset: 'slow',
+    },
+    '720': {
+      qualityVideo: 26,
+      codecAudio: 'eac3',
+      bitrateAudio: 128000,
+      preset: 'slow',
+    },
+    '1080': {
+      qualityVideo: 23,
+      codecAudio: 'eac3',
+      bitrateAudio: 128000,
+      preset: 'slow',
+    },
+  },
+  'h264': {
+    '270': {
+      qualityVideo: 28,
+      codecAudio: 'aac',
+      bitrateAudio: 64000,
+      preset: 'fast',
+    },
+    '480': {
+      qualityVideo: 26,
+      codecAudio: 'aac',
+      bitrateAudio: 128000,
+      preset: 'medium',
+    }
+  }
+}
 
 function parseEvenementTranscodage(evenement) {
   const message = evenement.message || {}
@@ -156,15 +242,34 @@ function FormConversionVideo(props) {
     const [codecAudio, setCodecAudio] = useState('opus')
     const [resolutionVideo, setResolutionVideo] = useState(360)
     // const [bitrateVideo, setBitrateVideo] = useState(250000)
-    const [qualityVideo, setQualityVideo] = useState(30)
+    const [qualityVideo, setQualityVideo] = useState(37)
     const [bitrateAudio, setBitrateAudio] = useState(128000)
+    const [preset, setPreset] = useState('medium')
+
+    const profilDefault = useMemo(()=>{
+      const profilCodec = PROFILS_VIDEO[codecVideo]
+      if(profilCodec) {
+        const profilResolution = profilCodec[resolutionVideo]
+        if(profilResolution) return profilResolution
+      }
+      return PROFILS_VIDEO['h264']['270']  // Par defaut, profil h264 en 270p
+    }, [codecVideo, resolutionVideo])
+
+    useEffect(()=>{
+      if(profilDefault) {
+        setCodecAudio(profilDefault.codecAudio)
+        setBitrateAudio(profilDefault.bitrateAudio)
+        setQualityVideo(profilDefault.qualityVideo)
+        setPreset(profilDefault.preset)
+      }
+    }, [profilDefault, setCodecAudio, setBitrateAudio, setQualityVideo])
 
     const changerCodecVideo = useCallback(event => { 
       const codec = event.currentTarget.value
       setCodecVideo(codec)
-      if(codec === 'vp9') setCodecAudio('opus')
-      else if(codec === 'hevc') setCodecAudio('eac3')
-      else setCodecAudio('aac')
+      // if(codec === 'vp9') setCodecAudio('opus')
+      // else if(codec === 'hevc') setCodecAudio('eac3')
+      // else setCodecAudio('aac')
     }, [setCodecVideo, setCodecAudio])
 
     const versionCourante = (fichier?fichier.version_courante:{}) || {}
@@ -188,7 +293,7 @@ function FormConversionVideo(props) {
       convertirVideo(
         workers,
         fichier,
-        {codecVideo, codecAudio, resolutionVideo, qualityVideo, bitrateAudio, preset: 'slower'},
+        {codecVideo, codecAudio, resolutionVideo, qualityVideo, bitrateAudio, preset},
         erreurCb,
         {usager}
       )
@@ -206,7 +311,9 @@ function FormConversionVideo(props) {
               <SelectGroup formLabel={'Qualite Video'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
               <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
               <SelectGroup formLabel={'Bitrate Audio'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
-      
+              <Row>
+                <p>Preset : {preset}</p>
+              </Row>
               <Row>
                 <Col>
                   <Button variant="secondary" disabled={!estPret} onClick={convertir}>Convertir</Button>
