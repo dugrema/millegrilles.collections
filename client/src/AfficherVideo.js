@@ -20,14 +20,36 @@ function AfficherVideo(props) {
     const { support, showInfoModalOuvrir } = props,
           fichier = props.fichier || {},
           nomFichier = fichier.nom || '',
-          version_courante = fichier.version_courante || {}
+          version_courante = fichier.version_courante || {},
+          videoLoader = fichier.videoLoader
 
     const videos = useMemo(()=>version_courante.video || {}, [version_courante.video])
 
-    const [selecteur, setSelecteur] = useState('faible')
+    const [selecteur, setSelecteur] = useState('')
     const [srcVideo, setSrcVideo] = useState('')
     const [posterObj, setPosterObj] = useState('')
     const [genererToken, setGenererToken] = useState(false)
+
+    useEffect(()=>{
+        if(selecteur) return  // Deja initialise
+        console.debug("Detecte video initial a afficher, videos %O", videos)
+        // Identifier un selecteur initial
+        const selecteurs = videoLoader.getSelecteurs()
+        if(!selecteurs) {
+            return setSelecteur('original')
+        } else if(selecteurs.includes('faible')) {
+            return setSelecteur('faible')
+        } else if(selecteurs.includes('medium')) {
+            return setSelecteur('medium')
+        } else if(selecteurs.includes('haute')) {
+            return setSelecteur('haute')
+        } else if(selecteurs.includes('original')) {
+            // Selectionner l'original, c'est le seul format disponible
+            return setSelecteur('original')
+        } else {
+            console.error("Aucuns format video n'est disponible dans le selecteur")
+        }
+    }, [selecteur, videoLoader, setSelecteur])
 
     const genererTokenToggle = useCallback(()=>{
         console.debug("Toggle check de %O", genererToken)
@@ -65,14 +87,14 @@ function AfficherVideo(props) {
     }, [fichier, selecteur, genererToken, setSrcVideo])
 
 
-    if(!srcVideo) return (
-        <>
-            <h3>{nomFichier}</h3>
-            <p>Video non disponible.</p>
-            <p>Votre navigateur ne supporte pas le format de ce video.</p>
-            <Button onClick={props.fermer}>Retour</Button>
-        </>
-    )
+    // if(!srcVideo) return (
+    //     <>
+    //         <h3>{nomFichier}</h3>
+    //         <p>Video non disponible.</p>
+    //         <p>Votre navigateur ne supporte pas le format de ce video.</p>
+    //         <Button onClick={props.fermer}>Retour</Button>
+    //     </>
+    // )
 
     return (
         <div>
@@ -80,7 +102,7 @@ function AfficherVideo(props) {
                 
                 <Col md={12} lg={8}>
                     {posterObj&&srcVideo?
-                        <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' />
+                        <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' selecteur={selecteur} />
                     :(
                         <div>
                             <p>

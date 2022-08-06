@@ -75,8 +75,12 @@ export function mapper(row, workers) {
                 imageLoader = imageResourceLoader(getFichierChiffre, images, {anime, supporteWebp, fuuid: fuuid_v_courante, mimetype})
             }
 
-            if(video) {
-                videoLoader = videoResourceLoader(getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante, supporteWebm})
+            if(mimetypeBase == 'video') {
+                if(video && Object.keys(video).length > 0) {
+                    videoLoader = videoResourceLoader(getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
+                } else {
+                    videoLoader = videoResourceLoader(getFichierChiffre, {}, {creerToken, fuuid: fuuid_v_courante, version_courante})
+                }
             }
         
             // Loader du fichier source (principal), supporte thumbnail pour chargement
