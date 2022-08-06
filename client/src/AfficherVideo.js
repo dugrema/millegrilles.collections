@@ -29,6 +29,7 @@ function AfficherVideo(props) {
     const [srcVideo, setSrcVideo] = useState('')
     const [posterObj, setPosterObj] = useState('')
     const [genererToken, setGenererToken] = useState(false)
+    const [timeStamp, setTimeStamp] = useState(0)
 
     useEffect(()=>{
         if(selecteur) return  // Deja initialise
@@ -55,6 +56,12 @@ function AfficherVideo(props) {
         console.debug("Toggle check de %O", genererToken)
         setGenererToken(!genererToken)
     }, [genererToken, setGenererToken])
+
+    const videoTimeUpdateHandler = useCallback(event=>{
+        console.debug("Video time update event : %O", event)
+        const currentTime = event.target.currentTime
+        setTimeStamp(currentTime)
+    }, [setTimeStamp])
 
     useEffect(()=>{
         const loaderImage = fichier.imageLoader
@@ -86,23 +93,16 @@ function AfficherVideo(props) {
             })
     }, [fichier, selecteur, genererToken, setSrcVideo])
 
-
-    // if(!srcVideo) return (
-    //     <>
-    //         <h3>{nomFichier}</h3>
-    //         <p>Video non disponible.</p>
-    //         <p>Votre navigateur ne supporte pas le format de ce video.</p>
-    //         <Button onClick={props.fermer}>Retour</Button>
-    //     </>
-    // )
-
     return (
         <div>
             <Row>
                 
                 <Col md={12} lg={8}>
                     {posterObj&&srcVideo?
-                        <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' selecteur={selecteur} />
+                        <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' 
+                            selecteur={selecteur} 
+                            onTimeUpdate={videoTimeUpdateHandler} 
+                            timeStamp={timeStamp} />
                     :(
                         <div>
                             <p>
