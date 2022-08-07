@@ -11,15 +11,16 @@ import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 
 
-const PLAYER_VIDEORESOLUTION = 'player.videoResolution'
+// const PLAYER_VIDEORESOLUTION = 'player.videoResolution'
 
 function AfficherVideo(props) {
 
     // console.debug("AfficherVideo PROPPIES : %O", props)
 
-    const { support, showInfoModalOuvrir } = props,
-          fichier = props.fichier || {},
-          nomFichier = fichier.nom || '',
+    const { support, showInfoModalOuvrir } = props
+
+    const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
+    const nomFichier = fichier.nom || '',
           version_courante = fichier.version_courante || {},
           videoLoader = fichier.videoLoader
 
@@ -33,7 +34,6 @@ function AfficherVideo(props) {
 
     useEffect(()=>{
         if(selecteur) return  // Deja initialise
-        console.debug("Detecte video initial a afficher, videos %O", videos)
         // Identifier un selecteur initial
         const selecteurs = videoLoader.getSelecteurs()
         if(!selecteurs) {
@@ -150,7 +150,7 @@ function AfficherVideo(props) {
 export default AfficherVideo
 
 function SelecteurResolution(props) {
-    const { listeVideos, support, selecteur, setSelecteur, videoLoader } = props
+    const { listeVideos, /*support,*/ selecteur, setSelecteur, videoLoader } = props
 
     const [listeOptions, setListeOptions] = useState([])
 
@@ -175,7 +175,7 @@ function SelecteurResolution(props) {
 
         setListeOptions(options)
 
-    }, [listeVideos, setListeOptions])
+    }, [listeVideos, setListeOptions, videoLoader])
 
     const changerSelecteur = useCallback(value=>{
         console.debug("Valeur : %O", value)

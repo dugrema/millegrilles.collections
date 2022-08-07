@@ -270,7 +270,7 @@ function FormConversionVideo(props) {
       // if(codec === 'vp9') setCodecAudio('opus')
       // else if(codec === 'hevc') setCodecAudio('eac3')
       // else setCodecAudio('aac')
-    }, [setCodecVideo, setCodecAudio])
+    }, [setCodecVideo])
 
     const versionCourante = (fichier?fichier.version_courante:{}) || {}
     console.debug("Version courante : %O", versionCourante)
@@ -535,7 +535,7 @@ function triCleTranscodage(a,b) {
 }
 
 function AfficherLigneFormatVideo(props) {
-  const { fichier, video, support, downloadAction, supprimerVideo } = props
+  const { fichier, video, /*support,*/ downloadAction, supprimerVideo } = props
 
   const download = useCallback(event => {
     console.debug("Downloader fichier %O", fichier)
@@ -565,7 +565,7 @@ function AfficherLigneFormatVideo(props) {
 
   const supprimerVideoCb = useCallback(()=>supprimerVideo(video.fuuid_video), [video, supprimerVideo])
 
-  const [base, packageFormat] = video.mimetype.split('/')
+  const packageFormat = video.mimetype.split('/')[1]
   const bitrate_quality = video.quality || video.bitrate
   const codec = video.codec
 

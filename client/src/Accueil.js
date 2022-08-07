@@ -293,7 +293,7 @@ function NavigationFavoris(props) {
             }
             addEvenementCollection('')  // Vider liste evenements
         }
-    }, [cuuidCourant, cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
+    }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
 
     useEffect(()=>{
         const {connexion} = workers
@@ -473,11 +473,11 @@ function AffichagePrincipal(props) {
 
     const {
         modeView, colonnes, liste, cuuidCourant, isListeComplete, tuuidSelectionne, support,
-        onClick, onDoubleClick, onContextMenu, setContextuel, onSelectionLignes, enteteOnClickCb, suivantCb,
+        /*onClick,*/ onDoubleClick, onContextMenu, setContextuel, onSelectionLignes, enteteOnClickCb, suivantCb,
         afficherVideo, setAfficherVideo, showInfoModalOuvrir,
     } = props
 
-    const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false))
+    const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
         // console.debug("onContextMenuClick event %O, value %O", event, value)
         onContextMenu(event, value, setContextuel)

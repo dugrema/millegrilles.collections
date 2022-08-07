@@ -2,8 +2,8 @@ import { expose } from 'comlink'
 import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
 
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
-      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles',
-      CONST_DOMAINE_FICHIERS = 'fichiers'
+      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
+      /* , CONST_DOMAINE_FICHIERS = 'fichiers' */
 
 function getFavoris() {
   return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})

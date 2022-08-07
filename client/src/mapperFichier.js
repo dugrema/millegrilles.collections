@@ -1,5 +1,5 @@
 import {loadFichierChiffre, fileResourceLoader, imageResourceLoader, videoResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
-import {supporteFormatWebp, supporteFormatWebm} from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
+import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>
 const ICONE_FICHIER = <i className="fa fa-file fa-lg"/>
@@ -17,7 +17,7 @@ const Icones = {
 }
 
 // Detection format media
-const supporteWebm = supporteFormatWebm()
+// const supporteWebm = supporteFormatWebm()
 let supporteWebp = false
 supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.warn("Erreur detection webp : %O", err))
 // console.debug("Support webm : %O", supporteWebm)
@@ -75,7 +75,7 @@ export function mapper(row, workers) {
                 imageLoader = imageResourceLoader(getFichierChiffre, images, {anime, supporteWebp, fuuid: fuuid_v_courante, mimetype})
             }
 
-            if(mimetypeBase == 'video') {
+            if(mimetypeBase === 'video') {
                 if(video && Object.keys(video).length > 0) {
                     videoLoader = videoResourceLoader(getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
                 } else {
