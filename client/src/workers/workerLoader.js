@@ -1,28 +1,23 @@
-import { wrap } from 'comlink'
+import { wrap, releaseProxy } from 'comlink'
 
-import ChiffrageWorker from './chiffrage.worker'
-import ConnexionWorker from './connexion.worker'
-import TransfertWorker from './transfert.worker'
 import * as traitementFichiers from './traitementFichiers'
 
-// Exemple de loader pour web workers
-export function chargerWorkers() {
-    const {worker: chiffrage} = charger(ChiffrageWorker)
-    const {worker: connexion} = charger(ConnexionWorker)
-    const {worker: transfertFichiers} = charger(TransfertWorker)
+export function setupWorkers() {
 
     // Chiffrage et x509 sont combines, reduit taille de l'application
-    const x509 = chiffrage
+    const connexion = wrapWorker(new Worker(new URL('./connexion.worker', import.meta.url), {type: 'module'}))
+    const chiffrage = wrapWorker(new Worker(new URL('./chiffrage.worker', import.meta.url), {type: 'module'}))
+    const transfertFichiers = wrapWorker(new Worker(new URL('./transfert.worker', import.meta.url), {type: 'module'}))
+  
+    const workerInstances = { chiffrage, connexion, transfertFichiers }
+  
+    const workers = Object.keys(workerInstances).reduce((acc, item)=>{
+        acc[item] = workerInstances[item].proxy
+        return acc
+      }, {})
 
-    const workers = {
-        chiffrage, 
-        connexion, 
-        x509,
-        transfertFichiers,
-
-        // Pseudo-workers
-        traitementFichiers,
-    }
+    // Pseudo-worker
+    workers.traitementFichiers = traitementFichiers
 
     // Wiring
     try {
@@ -30,6 +25,14 @@ export function chargerWorkers() {
     } catch(err) {
         console.error("Erreur chargement traitementFichiers : %O", err)
     }
+
+    wireWorkers(workers).catch(err=>console.error("Erreur wiring workers", err))
+
+    return { workerInstances, workers }
+}
+
+async function wireWorkers(workers) {
+    const { connexion, chiffrage, transfertFichiers } = workers
     connexion.setX509Worker(chiffrage).catch(err=>console.error("Erreur chargement connexion worker : %O", err))
     transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
     transfertFichiers.up_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/up worker : %O", err))
@@ -44,12 +47,21 @@ export function chargerWorkers() {
     const uploadHref = urlLocal.href
     console.debug("Upload path : %O", uploadHref)
     transfertFichiers.up_setPathServeur('/collections/upload')
-
-    return workers
 }
 
-function charger(ClasseWorker) {
-    const instance = new ClasseWorker()
-    const worker = wrap(instance)
-    return {instance, worker}
+function wrapWorker(worker) {
+    const proxy = wrap(worker)
+    return {proxy, worker}
+}
+
+export function cleanupWorkers(workers) {
+    Object.values(workers).forEach((workerInstance) => {
+        try {
+            const {worker, proxy} = workerInstance
+            proxy[releaseProxy]()
+            worker.terminate()
+        } catch(err) {
+            console.warn("Errreur fermeture worker : %O\n(Workers: %O)", err, workers)
+        }
+    })
 }

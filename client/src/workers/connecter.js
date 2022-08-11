@@ -17,7 +17,8 @@ export async function connecter(workers, setUsagerState, setEtatConnexion, setEt
     await connexion.setCallbacks(setEtatConnexionCb, setUsagerCb, setEtatFormatteurMessageCb)
 
     try {
-        const axios = await import('axios')
+        const axiosImport = await import('axios')
+        const axios = axiosImport.default
         await axios.get('/collections/initSession')
     } catch(err) {
         console.error("Erreur init session : %O", err)
@@ -36,7 +37,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
     // console.debug("Usager info : %O", usager)
     
     if(usager && usager.certificat) {
-        const { connexion, chiffrage, x509, transfertFichiers } = workers
+        const { connexion, chiffrage, transfertFichiers } = workers
         const fullchain = usager.certificat,
               caPem = usager.ca
 
@@ -45,7 +46,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         // Initialiser le CertificateStore
         await chiffrage.initialiserCertificateStore(caPem, {isPEM: true, DEBUG: false})
 
-        await x509.init(caPem)
+        // await x509.init(caPem)
 
         // Init cles privees
         await chiffrage.initialiserFormatteurMessage(certificatPem, usager.clePriveePem, {DEBUG: false})

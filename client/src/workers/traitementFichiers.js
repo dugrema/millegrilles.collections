@@ -17,7 +17,7 @@ export function setWorkers(workers) {
 // }
 
 export async function getFichierChiffre(fuuid, opts) {
-    // console.debug("!!! getFichierChiffre %s !!! opts %O", fuuid, opts)
+    console.debug("!!! getFichierChiffre %s !!! opts %O", fuuid, opts)
     opts = opts || {}
     const { dataChiffre, mimetype, controller, progress } = opts
     const { connexion, chiffrage } = _workers
@@ -51,25 +51,25 @@ export async function getFichierChiffre(fuuid, opts) {
             const signal = controller?controller.signal:null
 
             // Recuperer le fichier
+            console.debug("Requete axios fichier : %s", fuuid)
             const reponse = await axios({
                 method: 'GET',
                 url: `/collections/fichiers/${fuuid}`,
                 responseType: 'arraybuffer',
-                // timeout: 120000,
+                timeout: 20000,
                 progress,
-                signal,
+                // signal,
             })
-            // console.debug("!!! Reponse axios : %O", reponse)
-            
-            return reponse.data
+            const abIn = Buffer.from(reponse.data)
+            return abIn
         }
     }
 
     var [cleFichier, abFichier] = await Promise.all([cleFichierFct(), fichierFct()])
     if(cleFichier && abFichier) {
         try {
-            const ab = await chiffrage.chiffrage.dechiffrer(abFichier, cleFichier.cleSecrete, cleFichier.iv, cleFichier.tag)
-            // console.debug("!!!! blob %s mimetype %s", fuuid, mimetype)
+            console.debug("Dechiffrer : %O, %O", cleFichier, abFichier)
+            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, abFichier, cleFichier)
             const blob = new Blob([ab], {type: mimetype})
             return blob
         } catch(err) {

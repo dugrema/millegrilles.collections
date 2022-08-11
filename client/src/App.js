@@ -7,6 +7,7 @@ import Col from 'react-bootstrap/Col'
 import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout, TransfertModal } from '@dugrema/millegrilles.reactjs'
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
+import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
 
 // import TransfertModal from './TransfertModal'
 import { ReindexerModal } from './ModalOperations'
@@ -74,11 +75,17 @@ function App() {
   // Chargement des proprietes et workers
   useEffect(()=>{
     Promise.all([
-      importerWorkers(setWorkers),
       initDb(),
     ])
       .then(()=>{ console.debug("Chargement de l'application complete") })
       .catch(err=>{console.error("Erreur chargement application : %O", err)})
+  }, [])
+
+  useEffect(()=>{
+    console.info("Initialiser web workers")
+    const { workerInstances, workers } = setupWorkers()
+    setWorkers(workers)
+    return () => { console.info("Cleanup web workers"); cleanupWorkers(workerInstances) }
   }, [setWorkers])
 
   useEffect(()=>{
@@ -187,12 +194,6 @@ function Attente(props) {
   return <p>Chargement en cours</p>
 }
 
-async function importerWorkers(setWorkers) {
-  const { chargerWorkers } = await import('./workers/workerLoader')
-  const workers = chargerWorkers()
-  setWorkers(workers)
-}
-
 async function connecter(workers, setUsager, setEtatConnexion, setFormatteurPret) {
   const { connecter: connecterWorker } = await import('./workers/connecter')
   return connecterWorker(workers, setUsager, setEtatConnexion, setFormatteurPret)
@@ -214,6 +215,10 @@ function Contenu(props) {
   }
 
   return <ErrorBoundary><Page {...props}/></ErrorBoundary>
+}
+
+function Test(props) {
+  return 'test'
 }
 
 function Footer(props) {

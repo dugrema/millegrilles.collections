@@ -185,7 +185,7 @@ function NavigationFavoris(props) {
     }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, setChargementListeEnCours, erreurCb])
     
     // Detect support divers de l'appareil/navigateur
-    useEffect(()=>detecterSupport(setSupport), [setSupport])
+    useEffect(()=>{detecterSupport(setSupport)}, [setSupport])
 
     // Event pour bloquer onClick sur dropzone (panneau background)
     const onClickBack = useCallback(event=>{
