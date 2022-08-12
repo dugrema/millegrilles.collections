@@ -17,7 +17,6 @@ export function setWorkers(workers) {
 // }
 
 export async function getFichierChiffre(fuuid, opts) {
-    console.debug("!!! getFichierChiffre %s !!! opts %O", fuuid, opts)
     opts = opts || {}
     const { dataChiffre, mimetype, controller, progress } = opts
     const { connexion, chiffrage } = _workers
@@ -45,13 +44,13 @@ export async function getFichierChiffre(fuuid, opts) {
     let fichierFct = async () => {
         if( dataChiffre ) {
             // Convertir de multibase en array
+            // console.debug("Data chiffre a dechiffrer : %O", dataChiffre)
             return multibase.decode(dataChiffre)
         } else {
             // const controller = new AbortController();
             const signal = controller?controller.signal:null
 
             // Recuperer le fichier
-            console.debug("Requete axios fichier : %s", fuuid)
             const reponse = await axios({
                 method: 'GET',
                 url: `/collections/fichiers/${fuuid}`,
@@ -67,9 +66,10 @@ export async function getFichierChiffre(fuuid, opts) {
 
     var [cleFichier, abFichier] = await Promise.all([cleFichierFct(), fichierFct()])
     if(cleFichier && abFichier) {
+        // console.debug("Dechiffrer : cle %O, contenu : %O", cleFichier, abFichier)
         try {
-            console.debug("Dechiffrer : %O, %O", cleFichier, abFichier)
             const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, abFichier, cleFichier)
+            // console.debug("Contenu dechiffre : %O", ab)
             const blob = new Blob([ab], {type: mimetype})
             return blob
         } catch(err) {
