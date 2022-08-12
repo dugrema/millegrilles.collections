@@ -59,8 +59,8 @@ function App() {
         // console.debug("REPONSE CLE pour download : %O", reponseCle)
         if(reponseCle.code === 1) {
           // Permis
-          const {cle, iv, tag, format} = reponseCle.cles[fuuid]
-          transfertFichiers.down_ajouterDownload(fuuid, {mimetype, filename, taille, passwordChiffre: cle, iv, tag, format})
+          const {cle, iv, nonce, tag, header, format} = reponseCle.cles[fuuid]
+          transfertFichiers.down_ajouterDownload(fuuid, {mimetype, filename, taille, passwordChiffre: cle, iv, nonce, tag, header, format})
               .catch(err=>{console.error("Erreur debut download : %O", err)})
           } else {
               console.warn("Cle refusee/erreur (code: %s) pour %s", reponseCle.code, fuuid)
