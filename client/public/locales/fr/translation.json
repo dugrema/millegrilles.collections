@@ -1,0 +1,24 @@
+{
+    "titre": "Collections",
+    "application": {
+        "nom": "Collections"
+    },
+    "menu": {
+        "collections": "Collections",
+        "recents": "Recents",
+        "corbeille": "Corbeille",
+        "information": "Information",
+        "language": "Language",
+        "portail": "Portail",
+        "deconnecter": "Déconnecter"
+    },
+    "layout-millegrilles": {
+        "modal-info-titre": "Information MilleGrille",
+        "modal-info-application": "Application",
+        "modal-info-nom": "Nom",
+        "modal-info-version": "Version",
+        "modal-info-date": "Date",
+        "modal-info-systeme": "Système",
+        "idmg": "Identificateur MilleGrille (IDMG)"
+    }
+}

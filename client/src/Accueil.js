@@ -343,7 +343,7 @@ function NavigationFavoris(props) {
         <div {...getRootProps({onClick: onClickBack})}>
             <input {...getInputProps()} />
 
-            <Row>
+            <Row className='fichiers-header-buttonbar'>
                 <Col xs={12} lg={7}>
                     <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
                 </Col>

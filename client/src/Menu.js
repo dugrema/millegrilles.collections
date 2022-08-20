@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
@@ -8,96 +9,164 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 import Form from 'react-bootstrap/Form'
 import FormControl from 'react-bootstrap/FormControl'
 
-import { IconeConnexion } from '@dugrema/millegrilles.reactjs'
+// import { IconeConnexion } from '@dugrema/millegrilles.reactjs'
+import { Menu as MenuMillegrilles, DropDownLanguage, ModalInfo } from '@dugrema/millegrilles.reactjs'
 
 function Menu(props) {
 
-    const { 
-      setPage, paramsRecherche, setParamsRecherche,
-      showTransfertModal,  
-    } = props
+  const { i18n, etatConnexion, idmg, setSectionAfficher, manifest, onSelect } = props
+ 
+  const { t } = useTranslation()
+  const [showModalInfo, setShowModalInfo] = useState(false)
+  const handlerCloseModalInfo = useCallback(()=>setShowModalInfo(false), [setShowModalInfo])
 
-    return (
-      <Navbar collapseOnSelect expand="md">
-        
-        <Navbar.Brand>
-          <Nav.Link onClick={()=>setPage('Accueil')} title="Accueil MilleGrilles Collections">
-              Collections
+  const handlerChangerLangue = eventKey => {i18n.changeLanguage(eventKey)}
+  const brand = (
+      <Navbar.Brand>
+          <Nav.Link title={t('titre')}>
+              {t('titre')}
           </Nav.Link>
-        </Navbar.Brand>
+      </Navbar.Brand>
+  )
 
-        <Nav.Item>
-            <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
-                <LabelTransfert {...props} />
-            </Nav.Link>
-        </Nav.Item>
+  const handlerSelect = eventKey => {
+    switch(eventKey) {
+      case 'information': setShowModalInfo(true); break
+      case 'portail': window.location = '/millegrilles'; break
+      case 'deconnecter': window.location = '/millegrilles/authentification/fermer'; break
+      default:
+        onSelect(eventKey)
+    }
+  }
 
-        <Navbar.Collapse id="responsive-navbar-menu">
+  return (
+    <>
+      <MenuMillegrilles brand={brand} labelMenu="Menu" etatConnexion={etatConnexion} onSelect={handlerSelect}>
 
-            <Nav.Item>
-                <Nav.Link title="Recents" onClick={()=>setPage('Recents')}>
-                    <i className="fa fa-clock-o" /> {' '} Recents
-                </Nav.Link>
-            </Nav.Item>
+        <Nav.Link eventKey="collections" title={t('menu.collections')}>
+          {t('menu.collections')}
+        </Nav.Link>
 
-            <DropDownRequetes {...props} />
+        <Nav.Link eventKey="recents">
+          <i className="fa fa-clock-o" /> {' '} {t('menu.recents')}
+        </Nav.Link>
 
-            <Search 
-              paramsRecherche={paramsRecherche}
-              setParamsRecherche={setParamsRecherche}
-              setPage={setPage}
-            />
+        <Nav.Link eventKey="corbeille" title="Corbeille">
+          <i className="fa fa-trash-o" /> {' '} {t('menu.corbeille')}
+        </Nav.Link>
 
-            <DropDownUsager {...props} />
+        <Nav.Link eventKey="information" title="Afficher l'information systeme">
+            {t('menu.information')}
+        </Nav.Link>
 
-        </Navbar.Collapse>
+        <DropDownLanguage title={t('menu.language')} onSelect={handlerChangerLangue}>
+            <NavDropdown.Item eventKey="en-US">English</NavDropdown.Item>
+            <NavDropdown.Item eventKey="fr-CA">Francais</NavDropdown.Item>
+        </DropDownLanguage>
 
-        <Nav><Nav.Item><IconeConnexion connecte={props.etatConnexion} /></Nav.Item></Nav>
+        <Nav.Link eventKey="portail" title={t('menu.portail')}>
+            {t('menu.portail')}
+        </Nav.Link>
 
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Nav.Link eventKey="deconnecter" title={t('menu.deconnecter')}>
+            {t('menu.deconnecter')}
+        </Nav.Link>
 
-      </Navbar>
-    )
+      </MenuMillegrilles>
+
+      <ModalInfo 
+          show={showModalInfo} 
+          fermer={handlerCloseModalInfo} 
+          manifest={manifest} 
+          idmg={idmg} />
+    </>
+  )
 }
 
 export default Menu
 
-function Search(props) {
+// function Menu(props) {
 
-  const { setParamsRecherche, setPage } = props
+//     const { 
+//       setPage, paramsRecherche, setParamsRecherche,
+//       showTransfertModal,  
+//     } = props
 
-  const [ paramsStr, setParamsStr ] = useState('')
+//     return (
+//       <Navbar collapseOnSelect expand="md">
+        
+//         <Navbar.Brand>
+//           <Nav.Link onClick={()=>setPage('Accueil')} title="Accueil MilleGrilles Collections">
+//               Collections
+//           </Nav.Link>
+//         </Navbar.Brand>
 
-  const changerParams = useCallback( event => {
-    const value = event.currentTarget.value
-    setParamsStr(value)
-  }, [setParamsStr])
+//         <Navbar.Collapse id="responsive-navbar-menu">
 
-  const chercherAction = useCallback( event => {
-    event.stopPropagation()
-    event.preventDefault()
+//             <Nav.Item>
+//                 <Nav.Link title="Recents" onClick={()=>setPage('Recents')}>
+//                     <i className="fa fa-clock-o" /> {' '} Recents
+//                 </Nav.Link>
+//             </Nav.Item>
 
-    if(paramsStr) {
-      setParamsRecherche(paramsStr)
-      setPage("Recherche")
-    }
+//             <DropDownRequetes {...props} />
 
-  }, [paramsStr, setPage, setParamsRecherche])
+//             <Search 
+//               paramsRecherche={paramsRecherche}
+//               setParamsRecherche={setParamsRecherche}
+//               setPage={setPage}
+//             />
 
-  return (
-    <Form className="d-flex" onSubmit={chercherAction}>
-      <FormControl
-        type="search"
-        placeholder="Search"
-        className="me-2"
-        aria-label="Search"
-        value={paramsStr}
-        onChange={changerParams}
-      />
-      <Button variant="outline-secondary" disabled={!paramsStr} onClick={chercherAction}>Recherche</Button>
-    </Form>
-  )
-}
+//             <DropDownUsager {...props} />
+
+//         </Navbar.Collapse>
+
+//         <Nav><Nav.Item><IconeConnexion connecte={props.etatConnexion} /></Nav.Item></Nav>
+
+//         <Navbar.Toggle aria-controls="basic-navbar-nav" />
+
+//       </Navbar>
+//     )
+// }
+
+// export default Menu
+
+// function Search(props) {
+
+//   const { setParamsRecherche, setPage } = props
+
+//   const [ paramsStr, setParamsStr ] = useState('')
+
+//   const changerParams = useCallback( event => {
+//     const value = event.currentTarget.value
+//     setParamsStr(value)
+//   }, [setParamsStr])
+
+//   const chercherAction = useCallback( event => {
+//     event.stopPropagation()
+//     event.preventDefault()
+
+//     if(paramsStr) {
+//       setParamsRecherche(paramsStr)
+//       setPage("Recherche")
+//     }
+
+//   }, [paramsStr, setPage, setParamsRecherche])
+
+//   return (
+//     <Form className="d-flex" onSubmit={chercherAction}>
+//       <FormControl
+//         type="search"
+//         placeholder="Search"
+//         className="me-2"
+//         aria-label="Search"
+//         value={paramsStr}
+//         onChange={changerParams}
+//       />
+//       <Button variant="outline-secondary" disabled={!paramsStr} onClick={chercherAction}>Recherche</Button>
+//     </Form>
+//   )
+// }
 
 function DropDownRequetes(props) {
 

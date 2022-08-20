@@ -1,28 +1,49 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
+import Nav from 'react-bootstrap/Nav'
+import Navbar from 'react-bootstrap/Navbar'
+import NavDropdown from 'react-bootstrap/NavDropdown'
 
-import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout, TransfertModal } from '@dugrema/millegrilles.reactjs'
+// import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout, TransfertModal } from '@dugrema/millegrilles.reactjs'
+import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'
+
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
+import ErrorBoundary from './ErrorBoundary'
 
-// import TransfertModal from './TransfertModal'
-import { ReindexerModal } from './ModalOperations'
+import './i18n'
 
-import stylesCommuns from '@dugrema/millegrilles.reactjs/dist/index.css'
+// Importer JS global
+import 'react-bootstrap/dist/react-bootstrap.min.js'
+
+// Importer cascade CSS global
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'font-awesome/css/font-awesome.min.css'
+import '@dugrema/millegrilles.reactjs/dist/index.css'
+
+import manifest from './manifest.build'
+
+import './index.scss'
 import './App.css'
+
+// import stylesCommuns from '@dugrema/millegrilles.reactjs/dist/index.css'
+// import './App.css'
 
 import Menu from './Menu'
 import Accueil from './Accueil'
-import Recents from './Recents'
-import Corbeille from './Corbeille'
-import Recherche from './Recherche'
+const Recents = lazy( () => import('./Recents') )
+const Corbeille = lazy( () => import('./Corbeille') )
+const Recherche = lazy( () => import('./Recherche') )
 
 function App() {
   
+  const { t, i18n } = useTranslation()
+
   const [workers, setWorkers] = useState('')
   const [usager, setUsager] = useState('')
   const [etatConnexion, setEtatConnexion] = useState(false)
@@ -30,13 +51,14 @@ function App() {
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [showReindexerModal, setShowReidexerModal] = useState(false)
   const [etatTransfert, setEtatTransfert] = useState('')
-  const [page, setPage] = useState('Accueil')
+  const [page, setPage] = useState('')
   const [paramsRecherche, setParamsRecherche] = useState('')
   const [idmg, setIdmg] = useState('')
 
   // Message d'erreur global
   const [ erreur, setErreur ] = useState('')
   const erreurCb = useCallback((err, message)=>setErreur({err, message}), [setErreur])
+  const handlerCloseErreur = useCallback(()=>setErreur(''), [setErreur])
 
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
@@ -101,6 +123,7 @@ function App() {
               setErreur("Erreur de connexion au serveur : " + infoConnexion.err); 
             } else {
               console.debug("Info connexion : %O", infoConnexion)
+              setIdmg(infoConnexion.idmg)
             }
           })
           .catch(err=>{
@@ -113,15 +136,14 @@ function App() {
     } else {
       setErreur("Connexion non initialisee (workers)")
     }
-  }, [workers, setUsager, setEtatConnexion, setFormatteurPret, setErreur])
+  }, [workers, setUsager, setEtatConnexion, setFormatteurPret, setIdmg, setErreur])
 
   useEffect(()=>{
       if(etatAuthentifie) {
-        workers.chiffrage.getIdmgLocal().then(idmg=>setIdmg(idmg))
         // Preload certificat maitre des cles
         workers.connexion.getCertificatsMaitredescles().catch(err=>console.error("Erreur preload certificat maitre des cles : %O", err))
       }
-  }, [workers, etatAuthentifie, setIdmg])
+  }, [workers, etatAuthentifie])
   
   useEffect(()=>{
     const upload = etatTransfert.upload || {}
@@ -132,67 +154,128 @@ function App() {
     }
   }, [workers, etatAuthentifie, etatTransfert])
 
+  const handlerSelect = useCallback(eventKey => {
+    switch(eventKey) {
+      default:
+        setPage('')
+    }
+  }, [setPage])
+
+  const menu = (
+    <Menu 
+        i18n={i18n} 
+        etatConnexion={etatConnexion}
+        idmg={idmg}
+        workers={workers} 
+        etatTransfert={etatTransfert} 
+        manifest={manifest} 
+        onSelect={handlerSelect} />
+  )
+
+  if(!workers) return <Attente />
+
   return (
-    <LayoutApplication>
+    <LayoutMillegrilles menu={menu}>
 
-      <HeaderApplication>
-        <Menu 
-          workers={workers} 
-          usager={usager} 
-          etatConnexion={etatConnexion} 
-          showTransfertModal={showTransfertModalOuvrir}
-          etatTransfert={etatTransfert}
-          setPage={setPage}
-          paramsRecherche={paramsRecherche}
-          setParamsRecherche={setParamsRecherche}
-          showReindexerModalOuvrir={showReindexerModalOuvrir}
-        />
-      </HeaderApplication>
-
-      <Container>
-        <AlertTimeout variant="danger" titre="Erreur" delay={30000} value={erreur} setValue={setErreur} />
+      <Container className="contenu">
 
         <Suspense fallback={<Attente />}>
           <Contenu 
-            workers={workers} 
-            usager={usager}
-            etatConnexion={etatConnexion} 
-            etatAuthentifie={etatAuthentifie}
-            page={page}
-            etatTransfert={etatTransfert}
-            evenementCollection={evenementCollection}
-            paramsRecherche={paramsRecherche}
-            downloadAction={downloadAction}
-            erreurCb={erreurCb}
-          />
+              workers={workers} 
+              usager={usager}
+              etatConnexion={etatConnexion} 
+              etatAuthentifie={etatAuthentifie}
+              page={page}
+              etatTransfert={etatTransfert}
+              evenementCollection={evenementCollection}
+              paramsRecherche={paramsRecherche}
+              downloadAction={downloadAction}
+              erreurCb={erreurCb}
+            />
+          
         </Suspense>
+
       </Container>
 
-      <FooterApplication>
-        <Footer workers={workers} idmg={idmg} />
-      </FooterApplication>
-
       <TransfertModal 
-        show={showTransfertModal}
-        fermer={showTransfertModalFermer} 
-        workers={workers}
-        setEtatTransfert={setEtatTransfert}
-      />
+            show={showTransfertModal}
+            fermer={showTransfertModalFermer} 
+            workers={workers}
+            setEtatTransfert={setEtatTransfert}
+          />
 
-      <ReindexerModal
-        show={delegue && showReindexerModal}
-        fermer={showReindexerModalFermer}
-        workers={workers}
-      />
+      <ModalErreur 
+          show={!!erreur} 
+          err={erreur.err} 
+          message={erreur.message} 
+          titre={t('Erreur.titre')} 
+          fermer={handlerCloseErreur} 
+        />
 
-    </LayoutApplication>
+    </LayoutMillegrilles>    
   )
+  
+  // return (
+  //   <LayoutApplication>
+
+  //     <HeaderApplication>
+  //       <Menu 
+  //         workers={workers} 
+  //         usager={usager} 
+  //         etatConnexion={etatConnexion} 
+  //         showTransfertModal={showTransfertModalOuvrir}
+  //         etatTransfert={etatTransfert}
+  //         setPage={setPage}
+  //         paramsRecherche={paramsRecherche}
+  //         setParamsRecherche={setParamsRecherche}
+  //         showReindexerModalOuvrir={showReindexerModalOuvrir}
+  //       />
+  //     </HeaderApplication>
+
+  //     <Container>
+  //       <AlertTimeout variant="danger" titre="Erreur" delay={30000} value={erreur} setValue={setErreur} />
+
+  //       <Suspense fallback={<Attente />}>
+  //         <Contenu 
+  //           workers={workers} 
+  //           usager={usager}
+  //           etatConnexion={etatConnexion} 
+  //           etatAuthentifie={etatAuthentifie}
+  //           page={page}
+  //           etatTransfert={etatTransfert}
+  //           evenementCollection={evenementCollection}
+  //           paramsRecherche={paramsRecherche}
+  //           downloadAction={downloadAction}
+  //           erreurCb={erreurCb}
+  //         />
+  //       </Suspense>
+  //     </Container>
+
+  //     <FooterApplication>
+  //       <Footer workers={workers} idmg={idmg} />
+  //     </FooterApplication>
+
+  //     <TransfertModal 
+  //       show={showTransfertModal}
+  //       fermer={showTransfertModalFermer} 
+  //       workers={workers}
+  //       setEtatTransfert={setEtatTransfert}
+  //     />
+
+  //     <ReindexerModal
+  //       show={delegue && showReindexerModal}
+  //       fermer={showReindexerModalFermer}
+  //       workers={workers}
+  //     />
+
+  //   </LayoutApplication>
+  // )
 }
 export default App
 
-function Attente(props) {
-  return <p>Chargement en cours</p>
-}
+// function Attente(props) {
+//   return <p>Chargement en cours</p>
+// }
 
 async function connecter(workers, setUsager, setEtatConnexion, setFormatteurPret) {
   const { connecter: connecterWorker } = await import('./workers/connecter')
@@ -217,18 +300,18 @@ function Contenu(props) {
   return <ErrorBoundary><Page {...props}/></ErrorBoundary>
 }
 
-function Test(props) {
-  return 'test'
-}
+// function Test(props) {
+//   return 'test'
+// }
 
-function Footer(props) {
-  return (
-    <div className={stylesCommuns.centre}>
-      <Row><Col>{props.idmg}</Col></Row>
-      <Row><Col>Collections de MilleGrilles</Col></Row>
-    </div>
-  )
-}
+// function Footer(props) {
+//   return (
+//     <div className={stylesCommuns.centre}>
+//       <Row><Col>{props.idmg}</Col></Row>
+//       <Row><Col>Collections de MilleGrilles</Col></Row>
+//     </div>
+//   )
+// }
 
 async function emettreAjouterFichier(workers, transaction) {
   const { connexion } = workers
@@ -248,44 +331,16 @@ async function emettreAjouterFichier(workers, transaction) {
   }
 }
 
-class ErrorBoundary extends React.Component {
-
-  state = {
-    hasError: false,
-    error: '',
-    errorInfo: '',
-  }
-
-  static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI.
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    // You can also log the error to an error reporting service
-    console.error("ErrorBoundary Erreur : %O\nInfo: %O", error, errorInfo);
-    this.setState({error, errorInfo})
-  }
-
-  render() {
-    if (this.state.hasError) {
-
-      const errorInfo = this.state.errorInfo || {},
-            stack = errorInfo.stack || errorInfo.componentStack
-
-      // You can render any custom fallback UI
-      return (
-        <div>
-          <h1>Something went wrong.</h1>
-
-          <p>{''+this.state.error}</p>
-
-          <pre>{''+stack}</pre>
-
-        </div>
-      )
-    }
-
-    return this.props.children; 
-  }
+function Attente(_props) {
+  return (
+      <div>
+          <p className="titleinit">Preparation de Coup D'Oeil</p>
+          <p>Veuillez patienter durant le chargement de la page.</p>
+          <ol>
+              <li>Initialisation</li>
+              <li>Chargement des composants dynamiques</li>
+              <li>Connexion a la page</li>
+          </ol>
+      </div>
+  )
 }
