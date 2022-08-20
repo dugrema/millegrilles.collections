@@ -2,11 +2,6 @@ import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import Container from 'react-bootstrap/Container'
-import Row from 'react-bootstrap/Row'
-import Col from 'react-bootstrap/Col'
-import Nav from 'react-bootstrap/Nav'
-import Navbar from 'react-bootstrap/Navbar'
-import NavDropdown from 'react-bootstrap/NavDropdown'
 
 // import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout, TransfertModal } from '@dugrema/millegrilles.reactjs'
 import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'

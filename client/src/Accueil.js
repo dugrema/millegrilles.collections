@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { proxy as comlinkProxy } from 'comlink'
+import { useDropzone } from 'react-dropzone'
 
+import Alert from 'react-bootstrap/Alert'
 import Breadcrumb from 'react-bootstrap/Breadcrumb'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -9,8 +11,6 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
-
-import { useDropzone } from 'react-dropzone'
 
 import { 
     ListeFichiers, FormatteurTaille, FormatterDate, usagerDao,
@@ -22,7 +22,6 @@ import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } 
 import { mapper } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
-import { Alert } from 'react-bootstrap'
 
 function Accueil(props) {
 
@@ -106,8 +105,8 @@ function NavigationFavoris(props) {
     const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
     const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
 
-    const showPreviewAction = useCallback( async tuuid => {
-        await setTuuidSelectionne(tuuid)
+    const showPreviewAction = useCallback( tuuid => {
+        setTuuidSelectionne(tuuid)
         setShowPreview(true)
     }, [setShowPreview, setTuuidSelectionne])
 
@@ -153,6 +152,75 @@ function NavigationFavoris(props) {
         else setCuuidCourant('')  // Racine des favoris
     }, [breadcrumb, setBreadcrumb, setCuuidCourant, setAfficherVideo, setShowInfoModal])
 
+    // Event pour bloquer onClick sur dropzone (panneau background)
+    const onClickBack = useCallback(event=>{
+        event.stopPropagation()
+        event.preventDefault()
+    }, [])
+
+    // Dropzone
+    const onDrop = useCallback( acceptedFiles => {
+        if(!cuuidCourant) {
+            console.error("Cuuid non selectionne (favoris actif)")
+            return
+        }
+        uploaderFichiers(workers, cuuidCourant, acceptedFiles, {erreurCb})
+    }, [workers, cuuidCourant, erreurCb])
+    const dzHook = useDropzone({onDrop})
+    const {getRootProps, getInputProps, open: openDropzone} = dzHook
+    // Fin Dropzone
+
+    const uploaderFichiersAction = useCallback(event=>{
+        event.stopPropagation()
+        event.preventDefault()
+        openDropzone()
+    }, [openDropzone])
+
+    const suivantCb = useCallback( opts => {
+        opts = opts || {}
+        const limit = opts.limit || 50,
+              deuxiemeBatch = opts.deuxiemeBatch || false
+        if(!cuuidCourant) {
+            // Favoris - on n'a pas de suivant pour favoris
+        } else if(etatConnexion) {
+            chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit, tri: triColonnes})
+                .then(resultat=>{
+                    console.debug("Resultat 1 : %O", resultat)
+                    setListe(resultat.data)
+                    setListeComplete(resultat.estComplet?true:false)
+                    // if(deuxiemeBatch || !resultat.estComplet) {
+                    //     return chargerCollection(
+                    //         workers, cuuidCourant, usager, {listeCourante: liste, limit: deuxiemeBatch, tri: triColonnes})
+                    // }
+                })
+                // .then(resultat => {
+                //     if(resultat) {  // Deuxieme batch est optionnelle
+                //         console.debug("Resultat 2 : %O", resultat)
+                //         setListe(resultat.data)
+                //         setListeComplete(resultat.estComplet)
+                //     }
+                // })
+                .catch(erreurCb)
+        }
+    }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
+
+    const enteteOnClickCb = useCallback(colonne=>{
+        // console.debug("Click entete nom colonne : %s", colonne)
+        const triCourant = {...colonnes.tri}
+        const colonnesCourant = {...colonnes}
+        const colonneCourante = triCourant.colonne
+        let ordre = triCourant.ordre || 1
+        if(colonne === colonneCourante) {
+            // Toggle direction
+            ordre = ordre * -1
+        } else {
+            ordre = 1
+        }
+        colonnesCourant.tri = {colonne, ordre}
+        // console.debug("Sort key maj : %O", colonnesCourant)
+        setColonnes(colonnesCourant)
+    }, [colonnes, setColonnes])
+    
     // Preparer format des colonnes
     useEffect(()=>{ setColonnes(preparerColonnes()) }, [setColonnes])
 
@@ -186,59 +254,6 @@ function NavigationFavoris(props) {
     
     // Detect support divers de l'appareil/navigateur
     useEffect(()=>{detecterSupport(setSupport)}, [setSupport])
-
-    // Event pour bloquer onClick sur dropzone (panneau background)
-    const onClickBack = useCallback(event=>{
-        event.stopPropagation()
-        event.preventDefault()
-    }, [])
-
-    const onDrop = useCallback( acceptedFiles => {
-        if(!cuuidCourant) {
-            console.error("Cuuid non selectionne (favoris actif)")
-            return
-        }
-        uploaderFichiers(workers, cuuidCourant, acceptedFiles, {erreurCb})
-    }, [workers, cuuidCourant, erreurCb])
-
-    const dzHook = useDropzone({onDrop})
-    const {getRootProps, getInputProps, open: openDropzone} = dzHook
-
-    const uploaderFichiersAction = useCallback(event=>{
-        event.stopPropagation()
-        event.preventDefault()
-        openDropzone()
-    }, [openDropzone])
-
-    const suivantCb = useCallback(()=>{
-        if(!cuuidCourant) {
-            // Favoris - on n'a pas de suivant pour favoris
-        } else if(etatConnexion) {
-            chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit: 20, tri: triColonnes})
-                .then(resultat=>{
-                    setListe(resultat.data)
-                    setListeComplete(resultat.estComplet)
-                })
-                .catch(erreurCb)
-        }
-    }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
-
-    const enteteOnClickCb = useCallback(colonne=>{
-        // console.debug("Click entete nom colonne : %s", colonne)
-        const triCourant = {...colonnes.tri}
-        const colonnesCourant = {...colonnes}
-        const colonneCourante = triCourant.colonne
-        let ordre = triCourant.ordre || 1
-        if(colonne === colonneCourante) {
-            // Toggle direction
-            ordre = ordre * -1
-        } else {
-            ordre = 1
-        }
-        colonnesCourant.tri = {colonne, ordre}
-        // console.debug("Sort key maj : %O", colonnesCourant)
-        setColonnes(colonnesCourant)
-    }, [colonnes, setColonnes])
 
     useEffect(()=>{
         if(!evenementFichierCb) return
@@ -474,7 +489,7 @@ function AffichagePrincipal(props) {
     const {
         modeView, colonnes, liste, cuuidCourant, isListeComplete, tuuidSelectionne, support,
         /*onClick,*/ onDoubleClick, onContextMenu, setContextuel, onSelectionLignes, enteteOnClickCb, suivantCb,
-        afficherVideo, setAfficherVideo, showInfoModalOuvrir,
+        afficherVideo, setAfficherVideo, showInfoModalOuvrir
     } = props
 
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
@@ -482,6 +497,14 @@ function AffichagePrincipal(props) {
         // console.debug("onContextMenuClick event %O, value %O", event, value)
         onContextMenu(event, value, setContextuel)
     }, [onContextMenu, setContextuel])
+
+    // const handlerSuivant = useMemo(()=>(!cuuidCourant||isListeComplete)?'':suivantCb, [suivantCb])
+
+    const handlerSuivant = useCallback(()=>{
+        console.warn("Handler suivant")
+        if(!cuuidCourant||isListeComplete) return
+        suivantCb({limit: 1, deuxiemeBatch: 3})
+    }, [suivantCb, cuuidCourant, isListeComplete])
 
     if(afficherVideo) {
         // console.debug("AffichagePrincipal PROPPIES : %O", props)
@@ -507,7 +530,8 @@ function AffichagePrincipal(props) {
             onContextMenu={onContextMenuClick}
             onSelection={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
-            suivantCb={(!cuuidCourant||isListeComplete)?'':suivantCb}
+            suivantCb={handlerSuivant}
+            isListeComplete={isListeComplete}
         />
     )
 }
