@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next'
 
 import Container from 'react-bootstrap/Container'
 
-// import { LayoutApplication, HeaderApplication, FooterApplication, AlertTimeout, TransfertModal } from '@dugrema/millegrilles.reactjs'
 import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'
 
 import { ouvrirDB } from './idbCollections'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
 import ErrorBoundary from './ErrorBoundary'
+import useWorker, {WorkerProvider} from './WorkerContext'
 
 import './i18n'
 
@@ -170,44 +170,46 @@ function App() {
   if(!workers) return <Attente />
 
   return (
-    <LayoutMillegrilles menu={menu}>
+    <WorkerProvider>
+      <LayoutMillegrilles menu={menu}>
 
-      <Container className="contenu">
+        <Container className="contenu">
 
-        <Suspense fallback={<Attente />}>
-          <Contenu 
-              workers={workers} 
-              usager={usager}
-              etatConnexion={etatConnexion} 
-              etatAuthentifie={etatAuthentifie}
-              page={page}
-              etatTransfert={etatTransfert}
-              evenementCollection={evenementCollection}
-              paramsRecherche={paramsRecherche}
-              downloadAction={downloadAction}
-              erreurCb={erreurCb}
+          <Suspense fallback={<Attente />}>
+            <Contenu 
+                workers={workers} 
+                usager={usager}
+                etatConnexion={etatConnexion} 
+                etatAuthentifie={etatAuthentifie}
+                page={page}
+                etatTransfert={etatTransfert}
+                evenementCollection={evenementCollection}
+                paramsRecherche={paramsRecherche}
+                downloadAction={downloadAction}
+                erreurCb={erreurCb}
+              />
+            
+          </Suspense>
+
+        </Container>
+
+        <TransfertModal 
+              show={showTransfertModal}
+              fermer={showTransfertModalFermer} 
+              workers={workers}
+              setEtatTransfert={setEtatTransfert}
             />
-          
-        </Suspense>
 
-      </Container>
-
-      <TransfertModal 
-            show={showTransfertModal}
-            fermer={showTransfertModalFermer} 
-            workers={workers}
-            setEtatTransfert={setEtatTransfert}
+        <ModalErreur 
+            show={!!erreur} 
+            err={erreur.err} 
+            message={erreur.message} 
+            titre={t('Erreur.titre')} 
+            fermer={handlerCloseErreur} 
           />
 
-      <ModalErreur 
-          show={!!erreur} 
-          err={erreur.err} 
-          message={erreur.message} 
-          titre={t('Erreur.titre')} 
-          fermer={handlerCloseErreur} 
-        />
-
-    </LayoutMillegrilles>    
+      </LayoutMillegrilles>
+    </WorkerProvider>
   )
   
   // return (

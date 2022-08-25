@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { proxy as comlinkProxy } from 'comlink'
 import { useDropzone } from 'react-dropzone'
 
@@ -373,24 +373,26 @@ function NavigationFavoris(props) {
                 </Col>
             </Row>
 
-            <AffichagePrincipal 
-                modeView={modeView}
-                colonnes={colonnes}
-                liste={liste} 
-                onDoubleClick={onDoubleClick}
-                onContextMenu={onContextMenu}
-                setContextuel={setContextuel}
-                onSelectionLignes={onSelectionLignes}
-                onClickEntete={enteteOnClickCb}
-                cuuidCourant={cuuidCourant}
-                isListeComplete={isListeComplete}
-                suivantCb={suivantCb}
-                tuuidSelectionne={tuuidSelectionne}
-                afficherVideo={afficherVideo}
-                setAfficherVideo={setAfficherVideo}
-                support={support}
-                showInfoModalOuvrir={showInfoModalOuvrir}
-            />
+            <Suspense fallback={<p>Loading ...</p>}>
+                <AffichagePrincipal 
+                    modeView={modeView}
+                    colonnes={colonnes}
+                    liste={liste} 
+                    onDoubleClick={onDoubleClick}
+                    onContextMenu={onContextMenu}
+                    setContextuel={setContextuel}
+                    onSelectionLignes={onSelectionLignes}
+                    onClickEntete={enteteOnClickCb}
+                    cuuidCourant={cuuidCourant}
+                    isListeComplete={isListeComplete}
+                    suivantCb={suivantCb}
+                    tuuidSelectionne={tuuidSelectionne}
+                    afficherVideo={afficherVideo}
+                    setAfficherVideo={setAfficherVideo}
+                    support={support}
+                    showInfoModalOuvrir={showInfoModalOuvrir}
+                />
+            </Suspense>
 
             <InformationListe 
                 favoris={favoris}
@@ -838,6 +840,7 @@ async function chargerCollection(workers, cuuid, usager, opts) {
     // console.debug("Charger collection %s (offset: %s)", cuuid, skip)
     const { connexion, chiffrage } = workers
     const reponse = await connexion.getContenuCollection(cuuid, {skip, limit, sort_keys})
+    // console.debug("Reponse contenu collection : %O", reponse)
     const { documents } = reponse
 
     // Precharger les cles des images thumbnails, small et posters

@@ -248,42 +248,6 @@ function retirerCallbackTranscodageProgres(params, cb) {
   return ConnexionClient.unsubscribe('retirerCallbackTranscodageVideo', cb, params) 
 }
 
-// async function enregistrerCallbackTranscodageProgres(fuuid, cb) {
-//   console.debug("!!! enregistrerCallbackTranscodageProgres fuuid %s", fuuid)
-//   ConnexionClient.socketOn('evenement.fichiers.transcodageProgres', cb)
-//   const resultat = await ConnexionClient.emitBlocking('ecouterTranscodageProgres', {fuuid}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-// }
-
-// async function supprimerCallbackTranscodageProgres(fuuid) {
-//   console.debug("!!! supprimerCallbackTranscodageProgres fuuid %s", fuuid)
-//   ConnexionClient.socketOff('evenement.fichiers.transcodageProgres')
-//   const resultat = await ConnexionClient.emitBlocking('retirerTranscodageProgres', {fuuid}, {noformat: true})
-//   if(!resultat) {
-//     throw new Error("Erreur enregistrerCallbackMajFichier")
-//   }
-// }
-
-// comlinkExpose({
-//   ...ConnexionClient,
-//   connecter,  // Override de connexionClient.connecter
-//   setCallbacks,
-
-//   requeteDocuments, getClesChiffrage, getFichiersActivite, getFichiersCorbeille,
-//   //getCleFichier,
-//   getFavoris, getSites, getCollections, getContenuCollection,
-//   ajouterDocumentsDansCollection, creerCollection, toggleFavoris, supprimerDocuments,
-//   retirerDocumentsCollection, recupererDocuments, renommerDocument, decrireCollection,
-//   decrireFichier, transcoderVideo, getConversionsMedia,
-//   demandePermissionDechiffragePublic, getCleFichierProtege,
-//   estActif, regenererPreviews, rechercherIndex, indexerFichiers,
-
-//   enregistrerCallbackMajFichier, enregistrerCallbackMajCollection,
-//   enregistrerCallbackTranscodageProgres, supprimerCallbackTranscodageProgres,
-// })
-
 // Exposer methodes du Worker
 expose({
     ...ConnexionClient, 
