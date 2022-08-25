@@ -1,6 +1,8 @@
 import { wrap, releaseProxy } from 'comlink'
 
 import * as traitementFichiers from './traitementFichiers'
+import * as collectionsDao from '../redux/collectionsIdbDao'
+import * as clesDao from './clesDao'
 
 export function setupWorkers() {
 
@@ -17,7 +19,9 @@ export function setupWorkers() {
       }, {})
 
     // Pseudo-worker
-    workers.traitementFichiers = traitementFichiers
+    workers.traitementFichiers = traitementFichiers // Upload et download
+    workers.collectionsDao = collectionsDao         // IDB
+    workers.clesDao = clesDao                       // Cles asymetriques
 
     // Wiring
     try {

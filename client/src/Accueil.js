@@ -22,12 +22,17 @@ import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } 
 import { mapper } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
+import useWorkers, { useUsager, useEtatConnexion, useEtatAuthentifie } from './WorkerContext'
 
 function Accueil(props) {
 
-    // console.debug("Accueil props : %O", props)
+    console.debug("Accueil props : %O", props)
+    const workers = useWorkers()
+    const usager = useUsager()
+    const etatConnexion = useEtatConnexion()
+    const etatAuthentifie = useEtatAuthentifie()
 
-    const { workers, etatConnexion, etatAuthentifie, evenementFichier, usager, downloadAction, etatTransfert, erreurCb } = props
+    const { evenementFichier, downloadAction, etatTransfert, erreurCb } = props
 
     return (
         <>
