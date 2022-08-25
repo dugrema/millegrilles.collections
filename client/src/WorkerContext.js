@@ -27,6 +27,10 @@ export function useEtatAuthentifie() {
     return useContext(Context).etatAuthentifie
 }
 
+export function useInfoConnexion() {
+    return useContext(Context).infoConnexion
+}
+
 export function WorkerProvider(props) {
 
     const [workers, setWorkers] = useState('')
