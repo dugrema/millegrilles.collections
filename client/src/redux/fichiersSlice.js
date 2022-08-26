@@ -321,6 +321,7 @@ async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
                 // console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
                 // Images inline chiffrees (thumbnail)
                 const tuuid = fichierChiffre.tuuid
+                let dechiffre = true
 
                 const docCourant = (await collectionsDao.getParTuuids([tuuid])).pop()
                 const version_courante = docCourant.version_courante || {}
@@ -337,6 +338,8 @@ async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
                             const dataDechiffre = base64.encode(ab)
                             image.data = dataDechiffre
                             delete image.data_chiffre
+                        } else {
+                            dechiffre = false  // Echec, cle non trouvee
                         }
                     }
                 }
@@ -344,7 +347,7 @@ async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
                 // console.debug("fichier dechiffre : %O", docCourant)
 
                 // Mettre a jour dans IDB
-                collectionsDao.updateDocument(docCourant, {dirty: false, dechiffre: true})
+                collectionsDao.updateDocument(docCourant, {dirty: false, dechiffre})
                     .catch(err=>console.error("Erreur maj document %O dans idb : %O", docCourant, err))
 
                     // Mettre a jour a l'ecran
@@ -356,22 +359,6 @@ async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
             fichiersChiffres = listenerApi.getState().fichiers.listeDechiffrage
         }
 
-        // // Reset liste de fichiers completes utilises pour calculer pourcentage upload
-        // listenerApi.dispatch(clearCycleUpload())
-
-        // const task = listenerApi.fork( forkApi => tacheUpload(workers, listenerApi, forkApi) )
-        // const stopAction = listenerApi.condition(arretUpload.match)
-        // await Promise.race([task.result, stopAction])
-
-        // console.debug("Task %O\nstopAction %O", task, stopAction)
-        // task.result.catch(err=>console.error("Erreur task : %O", err))
-        // stopAction
-        //     .then(()=>task.cancel())
-        //     .catch(()=>{
-        //         // Aucun impact
-        //     })
-
-        // await task.result  // Attendre fin de la tache en cas d'annulation
         console.debug("dechiffrageMiddlewareListener Sequence dechiffrage terminee")
     } finally {
         await listenerApi.subscribe()
