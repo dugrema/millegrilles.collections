@@ -344,13 +344,24 @@ export function mapperRecherche(row, workers) {
 export function mapDocumentComplet(doc) {
     const copie = {...doc}
     
-    const tuuid = copie.tuuid
+    const {tuuid, date_creation, version_courante} = copie
+    
     if(tuuid) {
         // Mapper vers fileId ou folderId
         // Utiliser mimetype pour detecter si c'est un repertoire ou fichier
         if(copie.mimetype) copie.fileId = tuuid
-        else copie.folderId = tuuid
+        else {
+            copie.mimetype = 'Repertoire'
+            copie.folderId = tuuid
+        }
     }
     
+    if(date_creation) copie.dateAjout = date_creation
+
+    if(version_courante) {
+        const { taille } = version_courante
+        if(taille) copie.taille = taille
+    }
+
     return copie
 }

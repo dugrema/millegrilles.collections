@@ -64,8 +64,7 @@ function NavigationCollections(props) {
             <div>
                 <Row className='fichiers-header-buttonbar'>
                     <Col xs={12} lg={7}>
-                        ... Breadcrumb ...
-                        {/* <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} /> */}
+                        <SectionBreadcrumb naviguerCollection={naviguerCollection} />
                     </Col>
 
                     <Col xs={12} lg={5} className="buttonbars">
@@ -82,6 +81,7 @@ function NavigationCollections(props) {
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
                         modeView={modeView}
+                        naviguerCollection={naviguerCollection}
                         // colonnes={colonnes}
                         // liste={liste} 
                         // onDoubleClick={onDoubleClick}
@@ -548,6 +548,7 @@ function AffichagePrincipal(props) {
     const {
         modeView, 
         tuuidSelectionne, 
+        naviguerCollection,
         // onClick,
         onContextMenu, setContextuel, 
         enteteOnClickCb,
@@ -585,7 +586,7 @@ function AffichagePrincipal(props) {
         window.getSelection().removeAllRanges()
         const folderId = value.folderId || dataset.folderId
         const fileId = value.fileId || dataset.fileId
-        if(folderId) dispatch(changerCollection(workers, folderId)) 
+        if(folderId) naviguerCollection(folderId) // dispatch(changerCollection(workers, folderId)) 
         else throw new Error('fix me') // dispatch(viewFichier(fileId))
     }, [workers, dispatch])
 
@@ -676,17 +677,44 @@ function ModalCreerRepertoire(props) {
 
 function SectionBreadcrumb(props) {
 
-    const { value, setIdx } = props
+    const { naviguerCollection } = props
+
+    const dispatch = useDispatch()
+    const breadcrumb = useSelector((state) => state.fichiers.breadcrumb)
+
+    const handlerSliceBreadcrumb = event => {
+        const value = event.currentTarget.dataset.idx
+        console.debug('handlerSliceBreadcrumb event ', event)
+        let tuuid = ''
+        if(value) {
+            let level = Number.parseInt(value)
+            console.debug("Slice breadcrumb %O (value %O)", level, value)
+            const collection = breadcrumb[level]
+            console.debug("Slice breadcrumb revenir a ", collection)
+            tuuid = collection.tuuid
+            dispatch(breadcrumbSlice(level))
+            naviguerCollection(tuuid)
+        } else {
+            dispatch(breadcrumbSlice())
+            naviguerCollection()
+        }
+    }    
 
     return (
         <Breadcrumb>
             
-            <Breadcrumb.Item onClick={()=>setIdx(-1)}>Favoris</Breadcrumb.Item>
+            <Breadcrumb.Item onClick={handlerSliceBreadcrumb} value=''>Favoris</Breadcrumb.Item>
             
-            {value.map((item, idxItem)=>{
+            {breadcrumb.map((item, idxItem)=>{
+                // Dernier
+                if(idxItem === breadcrumb.length - 1) {
+                    return <span key={idxItem}>&nbsp; / {item.label}</span>
+                }
+                
+                // Parents
                 return (
-                    <Breadcrumb.Item key={idxItem} onClick={()=>setIdx(idxItem)} >
-                        {item.nom}
+                    <Breadcrumb.Item key={idxItem} onClick={handlerSliceBreadcrumb} data-idx={''+idxItem}>
+                        {item.label}
                     </Breadcrumb.Item>
                 )
             })}
