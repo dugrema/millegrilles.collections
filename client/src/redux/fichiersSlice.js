@@ -140,7 +140,9 @@ function mergeTuuidDataAction(state, action) {
     
     let peutAppend = false
     if(source === SOURCE_COLLECTION) {
-        if(cuuidCourant) {
+        if(data.supprime === true) {
+            // false
+        } else if(cuuidCourant) {
             // Verifier si le fichier est sous le cuuid courant
             peutAppend = cuuids.includes(cuuidCourant)
         } else if( ! data.mimetype ) {

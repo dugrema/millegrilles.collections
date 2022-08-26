@@ -545,7 +545,8 @@ function NavigationFavoris(props) {
 function AffichagePrincipal(props) {
 
     const {
-        modeView, colonnes, tuuidSelectionne, 
+        modeView, 
+        tuuidSelectionne, 
         // support,
         // onClick,
         onDoubleClick, 
@@ -557,6 +558,8 @@ function AffichagePrincipal(props) {
     const liste = useSelector(state => state.fichiers.liste)
     console.debug("Liste fichiers : %O", liste)
     // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
+
+    const colonnes = useMemo(preparerColonnes, [])
 
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
