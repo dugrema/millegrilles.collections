@@ -1,3 +1,4 @@
+import { base64 } from 'multiformats/bases/base64'
 import { createSlice, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit'
 
 const SOURCE_COLLECTION = 'collection',
@@ -303,7 +304,7 @@ export function dechiffrageMiddlewareSetup(workers) {
 
 async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
     console.debug("dechiffrageMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
-    const { clesDao, chiffrage } = workers
+    const { clesDao, chiffrage, collectionsDao } = workers
     await listenerApi.unsubscribe()
     try {
         // Recuperer la liste des fichiers chiffres
@@ -313,20 +314,41 @@ async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
 
             // Extraire toutes les cles a charger
             const {clesHachage_bytes} = identifierClesHachages(fichiersChiffres)
-            const reponseCles = await clesDao.getCles(clesHachage_bytes)
-            console.debug("dechiffrageMiddlewareListener Recu cles : ", reponseCles)
+            const cles = await clesDao.getCles(clesHachage_bytes)
+            // console.debug("dechiffrageMiddlewareListener Recu cles : ", cles)
 
             for await (const fichierChiffre of fichiersChiffres) {
-                console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
+                // console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
                 // Images inline chiffrees (thumbnail)
-                const version_courante = fichierChiffre.version_courante || {},
-                images = version_courante.images
-                if(images) Object.values(images).forEach(image=>{
+                const tuuid = fichierChiffre.tuuid
+
+                const docCourant = (await collectionsDao.getParTuuids([tuuid])).pop()
+                const version_courante = docCourant.version_courante || {}
+                const images = version_courante.images || {}
+
+                for await (const image of Object.values(images)) {
                     if(image.data_chiffre) {
                         // Dechiffrer
-                        
+                        const hachage_bytes = image.hachage
+                        const cleFichier = cles[hachage_bytes]
+                        if(cleFichier) {
+                            const dataChiffre = base64.decode(image.data_chiffre)
+                            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, dataChiffre, cleFichier)
+                            const dataDechiffre = base64.encode(ab)
+                            image.data = dataDechiffre
+                            delete image.data_chiffre
+                        }
                     }
-                })
+                }
+
+                // console.debug("fichier dechiffre : %O", docCourant)
+
+                // Mettre a jour dans IDB
+                collectionsDao.updateDocument(docCourant, {dirty: false, dechiffre: true})
+                    .catch(err=>console.error("Erreur maj document %O dans idb : %O", docCourant, err))
+
+                    // Mettre a jour a l'ecran
+                listenerApi.dispatch(mergeTuuidData({tuuid, data: docCourant}))
 
             }
 

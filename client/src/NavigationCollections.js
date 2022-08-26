@@ -571,10 +571,15 @@ function AffichagePrincipal(props) {
     const workers = useWorkers()
     const dispatch = useDispatch()
     const listeBrute = useSelector(state => state.fichiers.liste)
+
+    const mapperDocument = useMemo(()=>{
+        return (item, idx) => mapDocumentComplet(workers, item, idx)
+    }, [workers])
+
     const liste = useMemo(()=>{
         if(!listeBrute) return []
-        return listeBrute.map(mapDocumentComplet)
-    }, [listeBrute])
+        return listeBrute.map(mapperDocument)
+    }, [workers, listeBrute])
 
     console.debug("Liste fichiers : %O", liste)
     // const cuuidCourant = useSelector(state => state.fichiers.cuuid)

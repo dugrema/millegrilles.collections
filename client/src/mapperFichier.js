@@ -341,15 +341,18 @@ export function mapperRecherche(row, workers) {
 //     return loader
 // }
 
-export function mapDocumentComplet(doc) {
+export function mapDocumentComplet(workers, doc) {
+
+    const { traitementFichiers } = workers
+
     const copie = {...doc}
     
-    const {tuuid, date_creation, version_courante} = copie
+    const {nom, tuuid, date_creation, version_courante, fuuid_v_courante, mimetype} = copie
     
     if(tuuid) {
         // Mapper vers fileId ou folderId
         // Utiliser mimetype pour detecter si c'est un repertoire ou fichier
-        if(copie.mimetype) copie.fileId = tuuid
+        if(mimetype) copie.fileId = tuuid
         else {
             copie.mimetype = 'Repertoire'
             copie.folderId = tuuid
@@ -358,10 +361,48 @@ export function mapDocumentComplet(doc) {
     
     if(date_creation) copie.dateAjout = date_creation
 
+    // Icones et image
+    copie.thumbnail = {
+        thumbnailIcon: getThumbnailIcon(mimetype),
+        thumbnailCaption: nom,
+    }
+
     if(version_courante) {
-        const { taille } = version_courante
+        const { anime, taille, images } = version_courante
         if(taille) copie.taille = taille
+        if(images) {
+            const imageLoader = imageResourceLoader(
+                traitementFichiers.getFichierChiffre, 
+                images, 
+                {anime, supporteWebp: true, fuuid: fuuid_v_courante, mimetype}
+            )
+            copie.imageLoader = imageLoader
+        }
     }
 
     return copie
+}
+
+function getThumbnailIcon(mimetype) {
+    if(!mimetype) return ICONE_FOLDER
+
+    if(mimetype === 'application/pdf') {
+        return ICONE_FICHIER_PDF
+    }
+    
+    const mimetypeBase = mimetype.split('/').shift()
+
+    if(mimetypeBase === 'image') {
+        return ICONE_FICHIER_IMAGE
+    } else if(mimetypeBase === 'video') {
+        return ICONE_FICHIER_VIDEO
+    } else if(mimetypeBase === 'audio') {
+        return ICONE_FICHIER_AUDIO
+    } else if(mimetypeBase === 'application/text') {
+        return ICONE_FICHIER_TEXT
+    } else if(mimetypeBase === 'application/zip') {
+        return ICONE_FICHIER_ZIP
+    }
+
+    return ICONE_FICHIER
 }

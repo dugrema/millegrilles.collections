@@ -11,6 +11,8 @@ export default build
 
 async function getCles(workers, liste_hachage_bytes) {
 
+    if(typeof(liste_hachage_bytes) === 'string') liste_hachage_bytes = [liste_hachage_bytes]
+
     const { connexion, chiffrage, usagerDao } = workers
 
     const clesManquantes = [],
