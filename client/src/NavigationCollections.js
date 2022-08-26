@@ -43,11 +43,24 @@ function NavigationCollections(props) {
     const [modeView, setModeView] = useState('')
 
     const naviguerCollection = useCallback( cuuid => {
-        console.debug("!!! naviguerCollection %s", cuuid)
-        dispatch(breadcrumbPush({tuuid: cuuid}))
-        dispatch(changerCollection(workers, cuuid))
-            .then(resultat=>console.debug("Succes changerCollection : %O", resultat))
-            .catch(err=>erreurCb(err, 'Erreur changer collection'))
+        console.debug("!!! naviguerCollection ", cuuid)
+        if(!cuuid) cuuid = ''
+        try {
+            if(cuuid) {
+                dispatch(breadcrumbPush({tuuid: cuuid}))
+            } else {
+                dispatch(breadcrumbSlice())
+            }
+        } catch(err) {
+            console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
+        }
+        try {
+            dispatch(changerCollection(workers, cuuid))
+                .then(()=>console.debug("Succes changerCollection : ", cuuid))
+                .catch(err=>erreurCb(err, 'Erreur changer collection'))
+        } catch(err) {
+            console.error("naviguerCollection Erreur dispatch changerCollection", err)
+        }
     }, [dispatch, workers])
 
     // Declencher chargement initial des favoris
@@ -682,28 +695,37 @@ function SectionBreadcrumb(props) {
     const dispatch = useDispatch()
     const breadcrumb = useSelector((state) => state.fichiers.breadcrumb)
 
-    const handlerSliceBreadcrumb = event => {
+    const handlerSliceBreadcrumb = useCallback(event => {
+        event.preventDefault()
+        event.stopPropagation()
+        
         const value = event.currentTarget.dataset.idx
-        console.debug('handlerSliceBreadcrumb event ', event)
         let tuuid = ''
         if(value) {
             let level = Number.parseInt(value)
-            console.debug("Slice breadcrumb %O (value %O)", level, value)
             const collection = breadcrumb[level]
-            console.debug("Slice breadcrumb revenir a ", collection)
             tuuid = collection.tuuid
             dispatch(breadcrumbSlice(level))
-            naviguerCollection(tuuid)
+            try {
+                naviguerCollection(tuuid)
+                    .catch(err=>console.error("SectionBreadcrumb Erreur navigation ", err))
+            } catch(err) {
+                console.error("handlerSliceBreadcrumb Erreur naviguerCollection %s: ", tuuid, err)
+            }
         } else {
-            dispatch(breadcrumbSlice())
-            naviguerCollection()
+            try {
+                naviguerCollection()
+                    .catch(err=>console.error("SectionBreadcrumb Erreur navigation vers favoris", err))
+            } catch(err) {
+                console.error("handlerSliceBreadcrumb Erreur naviguerCollection favoris : ", err)
+            }
         }
-    }    
+    }, [dispatch, breadcrumb, naviguerCollection])
 
     return (
         <Breadcrumb>
             
-            <Breadcrumb.Item onClick={handlerSliceBreadcrumb} value=''>Favoris</Breadcrumb.Item>
+            <Breadcrumb.Item onClick={handlerSliceBreadcrumb}>Favoris</Breadcrumb.Item>
             
             {breadcrumb.map((item, idxItem)=>{
                 // Dernier
