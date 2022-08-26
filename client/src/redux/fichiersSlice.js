@@ -151,7 +151,9 @@ function mergeTuuidDataAction(state, action) {
     } else if(source === SOURCE_CORBEILLE) {
         peutAppend = data.supprime === true
     } else if(source === SOURCE_PLUS_RECENT) {
-        if(intervalle) {
+        if(data.supprime === true) {
+            // False
+        } else if(intervalle) {
             const { debut, fin } = intervalle
             const champsDate = ['derniere_modification', 'date_creation']
             champsDate.forEach(champ=>{
