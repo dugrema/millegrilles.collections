@@ -54,6 +54,18 @@ function rechercheIndex(socket, params) {
     return transmettreRequete(socket, params, 'rechercheIndex')
 }
 
+function syncCollection(socket, params) {
+  return transmettreRequete(socket, params, 'syncCollection')
+}
+
+function syncRecents(socket, params) {
+  return transmettreRequete(socket, params, 'syncRecents')
+}
+
+function syncCorbeille(socket, params) {
+  return transmettreRequete(socket, params, 'syncCorbeille')
+}
+
 function creerCollection(socket, params) {
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }
@@ -427,6 +439,8 @@ module.exports = {
     enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
     enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
     ajouterFichier, creerTokenStream, getClesChiffrage, supprimerVideo,
+
+    syncCollection, syncRecents, syncCorbeille,
 
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,

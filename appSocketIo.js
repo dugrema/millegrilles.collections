@@ -32,6 +32,9 @@ function configurerEvenements(socket) {
       { eventName: 'ajouterFichier', callback: (params, cb) => traiter(socket, mqdao.ajouterFichier, {params, cb}) },
       { eventName: 'supprimerVideo', callback: (params, cb) => traiter(socket, mqdao.supprimerVideo, {params, cb}) },
       { eventName: 'creerTokenStream', callback: (params, cb) => traiter(socket, mqdao.creerTokenStream, {params, cb}) },
+      { eventName: 'syncCollection', callback: (params, cb) => traiter(socket, mqdao.syncCollection, {params, cb}) },
+      { eventName: 'syncRecents', callback: (params, cb) => traiter(socket, mqdao.syncRecents, {params, cb}) },
+      { eventName: 'syncCorbeille', callback: (params, cb) => traiter(socket, mqdao.syncCorbeille, {params, cb}) },
 
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},

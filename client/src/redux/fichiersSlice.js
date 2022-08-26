@@ -361,7 +361,7 @@ async function traiterChargerTuuids(workers, tuuids, dispatch, getState) {
 
     if(typeof(tuuids) === 'string') tuuids = [tuuids]
 
-    const resultat = connexion.getDocuments(tuuids)
+    const resultat = await connexion.getDocuments(tuuids)
 
     if(resultat.fichiers) {
 

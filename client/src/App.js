@@ -1,15 +1,16 @@
-import React, { useState, useMemo, useCallback, Suspense, lazy } from 'react'
+import React, { useState, useMemo, useCallback, Suspense, lazy, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Provider as ReduxProvider } from 'react-redux'
+import { Provider as ReduxProvider, useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 
 import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'
 
-// import { ouvrirDB } from './idbCollections'
 import ErrorBoundary from './ErrorBoundary'
-import useWorkers, {useEtatConnexion, WorkerProvider} from './WorkerContext'
+import useWorkers, {useEtatConnexion, WorkerProvider, useUsager} from './WorkerContext'
 import storeSetup from './redux/store'
+
+import { setUserId } from './redux/fichiersSlice'
 
 import './i18n'
 
@@ -27,10 +28,9 @@ import './index.scss'
 import './App.css'
 
 import Menu from './Menu'
-import Accueil from './Accueil'
-const Recents = lazy( () => import('./Recents') )
-const Corbeille = lazy( () => import('./Corbeille') )
-const Recherche = lazy( () => import('./Recherche') )
+const NavigationCollections = lazy( () => import('./NavigationCollections') )
+const NavigationRecents = lazy( () => import('./NavigationRecents') )
+const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
 
 function App() {
   
@@ -53,7 +53,7 @@ function Layout(_props) {
 
   const workers = useWorkers()
   const etatConnexion = useEtatConnexion()
-  
+
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [page, setPage] = useState('')
   
@@ -114,12 +114,18 @@ function Layout(_props) {
 }
 
 function Contenu(props) {
+
+  const dispatch = useDispatch()
+
+  // Set userId dans redux
+  const usager = useUsager()
+  useEffect(()=>{ if(!usager) return; dispatch(setUserId(usager.extensions.userId)); }, [dispatch, usager])
+
   let Page
   switch(props.page) {
-    case 'Recents': Page = Recents; break
-    case 'Corbeille': Page = Corbeille; break
-    case 'Recherche': Page = Recherche; break
-    default: Page = Accueil
+    case 'Recents': Page = NavigationRecents; break
+    case 'Corbeille': Page = NavigationCorbeille; break
+    default: Page = NavigationCollections
   }
 
   return (

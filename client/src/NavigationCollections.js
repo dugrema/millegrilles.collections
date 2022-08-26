@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import { proxy as comlinkProxy } from 'comlink'
 import { useDropzone } from 'react-dropzone'
 
@@ -12,9 +13,7 @@ import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import { 
-    ListeFichiers, FormatteurTaille, FormatterDate, usagerDao,
-} from '@dugrema/millegrilles.reactjs'
+import { ListeFichiers, FormatteurTaille, FormatterDate, usagerDao } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
@@ -22,359 +21,411 @@ import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } 
 import { mapper } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
-import useWorkers, { useUsager, useEtatConnexion, useEtatAuthentifie } from './WorkerContext'
+import useWorkers, { useEtatPret, useUsager, useEtatConnexion, useEtatAuthentifie } from './WorkerContext'
 
-function Accueil(props) {
+import { 
+    setUserId,
+    changerCollection, afficherPlusrecents, afficherCorbeille,
+    breadcrumbPush, breadcrumbSlice, ajouterFichierVolatil, 
+    supprimerFichier, restaurerFichier, rafraichirCollection,
+} from './redux/fichiersSlice'
 
-    console.debug("Accueil props : %O", props)
+
+function NavigationCollections(props) {
+
+    const { erreurCb } = props
+    const dispatch = useDispatch()
     const workers = useWorkers()
-    const usager = useUsager()
-    const etatConnexion = useEtatConnexion()
-    const etatAuthentifie = useEtatAuthentifie()
+    const etatPret = useEtatPret()
+    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
+    const userId = useSelector(state=>state.fichiers.userId)
 
-    const { evenementFichier, downloadAction, etatTransfert, erreurCb } = props
+    const naviguerCollection = useCallback( cuuid => {
+        console.debug("!!! naviguerCollection %s", cuuid)
+        dispatch(breadcrumbPush({tuuid: cuuid}))
+        dispatch(changerCollection(workers, cuuid))
+            .then(resultat=>console.debug("Succes changerCollection : %O", resultat))
+            .catch(err=>erreurCb(err, 'Erreur changer collection'))
+    }, [dispatch, workers])
+
+    // Declencher chargement initial des favoris
+    useEffect(()=>{
+        console.debug("Declencher chargement initial? etatPret %O, cuuidCourant %O", etatPret, cuuidCourant)
+        if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
+        naviguerCollection('')
+    }, [naviguerCollection, etatPret, cuuidCourant, userId])
 
     return (
         <>
             <h1>Collections</h1>
-            <NavigationFavoris 
-                workers={workers} 
-                etatConnexion={etatConnexion}
-                etatAuthentifie={etatAuthentifie}
-                evenementFichier={evenementFichier}
-                etatTransfert={etatTransfert}
-                usager={usager}
-                downloadAction={downloadAction}
-                erreurCb={erreurCb}
-            />
+
+            <div>
+                <Row className='fichiers-header-buttonbar'>
+                    <Col xs={12} lg={7}>
+                        ... Breadcrumb ...
+                        {/* <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} /> */}
+                    </Col>
+
+                    <Col xs={12} lg={5} className="buttonbars">
+                        ... ButtonBars ...
+                        {/* <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                        <BoutonsUpload 
+                            cuuid={cuuidCourant}
+                            uploaderFichiersAction={uploaderFichiersAction} 
+                            setShowCreerRepertoire={setShowCreerRepertoire}
+                        /> */}
+                    </Col>
+                </Row>
+
+                <Suspense fallback={<p>Loading ...</p>}>
+                    <p> ... Affichage principal ...</p>
+                    <AffichagePrincipal 
+                        // modeView={modeView}
+                        // colonnes={colonnes}
+                        // liste={liste} 
+                        // onDoubleClick={onDoubleClick}
+                        // onContextMenu={onContextMenu}
+                        // setContextuel={setContextuel}
+                        // onSelectionLignes={onSelectionLignes}
+                        // onClickEntete={enteteOnClickCb}
+                        // cuuidCourant={cuuidCourant}
+                        // isListeComplete={isListeComplete}
+                        // suivantCb={suivantCb}
+                        // tuuidSelectionne={tuuidSelectionne}
+                        // afficherVideo={afficherVideo}
+                        // setAfficherVideo={setAfficherVideo}
+                        // support={support}
+                        // showInfoModalOuvrir={showInfoModalOuvrir}
+                    />
+                </Suspense>
+            </div>            
         </>
     )
 
 }
 
-export default Accueil
+export default NavigationCollections
 
 function NavigationFavoris(props) {
 
-    const { workers, etatConnexion, etatAuthentifie, usager, downloadAction, etatTransfert, erreurCb } = props
+    const { erreurCb } = props
 
-    const userId = useMemo(()=>{
-        if(!usager) return ''
-        return usager.extensions.userId
-    }, [usager])
+    // const workers = useWorkers()
+    // const liste = useSelector(state => state.fichiers.liste)
+    // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
 
-    const [ favoris, setFavoris ] = useState('')
+    // const [ favoris, setFavoris ] = useState('')
     const [ colonnes, setColonnes ] = useState('')
-    const [ breadcrumb, setBreadcrumb ] = useState([])
-    const [ cuuidCourant, setCuuidCourant ] = useState('')
-    const [ liste, setListe ] = useState([])
+    // const [ breadcrumb, setBreadcrumb ] = useState([])
+    // const [ cuuidCourant, setCuuidCourant ] = useState('')
+    // const [ liste, setListe ] = useState([])
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ selection, setSelection ] = useState('')
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState('')
     const [ modeView, setModeView ] = useState('')
     const [ showPreview, setShowPreview ] = useState(false)
-    const [ support, setSupport ] = useState({})
+    //const [ support, setSupport ] = useState({})
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
-    const [ isListeComplete, setListeComplete ] = useState(false)
-    const [ chargementListeEnCours, setChargementListeEnCours ] = useState(true)
+    // const [ isListeComplete, setListeComplete ] = useState(false)
+    // const [ chargementListeEnCours, setChargementListeEnCours ] = useState(true)
     const [ afficherVideo, setAfficherVideo ] = useState(false)
 
     // Event handling
-    const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
-    const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
-    const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
-    const [ evenementContenuFavoris, addEvenementContenuFavoris ] = useState('')
-    const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
-    const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
-    const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
-    const evenementContenuFavorisCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuFavoris(evenement)), [addEvenementContenuFavoris])
-    useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
+    // const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
+    // const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
+    // const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
+    // const [ evenementContenuFavoris, addEvenementContenuFavoris ] = useState('')
+    // const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
+    // const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
+    // const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
+    // const evenementContenuFavorisCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuFavoris(evenement)), [addEvenementContenuFavoris])
+    // useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
 
     // Extraire tri pour utiliser comme trigger pour useEffect
-    const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
+    // const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
 
     // Callbacks
-    const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
-    const showSupprimerModalFermer = useCallback(()=>{ setShowSupprimerModal(false) }, [setShowSupprimerModal])
-    const showCopierModalOuvrir = useCallback(()=>{ setShowCopierModal(true) }, [setShowCopierModal])
-    const showCopierModalFermer = useCallback(()=>{ setShowCopierModal(false) }, [setShowCopierModal])
-    const showDeplacerModalOuvrir = useCallback(()=>{ setShowDeplacerModal(true) }, [setShowDeplacerModal])
-    const showDeplacerModalFermer = useCallback(()=>{ setShowDeplacerModal(false) }, [setShowDeplacerModal])
-    const showInfoModalOuvrir = useCallback(()=>{ setShowInfoModal(true) }, [setShowInfoModal])
-    const showInfoModalFermer = useCallback(()=>{ setShowInfoModal(false) }, [setShowInfoModal])
-    const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
-    const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
+    // const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
+    // const showSupprimerModalFermer = useCallback(()=>{ setShowSupprimerModal(false) }, [setShowSupprimerModal])
+    // const showCopierModalOuvrir = useCallback(()=>{ setShowCopierModal(true) }, [setShowCopierModal])
+    // const showCopierModalFermer = useCallback(()=>{ setShowCopierModal(false) }, [setShowCopierModal])
+    // const showDeplacerModalOuvrir = useCallback(()=>{ setShowDeplacerModal(true) }, [setShowDeplacerModal])
+    // const showDeplacerModalFermer = useCallback(()=>{ setShowDeplacerModal(false) }, [setShowDeplacerModal])
+    // const showInfoModalOuvrir = useCallback(()=>{ setShowInfoModal(true) }, [setShowInfoModal])
+    // const showInfoModalFermer = useCallback(()=>{ setShowInfoModal(false) }, [setShowInfoModal])
+    // const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
+    // const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
 
-    const showPreviewAction = useCallback( tuuid => {
-        setTuuidSelectionne(tuuid)
-        setShowPreview(true)
-    }, [setShowPreview, setTuuidSelectionne])
+    // const showPreviewAction = useCallback( tuuid => {
+    //     setTuuidSelectionne(tuuid)
+    //     setShowPreview(true)
+    // }, [setShowPreview, setTuuidSelectionne])
 
-    const onDoubleClick = useCallback((event, value)=>{
-        window.getSelection().removeAllRanges()
-        // console.debug("Ouvrir %O (liste courante: %O)", value, liste)
-        if(value.folderId) {
-            const folderItem = liste.filter(item=>item.folderId===value.folderId).pop()
-            setBreadcrumb([...breadcrumb, folderItem])
-            setCuuidCourant(value.folderId)
-        } else {
-            // Determiner le type de fichier
-            const fileItem = liste.filter(item=>item.fileId===value.fileId).pop()
-            const mimetype = fileItem.mimetype || ''
-            console.debug("Choisir tuuid %s (%s) : %O", value.fileId, mimetype, fileItem)
-            if(mimetype.startsWith('video/')) {
-                // Page Video
-                setAfficherVideo(value.fileId)
-            } else {
-                // Preview/carousel
-                showPreviewAction(value.fileId)
-            }
-        }
-    }, [liste, setCuuidCourant, breadcrumb, setBreadcrumb, showPreviewAction])
+    // const onDoubleClick = useCallback((event, value)=>{
+    //     window.getSelection().removeAllRanges()
+    //     // console.debug("Ouvrir %O (liste courante: %O)", value, liste)
+    //     if(value.folderId) {
+    //         const folderItem = liste.filter(item=>item.folderId===value.folderId).pop()
+    //         setBreadcrumb([...breadcrumb, folderItem])
+    //         setCuuidCourant(value.folderId)
+    //     } else {
+    //         // Determiner le type de fichier
+    //         const fileItem = liste.filter(item=>item.fileId===value.fileId).pop()
+    //         const mimetype = fileItem.mimetype || ''
+    //         console.debug("Choisir tuuid %s (%s) : %O", value.fileId, mimetype, fileItem)
+    //         if(mimetype.startsWith('video/')) {
+    //             // Page Video
+    //             setAfficherVideo(value.fileId)
+    //         } else {
+    //             // Preview/carousel
+    //             showPreviewAction(value.fileId)
+    //         }
+    //     }
+    // }, [liste, setCuuidCourant, breadcrumb, setBreadcrumb, showPreviewAction])
 
-    const onSelectionLignes = useCallback(selection=>{setSelection(selection)}, [setSelection])
+    // const onSelectionLignes = useCallback(selection=>{setSelection(selection)}, [setSelection])
     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
 
-    const fermerContextuel = useCallback(()=>{
-        setContextuel(false)
-    }, [setContextuel])
+    // const fermerContextuel = useCallback(()=>{
+    //     setContextuel(false)
+    // }, [setContextuel])
 
-    const setBreadcrumbIdx = useCallback( idx => {
-        // Tronquer la breadcrumb pour revenir a un folder precedent
-        setAfficherVideo(false)
-        setShowInfoModal(false)
+    // const setBreadcrumbIdx = useCallback( idx => {
+    //     // Tronquer la breadcrumb pour revenir a un folder precedent
+    //     setAfficherVideo(false)
+    //     setShowInfoModal(false)
 
-        const breadcrumbTronquee = breadcrumb.filter((_, idxItem)=>idxItem<=idx)
-        setBreadcrumb(breadcrumbTronquee)
+    //     const breadcrumbTronquee = breadcrumb.filter((_, idxItem)=>idxItem<=idx)
+    //     setBreadcrumb(breadcrumbTronquee)
 
-        // Set nouveau cuuid courant
-        if(idx >= 0) setCuuidCourant(breadcrumbTronquee[idx].folderId)
-        else setCuuidCourant('')  // Racine des favoris
-    }, [breadcrumb, setBreadcrumb, setCuuidCourant, setAfficherVideo, setShowInfoModal])
+    //     // Set nouveau cuuid courant
+    //     if(idx >= 0) setCuuidCourant(breadcrumbTronquee[idx].folderId)
+    //     else setCuuidCourant('')  // Racine des favoris
+    // }, [breadcrumb, setBreadcrumb, setCuuidCourant, setAfficherVideo, setShowInfoModal])
 
     // Event pour bloquer onClick sur dropzone (panneau background)
-    const onClickBack = useCallback(event=>{
-        event.stopPropagation()
-        event.preventDefault()
-    }, [])
+    // const onClickBack = useCallback(event=>{
+    //     event.stopPropagation()
+    //     event.preventDefault()
+    // }, [])
 
     // Dropzone
-    const onDrop = useCallback( acceptedFiles => {
-        if(!cuuidCourant) {
-            console.error("Cuuid non selectionne (favoris actif)")
-            return
-        }
-        uploaderFichiers(workers, cuuidCourant, acceptedFiles, {erreurCb})
-    }, [workers, cuuidCourant, erreurCb])
-    const dzHook = useDropzone({onDrop})
-    const {getRootProps, getInputProps, open: openDropzone} = dzHook
+    // const onDrop = useCallback( acceptedFiles => {
+    //     if(!cuuidCourant) {
+    //         console.error("Cuuid non selectionne (favoris actif)")
+    //         return
+    //     }
+    //     uploaderFichiers(workers, cuuidCourant, acceptedFiles, {erreurCb})
+    // }, [workers, cuuidCourant, erreurCb])
+    // const dzHook = useDropzone({onDrop})
+    // const {getRootProps, getInputProps, open: openDropzone} = dzHook
     // Fin Dropzone
 
-    const uploaderFichiersAction = useCallback(event=>{
-        event.stopPropagation()
-        event.preventDefault()
-        openDropzone()
-    }, [openDropzone])
+    // const uploaderFichiersAction = useCallback(event=>{
+    //     event.stopPropagation()
+    //     event.preventDefault()
+    //     openDropzone()
+    // }, [openDropzone])
 
-    const suivantCb = useCallback( opts => {
-        opts = opts || {}
-        const limit = opts.limit || 50,
-              deuxiemeBatch = opts.deuxiemeBatch || false
-        if(!cuuidCourant) {
-            // Favoris - on n'a pas de suivant pour favoris
-        } else if(etatConnexion) {
-            chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit, tri: triColonnes})
-                .then(resultat=>{
-                    console.debug("Resultat 1 : %O", resultat)
-                    setListe(resultat.data)
-                    setListeComplete(resultat.estComplet?true:false)
-                    // if(deuxiemeBatch || !resultat.estComplet) {
-                    //     return chargerCollection(
-                    //         workers, cuuidCourant, usager, {listeCourante: liste, limit: deuxiemeBatch, tri: triColonnes})
-                    // }
-                })
-                // .then(resultat => {
-                //     if(resultat) {  // Deuxieme batch est optionnelle
-                //         console.debug("Resultat 2 : %O", resultat)
-                //         setListe(resultat.data)
-                //         setListeComplete(resultat.estComplet)
-                //     }
-                // })
-                .catch(erreurCb)
-        }
-    }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
+    // const suivantCb = useCallback( opts => {
+    //     opts = opts || {}
+    //     const limit = opts.limit || 50,
+    //           deuxiemeBatch = opts.deuxiemeBatch || false
+    //     if(!cuuidCourant) {
+    //         // Favoris - on n'a pas de suivant pour favoris
+    //     } else if(etatConnexion) {
+    //         chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit, tri: triColonnes})
+    //             .then(resultat=>{
+    //                 console.debug("Resultat 1 : %O", resultat)
+    //                 setListe(resultat.data)
+    //                 setListeComplete(resultat.estComplet?true:false)
+    //                 // if(deuxiemeBatch || !resultat.estComplet) {
+    //                 //     return chargerCollection(
+    //                 //         workers, cuuidCourant, usager, {listeCourante: liste, limit: deuxiemeBatch, tri: triColonnes})
+    //                 // }
+    //             })
+    //             // .then(resultat => {
+    //             //     if(resultat) {  // Deuxieme batch est optionnelle
+    //             //         console.debug("Resultat 2 : %O", resultat)
+    //             //         setListe(resultat.data)
+    //             //         setListeComplete(resultat.estComplet)
+    //             //     }
+    //             // })
+    //             .catch(erreurCb)
+    //     }
+    // }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
 
-    const enteteOnClickCb = useCallback(colonne=>{
-        // console.debug("Click entete nom colonne : %s", colonne)
-        const triCourant = {...colonnes.tri}
-        const colonnesCourant = {...colonnes}
-        const colonneCourante = triCourant.colonne
-        let ordre = triCourant.ordre || 1
-        if(colonne === colonneCourante) {
-            // Toggle direction
-            ordre = ordre * -1
-        } else {
-            ordre = 1
-        }
-        colonnesCourant.tri = {colonne, ordre}
-        // console.debug("Sort key maj : %O", colonnesCourant)
-        setColonnes(colonnesCourant)
-    }, [colonnes, setColonnes])
+    // const enteteOnClickCb = useCallback(colonne=>{
+    //     // console.debug("Click entete nom colonne : %s", colonne)
+    //     const triCourant = {...colonnes.tri}
+    //     const colonnesCourant = {...colonnes}
+    //     const colonneCourante = triCourant.colonne
+    //     let ordre = triCourant.ordre || 1
+    //     if(colonne === colonneCourante) {
+    //         // Toggle direction
+    //         ordre = ordre * -1
+    //     } else {
+    //         ordre = 1
+    //     }
+    //     colonnesCourant.tri = {colonne, ordre}
+    //     // console.debug("Sort key maj : %O", colonnesCourant)
+    //     setColonnes(colonnesCourant)
+    // }, [colonnes, setColonnes])
     
     // Preparer format des colonnes
     useEffect(()=>{ setColonnes(preparerColonnes()) }, [setColonnes])
 
     // Chargement initial des favoris
-    useEffect(()=>{ 
-        if(etatConnexion && etatAuthentifie) {
-            chargerFavoris(workers, setFavoris) 
-                .finally(()=>setChargementListeEnCours(false))
-        }
-    }, [workers, etatConnexion, etatAuthentifie, setFavoris])
+    // useEffect(()=>{ 
+    //     if(etatConnexion && etatAuthentifie) {
+    //         chargerFavoris(workers, setFavoris) 
+    //             .finally(()=>setChargementListeEnCours(false))
+    //     }
+    // }, [workers, etatConnexion, etatAuthentifie, setFavoris])
 
     // Preparer donnees a afficher dans la liste
-    useEffect(()=>{
-        if(!favoris || !etatConnexion) return  // Rien a faire
-        if(!cuuidCourant) {
-            // Utiliser liste de favoris
-            setListe( preprarerDonnees(favoris, workers, {tri: triColonnes}) )
-        } else {
-            setChargementListeEnCours(true)
-                if(etatConnexion) {
-                    chargerCollection(workers, cuuidCourant, usager, {tri: triColonnes})
-                    .then(resultat=>{
-                        setListe(resultat.data)
-                        setListeComplete(resultat.estComplet)
-                    })
-                    .catch(erreurCb)
-                    .finally(()=>{setChargementListeEnCours(false)})
-                }
-        }
-    }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, setChargementListeEnCours, erreurCb])
+    // useEffect(()=>{
+    //     if(!favoris || !etatConnexion) return  // Rien a faire
+    //     if(!cuuidCourant) {
+    //         // Utiliser liste de favoris
+    //         setListe( preprarerDonnees(favoris, workers, {tri: triColonnes}) )
+    //     } else {
+    //         setChargementListeEnCours(true)
+    //             if(etatConnexion) {
+    //                 chargerCollection(workers, cuuidCourant, usager, {tri: triColonnes})
+    //                 .then(resultat=>{
+    //                     setListe(resultat.data)
+    //                     setListeComplete(resultat.estComplet)
+    //                 })
+    //                 .catch(erreurCb)
+    //                 .finally(()=>{setChargementListeEnCours(false)})
+    //             }
+    //     }
+    // }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, setChargementListeEnCours, erreurCb])
     
     // Detect support divers de l'appareil/navigateur
-    useEffect(()=>{detecterSupport(setSupport)}, [setSupport])
+    //useEffect(()=>{detecterSupport(setSupport)}, [setSupport])
 
-    useEffect(()=>{
-        if(!evenementFichierCb) return
-        if(cuuidCourant && etatConnexion && etatAuthentifie) {
-            enregistrerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners majFichier : %O", err))
-            return () => {
-                retirerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
-                    .catch(err=>console.debug("Erreur retrait listeners majFichier : %O", err))
-            }
-        }
-    }, [workers, cuuidCourant, etatConnexion, etatAuthentifie, evenementFichierCb])
+    // useEffect(()=>{
+    //     if(!evenementFichierCb) return
+    //     if(cuuidCourant && etatConnexion && etatAuthentifie) {
+    //         enregistrerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
+    //             .catch(err=>console.warn("Erreur enregistrement listeners majFichier : %O", err))
+    //         return () => {
+    //             retirerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
+    //                 .catch(err=>console.debug("Erreur retrait listeners majFichier : %O", err))
+    //         }
+    //     }
+    // }, [workers, cuuidCourant, etatConnexion, etatAuthentifie, evenementFichierCb])
 
-    useEffect(()=>{
-        if(evenementFichier) {
-            if(evenementFichier.upload) {
-                mapperUploadFichier(workers, evenementFichier.upload, liste, cuuidCourant, setListe)
-            } else {
-                if(cuuidCourant) {
-                    mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
-                } else { // Favoris
-                    mapperEvenementFichier(workers, evenementFichier, favoris, cuuidCourant, setFavoris)
-                }
-            }
-            addEvenementFichier('')  // Vider liste evenements
-        }
-    }, [workers, liste, favoris, evenementFichier, cuuidCourant, setListe, setFavoris, addEvenementFichier])
+    // useEffect(()=>{
+    //     if(evenementFichier) {
+    //         if(evenementFichier.upload) {
+    //             mapperUploadFichier(workers, evenementFichier.upload, liste, cuuidCourant, setListe)
+    //         } else {
+    //             if(cuuidCourant) {
+    //                 mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
+    //             } else { // Favoris
+    //                 mapperEvenementFichier(workers, evenementFichier, favoris, cuuidCourant, setFavoris)
+    //             }
+    //         }
+    //         addEvenementFichier('')  // Vider liste evenements
+    //     }
+    // }, [workers, liste, favoris, evenementFichier, cuuidCourant, setListe, setFavoris, addEvenementFichier])
 
-    useEffect(()=>{
-        const {connexion} = workers
-        if(!evenementCollectionCb) return
-        if(liste && etatConnexion && etatAuthentifie) {
-            const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
-            if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
-            // console.debug("enregistrerCallbackMajCollections %O", cuuids)
-            connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
-            return () => {
-                connexion.retirerCallbackMajCollections({cuuids}, evenementCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
-            }
-        }
-    }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
+    // useEffect(()=>{
+    //     const {connexion} = workers
+    //     if(!evenementCollectionCb) return
+    //     if(liste && etatConnexion && etatAuthentifie) {
+    //         const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
+    //         if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
+    //         // console.debug("enregistrerCallbackMajCollections %O", cuuids)
+    //         connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
+    //             .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+    //         return () => {
+    //             connexion.retirerCallbackMajCollections({cuuids}, evenementCollectionCb)
+    //                 .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+    //         }
+    //     }
+    // }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
 
-    useEffect(()=>{
-        if(evenementCollection) {
-            console.debug("Evenement collection : %O", evenementCollection)
-            if(cuuidCourant) {
-                mapperEvenementCollection(evenementCollection, liste, setListe)
-            } else {
-                mapperEvenementCollection(evenementCollection, favoris, setFavoris, {favoris: true})
-            }
-            addEvenementCollection('')  // Vider liste evenements
-        }
-    }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
+    // useEffect(()=>{
+    //     if(evenementCollection) {
+    //         console.debug("Evenement collection : %O", evenementCollection)
+    //         if(cuuidCourant) {
+    //             mapperEvenementCollection(evenementCollection, liste, setListe)
+    //         } else {
+    //             mapperEvenementCollection(evenementCollection, favoris, setFavoris, {favoris: true})
+    //         }
+    //         addEvenementCollection('')  // Vider liste evenements
+    //     }
+    // }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
 
-    useEffect(()=>{
-        const {connexion} = workers
-        if(!evenementContenuCollectionCb) return
-        if(cuuidCourant && etatConnexion && etatAuthentifie) {
-            connexion.enregistrerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu collection : %O", err))
-            return () => {
-                connexion.retirerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners maj contenu collection : %O", err))
-            }
-        }
+    // useEffect(()=>{
+    //     const {connexion} = workers
+    //     if(!evenementContenuCollectionCb) return
+    //     if(cuuidCourant && etatConnexion && etatAuthentifie) {
+    //         connexion.enregistrerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
+    //             .catch(err=>console.warn("Erreur enregistrement listeners maj contenu collection : %O", err))
+    //         return () => {
+    //             connexion.retirerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
+    //                 .catch(err=>console.warn("Erreur retirer listeners maj contenu collection : %O", err))
+    //         }
+    //     }
 
-    }, [workers, etatConnexion, etatAuthentifie, cuuidCourant, evenementContenuCollectionCb])
+    // }, [workers, etatConnexion, etatAuthentifie, cuuidCourant, evenementContenuCollectionCb])
 
-    useEffect(()=>{
-        const {connexion} = workers
-        if(!evenementContenuFavorisCb) return
-        if(etatConnexion && etatAuthentifie) {
-            connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
-            return () => {
-                connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
-                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
-            }
-        }
+    // useEffect(()=>{
+    //     const {connexion} = workers
+    //     if(!evenementContenuFavorisCb) return
+    //     if(etatConnexion && etatAuthentifie) {
+    //         connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
+    //             .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+    //         return () => {
+    //             connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
+    //                 .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+    //         }
+    //     }
 
-    }, [workers, etatConnexion, etatAuthentifie, userId, evenementContenuFavorisCb])
+    // }, [workers, etatConnexion, etatAuthentifie, userId, evenementContenuFavorisCb])
 
-    useEffect(()=>{
-        if(evenementContenuCollection) {
-            // console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
-            mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier)
-            addEvenementContenuCollection('')
-        }
-    }, [workers, evenementContenuCollection, addEvenementContenuCollection, liste, setListe, addEvenementFichier])
+    // useEffect(()=>{
+    //     if(evenementContenuCollection) {
+    //         // console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
+    //         mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier)
+    //         addEvenementContenuCollection('')
+    //     }
+    // }, [workers, evenementContenuCollection, addEvenementContenuCollection, liste, setListe, addEvenementFichier])
 
-    useEffect(()=>{
-        if(evenementContenuFavoris) {
-            // console.debug("Recu evenementContenuFavoris : %O", evenementContenuFavoris)
-            mapperEvenementContenuCollection(workers, evenementContenuFavoris, favoris, setFavoris, addEvenementFichier, {favoris: true})
-            addEvenementContenuFavoris('')
-        }
-    }, [workers, evenementContenuFavoris, favoris, setFavoris, addEvenementContenuFavoris, addEvenementFichier])
+    // useEffect(()=>{
+    //     if(evenementContenuFavoris) {
+    //         // console.debug("Recu evenementContenuFavoris : %O", evenementContenuFavoris)
+    //         mapperEvenementContenuCollection(workers, evenementContenuFavoris, favoris, setFavoris, addEvenementFichier, {favoris: true})
+    //         addEvenementContenuFavoris('')
+    //     }
+    // }, [workers, evenementContenuFavoris, favoris, setFavoris, addEvenementContenuFavoris, addEvenementFichier])
 
     return (
-        <div {...getRootProps({onClick: onClickBack})}>
-            <input {...getInputProps()} />
-
+        // <div {...getRootProps({onClick: onClickBack})}>
+        //     <input {...getInputProps()} />
+        <div>
             <Row className='fichiers-header-buttonbar'>
                 <Col xs={12} lg={7}>
-                    <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} />
+                    {/* <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} /> */}
                 </Col>
 
                 <Col xs={12} lg={5} className="buttonbars">
-                    <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                    {/* <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                     <BoutonsUpload 
                         cuuid={cuuidCourant}
                         uploaderFichiersAction={uploaderFichiersAction} 
                         setShowCreerRepertoire={setShowCreerRepertoire}
-                    />
+                    /> */}
                 </Col>
             </Row>
 
@@ -382,24 +433,24 @@ function NavigationFavoris(props) {
                 <AffichagePrincipal 
                     modeView={modeView}
                     colonnes={colonnes}
-                    liste={liste} 
-                    onDoubleClick={onDoubleClick}
+                    // liste={liste} 
+                    // onDoubleClick={onDoubleClick}
                     onContextMenu={onContextMenu}
                     setContextuel={setContextuel}
-                    onSelectionLignes={onSelectionLignes}
-                    onClickEntete={enteteOnClickCb}
-                    cuuidCourant={cuuidCourant}
-                    isListeComplete={isListeComplete}
-                    suivantCb={suivantCb}
+                    // onSelectionLignes={onSelectionLignes}
+                    // onClickEntete={enteteOnClickCb}
+                    // cuuidCourant={cuuidCourant}
+                    // isListeComplete={isListeComplete}
+                    // suivantCb={suivantCb}
                     tuuidSelectionne={tuuidSelectionne}
                     afficherVideo={afficherVideo}
                     setAfficherVideo={setAfficherVideo}
-                    support={support}
-                    showInfoModalOuvrir={showInfoModalOuvrir}
+                    // support={support}
+                    // showInfoModalOuvrir={showInfoModalOuvrir}
                 />
             </Suspense>
 
-            <InformationListe 
+            {/* <InformationListe 
                 favoris={favoris}
                 liste={liste} 
                 cuuid={cuuidCourant} 
@@ -485,7 +536,7 @@ function NavigationFavoris(props) {
                 fichiers={liste}
                 selection={selection}
                 workers={workers}
-            />
+            /> */}
 
         </div>
     )
@@ -494,10 +545,18 @@ function NavigationFavoris(props) {
 function AffichagePrincipal(props) {
 
     const {
-        modeView, colonnes, liste, cuuidCourant, isListeComplete, tuuidSelectionne, support,
-        /*onClick,*/ onDoubleClick, onContextMenu, setContextuel, onSelectionLignes, enteteOnClickCb, suivantCb,
+        modeView, colonnes, tuuidSelectionne, 
+        // support,
+        // onClick,
+        onDoubleClick, 
+        onContextMenu, setContextuel, 
+        onSelectionLignes, enteteOnClickCb,
         afficherVideo, setAfficherVideo, showInfoModalOuvrir
     } = props
+
+    const liste = useSelector(state => state.fichiers.liste)
+    console.debug("Liste fichiers : %O", liste)
+    // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
 
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
@@ -507,18 +566,18 @@ function AffichagePrincipal(props) {
 
     // const handlerSuivant = useMemo(()=>(!cuuidCourant||isListeComplete)?'':suivantCb, [suivantCb])
 
-    const handlerSuivant = useCallback(()=>{
-        console.warn("Handler suivant")
-        if(!cuuidCourant||isListeComplete) return
-        suivantCb({limit: 1, deuxiemeBatch: 3})
-    }, [suivantCb, cuuidCourant, isListeComplete])
+    // const handlerSuivant = useCallback(()=>{
+    //     console.warn("Handler suivant")
+    //     if(!cuuidCourant||isListeComplete) return
+    //     suivantCb({limit: 1, deuxiemeBatch: 3})
+    // }, [suivantCb, cuuidCourant, isListeComplete])
 
     if(afficherVideo) {
         // console.debug("AffichagePrincipal PROPPIES : %O", props)
         const fileItem = liste.filter(item=>item.fileId===afficherVideo).pop()
         return (
             <AfficherVideo
-                support={support}
+                // support={support}
                 fichier={fileItem}
                 tuuidSelectionne={tuuidSelectionne}
                 fermer={fermerAfficherVideo} 
@@ -537,8 +596,8 @@ function AffichagePrincipal(props) {
             onContextMenu={onContextMenuClick}
             onSelection={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
-            suivantCb={handlerSuivant}
-            isListeComplete={isListeComplete}
+            // suivantCb={handlerSuivant}
+            // isListeComplete={isListeComplete}
         />
     )
 }

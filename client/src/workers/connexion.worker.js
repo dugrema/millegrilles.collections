@@ -185,6 +185,32 @@ function creerTokenStream(fuuids) {
   )
 }
 
+function syncCollection(cuuid, opts) {
+  opts = opts || {}
+  const {skip, limit} = opts
+  const requete = {skip, limit}
+  if(cuuid) requete.cuuid = cuuid
+  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCollection', ajouterCertificat: true}
+  console.debug("syncCollection %O, %O", requete, params)
+  return ConnexionClient.emitBlocking('syncCollection', requete, params)
+}
+
+function syncRecents(debut, fin, opts) {
+  opts = opts || {}
+  const {skip, limit} = opts
+  const requete = {debut, fin, skip, limit}
+  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncRecents', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('syncRecents', requete, params)
+}
+
+function syncCorbeille(debut, fin, opts) {
+  opts = opts || {}
+  const {skip, limit} = opts
+  const requete = {debut, fin, skip, limit}
+  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCorbeille', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('syncCorbeille', requete, params)
+}
+
 
 // Fonctions delegues
 
@@ -261,6 +287,8 @@ expose({
     copierVersCollection, deplacerFichiersCollection,
     rechercheIndex, transcoderVideo, getPermission,
     ajouterFichier, creerTokenStream, supprimerVideo,
+
+    syncCollection, syncRecents, syncCorbeille,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,

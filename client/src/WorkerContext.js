@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
 import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
-import { ouvrirDB } from './idbCollections'
+import { init as initCollectionsIdb } from './redux/collectionsIdbDao'
 
 const Context = createContext()
 
+// Hooks
 function useWorkers() {
     return useContext(Context).workers
 }
-
 export default useWorkers
 
 export function useUsager() {
@@ -31,6 +31,11 @@ export function useInfoConnexion() {
     return useContext(Context).infoConnexion
 }
 
+export function useEtatPret() {
+    return useContext(Context).etatPret
+}
+
+// Provider
 export function WorkerProvider(props) {
 
     const [workers, setWorkers] = useState('')
@@ -40,52 +45,54 @@ export function WorkerProvider(props) {
     const [infoConnexion, setInfoConnexion] = useState('')
 
     const etatAuthentifie = useMemo(()=>usager && formatteurPret, [usager, formatteurPret])
+    const etatPret = useMemo(()=>{
+        return etatConnexion && usager && formatteurPret
+    }, [etatConnexion, usager, formatteurPret])
 
     const value = useMemo(()=>{
-        return { workers, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion }
-    }, [workers, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion])
-
-    // Chargement des proprietes et workers
-    useEffect(()=>{
-        initDb()
-          .then(()=>{ console.debug("Chargement de l'application complete") })
-          .catch(err=>{console.error("Erreur chargement application : %O", err)})
-    }, [])
+        return { workers, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret }
+    }, [workers, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret])
 
     useEffect(()=>{
         console.info("Initialiser web workers")
-        const { workerInstances, workers } = setupWorkers()
-        setWorkers(workers)
-        return () => { console.info("Cleanup web workers"); cleanupWorkers(workerInstances) }
+        const { workerInstances, workers, ready } = setupWorkers()
+
+        // Initialiser workers et tables collections dans IDB
+        const promiseWorkers = initCollectionsIdb()
+        Promise.all([ready, promiseWorkers])
+            .then(()=>setWorkers(workers))
+            .catch(err=>console.error("Erreur initialisation collections IDB / workers ", err))
+
+        // Cleanup
+        return () => { 
+            console.info("Cleanup web workers")
+            cleanupWorkers(workerInstances) 
+        }
     }, [setWorkers])
 
     useEffect(()=>{
+        if(!workers) return
         setWorkersTraitementFichiers(workers)
-        if(workers) {
-            if(workers.connexion) {
-                // setErreur('')
-                connecter(workers, setUsager, setEtatConnexion, setFormatteurPret)
-                    .then(infoConnexion=>{
-                        // const statusConnexion = JSON.stringify(infoConnexion)
-                        if(infoConnexion.ok === false) {
-                            console.error("Erreur de connexion : %O", infoConnexion)
-                            // setErreur("Erreur de connexion au serveur : " + infoConnexion.err); 
-                        } else {
-                            console.debug("Info connexion : %O", infoConnexion)
-                            setInfoConnexion(infoConnexion)
-                        }
-                    })
-                    .catch(err=>{
-                        // setErreur('Erreur de connexion. Detail : ' + err); 
-                        console.debug("Erreur de connexion : %O", err)
-                    })
-            } else {
-                // setErreur("Pas de worker de connexion")
-                console.error("Pas de worker de connexion")
-            }
+        if(workers.connexion) {
+            // setErreur('')
+            connecter(workers, setUsager, setEtatConnexion, setFormatteurPret)
+                .then(infoConnexion=>{
+                    // const statusConnexion = JSON.stringify(infoConnexion)
+                    if(infoConnexion.ok === false) {
+                        console.error("Erreur de connexion : %O", infoConnexion)
+                        // setErreur("Erreur de connexion au serveur : " + infoConnexion.err); 
+                    } else {
+                        console.info("Info connexion : %O", infoConnexion)
+                        setInfoConnexion(infoConnexion)
+                    }
+                })
+                .catch(err=>{
+                    // setErreur('Erreur de connexion. Detail : ' + err); 
+                    console.debug("Erreur de connexion : %O", err)
+                })
         } else {
-            // setErreur("Connexion non initialisee (workers)")
-            console.error("Connexion non initialisee")
+            // setErreur("Pas de worker de connexion")
+            console.error("Pas de worker de connexion")
         }
     }, [ workers, setUsager, setEtatConnexion, setFormatteurPret, setInfoConnexion ])
 
@@ -108,8 +115,4 @@ export function WorkerContext(props) {
 async function connecter(workers, setUsager, setEtatConnexion, setFormatteurPret) {
     const { connecter: connecterWorker } = await import('./workers/connecter')
     return connecterWorker(workers, setUsager, setEtatConnexion, setFormatteurPret)
-}
-  
-function initDb() {
-    return ouvrirDB({upgrade: true})
 }

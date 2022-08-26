@@ -30,9 +30,9 @@ export function setupWorkers() {
         console.error("Erreur chargement traitementFichiers : %O", err)
     }
 
-    wireWorkers(workers).catch(err=>console.error("Erreur wiring workers", err))
+    const ready = wireWorkers(workers)
 
-    return { workerInstances, workers }
+    return { workerInstances, workers, ready }
 }
 
 async function wireWorkers(workers) {
