@@ -340,3 +340,17 @@ export function mapperRecherche(row, workers) {
 
 //     return loader
 // }
+
+export function mapDocumentComplet(doc) {
+    const copie = {...doc}
+    
+    const tuuid = copie.tuuid
+    if(tuuid) {
+        // Mapper vers fileId ou folderId
+        // Utiliser mimetype pour detecter si c'est un repertoire ou fichier
+        if(copie.mimetype) copie.fileId = tuuid
+        else copie.folderId = tuuid
+    }
+    
+    return copie
+}

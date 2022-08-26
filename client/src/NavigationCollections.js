@@ -18,7 +18,7 @@ import { ListeFichiers, FormatteurTaille, FormatterDate, usagerDao } from '@dugr
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
 import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
-import { mapper } from './mapperFichier'
+import { mapper, mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 import useWorkers, { useEtatPret, useUsager, useEtatConnexion, useEtatAuthentifie } from './WorkerContext'
@@ -39,6 +39,8 @@ function NavigationCollections(props) {
     const etatPret = useEtatPret()
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const userId = useSelector(state=>state.fichiers.userId)
+
+    const [modeView, setModeView] = useState('')
 
     const naviguerCollection = useCallback( cuuid => {
         console.debug("!!! naviguerCollection %s", cuuid)
@@ -67,9 +69,9 @@ function NavigationCollections(props) {
                     </Col>
 
                     <Col xs={12} lg={5} className="buttonbars">
-                        ... ButtonBars ...
-                        {/* <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                        <BoutonsUpload 
+                        <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                        ... Bouton upload/creer repertoire ...
+                        {/* <BoutonsUpload 
                             cuuid={cuuidCourant}
                             uploaderFichiersAction={uploaderFichiersAction} 
                             setShowCreerRepertoire={setShowCreerRepertoire}
@@ -78,9 +80,8 @@ function NavigationCollections(props) {
                 </Row>
 
                 <Suspense fallback={<p>Loading ...</p>}>
-                    <p> ... Affichage principal ...</p>
                     <AffichagePrincipal 
-                        // modeView={modeView}
+                        modeView={modeView}
                         // colonnes={colonnes}
                         // liste={liste} 
                         // onDoubleClick={onDoubleClick}
@@ -547,40 +548,52 @@ function AffichagePrincipal(props) {
     const {
         modeView, 
         tuuidSelectionne, 
-        // support,
         // onClick,
-        onDoubleClick, 
         onContextMenu, setContextuel, 
-        onSelectionLignes, enteteOnClickCb,
+        enteteOnClickCb,
         afficherVideo, setAfficherVideo, showInfoModalOuvrir
     } = props
 
-    const liste = useSelector(state => state.fichiers.liste)
+    const workers = useWorkers()
+    const dispatch = useDispatch()
+    const listeBrute = useSelector(state => state.fichiers.liste)
+    const liste = useMemo(()=>{
+        if(!listeBrute) return []
+        return listeBrute.map(mapDocumentComplet)
+    }, [listeBrute])
+
     console.debug("Liste fichiers : %O", liste)
     // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
 
     const colonnes = useMemo(preparerColonnes, [])
 
+    const onSelectionLignes = useCallback(selection=>{
+        console.debug("Selection lignes : ", selection)
+        // setSelection(selection)
+    }, [dispatch])
+    // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
         // console.debug("onContextMenuClick event %O, value %O", event, value)
         onContextMenu(event, value, setContextuel)
     }, [onContextMenu, setContextuel])
 
-    // const handlerSuivant = useMemo(()=>(!cuuidCourant||isListeComplete)?'':suivantCb, [suivantCb])
-
-    // const handlerSuivant = useCallback(()=>{
-    //     console.warn("Handler suivant")
-    //     if(!cuuidCourant||isListeComplete) return
-    //     suivantCb({limit: 1, deuxiemeBatch: 3})
-    // }, [suivantCb, cuuidCourant, isListeComplete])
+    const onDoubleClick = useCallback( (event, value) => {
+        console.debug("Double click event %O : value %O", event, value)
+        const dataset = event.currentTarget.dataset
+        console.debug("Dataset : ", dataset)
+        window.getSelection().removeAllRanges()
+        const folderId = value.folderId || dataset.folderId
+        const fileId = value.fileId || dataset.fileId
+        if(folderId) dispatch(changerCollection(workers, folderId)) 
+        else throw new Error('fix me') // dispatch(viewFichier(fileId))
+    }, [workers, dispatch])
 
     if(afficherVideo) {
         // console.debug("AffichagePrincipal PROPPIES : %O", props)
         const fileItem = liste.filter(item=>item.fileId===afficherVideo).pop()
         return (
             <AfficherVideo
-                // support={support}
                 fichier={fileItem}
                 tuuidSelectionne={tuuidSelectionne}
                 fermer={fermerAfficherVideo} 
