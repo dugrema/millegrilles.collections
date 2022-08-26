@@ -570,21 +570,21 @@ function AffichagePrincipal(props) {
 
     const workers = useWorkers()
     const dispatch = useDispatch()
-    const listeBrute = useSelector(state => state.fichiers.liste)
+    const liste = useSelector(state => state.fichiers.liste)
 
-    const mapperDocument = useMemo(()=>{
-        return (item, idx) => mapDocumentComplet(workers, item, idx)
-    }, [workers])
+    // const mapperDocument = useMemo(()=>{
+    //     return (item, idx) => mapDocumentComplet(workers, item, idx)
+    // }, [workers])
 
-    const liste = useMemo(()=>{
-        if(!listeBrute) return []
-        return listeBrute.map(mapperDocument)
-    }, [workers, listeBrute])
+    // const liste = useMemo(()=>{
+    //     if(!listeBrute) return []
+    //     return listeBrute.map(mapperDocument)
+    // }, [workers, listeBrute])
 
     console.debug("Liste fichiers : %O", liste)
     // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
 
-    const colonnes = useMemo(preparerColonnes, [])
+    const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
 
     const onSelectionLignes = useCallback(selection=>{
         console.debug("Selection lignes : ", selection)
@@ -797,7 +797,9 @@ function BoutonsUpload(props) {
     )
 }
 
-function preparerColonnes() {
+function preparerColonnes(workers) {
+
+    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
 
     const params = {
         ordreColonnes: ['nom', 'taille', 'mimetype', 'dateAjout', 'boutonDetail'],
@@ -809,6 +811,7 @@ function preparerColonnes() {
             'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
         tri: {colonne: 'nom', ordre: 1},
+        rowLoader,
     }
     return params
 }
