@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit'
 
 const SOURCE_COLLECTION = 'collection',
       SOURCE_PLUS_RECENT = 'plusrecent',
@@ -17,6 +17,7 @@ const initialState = {
     breadcrumb: [],             // Breadcrumb du path de la collection affichee
     userId: '',                 // UserId courant, permet de stocker plusieurs users localement
     intervalle: null,           // Intervalle de temps des donnees, l'effet depend de la source
+    listeDechiffrage: [],       // Liste de fichiers a dechiffrer
 }
 
 // Actions
@@ -244,6 +245,17 @@ function mergeTuuidDataAction(state, action) {
     state.liste.sort(genererTriListe(state.sortKeys))
 }
 
+// Ajouter des fichiers a la liste de fichiers a dechiffrer
+function pushFichiersChiffresAction(state, action) {
+    const fichiers = action.payload
+    state.listeDechiffrage = [...state.listeDechiffrage, ...fichiers]
+}
+
+// Retourne un fichier de la liste a dechiffrer
+function clearFichiersChiffresAction(state) {
+    state.listeDechiffrage = []
+}
+
 // Slice collection
 
 const fichiersSlice = createSlice({
@@ -262,6 +274,8 @@ const fichiersSlice = createSlice({
         setSortKeys: setSortKeysAction,
         setSource: setSourceAction,
         setIntervalle: setIntervalleAction,
+        pushFichiersChiffres: pushFichiersChiffresAction,
+        clearFichiersChiffres: clearFichiersChiffresAction,
     }
 })
 
@@ -270,19 +284,79 @@ const fichiersSlice = createSlice({
 // Action creators are generated for each case reducer function
 const { 
     setUserId, setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
-    breadcrumbPush, breadcrumbSlice, supprimer, setSortKeys, setSource, setIntervalle
+    breadcrumbPush, breadcrumbSlice, supprimer, setSortKeys, setSource, setIntervalle,
+    pushFichiersChiffres, clearFichiersChiffres,
 } = fichiersSlice.actions
 
-function chargerIdb(workers) {
-    return async (dispatch, getState) => {
-        console.debug("Charger idb action, workers : %O, dispatch : %O, getState : %O", workers, dispatch, getState)
-        
-        console.debug("chargerIdb State : %O", getState())
+// Middleware
 
-        // Charger favoris
-        dispatch(changerCollection(workers))
+export function dechiffrageMiddlewareSetup(workers) {
+    const uploaderMiddleware = createListenerMiddleware()
+    
+    uploaderMiddleware.startListening({
+        matcher: isAnyOf(pushFichiersChiffres),
+        effect: (action, listenerApi) => dechiffrageMiddlewareListener(workers, action, listenerApi)
+    }) 
+    
+    return uploaderMiddleware
+}
+
+async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
+    console.debug("dechiffrageMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    const { clesDao, chiffrage } = workers
+    await listenerApi.unsubscribe()
+    try {
+        // Recuperer la liste des fichiers chiffres
+        let fichiersChiffres = listenerApi.getState().fichiers.listeDechiffrage
+        while(fichiersChiffres.length > 0) {
+            listenerApi.dispatch(clearFichiersChiffres())
+
+            // Extraire toutes les cles a charger
+            const {clesHachage_bytes} = identifierClesHachages(fichiersChiffres)
+            const reponseCles = await clesDao.getCles(clesHachage_bytes)
+            console.debug("dechiffrageMiddlewareListener Recu cles : ", reponseCles)
+
+            for await (const fichierChiffre of fichiersChiffres) {
+                console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
+                // Images inline chiffrees (thumbnail)
+                const version_courante = fichierChiffre.version_courante || {},
+                images = version_courante.images
+                if(images) Object.values(images).forEach(image=>{
+                    if(image.data_chiffre) {
+                        // Dechiffrer
+                        
+                    }
+                })
+
+            }
+
+            // Continuer tant qu'il reste des fichiers chiffres
+            fichiersChiffres = listenerApi.getState().fichiers.listeDechiffrage
+        }
+
+        // // Reset liste de fichiers completes utilises pour calculer pourcentage upload
+        // listenerApi.dispatch(clearCycleUpload())
+
+        // const task = listenerApi.fork( forkApi => tacheUpload(workers, listenerApi, forkApi) )
+        // const stopAction = listenerApi.condition(arretUpload.match)
+        // await Promise.race([task.result, stopAction])
+
+        // console.debug("Task %O\nstopAction %O", task, stopAction)
+        // task.result.catch(err=>console.error("Erreur task : %O", err))
+        // stopAction
+        //     .then(()=>task.cancel())
+        //     .catch(()=>{
+        //         // Aucun impact
+        //     })
+
+        // await task.result  // Attendre fin de la tache en cas d'annulation
+        console.debug("dechiffrageMiddlewareListener Sequence dechiffrage terminee")
+    } finally {
+        await listenerApi.subscribe()
     }
 }
+
+// Async thunks
 
 function dechiffrerFichiers(workers, fichiers) {
     return (dispatch, getState) => traiterDechiffrerFichiers(workers, fichiers, dispatch, getState)
@@ -295,55 +369,14 @@ async function traiterDechiffrerFichiers(workers, fichiers, dispatch, getState) 
     const { collectionsDao } = workers
 
     // Detecter les cles requises
-    const clesHachage_bytes = fichiers.reduce( (acc, item) => {
+    const {clesHachage_bytes, fichiersChiffres} = identifierClesHachages(fichiers)
+    console.debug('traiterDechiffrerFichiers Cles a extraire : %O de fichiers %O', clesHachage_bytes, fichiersChiffres)
+    if(fichiersChiffres.length > 0) dispatch(pushFichiersChiffres(fichiersChiffres))
 
-        // Champs proteges
-        if(item.champs_proteges) {
-            const champs_proteges = item.champs_proteges
-            const hachage_bytes = champs_proteges.ref_hachage_bytes
-            acc.push(hachage_bytes)
-        }
-        
-        // Images inline chiffrees (thumbnail)
-        const version_courante = item.version_courante || {},
-              images = version_courante.images
-        if(images) Object.values(images).forEach(image=>{
-            if(image.data_chiffre) {
-                acc.push(image.hachage)
-            }
-        })
-
-        return acc
-    }, [])
-
-    // Faire une requete pour les cles, attendre reponse
-    if(clesHachage_bytes.length > 0) {
-        console.debug("traiterDechiffrerFichiers Charger cles : %O", clesHachage_bytes)
-    }
-
-    for await (const fichier of fichiers) {
+    const tuuidsChiffres = fichiersChiffres.map(item=>item.tuuid)
+    for (const fichier of fichiers) {
         console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
-
-        let dechiffre = true
-        if(fichier.champs_proteges) {
-            // Dechiffrer avec cle recue
-            const champs_proteges = fichier.champs_proteges
-            const hachage_bytes = champs_proteges.ref_hachage_bytes
-            
-            // todo Dechiffrer
-            dechiffre = false  // Flag, dechiffrage incomplet
-        }
-
-        const images = fichier.images || {}
-        for await (const image of Object.values(images)) {
-            if(image.data_chiffre) {
-                // Remplacer data_chiffre par data
-                const hachage_bytes = image.hachage
-                
-                // todo Dechiffrer
-                dechiffre = false  // Flag, dechiffrage incomplet
-            }
-        }
+        const dechiffre = ! tuuidsChiffres.includes(fichier.tuuid)
 
         // Mettre a jour dans IDB
         collectionsDao.updateDocument(fichier, {dechiffre})
@@ -800,6 +833,39 @@ function genererTriListe(sortKeys) {
     }
 }
 
+function identifierClesHachages(liste) {
+    const fichiersChiffres = []
+    const clesHachage_bytes = liste.reduce( (acc, item) => {
+
+        let chiffre = false
+
+        // Champs proteges
+        if(item.champs_proteges) {
+            const champs_proteges = item.champs_proteges
+            const hachage_bytes = champs_proteges.ref_hachage_bytes
+            acc.push(hachage_bytes)
+            chiffre = true
+        }
+        
+        // Images inline chiffrees (thumbnail)
+        const version_courante = item.version_courante || {},
+              images = version_courante.images
+        if(images) Object.values(images).forEach(image=>{
+            if(image.data_chiffre) {
+                acc.push(image.hachage)
+                chiffre = true
+            }
+        })
+
+        // Conserver le fichier dans la liste de fichiers chiffres au besoin
+        if(chiffre) fichiersChiffres.push(item)
+
+        return acc
+    }, [])    
+
+    return {clesHachage_bytes, fichiersChiffres}
+}
+
 export { 
     setUserId, breadcrumbPush, breadcrumbSlice, 
     setSortKeys, setIntervalle, 
@@ -807,7 +873,7 @@ export {
 
 // Async actions
 export { 
-    chargerIdb, changerCollection, afficherPlusrecents, afficherCorbeille,
+    changerCollection, afficherPlusrecents, afficherCorbeille,
     ajouterFichierVolatil, rafraichirCollection, supprimerFichier, restaurerFichier,
 }
 
