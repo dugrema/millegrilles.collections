@@ -30,7 +30,6 @@ import {
     supprimerFichier, restaurerFichier, rafraichirCollection,
 } from './redux/fichiersSlice'
 
-
 function NavigationCollections(props) {
 
     const { erreurCb } = props
@@ -42,6 +41,9 @@ function NavigationCollections(props) {
 
     const [modeView, setModeView] = useState('')
 
+    // Modals
+    const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
+    
     const naviguerCollection = useCallback( cuuid => {
         console.debug("!!! naviguerCollection ", cuuid)
         if(!cuuid) cuuid = ''
@@ -82,12 +84,11 @@ function NavigationCollections(props) {
 
                     <Col xs={12} lg={5} className="buttonbars">
                         <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                        ... Bouton upload/creer repertoire ...
-                        {/* <BoutonsUpload 
+                        <BoutonsAction 
                             cuuid={cuuidCourant}
-                            uploaderFichiersAction={uploaderFichiersAction} 
+                            // uploaderFichiersAction={uploaderFichiersAction} 
                             setShowCreerRepertoire={setShowCreerRepertoire}
-                        /> */}
+                        />
                     </Col>
                 </Row>
 
@@ -112,7 +113,11 @@ function NavigationCollections(props) {
                         // showInfoModalOuvrir={showInfoModalOuvrir}
                     />
                 </Suspense>
-            </div>            
+            </div>
+
+            <Modals 
+                showCreerRepertoire={showCreerRepertoire}
+                setShowCreerRepertoire={setShowCreerRepertoire} />
         </>
     )
 
@@ -637,9 +642,113 @@ function AffichagePrincipal(props) {
     )
 }
 
+function Modals(props) {
+
+    const { 
+        showCreerRepertoire, setShowCreerRepertoire,
+    } = props
+    
+    // const workers = useWorkers()
+    // const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
+
+    return (
+        <>
+            {/* <InformationListe 
+                    favoris={favoris}
+                    liste={liste} 
+                    cuuid={cuuidCourant} 
+                    chargementListeEnCours={chargementListeEnCours} />*/}
+
+            {/* <MenuContextuelFavoris 
+                workers={props.workers}
+                contextuel={contextuel} 
+                fermerContextuel={fermerContextuel}
+                fichiers={liste}
+                tuuidSelectionne={tuuidSelectionne}
+                selection={selection}
+                showPreview={showPreviewAction}
+                usager={usager}
+                showSupprimerModalOuvrir={showSupprimerModalOuvrir}
+                showCopierModalOuvrir={showCopierModalOuvrir}
+                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
+                showInfoModalOuvrir={showInfoModalOuvrir}
+                showRenommerModalOuvrir={showRenommerModalOuvrir}
+                cuuid={cuuidCourant}
+                downloadAction={downloadAction}
+                etatConnexion={etatConnexion}
+                etatAuthentifie={etatAuthentifie}
+            /> */}
+
+            {/* <PreviewFichiers 
+                workers={workers}
+                showPreview={showPreview} 
+                setShowPreview={setShowPreview}
+                tuuidSelectionne={tuuidSelectionne}
+                fichiers={liste}
+                support={support}
+            /> */}
+
+            <ModalCreerRepertoire 
+                show={showCreerRepertoire} 
+                fermer={()=>{setShowCreerRepertoire(false)}} 
+            />
+
+            {/* <SupprimerModal
+                show={showSupprimerModal}
+                fermer={showSupprimerModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+            /> */}
+
+            {/* <CopierModal 
+                show={showCopierModal} 
+                fermer={showCopierModalFermer}
+                favoris={favoris}
+                selection={selection}
+                workers={workers}
+            /> */}
+
+            {/* <DeplacerModal 
+                show={showDeplacerModal} 
+                fermer={showDeplacerModalFermer}
+                favoris={favoris}
+                cuuid={cuuidCourant}
+                selection={selection}
+                workers={workers}
+            /> */}
+
+            {/* <InfoModal 
+                show={showInfoModal} 
+                fermer={showInfoModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+                support={support}
+                downloadAction={downloadAction}
+                etatConnexion={etatConnexion}
+                etatAuthentifie={etatAuthentifie}
+                usager={usager}
+            /> */}
+
+            {/* <RenommerModal
+                show={showRenommerModal} 
+                fermer={showRenommerModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+            />        */}
+        </>
+    )
+}
+
 function ModalCreerRepertoire(props) {
 
-    const { show, fermer, workers, cuuid } = props
+    const { show, fermer } = props
+
+    const workers = useWorkers()
+    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
+
     const { connexion } = workers
 
     const [ nomCollection, setNomCollection ] = useState('')
@@ -654,7 +763,7 @@ function ModalCreerRepertoire(props) {
         event.stopPropagation()
 
         const opts = {}
-        if(cuuid) opts.cuuid = cuuid
+        if(cuuidCourant) opts.cuuid = cuuidCourant
         else opts.favoris = true
 
         connexion.creerCollection(nomCollection, opts)
@@ -665,7 +774,7 @@ function ModalCreerRepertoire(props) {
             .catch(err=>{
                 console.error("Erreur creation collection : %O", err)
             })
-    }, [connexion, nomCollection, cuuid, setNomCollection, fermer])
+    }, [connexion, nomCollection, cuuidCourant, setNomCollection, fermer])
 
     return (
         <Modal show={show} onHide={fermer}>
@@ -772,7 +881,7 @@ function BoutonsFormat(props) {
     )
 }
 
-function BoutonsUpload(props) {
+function BoutonsAction(props) {
 
     const { cuuid, uploaderFichiersAction, setShowCreerRepertoire } = props
 
