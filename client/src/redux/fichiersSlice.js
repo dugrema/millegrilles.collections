@@ -883,6 +883,7 @@ export {
 // Async actions
 export { 
     changerCollection, afficherPlusrecents, afficherCorbeille,
+    chargerTuuids,
     ajouterFichierVolatil, rafraichirCollection, supprimerFichier, restaurerFichier,
 }
 

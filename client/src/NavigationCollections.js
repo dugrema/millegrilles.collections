@@ -24,7 +24,7 @@ import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 import useWorkers, { useEtatPret, useUsager, useEtatConnexion, useEtatAuthentifie } from './WorkerContext'
 
 import { 
-    setUserId,
+    setUserId, chargerTuuids, 
     changerCollection, afficherPlusrecents, afficherCorbeille,
     breadcrumbPush, breadcrumbSlice, ajouterFichierVolatil, 
     supprimerFichier, restaurerFichier, rafraichirCollection,
@@ -114,6 +114,8 @@ function NavigationCollections(props) {
                     />
                 </Suspense>
             </div>
+
+            <HandlerEvenements />
 
             <Modals 
                 showCreerRepertoire={showCreerRepertoire}
@@ -640,6 +642,99 @@ function AffichagePrincipal(props) {
             // isListeComplete={isListeComplete}
         />
     )
+}
+
+function HandlerEvenements(props) {
+
+    const workers = useWorkers()
+    const etatPret = useEtatPret()
+    const dispatch = useDispatch()
+    const usager = useUsager()
+    const fichiersInfo = useSelector(state => state.fichiers)
+    const { cuuid, liste } = fichiersInfo
+    const extensions = usager.extensions || {}
+    const { userId } = extensions
+
+    const { connexion } = workers
+
+    // const cuuids = useMemo(()=>{
+    //     // Recuperer la liste des folders (filtre est pas de mimetype => folder)
+    //     const cuuids = liste?liste.filter(item=>!item.mimetype).map(item=>item.tuuid):[]
+    //     if(cuuid) cuuids.push(cuuid)
+    //     return cuuids
+    // }, [cuuid, liste])
+
+    // Event handling
+    // const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
+    // const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
+    // const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
+    // const [ evenementContenuFavoris, addEvenementContenuFavoris ] = useState('')
+    // const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
+    
+    const evenementCollectionCb = useMemo(
+        () => comlinkProxy( evenement => traiterCollectionEvenement(workers, dispatch, evenement) ),
+        [workers, dispatch]
+    )
+    
+    const evenementContenuCollectionCb = useMemo(
+        () => comlinkProxy( evenement => traiterContenuCollectionEvenement(workers, dispatch, evenement) ), 
+        [workers, dispatch]
+    )
+
+    // const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
+    // const evenementContenuFavorisCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuFavoris(evenement)), [addEvenementContenuFavoris])
+    // useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
+
+    // useEffect(()=>{
+    //     const {connexion} = workers
+    //     if(!evenementCollectionCb) return
+    //     if(liste && etatConnexion && etatAuthentifie) {
+    //         const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
+    //         if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
+    //         // console.debug("enregistrerCallbackMajCollections %O", cuuids)
+    //         connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
+    //             .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+    //         return () => {
+    //             connexion.retirerCallbackMajCollections({cuuids}, evenementCollectionCb)
+    //                 .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+    //         }
+    //     }
+    // }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
+
+    // Enregistrer changement de collection
+    useEffect(()=>{
+        console.debug("HandlerEvenements listener collection connexion %O, etatPret %O, userId %O, cuuid %O", connexion, etatPret, userId, cuuid)
+        if(!connexion || !etatPret) return  // Pas de connexion, rien a faire
+
+        // Enregistrer listeners
+        console.debug("HandlerEvenements Enregistrer listeners collection ", cuuid)
+        if(cuuid) {
+            connexion.enregistrerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
+                .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+            connexion.enregistrerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
+                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+        } else {
+            // Favoris
+            connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
+                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+        }
+
+        // Cleanup listeners
+        return () => {
+            console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
+            if(cuuid) {
+                connexion.retirerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
+                    .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+                connexion.retirerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
+                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+            } else {
+                connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
+                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+            }
+        }
+    }, [connexion, etatPret, userId, cuuid, evenementCollectionCb, evenementContenuCollectionCb])
+
+    return ''  // Aucun affichage
 }
 
 function Modals(props) {
@@ -1366,4 +1461,28 @@ function InformationListe(props) {
     }
 
     return ''
+}
+
+function traiterCollectionEvenement(workers, dispatch, evenement) {
+    console.debug("traiterCollectionEvenement ", evenement)
+}
+
+async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
+    console.debug("traiterContenuCollectionEvenement ", evenement)
+
+    const message = evenement.message || {}
+    const { collections_ajoutees } = message
+    
+    // Conserver liste tuuids (et dedupe)
+    const dirtyTuuids = {}
+    if(collections_ajoutees) {
+        collections_ajoutees.forEach(item=>{dirtyTuuids[item] = true})
+    }
+    const tuuids = Object.keys(dirtyTuuids)
+
+    if(tuuids.length > 0) {
+        console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
+        return dispatch(chargerTuuids(workers, tuuids))
+    }
+
 }
