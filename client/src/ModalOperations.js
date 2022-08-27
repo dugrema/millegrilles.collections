@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
@@ -385,12 +385,19 @@ export function RenommerModal(props) {
     const { workers, show, fermer, fichiers, selection } = props
     const { connexion } = workers
 
-    let tuuidSelectionne = null,
-        docSelectionne = null
-    if(selection && selection.length === 1) {
-        tuuidSelectionne = selection[0]
-        docSelectionne = fichiers.filter(item=>tuuidSelectionne===(item.fileId || item.folderId)).pop()
-    }
+    // let tuuidSelectionne = null,
+    //     docSelectionne = null
+    // if(fichiers && selection && selection.length === 1) {
+    //     tuuidSelectionne = selection[0]
+    //     docSelectionne = fichiers.filter(item=>tuuidSelectionne===(item.fileId || item.folderId)).pop()
+    // }
+
+    const { tuuidSelectionne, docSelectionne } = useMemo(()=>{
+        if(!fichiers || !selection) return {}
+        const tuuidSelectionne = selection[0]
+        const docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
+        return {tuuidSelectionne, docSelectionne}
+    }, [fichiers, selection])
 
     const [nom, setNom] = useState('')
 
@@ -406,12 +413,14 @@ export function RenommerModal(props) {
         // console.debug("Appliquer a %s", tuuidSelectionne)
         try {
             let reponse = null
-            if(docSelectionne.fileId) {
+            const tuuid = docSelectionne.tuuid,
+                  mimetype = docSelectionne.mimetype
+            if(mimetype) {
                 // Fichier
-                reponse = await connexion.decrireFichier(docSelectionne.fileId, {nom})
-            } else if(docSelectionne.folderId) {
+                reponse = await connexion.decrireFichier(tuuid, {nom})
+            } else {
                 // Collection
-                reponse = connexion.decrireCollection(docSelectionne.folderId, {nom})
+                reponse = await connexion.decrireCollection(tuuid, {nom})
             }
 
             if(reponse.ok === false) {

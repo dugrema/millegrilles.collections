@@ -44,7 +44,6 @@ function NavigationCollections(props) {
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
-    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     
     const naviguerCollection = useCallback( cuuid => {
@@ -124,8 +123,6 @@ function NavigationCollections(props) {
             <Modals 
                 showCreerRepertoire={showCreerRepertoire}
                 setShowCreerRepertoire={setShowCreerRepertoire} 
-                showSupprimerModal={showSupprimerModal}
-                setShowSupprimerModal={setShowSupprimerModal}
                 contextuel={contextuel}
                 setContextuel={setContextuel} />
         </>
@@ -751,7 +748,7 @@ function Modals(props) {
 
     const {
         showCreerRepertoire, setShowCreerRepertoire,
-        setShowSupprimerModal, showSupprimerModal, 
+        // setShowSupprimerModal, showSupprimerModal, 
         contextuel, setContextuel,
     } = props
     
@@ -761,9 +758,19 @@ function Modals(props) {
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
 
+    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
+    const [ showCopierModal, setShowCopierModal ] = useState(false)
+    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    const [ showInfoModal, setShowInfoModal ] = useState(false)
+    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
+
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
     const showSupprimerModalOuvrir = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
     const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
+    const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
+    const showRenommerModalFermer = useCallback(()=>setShowRenommerModal(false), [setShowRenommerModal])
+    
+    
 
     const workers = useWorkers()
     // const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -788,7 +795,7 @@ function Modals(props) {
                 // showCopierModalOuvrir={showCopierModalOuvrir}
                 // showDeplacerModalOuvrir={showDeplacerModalOuvrir}
                 // showInfoModalOuvrir={showInfoModalOuvrir}
-                // showRenommerModalOuvrir={showRenommerModalOuvrir}
+                showRenommerModalOuvrir={showRenommerModalOuvrir}
                 cuuid={cuuid}
                 // downloadAction={downloadAction}
                 etatConnexion={etatPret}
@@ -848,13 +855,13 @@ function Modals(props) {
                 usager={usager}
             /> */}
 
-            {/* <RenommerModal
+            <RenommerModal
                 show={showRenommerModal} 
                 fermer={showRenommerModalFermer}
                 fichiers={liste}
                 selection={selection}
                 workers={workers}
-            />        */}
+            />       
         </>
     )
 }
