@@ -32,7 +32,7 @@ export function SupprimerModal(props) {
             fermer()
         })
         
-    }, [connexion, fermer, selection])
+    }, [connexion, fermer, selection, cuuid])
 
     if(!selection || selection.length === 0) return ''
 
@@ -382,11 +382,11 @@ export function RenommerModal(props) {
     //     docSelectionne = fichiers.filter(item=>tuuidSelectionne===(item.fileId || item.folderId)).pop()
     // }
 
-    const { tuuidSelectionne, docSelectionne } = useMemo(()=>{
+    const { docSelectionne } = useMemo(()=>{
         if(!fichiers || !selection) return {}
         const tuuidSelectionne = selection[0]
         const docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
-        return {tuuidSelectionne, docSelectionne}
+        return { docSelectionne }
     }, [fichiers, selection])
 
     const [nom, setNom] = useState('')

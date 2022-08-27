@@ -64,7 +64,7 @@ function Layout(_props) {
   }, [setErreur])
   const handlerCloseErreur = useCallback(()=>setErreur(''), [setErreur])
 
-  const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
+  // const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
   
   const handlerSelect = useCallback(eventKey => {

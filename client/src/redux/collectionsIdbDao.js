@@ -218,7 +218,7 @@ async function retirerFichiersExpires(db) {
     const store = db.transaction(STORE_FICHIERS, 'readwrite').store
     let curseur = await store.openCursor()
     while(curseur) {
-        const { tuuid, expiration } = curseur.value
+        const { expiration } = curseur.value
         if(expiration < now) {
             // console.debug("Expirer %s : %O", tuuid, new Date(expiration))
             curseur.delete()

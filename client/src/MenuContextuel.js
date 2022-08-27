@@ -7,7 +7,7 @@ import { MenuContextuel } from '@dugrema/millegrilles.reactjs'
 
 export function MenuContextuelFichier(props) {
     const { 
-        workers, fichier, contextuel, fermerContextuel, showPreview, cuuid, 
+        fichier, contextuel, fermerContextuel, showPreview, cuuid, 
         showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
         showInfoModalOuvrir, showRenommerModalOuvrir, downloadAction,
     } = props

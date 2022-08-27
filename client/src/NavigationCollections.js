@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { proxy as comlinkProxy } from 'comlink'
-import { useDropzone } from 'react-dropzone'
 
 import Alert from 'react-bootstrap/Alert'
 import Breadcrumb from 'react-bootstrap/Breadcrumb'
@@ -13,22 +12,20 @@ import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import { ListeFichiers, FormatteurTaille, FormatterDate, usagerDao } from '@dugrema/millegrilles.reactjs'
+import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
 import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
-import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
-import useWorkers, { useEtatPret, useUsager, useEtatConnexion, useEtatAuthentifie } from './WorkerContext'
+// import { uploaderFichiers } from './fonctionsFichiers'
+import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 
 import { 
-    setUserId, chargerTuuids, 
-    changerCollection, afficherPlusrecents, afficherCorbeille,
-    breadcrumbPush, breadcrumbSlice, ajouterFichierVolatil, 
-    supprimerFichier, restaurerFichier, rafraichirCollection,
-    selectionTuuids,
+    chargerTuuids, changerCollection, breadcrumbPush, breadcrumbSlice, selectionTuuids,
+    // setUserId, afficherPlusrecents, afficherCorbeille,
+    // ajouterFichierVolatil, supprimerFichier, restaurerFichier, rafraichirCollection,
 } from './redux/fichiersSlice'
 
 function NavigationCollections(props) {
@@ -57,7 +54,6 @@ function NavigationCollections(props) {
     }, [setShowPreview, selection, setTuuidSelectionne])
     
     const naviguerCollection = useCallback( cuuid => {
-        console.debug("!!! naviguerCollection ", cuuid)
         if(!cuuid) cuuid = ''
         try {
             if(cuuid) {
@@ -70,12 +66,12 @@ function NavigationCollections(props) {
         }
         try {
             dispatch(changerCollection(workers, cuuid))
-                .then(()=>console.debug("Succes changerCollection : ", cuuid))
+                // .then(()=>console.debug("Succes changerCollection : ", cuuid))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers])
+    }, [dispatch, workers, erreurCb])
 
     // Declencher chargement initial des favoris
     useEffect(()=>{
@@ -110,21 +106,6 @@ function NavigationCollections(props) {
                         naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
-                        // colonnes={colonnes}
-                        // liste={liste} 
-                        // onDoubleClick={onDoubleClick}
-                        // onContextMenu={onContextMenu}
-                        // setContextuel={setContextuel}
-                        // onSelectionLignes={onSelectionLignes}
-                        // onClickEntete={enteteOnClickCb}
-                        // cuuidCourant={cuuidCourant}
-                        // isListeComplete={isListeComplete}
-                        // suivantCb={suivantCb}
-                        // tuuidSelectionne={tuuidSelectionne}
-                        // afficherVideo={afficherVideo}
-                        // setAfficherVideo={setAfficherVideo}
-                        // support={support}
-                        // showInfoModalOuvrir={showInfoModalOuvrir}
                     />
                 </Suspense>
             </div>
@@ -147,441 +128,441 @@ function NavigationCollections(props) {
 
 export default NavigationCollections
 
-function NavigationFavoris(props) {
+// function NavigationFavoris(props) {
 
-    const { erreurCb } = props
+//     const { erreurCb } = props
 
-    // const workers = useWorkers()
-    // const liste = useSelector(state => state.fichiers.liste)
-    // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
+//     // const workers = useWorkers()
+//     // const liste = useSelector(state => state.fichiers.liste)
+//     // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
 
-    // const [ favoris, setFavoris ] = useState('')
-    const [ colonnes, setColonnes ] = useState('')
-    // const [ breadcrumb, setBreadcrumb ] = useState([])
-    // const [ cuuidCourant, setCuuidCourant ] = useState('')
-    // const [ liste, setListe ] = useState([])
-    const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
-    const [ selection, setSelection ] = useState('')
-    const [ tuuidSelectionne, setTuuidSelectionne ] = useState('')
-    const [ modeView, setModeView ] = useState('')
-    const [ showPreview, setShowPreview ] = useState(false)
-    //const [ support, setSupport ] = useState({})
-    const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
-    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
-    const [ showCopierModal, setShowCopierModal ] = useState(false)
-    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
-    const [ showInfoModal, setShowInfoModal ] = useState(false)
-    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
-    // const [ isListeComplete, setListeComplete ] = useState(false)
-    // const [ chargementListeEnCours, setChargementListeEnCours ] = useState(true)
-    const [ afficherVideo, setAfficherVideo ] = useState(false)
+//     // const [ favoris, setFavoris ] = useState('')
+//     const [ colonnes, setColonnes ] = useState('')
+//     // const [ breadcrumb, setBreadcrumb ] = useState([])
+//     // const [ cuuidCourant, setCuuidCourant ] = useState('')
+//     // const [ liste, setListe ] = useState([])
+//     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
+//     const [ selection, setSelection ] = useState('')
+//     const [ tuuidSelectionne, setTuuidSelectionne ] = useState('')
+//     const [ modeView, setModeView ] = useState('')
+//     const [ showPreview, setShowPreview ] = useState(false)
+//     //const [ support, setSupport ] = useState({})
+//     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
+//     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
+//     const [ showCopierModal, setShowCopierModal ] = useState(false)
+//     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+//     const [ showInfoModal, setShowInfoModal ] = useState(false)
+//     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
+//     // const [ isListeComplete, setListeComplete ] = useState(false)
+//     // const [ chargementListeEnCours, setChargementListeEnCours ] = useState(true)
+//     const [ afficherVideo, setAfficherVideo ] = useState(false)
 
-    // Event handling
-    // const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
-    // const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
-    // const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
-    // const [ evenementContenuFavoris, addEvenementContenuFavoris ] = useState('')
-    // const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
-    // const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
-    // const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
-    // const evenementContenuFavorisCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuFavoris(evenement)), [addEvenementContenuFavoris])
-    // useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
+//     // Event handling
+//     // const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
+//     // const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
+//     // const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
+//     // const [ evenementContenuFavoris, addEvenementContenuFavoris ] = useState('')
+//     // const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
+//     // const evenementCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementCollection(evenement)), [addEvenementCollection])
+//     // const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
+//     // const evenementContenuFavorisCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuFavoris(evenement)), [addEvenementContenuFavoris])
+//     // useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
 
-    // Extraire tri pour utiliser comme trigger pour useEffect
-    // const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
+//     // Extraire tri pour utiliser comme trigger pour useEffect
+//     // const triColonnes = useMemo(()=>colonnes?colonnes.tri||{}:{}, [colonnes])
 
-    // Callbacks
-    // const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
-    // const showSupprimerModalFermer = useCallback(()=>{ setShowSupprimerModal(false) }, [setShowSupprimerModal])
-    // const showCopierModalOuvrir = useCallback(()=>{ setShowCopierModal(true) }, [setShowCopierModal])
-    // const showCopierModalFermer = useCallback(()=>{ setShowCopierModal(false) }, [setShowCopierModal])
-    // const showDeplacerModalOuvrir = useCallback(()=>{ setShowDeplacerModal(true) }, [setShowDeplacerModal])
-    // const showDeplacerModalFermer = useCallback(()=>{ setShowDeplacerModal(false) }, [setShowDeplacerModal])
-    // const showInfoModalOuvrir = useCallback(()=>{ setShowInfoModal(true) }, [setShowInfoModal])
-    // const showInfoModalFermer = useCallback(()=>{ setShowInfoModal(false) }, [setShowInfoModal])
-    // const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
-    // const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
+//     // Callbacks
+//     // const showSupprimerModalOuvrir = useCallback(()=>{ setShowSupprimerModal(true) }, [setShowSupprimerModal])
+//     // const showSupprimerModalFermer = useCallback(()=>{ setShowSupprimerModal(false) }, [setShowSupprimerModal])
+//     // const showCopierModalOuvrir = useCallback(()=>{ setShowCopierModal(true) }, [setShowCopierModal])
+//     // const showCopierModalFermer = useCallback(()=>{ setShowCopierModal(false) }, [setShowCopierModal])
+//     // const showDeplacerModalOuvrir = useCallback(()=>{ setShowDeplacerModal(true) }, [setShowDeplacerModal])
+//     // const showDeplacerModalFermer = useCallback(()=>{ setShowDeplacerModal(false) }, [setShowDeplacerModal])
+//     // const showInfoModalOuvrir = useCallback(()=>{ setShowInfoModal(true) }, [setShowInfoModal])
+//     // const showInfoModalFermer = useCallback(()=>{ setShowInfoModal(false) }, [setShowInfoModal])
+//     // const showRenommerModalOuvrir = useCallback(()=>{ setShowRenommerModal(true) }, [setShowRenommerModal])
+//     // const showRenommerModalFermer = useCallback(()=>{ setShowRenommerModal(false) }, [setShowRenommerModal])
 
-    // const showPreviewAction = useCallback( tuuid => {
-    //     setTuuidSelectionne(tuuid)
-    //     setShowPreview(true)
-    // }, [setShowPreview, setTuuidSelectionne])
+//     // const showPreviewAction = useCallback( tuuid => {
+//     //     setTuuidSelectionne(tuuid)
+//     //     setShowPreview(true)
+//     // }, [setShowPreview, setTuuidSelectionne])
 
-    // const onDoubleClick = useCallback((event, value)=>{
-    //     window.getSelection().removeAllRanges()
-    //     // console.debug("Ouvrir %O (liste courante: %O)", value, liste)
-    //     if(value.folderId) {
-    //         const folderItem = liste.filter(item=>item.folderId===value.folderId).pop()
-    //         setBreadcrumb([...breadcrumb, folderItem])
-    //         setCuuidCourant(value.folderId)
-    //     } else {
-    //         // Determiner le type de fichier
-    //         const fileItem = liste.filter(item=>item.fileId===value.fileId).pop()
-    //         const mimetype = fileItem.mimetype || ''
-    //         console.debug("Choisir tuuid %s (%s) : %O", value.fileId, mimetype, fileItem)
-    //         if(mimetype.startsWith('video/')) {
-    //             // Page Video
-    //             setAfficherVideo(value.fileId)
-    //         } else {
-    //             // Preview/carousel
-    //             showPreviewAction(value.fileId)
-    //         }
-    //     }
-    // }, [liste, setCuuidCourant, breadcrumb, setBreadcrumb, showPreviewAction])
+//     // const onDoubleClick = useCallback((event, value)=>{
+//     //     window.getSelection().removeAllRanges()
+//     //     // console.debug("Ouvrir %O (liste courante: %O)", value, liste)
+//     //     if(value.folderId) {
+//     //         const folderItem = liste.filter(item=>item.folderId===value.folderId).pop()
+//     //         setBreadcrumb([...breadcrumb, folderItem])
+//     //         setCuuidCourant(value.folderId)
+//     //     } else {
+//     //         // Determiner le type de fichier
+//     //         const fileItem = liste.filter(item=>item.fileId===value.fileId).pop()
+//     //         const mimetype = fileItem.mimetype || ''
+//     //         console.debug("Choisir tuuid %s (%s) : %O", value.fileId, mimetype, fileItem)
+//     //         if(mimetype.startsWith('video/')) {
+//     //             // Page Video
+//     //             setAfficherVideo(value.fileId)
+//     //         } else {
+//     //             // Preview/carousel
+//     //             showPreviewAction(value.fileId)
+//     //         }
+//     //     }
+//     // }, [liste, setCuuidCourant, breadcrumb, setBreadcrumb, showPreviewAction])
 
-    // const onSelectionLignes = useCallback(selection=>{setSelection(selection)}, [setSelection])
-    // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
+//     // const onSelectionLignes = useCallback(selection=>{setSelection(selection)}, [setSelection])
+//     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
 
-    // const fermerContextuel = useCallback(()=>{
-    //     setContextuel(false)
-    // }, [setContextuel])
+//     // const fermerContextuel = useCallback(()=>{
+//     //     setContextuel(false)
+//     // }, [setContextuel])
 
-    // const setBreadcrumbIdx = useCallback( idx => {
-    //     // Tronquer la breadcrumb pour revenir a un folder precedent
-    //     setAfficherVideo(false)
-    //     setShowInfoModal(false)
+//     // const setBreadcrumbIdx = useCallback( idx => {
+//     //     // Tronquer la breadcrumb pour revenir a un folder precedent
+//     //     setAfficherVideo(false)
+//     //     setShowInfoModal(false)
 
-    //     const breadcrumbTronquee = breadcrumb.filter((_, idxItem)=>idxItem<=idx)
-    //     setBreadcrumb(breadcrumbTronquee)
+//     //     const breadcrumbTronquee = breadcrumb.filter((_, idxItem)=>idxItem<=idx)
+//     //     setBreadcrumb(breadcrumbTronquee)
 
-    //     // Set nouveau cuuid courant
-    //     if(idx >= 0) setCuuidCourant(breadcrumbTronquee[idx].folderId)
-    //     else setCuuidCourant('')  // Racine des favoris
-    // }, [breadcrumb, setBreadcrumb, setCuuidCourant, setAfficherVideo, setShowInfoModal])
+//     //     // Set nouveau cuuid courant
+//     //     if(idx >= 0) setCuuidCourant(breadcrumbTronquee[idx].folderId)
+//     //     else setCuuidCourant('')  // Racine des favoris
+//     // }, [breadcrumb, setBreadcrumb, setCuuidCourant, setAfficherVideo, setShowInfoModal])
 
-    // Event pour bloquer onClick sur dropzone (panneau background)
-    // const onClickBack = useCallback(event=>{
-    //     event.stopPropagation()
-    //     event.preventDefault()
-    // }, [])
+//     // Event pour bloquer onClick sur dropzone (panneau background)
+//     // const onClickBack = useCallback(event=>{
+//     //     event.stopPropagation()
+//     //     event.preventDefault()
+//     // }, [])
 
-    // Dropzone
-    // const onDrop = useCallback( acceptedFiles => {
-    //     if(!cuuidCourant) {
-    //         console.error("Cuuid non selectionne (favoris actif)")
-    //         return
-    //     }
-    //     uploaderFichiers(workers, cuuidCourant, acceptedFiles, {erreurCb})
-    // }, [workers, cuuidCourant, erreurCb])
-    // const dzHook = useDropzone({onDrop})
-    // const {getRootProps, getInputProps, open: openDropzone} = dzHook
-    // Fin Dropzone
+//     // Dropzone
+//     // const onDrop = useCallback( acceptedFiles => {
+//     //     if(!cuuidCourant) {
+//     //         console.error("Cuuid non selectionne (favoris actif)")
+//     //         return
+//     //     }
+//     //     uploaderFichiers(workers, cuuidCourant, acceptedFiles, {erreurCb})
+//     // }, [workers, cuuidCourant, erreurCb])
+//     // const dzHook = useDropzone({onDrop})
+//     // const {getRootProps, getInputProps, open: openDropzone} = dzHook
+//     // Fin Dropzone
 
-    // const uploaderFichiersAction = useCallback(event=>{
-    //     event.stopPropagation()
-    //     event.preventDefault()
-    //     openDropzone()
-    // }, [openDropzone])
+//     // const uploaderFichiersAction = useCallback(event=>{
+//     //     event.stopPropagation()
+//     //     event.preventDefault()
+//     //     openDropzone()
+//     // }, [openDropzone])
 
-    // const suivantCb = useCallback( opts => {
-    //     opts = opts || {}
-    //     const limit = opts.limit || 50,
-    //           deuxiemeBatch = opts.deuxiemeBatch || false
-    //     if(!cuuidCourant) {
-    //         // Favoris - on n'a pas de suivant pour favoris
-    //     } else if(etatConnexion) {
-    //         chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit, tri: triColonnes})
-    //             .then(resultat=>{
-    //                 console.debug("Resultat 1 : %O", resultat)
-    //                 setListe(resultat.data)
-    //                 setListeComplete(resultat.estComplet?true:false)
-    //                 // if(deuxiemeBatch || !resultat.estComplet) {
-    //                 //     return chargerCollection(
-    //                 //         workers, cuuidCourant, usager, {listeCourante: liste, limit: deuxiemeBatch, tri: triColonnes})
-    //                 // }
-    //             })
-    //             // .then(resultat => {
-    //             //     if(resultat) {  // Deuxieme batch est optionnelle
-    //             //         console.debug("Resultat 2 : %O", resultat)
-    //             //         setListe(resultat.data)
-    //             //         setListeComplete(resultat.estComplet)
-    //             //     }
-    //             // })
-    //             .catch(erreurCb)
-    //     }
-    // }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
+//     // const suivantCb = useCallback( opts => {
+//     //     opts = opts || {}
+//     //     const limit = opts.limit || 50,
+//     //           deuxiemeBatch = opts.deuxiemeBatch || false
+//     //     if(!cuuidCourant) {
+//     //         // Favoris - on n'a pas de suivant pour favoris
+//     //     } else if(etatConnexion) {
+//     //         chargerCollection(workers, cuuidCourant, usager, {listeCourante: liste, limit, tri: triColonnes})
+//     //             .then(resultat=>{
+//     //                 console.debug("Resultat 1 : %O", resultat)
+//     //                 setListe(resultat.data)
+//     //                 setListeComplete(resultat.estComplet?true:false)
+//     //                 // if(deuxiemeBatch || !resultat.estComplet) {
+//     //                 //     return chargerCollection(
+//     //                 //         workers, cuuidCourant, usager, {listeCourante: liste, limit: deuxiemeBatch, tri: triColonnes})
+//     //                 // }
+//     //             })
+//     //             // .then(resultat => {
+//     //             //     if(resultat) {  // Deuxieme batch est optionnelle
+//     //             //         console.debug("Resultat 2 : %O", resultat)
+//     //             //         setListe(resultat.data)
+//     //             //         setListeComplete(resultat.estComplet)
+//     //             //     }
+//     //             // })
+//     //             .catch(erreurCb)
+//     //     }
+//     // }, [workers, liste, cuuidCourant, etatConnexion, usager, triColonnes, setListe, setListeComplete, erreurCb])
 
-    // const enteteOnClickCb = useCallback(colonne=>{
-    //     // console.debug("Click entete nom colonne : %s", colonne)
-    //     const triCourant = {...colonnes.tri}
-    //     const colonnesCourant = {...colonnes}
-    //     const colonneCourante = triCourant.colonne
-    //     let ordre = triCourant.ordre || 1
-    //     if(colonne === colonneCourante) {
-    //         // Toggle direction
-    //         ordre = ordre * -1
-    //     } else {
-    //         ordre = 1
-    //     }
-    //     colonnesCourant.tri = {colonne, ordre}
-    //     // console.debug("Sort key maj : %O", colonnesCourant)
-    //     setColonnes(colonnesCourant)
-    // }, [colonnes, setColonnes])
+//     // const enteteOnClickCb = useCallback(colonne=>{
+//     //     // console.debug("Click entete nom colonne : %s", colonne)
+//     //     const triCourant = {...colonnes.tri}
+//     //     const colonnesCourant = {...colonnes}
+//     //     const colonneCourante = triCourant.colonne
+//     //     let ordre = triCourant.ordre || 1
+//     //     if(colonne === colonneCourante) {
+//     //         // Toggle direction
+//     //         ordre = ordre * -1
+//     //     } else {
+//     //         ordre = 1
+//     //     }
+//     //     colonnesCourant.tri = {colonne, ordre}
+//     //     // console.debug("Sort key maj : %O", colonnesCourant)
+//     //     setColonnes(colonnesCourant)
+//     // }, [colonnes, setColonnes])
     
-    // Preparer format des colonnes
-    useEffect(()=>{ setColonnes(preparerColonnes()) }, [setColonnes])
+//     // Preparer format des colonnes
+//     useEffect(()=>{ setColonnes(preparerColonnes()) }, [setColonnes])
 
-    // Chargement initial des favoris
-    // useEffect(()=>{ 
-    //     if(etatConnexion && etatAuthentifie) {
-    //         chargerFavoris(workers, setFavoris) 
-    //             .finally(()=>setChargementListeEnCours(false))
-    //     }
-    // }, [workers, etatConnexion, etatAuthentifie, setFavoris])
+//     // Chargement initial des favoris
+//     // useEffect(()=>{ 
+//     //     if(etatConnexion && etatAuthentifie) {
+//     //         chargerFavoris(workers, setFavoris) 
+//     //             .finally(()=>setChargementListeEnCours(false))
+//     //     }
+//     // }, [workers, etatConnexion, etatAuthentifie, setFavoris])
 
-    // Preparer donnees a afficher dans la liste
-    // useEffect(()=>{
-    //     if(!favoris || !etatConnexion) return  // Rien a faire
-    //     if(!cuuidCourant) {
-    //         // Utiliser liste de favoris
-    //         setListe( preprarerDonnees(favoris, workers, {tri: triColonnes}) )
-    //     } else {
-    //         setChargementListeEnCours(true)
-    //             if(etatConnexion) {
-    //                 chargerCollection(workers, cuuidCourant, usager, {tri: triColonnes})
-    //                 .then(resultat=>{
-    //                     setListe(resultat.data)
-    //                     setListeComplete(resultat.estComplet)
-    //                 })
-    //                 .catch(erreurCb)
-    //                 .finally(()=>{setChargementListeEnCours(false)})
-    //             }
-    //     }
-    // }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, setChargementListeEnCours, erreurCb])
+//     // Preparer donnees a afficher dans la liste
+//     // useEffect(()=>{
+//     //     if(!favoris || !etatConnexion) return  // Rien a faire
+//     //     if(!cuuidCourant) {
+//     //         // Utiliser liste de favoris
+//     //         setListe( preprarerDonnees(favoris, workers, {tri: triColonnes}) )
+//     //     } else {
+//     //         setChargementListeEnCours(true)
+//     //             if(etatConnexion) {
+//     //                 chargerCollection(workers, cuuidCourant, usager, {tri: triColonnes})
+//     //                 .then(resultat=>{
+//     //                     setListe(resultat.data)
+//     //                     setListeComplete(resultat.estComplet)
+//     //                 })
+//     //                 .catch(erreurCb)
+//     //                 .finally(()=>{setChargementListeEnCours(false)})
+//     //             }
+//     //     }
+//     // }, [workers, usager, etatConnexion, favoris, triColonnes, setListe, cuuidCourant, setListeComplete, setChargementListeEnCours, erreurCb])
     
-    // Detect support divers de l'appareil/navigateur
-    //useEffect(()=>{detecterSupport(setSupport)}, [setSupport])
+//     // Detect support divers de l'appareil/navigateur
+//     //useEffect(()=>{detecterSupport(setSupport)}, [setSupport])
 
-    // useEffect(()=>{
-    //     if(!evenementFichierCb) return
-    //     if(cuuidCourant && etatConnexion && etatAuthentifie) {
-    //         enregistrerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
-    //             .catch(err=>console.warn("Erreur enregistrement listeners majFichier : %O", err))
-    //         return () => {
-    //             retirerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
-    //                 .catch(err=>console.debug("Erreur retrait listeners majFichier : %O", err))
-    //         }
-    //     }
-    // }, [workers, cuuidCourant, etatConnexion, etatAuthentifie, evenementFichierCb])
+//     // useEffect(()=>{
+//     //     if(!evenementFichierCb) return
+//     //     if(cuuidCourant && etatConnexion && etatAuthentifie) {
+//     //         enregistrerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
+//     //             .catch(err=>console.warn("Erreur enregistrement listeners majFichier : %O", err))
+//     //         return () => {
+//     //             retirerEvenementsFichiersCollection(workers, cuuidCourant, evenementFichierCb)
+//     //                 .catch(err=>console.debug("Erreur retrait listeners majFichier : %O", err))
+//     //         }
+//     //     }
+//     // }, [workers, cuuidCourant, etatConnexion, etatAuthentifie, evenementFichierCb])
 
-    // useEffect(()=>{
-    //     if(evenementFichier) {
-    //         if(evenementFichier.upload) {
-    //             mapperUploadFichier(workers, evenementFichier.upload, liste, cuuidCourant, setListe)
-    //         } else {
-    //             if(cuuidCourant) {
-    //                 mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
-    //             } else { // Favoris
-    //                 mapperEvenementFichier(workers, evenementFichier, favoris, cuuidCourant, setFavoris)
-    //             }
-    //         }
-    //         addEvenementFichier('')  // Vider liste evenements
-    //     }
-    // }, [workers, liste, favoris, evenementFichier, cuuidCourant, setListe, setFavoris, addEvenementFichier])
+//     // useEffect(()=>{
+//     //     if(evenementFichier) {
+//     //         if(evenementFichier.upload) {
+//     //             mapperUploadFichier(workers, evenementFichier.upload, liste, cuuidCourant, setListe)
+//     //         } else {
+//     //             if(cuuidCourant) {
+//     //                 mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe)
+//     //             } else { // Favoris
+//     //                 mapperEvenementFichier(workers, evenementFichier, favoris, cuuidCourant, setFavoris)
+//     //             }
+//     //         }
+//     //         addEvenementFichier('')  // Vider liste evenements
+//     //     }
+//     // }, [workers, liste, favoris, evenementFichier, cuuidCourant, setListe, setFavoris, addEvenementFichier])
 
-    // useEffect(()=>{
-    //     const {connexion} = workers
-    //     if(!evenementCollectionCb) return
-    //     if(liste && etatConnexion && etatAuthentifie) {
-    //         const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
-    //         if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
-    //         // console.debug("enregistrerCallbackMajCollections %O", cuuids)
-    //         connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
-    //             .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
-    //         return () => {
-    //             connexion.retirerCallbackMajCollections({cuuids}, evenementCollectionCb)
-    //                 .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
-    //         }
-    //     }
-    // }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
+//     // useEffect(()=>{
+//     //     const {connexion} = workers
+//     //     if(!evenementCollectionCb) return
+//     //     if(liste && etatConnexion && etatAuthentifie) {
+//     //         const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
+//     //         if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
+//     //         // console.debug("enregistrerCallbackMajCollections %O", cuuids)
+//     //         connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
+//     //             .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+//     //         return () => {
+//     //             connexion.retirerCallbackMajCollections({cuuids}, evenementCollectionCb)
+//     //                 .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+//     //         }
+//     //     }
+//     // }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
 
-    // useEffect(()=>{
-    //     if(evenementCollection) {
-    //         console.debug("Evenement collection : %O", evenementCollection)
-    //         if(cuuidCourant) {
-    //             mapperEvenementCollection(evenementCollection, liste, setListe)
-    //         } else {
-    //             mapperEvenementCollection(evenementCollection, favoris, setFavoris, {favoris: true})
-    //         }
-    //         addEvenementCollection('')  // Vider liste evenements
-    //     }
-    // }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
+//     // useEffect(()=>{
+//     //     if(evenementCollection) {
+//     //         console.debug("Evenement collection : %O", evenementCollection)
+//     //         if(cuuidCourant) {
+//     //             mapperEvenementCollection(evenementCollection, liste, setListe)
+//     //         } else {
+//     //             mapperEvenementCollection(evenementCollection, favoris, setFavoris, {favoris: true})
+//     //         }
+//     //         addEvenementCollection('')  // Vider liste evenements
+//     //     }
+//     // }, [cuuidCourant, favoris, liste, setFavoris, setListe, evenementCollection, addEvenementCollection])
 
-    // useEffect(()=>{
-    //     const {connexion} = workers
-    //     if(!evenementContenuCollectionCb) return
-    //     if(cuuidCourant && etatConnexion && etatAuthentifie) {
-    //         connexion.enregistrerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
-    //             .catch(err=>console.warn("Erreur enregistrement listeners maj contenu collection : %O", err))
-    //         return () => {
-    //             connexion.retirerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
-    //                 .catch(err=>console.warn("Erreur retirer listeners maj contenu collection : %O", err))
-    //         }
-    //     }
+//     // useEffect(()=>{
+//     //     const {connexion} = workers
+//     //     if(!evenementContenuCollectionCb) return
+//     //     if(cuuidCourant && etatConnexion && etatAuthentifie) {
+//     //         connexion.enregistrerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
+//     //             .catch(err=>console.warn("Erreur enregistrement listeners maj contenu collection : %O", err))
+//     //         return () => {
+//     //             connexion.retirerCallbackMajContenuCollection({cuuid: cuuidCourant}, evenementContenuCollectionCb)
+//     //                 .catch(err=>console.warn("Erreur retirer listeners maj contenu collection : %O", err))
+//     //         }
+//     //     }
 
-    // }, [workers, etatConnexion, etatAuthentifie, cuuidCourant, evenementContenuCollectionCb])
+//     // }, [workers, etatConnexion, etatAuthentifie, cuuidCourant, evenementContenuCollectionCb])
 
-    // useEffect(()=>{
-    //     const {connexion} = workers
-    //     if(!evenementContenuFavorisCb) return
-    //     if(etatConnexion && etatAuthentifie) {
-    //         connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
-    //             .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
-    //         return () => {
-    //             connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
-    //                 .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
-    //         }
-    //     }
+//     // useEffect(()=>{
+//     //     const {connexion} = workers
+//     //     if(!evenementContenuFavorisCb) return
+//     //     if(etatConnexion && etatAuthentifie) {
+//     //         connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
+//     //             .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+//     //         return () => {
+//     //             connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuFavorisCb)
+//     //                 .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+//     //         }
+//     //     }
 
-    // }, [workers, etatConnexion, etatAuthentifie, userId, evenementContenuFavorisCb])
+//     // }, [workers, etatConnexion, etatAuthentifie, userId, evenementContenuFavorisCb])
 
-    // useEffect(()=>{
-    //     if(evenementContenuCollection) {
-    //         // console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
-    //         mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier)
-    //         addEvenementContenuCollection('')
-    //     }
-    // }, [workers, evenementContenuCollection, addEvenementContenuCollection, liste, setListe, addEvenementFichier])
+//     // useEffect(()=>{
+//     //     if(evenementContenuCollection) {
+//     //         // console.debug("Recu evenementContenuCollection : %O", evenementContenuCollection)
+//     //         mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier)
+//     //         addEvenementContenuCollection('')
+//     //     }
+//     // }, [workers, evenementContenuCollection, addEvenementContenuCollection, liste, setListe, addEvenementFichier])
 
-    // useEffect(()=>{
-    //     if(evenementContenuFavoris) {
-    //         // console.debug("Recu evenementContenuFavoris : %O", evenementContenuFavoris)
-    //         mapperEvenementContenuCollection(workers, evenementContenuFavoris, favoris, setFavoris, addEvenementFichier, {favoris: true})
-    //         addEvenementContenuFavoris('')
-    //     }
-    // }, [workers, evenementContenuFavoris, favoris, setFavoris, addEvenementContenuFavoris, addEvenementFichier])
+//     // useEffect(()=>{
+//     //     if(evenementContenuFavoris) {
+//     //         // console.debug("Recu evenementContenuFavoris : %O", evenementContenuFavoris)
+//     //         mapperEvenementContenuCollection(workers, evenementContenuFavoris, favoris, setFavoris, addEvenementFichier, {favoris: true})
+//     //         addEvenementContenuFavoris('')
+//     //     }
+//     // }, [workers, evenementContenuFavoris, favoris, setFavoris, addEvenementContenuFavoris, addEvenementFichier])
 
-    return (
-        // <div {...getRootProps({onClick: onClickBack})}>
-        //     <input {...getInputProps()} />
-        <div>
-            <Row className='fichiers-header-buttonbar'>
-                <Col xs={12} lg={7}>
-                    {/* <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} /> */}
-                </Col>
+//     return (
+//         // <div {...getRootProps({onClick: onClickBack})}>
+//         //     <input {...getInputProps()} />
+//         <div>
+//             <Row className='fichiers-header-buttonbar'>
+//                 <Col xs={12} lg={7}>
+//                     {/* <SectionBreadcrumb value={breadcrumb} setIdx={setBreadcrumbIdx} /> */}
+//                 </Col>
 
-                <Col xs={12} lg={5} className="buttonbars">
-                    {/* <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                    <BoutonsUpload 
-                        cuuid={cuuidCourant}
-                        uploaderFichiersAction={uploaderFichiersAction} 
-                        setShowCreerRepertoire={setShowCreerRepertoire}
-                    /> */}
-                </Col>
-            </Row>
+//                 <Col xs={12} lg={5} className="buttonbars">
+//                     {/* <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+//                     <BoutonsUpload 
+//                         cuuid={cuuidCourant}
+//                         uploaderFichiersAction={uploaderFichiersAction} 
+//                         setShowCreerRepertoire={setShowCreerRepertoire}
+//                     /> */}
+//                 </Col>
+//             </Row>
 
-            <Suspense fallback={<p>Loading ...</p>}>
-                <AffichagePrincipal 
-                    modeView={modeView}
-                    colonnes={colonnes}
-                    // liste={liste} 
-                    // onDoubleClick={onDoubleClick}
-                    onContextMenu={onContextMenu}
-                    setContextuel={setContextuel}
-                    // onSelectionLignes={onSelectionLignes}
-                    // onClickEntete={enteteOnClickCb}
-                    // cuuidCourant={cuuidCourant}
-                    // isListeComplete={isListeComplete}
-                    // suivantCb={suivantCb}
-                    tuuidSelectionne={tuuidSelectionne}
-                    afficherVideo={afficherVideo}
-                    setAfficherVideo={setAfficherVideo}
-                    // support={support}
-                    // showInfoModalOuvrir={showInfoModalOuvrir}
-                />
-            </Suspense>
+//             <Suspense fallback={<p>Loading ...</p>}>
+//                 <AffichagePrincipal 
+//                     modeView={modeView}
+//                     colonnes={colonnes}
+//                     // liste={liste} 
+//                     // onDoubleClick={onDoubleClick}
+//                     onContextMenu={onContextMenu}
+//                     setContextuel={setContextuel}
+//                     // onSelectionLignes={onSelectionLignes}
+//                     // onClickEntete={enteteOnClickCb}
+//                     // cuuidCourant={cuuidCourant}
+//                     // isListeComplete={isListeComplete}
+//                     // suivantCb={suivantCb}
+//                     tuuidSelectionne={tuuidSelectionne}
+//                     afficherVideo={afficherVideo}
+//                     setAfficherVideo={setAfficherVideo}
+//                     // support={support}
+//                     // showInfoModalOuvrir={showInfoModalOuvrir}
+//                 />
+//             </Suspense>
 
-            {/* <InformationListe 
-                favoris={favoris}
-                liste={liste} 
-                cuuid={cuuidCourant} 
-                chargementListeEnCours={chargementListeEnCours} />
+//             {/* <InformationListe 
+//                 favoris={favoris}
+//                 liste={liste} 
+//                 cuuid={cuuidCourant} 
+//                 chargementListeEnCours={chargementListeEnCours} />
 
-            <MenuContextuelFavoris 
-                workers={props.workers}
-                contextuel={contextuel} 
-                fermerContextuel={fermerContextuel}
-                fichiers={liste}
-                tuuidSelectionne={tuuidSelectionne}
-                selection={selection}
-                showPreview={showPreviewAction}
-                usager={usager}
-                showSupprimerModalOuvrir={showSupprimerModalOuvrir}
-                showCopierModalOuvrir={showCopierModalOuvrir}
-                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
-                showInfoModalOuvrir={showInfoModalOuvrir}
-                showRenommerModalOuvrir={showRenommerModalOuvrir}
-                cuuid={cuuidCourant}
-                downloadAction={downloadAction}
-                etatConnexion={etatConnexion}
-                etatAuthentifie={etatAuthentifie}
-            />
+//             <MenuContextuelFavoris 
+//                 workers={props.workers}
+//                 contextuel={contextuel} 
+//                 fermerContextuel={fermerContextuel}
+//                 fichiers={liste}
+//                 tuuidSelectionne={tuuidSelectionne}
+//                 selection={selection}
+//                 showPreview={showPreviewAction}
+//                 usager={usager}
+//                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
+//                 showCopierModalOuvrir={showCopierModalOuvrir}
+//                 showDeplacerModalOuvrir={showDeplacerModalOuvrir}
+//                 showInfoModalOuvrir={showInfoModalOuvrir}
+//                 showRenommerModalOuvrir={showRenommerModalOuvrir}
+//                 cuuid={cuuidCourant}
+//                 downloadAction={downloadAction}
+//                 etatConnexion={etatConnexion}
+//                 etatAuthentifie={etatAuthentifie}
+//             />
 
-            <PreviewFichiers 
-                workers={workers}
-                showPreview={showPreview} 
-                setShowPreview={setShowPreview}
-                tuuidSelectionne={tuuidSelectionne}
-                fichiers={liste}
-                support={support}
-            />
+//             <PreviewFichiers 
+//                 workers={workers}
+//                 showPreview={showPreview} 
+//                 setShowPreview={setShowPreview}
+//                 tuuidSelectionne={tuuidSelectionne}
+//                 fichiers={liste}
+//                 support={support}
+//             />
 
-            <ModalCreerRepertoire 
-                show={showCreerRepertoire} 
-                cuuid={cuuidCourant}
-                fermer={()=>{setShowCreerRepertoire(false)}} 
-                workers={workers}
-            />
+//             <ModalCreerRepertoire 
+//                 show={showCreerRepertoire} 
+//                 cuuid={cuuidCourant}
+//                 fermer={()=>{setShowCreerRepertoire(false)}} 
+//                 workers={workers}
+//             />
 
-            <SupprimerModal
-                show={showSupprimerModal}
-                fermer={showSupprimerModalFermer}
-                fichiers={liste}
-                selection={selection}
-                workers={workers}
-            />
+//             <SupprimerModal
+//                 show={showSupprimerModal}
+//                 fermer={showSupprimerModalFermer}
+//                 fichiers={liste}
+//                 selection={selection}
+//                 workers={workers}
+//             />
 
-            <CopierModal 
-                show={showCopierModal} 
-                fermer={showCopierModalFermer}
-                favoris={favoris}
-                selection={selection}
-                workers={workers}
-            />
+//             <CopierModal 
+//                 show={showCopierModal} 
+//                 fermer={showCopierModalFermer}
+//                 favoris={favoris}
+//                 selection={selection}
+//                 workers={workers}
+//             />
 
-            <DeplacerModal 
-                show={showDeplacerModal} 
-                fermer={showDeplacerModalFermer}
-                favoris={favoris}
-                cuuid={cuuidCourant}
-                selection={selection}
-                workers={workers}
-            />
+//             <DeplacerModal 
+//                 show={showDeplacerModal} 
+//                 fermer={showDeplacerModalFermer}
+//                 favoris={favoris}
+//                 cuuid={cuuidCourant}
+//                 selection={selection}
+//                 workers={workers}
+//             />
 
-            <InfoModal 
-                show={showInfoModal} 
-                fermer={showInfoModalFermer}
-                fichiers={liste}
-                selection={selection}
-                workers={workers}
-                support={support}
-                downloadAction={downloadAction}
-                etatConnexion={etatConnexion}
-                etatAuthentifie={etatAuthentifie}
-                usager={usager}
-            />
+//             <InfoModal 
+//                 show={showInfoModal} 
+//                 fermer={showInfoModalFermer}
+//                 fichiers={liste}
+//                 selection={selection}
+//                 workers={workers}
+//                 support={support}
+//                 downloadAction={downloadAction}
+//                 etatConnexion={etatConnexion}
+//                 etatAuthentifie={etatAuthentifie}
+//                 usager={usager}
+//             />
 
-            <RenommerModal
-                show={showRenommerModal} 
-                fermer={showRenommerModalFermer}
-                fichiers={liste}
-                selection={selection}
-                workers={workers}
-            /> */}
+//             <RenommerModal
+//                 show={showRenommerModal} 
+//                 fermer={showRenommerModalFermer}
+//                 fichiers={liste}
+//                 selection={selection}
+//                 workers={workers}
+//             /> */}
 
-        </div>
-    )
-}
+//         </div>
+//     )
+// }
 
 function AffichagePrincipal(props) {
 
@@ -610,33 +591,36 @@ function AffichagePrincipal(props) {
     //     return listeBrute.map(mapperDocument)
     // }, [workers, listeBrute])
 
-    console.debug("Liste fichiers : %O", liste)
+    // console.debug("Liste fichiers : %O", liste)
     // const cuuidCourant = useSelector(state => state.fichiers.cuuid)
 
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
 
     const onSelectionLignes = useCallback(selection=>{
-        console.debug("Selection lignes : ", selection)
+        // console.debug("Selection lignes : ", selection)
         // setSelection(selection)
         dispatch(selectionTuuids(selection))
     }, [dispatch])
     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
-        console.debug("onContextMenuClick event %O, value %O", event, value)
+        // console.debug("onContextMenuClick event %O, value %O", event, value)
         onContextMenu(event, value, setContextuel)
-    }, [onContextMenu, setContextuel])
+    }, [setContextuel])
 
     const onDoubleClick = useCallback( (event, value) => {
-        console.debug("Double click event %O : value %O", event, value)
+        // console.debug("Double click event %O : value %O", event, value)
         const dataset = event.currentTarget.dataset
-        console.debug("Dataset : ", dataset)
+        // console.debug("Dataset : ", dataset)
         window.getSelection().removeAllRanges()
+        
         const folderId = value.folderId || dataset.folderId
         const fileId = value.fileId || dataset.fileId
-        if(folderId) naviguerCollection(folderId) // dispatch(changerCollection(workers, folderId)) 
-        else if(fileId) showPreviewAction(fileId) // throw new Error('fix me') // dispatch(viewFichier(fileId))
-    }, [workers, dispatch])
+
+        if(folderId) naviguerCollection(folderId)
+        else if(fileId) showPreviewAction(fileId)
+
+    }, [naviguerCollection, showPreviewAction])
 
     if(afficherVideo) {
         // console.debug("AffichagePrincipal PROPPIES : %O", props)
@@ -667,32 +651,18 @@ function AffichagePrincipal(props) {
     )
 }
 
-function HandlerEvenements(props) {
+function HandlerEvenements(_props) {
 
     const workers = useWorkers()
     const etatPret = useEtatPret()
     const dispatch = useDispatch()
     const usager = useUsager()
     const fichiersInfo = useSelector(state => state.fichiers)
-    const { cuuid, liste } = fichiersInfo
+    const { cuuid } = fichiersInfo
     const extensions = usager.extensions || {}
     const { userId } = extensions
 
     const { connexion } = workers
-
-    // const cuuids = useMemo(()=>{
-    //     // Recuperer la liste des folders (filtre est pas de mimetype => folder)
-    //     const cuuids = liste?liste.filter(item=>!item.mimetype).map(item=>item.tuuid):[]
-    //     if(cuuid) cuuids.push(cuuid)
-    //     return cuuids
-    // }, [cuuid, liste])
-
-    // Event handling
-    // const [ evenementFichier, addEvenementFichier ] = useState('')        // Pipeline d'evenements fichier
-    // const [ evenementCollection, addEvenementCollection ] = useState('')  // Pipeline d'evenements de collection
-    // const [ evenementContenuCollection, addEvenementContenuCollection ] = useState('')
-    // const [ evenementContenuFavoris, addEvenementContenuFavoris ] = useState('')
-    // const evenementFichierCb = useMemo(()=>comlinkProxy(evenement=>addEvenementFichier(evenement)), [addEvenementFichier])
     
     const evenementCollectionCb = useMemo(
         () => comlinkProxy( evenement => traiterCollectionEvenement(workers, dispatch, evenement) ),
@@ -703,26 +673,6 @@ function HandlerEvenements(props) {
         () => comlinkProxy( evenement => traiterContenuCollectionEvenement(workers, dispatch, evenement) ), 
         [workers, dispatch]
     )
-
-    // const evenementContenuCollectionCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuCollection(evenement)), [addEvenementContenuCollection])
-    // const evenementContenuFavorisCb = useMemo(()=>comlinkProxy(evenement=>addEvenementContenuFavoris(evenement)), [addEvenementContenuFavoris])
-    // useEffect(()=>evenementFichierCb(etatTransfert), [etatTransfert, evenementFichierCb])
-
-    // useEffect(()=>{
-    //     const {connexion} = workers
-    //     if(!evenementCollectionCb) return
-    //     if(liste && etatConnexion && etatAuthentifie) {
-    //         const cuuids = liste.filter(item=>item.folderId).map(item=>item.folderId)
-    //         if(cuuidCourant) cuuids.push(cuuidCourant)  // Folder courant
-    //         // console.debug("enregistrerCallbackMajCollections %O", cuuids)
-    //         connexion.enregistrerCallbackMajCollections({cuuids}, evenementCollectionCb)
-    //             .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
-    //         return () => {
-    //             connexion.retirerCallbackMajCollections({cuuids}, evenementCollectionCb)
-    //                 .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
-    //         }
-    //     }
-    // }, [workers, evenementCollectionCb, cuuidCourant, liste, etatConnexion, etatAuthentifie])
 
     // Enregistrer changement de collection
     useEffect(()=>{
@@ -765,7 +715,6 @@ function Modals(props) {
     const {
         showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
-        // setShowSupprimerModal, showSupprimerModal, 
         contextuel, setContextuel,
     } = props
     
@@ -775,19 +724,9 @@ function Modals(props) {
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
 
-    // const [ showPreview, setShowPreview ] = useState(false)
-    // const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
-    // const showPreviewAction = useCallback( tuuid => {
-    //     if(!tuuid && selection && selection.length > 0) {
-    //         tuuid = selection[0]
-    //     }
-    //     setTuuidSelectionne(tuuid)
-    //     setShowPreview(true)
-    // }, [setShowPreview, selection, setTuuidSelectionne])
-
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
-    const [ showCopierModal, setShowCopierModal ] = useState(false)
-    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    // const [ showCopierModal, setShowCopierModal ] = useState(false)
+    // const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
 
@@ -800,15 +739,10 @@ function Modals(props) {
     const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
 
     const workers = useWorkers()
-    // const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
 
     return (
         <>
-            {/* <InformationListe 
-                    favoris={favoris}
-                    liste={liste} 
-                    cuuid={cuuidCourant} 
-                    chargementListeEnCours={chargementListeEnCours} />*/}
+            <InformationListe />
 
             <MenuContextuel
                 contextuel={contextuel} 
@@ -1092,58 +1026,58 @@ function FormatterColonneDate(props) {
     }
 }
 
-function trierNom(a, b) {
-    const nomA = a.nom?a.nom:'',
-          nomB = b.nom?b.nom:''
-    if(nomA === nomB) return 0
-    if(!nomA) return 1
-    if(!nomB) return -1
-    return nomA.localeCompare(nomB)
-}
+// function trierNom(a, b) {
+//     const nomA = a.nom?a.nom:'',
+//           nomB = b.nom?b.nom:''
+//     if(nomA === nomB) return 0
+//     if(!nomA) return 1
+//     if(!nomB) return -1
+//     return nomA.localeCompare(nomB)
+// }
 
-function trierTaille(a, b) {
-    const nomA = a.nom?a.nom:'',
-          nomB = b.nom?b.nom:''
-    const tailleA = a.taille?a.taille:0,
-          tailleB = b.taille?b.taille:0
-    if(tailleA !== tailleB) {
-        return tailleA - tailleB
-    }
-    if(nomA === nomB) return 0
-    if(!nomA) return 1
-    if(!nomB) return -1
-    return nomA.localeCompare(nomB)
-}
+// function trierTaille(a, b) {
+//     const nomA = a.nom?a.nom:'',
+//           nomB = b.nom?b.nom:''
+//     const tailleA = a.taille?a.taille:0,
+//           tailleB = b.taille?b.taille:0
+//     if(tailleA !== tailleB) {
+//         return tailleA - tailleB
+//     }
+//     if(nomA === nomB) return 0
+//     if(!nomA) return 1
+//     if(!nomB) return -1
+//     return nomA.localeCompare(nomB)
+// }
 
-function trierDateAjout(a, b) {
-    const nomA = a.nom?a.nom:'',
-          nomB = b.nom?b.nom:''
-    const dateAjoutA = a.dateAjout?a.dateAjout:0,
-          dateAjoutB = b.dateAjout?b.dateAjout:0
-    if(dateAjoutA !== dateAjoutB) {
-        return dateAjoutA - dateAjoutB
-    }
-    if(nomA === nomB) return 0
-    if(!nomA) return 1
-    if(!nomB) return -1
-    return nomA.localeCompare(nomB)
-}
+// function trierDateAjout(a, b) {
+//     const nomA = a.nom?a.nom:'',
+//           nomB = b.nom?b.nom:''
+//     const dateAjoutA = a.dateAjout?a.dateAjout:0,
+//           dateAjoutB = b.dateAjout?b.dateAjout:0
+//     if(dateAjoutA !== dateAjoutB) {
+//         return dateAjoutA - dateAjoutB
+//     }
+//     if(nomA === nomB) return 0
+//     if(!nomA) return 1
+//     if(!nomB) return -1
+//     return nomA.localeCompare(nomB)
+// }
 
-function trierMimetype(a, b) {
-    const nomA = a.nom?a.nom:'',
-          nomB = b.nom?b.nom:''
-    const mimetypeA = a.mimetype?a.mimetype:'',
-          mimetypeB = b.mimetype?b.mimetype:''
-    if(mimetypeA !== mimetypeB) {
-        if(!mimetypeA) return 1
-        if(!mimetypeB) return -1
-        return mimetypeA.localeCompare(mimetypeB)
-    }
-    if(nomA === nomB) return 0
-    if(!nomA) return 1
-    if(!nomB) return -1
-    return nomA.localeCompare(nomB)
-}
+// function trierMimetype(a, b) {
+//     const nomA = a.nom?a.nom:'',
+//           nomB = b.nom?b.nom:''
+//     const mimetypeA = a.mimetype?a.mimetype:'',
+//           mimetypeB = b.mimetype?b.mimetype:''
+//     if(mimetypeA !== mimetypeB) {
+//         if(!mimetypeA) return 1
+//         if(!mimetypeB) return -1
+//         return mimetypeA.localeCompare(mimetypeB)
+//     }
+//     if(nomA === nomB) return 0
+//     if(!nomA) return 1
+//     if(!nomB) return -1
+//     return nomA.localeCompare(nomB)
+// }
 
 // function preprarerDonnees(liste, workers, opts) {
 //     opts = opts || {}
@@ -1308,15 +1242,15 @@ function MenuContextuel(props) {
 //     return {data: liste, estComplet}
 // }
 
-async function enregistrerEvenementsFichiersCollection(workers, cuuid, callback) {
-    const { connexion } = workers
-    try {
-        // const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
-        await connexion.enregistrerCallbackMajFichierCollection({cuuids: [cuuid]}, callback)
-    } catch (err) {
-        console.error("Erreur enregistrerCallbackMajFichier : %O", err)
-    }
-}
+// async function enregistrerEvenementsFichiersCollection(workers, cuuid, callback) {
+//     const { connexion } = workers
+//     try {
+//         // const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
+//         await connexion.enregistrerCallbackMajFichierCollection({cuuids: [cuuid]}, callback)
+//     } catch (err) {
+//         console.error("Erreur enregistrerCallbackMajFichier : %O", err)
+//     }
+// }
 
 // async function retirerEvenementsFichiersCollection(workers, cuuid, callback) {
 //     const { connexion } = workers
@@ -1493,35 +1427,37 @@ async function enregistrerEvenementsFichiersCollection(workers, cuuid, callback)
 //     }
 // }
 
-// function InformationListe(props) {
-//     const { chargementListeEnCours, favoris, liste, cuuid } = props
+function InformationListe(_props) {
 
-//     if (chargementListeEnCours) return <p>Chargement en cours...</p>
+    const liste = useSelector(state => state.fichiers.liste)
+    const cuuid = useSelector(state => state.fichiers.cuuid)
 
-//     if(!cuuid) {
-//         const tailleListe = (favoris && favoris.length) || 0
-//         if(tailleListe === 0) {
-//             return (
-//                 <div>
-//                     <br/>
-//                     <Alert>
-//                         <Alert.Heading>Aucune collection</Alert.Heading>
-//                         <p>
-//                             Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
-//                         </p>
-//                     </Alert>
-//                 </div>
-//             )
-//         }
-//     } else {
-//         const tailleListe = (liste && liste.length) || 0
-//         if(tailleListe === 0) {
-//             return <p>Aucuns fichiers.</p>
-//         }
-//     }
+    if (!liste) return <p>Chargement en cours...</p>
 
-//     return ''
-// }
+    if(!cuuid) {
+        const tailleListe = (liste && liste.length) || 0
+        if(tailleListe === 0) {
+            return (
+                <div>
+                    <br/>
+                    <Alert>
+                        <Alert.Heading>Aucune collection</Alert.Heading>
+                        <p>
+                            Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
+                        </p>
+                    </Alert>
+                </div>
+            )
+        }
+    } else {
+        const tailleListe = (liste && liste.length) || 0
+        if(tailleListe === 0) {
+            return <p>Aucuns fichiers.</p>
+        }
+    }
+
+    return ''
+}
 
 function traiterCollectionEvenement(workers, dispatch, evenement) {
     console.debug("traiterCollectionEvenement ", evenement)

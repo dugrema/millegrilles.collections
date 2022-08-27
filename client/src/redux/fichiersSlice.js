@@ -4,7 +4,7 @@ import { createSlice, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit
 const SOURCE_COLLECTION = 'collection',
       SOURCE_PLUS_RECENT = 'plusrecent',
       SOURCE_CORBEILLE = 'corbeille',
-      SOURCE_INDEX = 'index',
+      // SOURCE_INDEX = 'index',
       CONST_SYNC_BATCH_SIZE = 250,
       SAFEGUARD_BATCH_MAX = 1000
 
@@ -94,10 +94,10 @@ function clearAction(state) {
     state.collection = null
 }
 
-function supprimerAction(state, action) {
-    const tuuid = action.payload
-    state.liste = state.liste.filter(item => item.tuuid !== tuuid)
-}
+// function supprimerAction(state, action) {
+//     const tuuid = action.payload
+//     state.liste = state.liste.filter(item => item.tuuid !== tuuid)
+// }
 
 function breadcrumbPushAction(state, action) {
     console.debug("State breadcrumb ", state.breadcrumb)
@@ -272,7 +272,7 @@ const fichiersSlice = createSlice({
         setCuuid: setCuuidAction,
         setCollectionInfo: setCollectionInfoAction,
         push: pushAction, 
-        supprimer: supprimerAction,
+        // supprimer: supprimerAction,
         clear: clearAction,
         mergeTuuidData: mergeTuuidDataAction,
         breadcrumbPush: breadcrumbPushAction,
@@ -291,8 +291,9 @@ const fichiersSlice = createSlice({
 // Action creators are generated for each case reducer function
 const { 
     setUserId, setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
-    breadcrumbPush, breadcrumbSlice, supprimer, setSortKeys, setSource, setIntervalle,
+    breadcrumbPush, breadcrumbSlice, setSortKeys, setSource, setIntervalle,
     pushFichiersChiffres, clearFichiersChiffres, selectionTuuids,
+    // supprimer, 
 } = fichiersSlice.actions
 
 // Middleware
