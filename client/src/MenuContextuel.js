@@ -82,7 +82,7 @@ export function MenuContextuelFichierRecherche(props) {
     }
 
     const showPreviewAction = useCallback( event => {
-        if(previewDisponible) showPreview(fichier.fileId)
+        if(previewDisponible) showPreview(fichier.tuuid || fichier.fileId)
         fermerContextuel()
     }, [fichier, previewDisponible, fermerContextuel, showPreview])
 

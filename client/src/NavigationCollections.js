@@ -39,12 +39,22 @@ function NavigationCollections(props) {
     const etatPret = useEtatPret()
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const userId = useSelector(state=>state.fichiers.userId)
+    const selection = useSelector(state => state.fichiers.selection )
 
     const [modeView, setModeView] = useState('')
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
+    const [ showPreview, setShowPreview ] = useState(false)
+    const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
+    const showPreviewAction = useCallback( tuuid => {
+        if(!tuuid && selection && selection.length > 0) {
+            tuuid = selection[0]
+        }
+        setTuuidSelectionne(tuuid)
+        setShowPreview(true)
+    }, [setShowPreview, selection, setTuuidSelectionne])
     
     const naviguerCollection = useCallback( cuuid => {
         console.debug("!!! naviguerCollection ", cuuid)
@@ -98,6 +108,7 @@ function NavigationCollections(props) {
                     <AffichagePrincipal 
                         modeView={modeView}
                         naviguerCollection={naviguerCollection}
+                        showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
                         // colonnes={colonnes}
                         // liste={liste} 
@@ -123,6 +134,10 @@ function NavigationCollections(props) {
             <Modals 
                 showCreerRepertoire={showCreerRepertoire}
                 setShowCreerRepertoire={setShowCreerRepertoire} 
+                showPreview={showPreview}
+                setShowPreview={setShowPreview}
+                tuuidSelectionne={tuuidSelectionne}
+                showPreviewAction={showPreviewAction}
                 contextuel={contextuel}
                 setContextuel={setContextuel} />
         </>
@@ -574,6 +589,7 @@ function AffichagePrincipal(props) {
         modeView, 
         tuuidSelectionne, 
         naviguerCollection,
+        showPreviewAction,
         // onClick,
         // onContextMenu, 
         setContextuel, 
@@ -619,7 +635,7 @@ function AffichagePrincipal(props) {
         const folderId = value.folderId || dataset.folderId
         const fileId = value.fileId || dataset.fileId
         if(folderId) naviguerCollection(folderId) // dispatch(changerCollection(workers, folderId)) 
-        else throw new Error('fix me') // dispatch(viewFichier(fileId))
+        else if(fileId) showPreviewAction(fileId) // throw new Error('fix me') // dispatch(viewFichier(fileId))
     }, [workers, dispatch])
 
     if(afficherVideo) {
@@ -748,6 +764,7 @@ function Modals(props) {
 
     const {
         showCreerRepertoire, setShowCreerRepertoire,
+        showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         // setShowSupprimerModal, showSupprimerModal, 
         contextuel, setContextuel,
     } = props
@@ -757,6 +774,16 @@ function Modals(props) {
     const liste = useSelector(state => state.fichiers.liste)
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
+
+    // const [ showPreview, setShowPreview ] = useState(false)
+    // const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
+    // const showPreviewAction = useCallback( tuuid => {
+    //     if(!tuuid && selection && selection.length > 0) {
+    //         tuuid = selection[0]
+    //     }
+    //     setTuuidSelectionne(tuuid)
+    //     setShowPreview(true)
+    // }, [setShowPreview, selection, setTuuidSelectionne])
 
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
@@ -787,9 +814,9 @@ function Modals(props) {
                 contextuel={contextuel} 
                 fermerContextuel={fermerContextuel}
                 fichiers={liste}
-                // tuuidSelectionne={tuuidSelectionne}
+                tuuidSelectionne={tuuidSelectionne}
                 selection={selection}
-                // showPreview={showPreviewAction}
+                showPreview={showPreviewAction}
                 usager={usager}
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 // showCopierModalOuvrir={showCopierModalOuvrir}
@@ -802,14 +829,13 @@ function Modals(props) {
                 etatAuthentifie={etatPret}
             />
 
-            {/* <PreviewFichiers 
+            <PreviewFichiers 
                 workers={workers}
                 showPreview={showPreview} 
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
-                support={support}
-            /> */}
+            />
 
             <ModalCreerRepertoire 
                 show={showCreerRepertoire} 

@@ -1,26 +1,37 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 
-import { ModalViewer } from '@dugrema/millegrilles.reactjs'
+import { ModalViewer, useDetecterSupport } from '@dugrema/millegrilles.reactjs'
 import {trouverLabelImage} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
 
+import { mapDocumentComplet } from './mapperFichier'
+
 function PreviewFichiers(props) {
-    // console.debug("PreviewFichiers proppies : %O", props)
+    console.debug("PreviewFichiers proppies : %O", props)
 
-    const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview, support } = props
+    const support = useDetecterSupport()
 
-    const [ liste, setListe ] = useState([])
+    const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview } = props
 
-    useEffect(()=>{
-        if(showPreview) {
-            const liste = preparerPreviews(workers, tuuidSelectionne, fichiers, support)
-            // console.debug("Liste fichiers pour previews : %O", liste)
-            setListe(liste)
-        } else {
-            // Vider la liste
-            setListe([])
-        }
-    }, [workers, tuuidSelectionne, fichiers, showPreview, support, setListe] )
+    // const [ liste, setListe ] = useState([])
+
+    const liste = useMemo(()=>{
+        if(!showPreview || !fichiers || !tuuidSelectionne) return []  // Rien a faire
+        const mapper = (item, idx) => mapDocumentComplet(workers, item, idx)
+        const listeMappee = fichiers.map(mapper)
+        return preparerPreviews(workers, tuuidSelectionne, listeMappee, support)
+    },[workers, tuuidSelectionne, fichiers, showPreview, support])
+
+    // useEffect(()=>{
+    //     if(showPreview) {
+    //         const liste = preparerPreviews(workers, tuuidSelectionne, fichiers, support)
+    //         // console.debug("Liste fichiers pour previews : %O", liste)
+    //         setListe(liste)
+    //     } else {
+    //         // Vider la liste
+    //         setListe([])
+    //     }
+    // }, [workers, tuuidSelectionne, fichiers, showPreview, support, setListe] )
 
     // console.debug("PreviewFichiers liste : %O", liste)
 
@@ -40,7 +51,7 @@ function preparerPreviews(workers, tuuidSelectionne, liste, support) {
 
     const optionsLoader = {supporteWebm: support.webm, supporteWebp: support.webp}
 
-    const fichierSelectionne = liste.filter(item=>item.fileId===tuuidSelectionne).pop()
+    const fichierSelectionne = liste.filter(item=>item.tuuid===tuuidSelectionne).pop()
     const versionCourante = fichierSelectionne.version_courante || {}
     const mimetypeSelectionne = versionCourante.mimetype || '',
           mimetypeBase = mimetypeSelectionne.split('/').shift()
