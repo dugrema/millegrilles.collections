@@ -812,6 +812,7 @@ function Modals(props) {
             <SupprimerModal
                 show={showSupprimerModal}
                 fermer={showSupprimerModalFermer}
+                cuuid={cuuid}
                 fichiers={liste}
                 selection={selection}
                 workers={workers}

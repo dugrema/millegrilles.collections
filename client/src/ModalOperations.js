@@ -12,13 +12,13 @@ import { ConversionVideo } from './OperationsVideo'
 
 export function SupprimerModal(props) {
 
-    const { workers, show, fermer, selection } = props
+    const { workers, show, fermer, selection, cuuid } = props
     const connexion = workers.connexion
 
     const supprimer = useCallback( () => {
         // console.debug("SUPRIMER %O", selection)
 
-        connexion.supprimerDocuments(selection)
+        connexion.supprimerDocuments(cuuid, selection)
         .then(reponse=>{
             if(reponse.ok === false) {
                 console.error("Erreur suppression documents %O : %s", selection, reponse.message)

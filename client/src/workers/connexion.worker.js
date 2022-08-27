@@ -77,18 +77,18 @@ function toggleFavoris(etatFavoris) {
   )
 }
 
-function retirerDocumentsCollection(cuuid, tuuids) {
-  return ConnexionClient.emitBlocking(
-    'retirerDocuments',
-    {cuuid, retirer_tuuids: tuuids},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'retirerDocumentsCollection', attacherCertificat: true}
-  )
-}
+// function retirerDocumentsCollection(cuuid, tuuids) {
+//   return ConnexionClient.emitBlocking(
+//     'retirerDocuments',
+//     {cuuid, retirer_tuuids: tuuids},
+//     {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'retirerDocumentsCollection', attacherCertificat: true}
+//   )
+// }
 
-function supprimerDocuments(tuuids) {
+function supprimerDocuments(cuuid, tuuids) {
   return ConnexionClient.emitBlocking(
     'supprimerDocuments',
-    {tuuids},
+    {cuuid, tuuids},
     {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerDocuments', attacherCertificat: true}
   )
 }
@@ -282,7 +282,7 @@ expose({
     getDocuments, getClesFichiers,
     getFavoris, getCorbeille, getRecents, getContenuCollection,
     creerCollection, toggleFavoris, 
-    recupererDocuments, retirerDocumentsCollection, supprimerDocuments,
+    recupererDocuments, supprimerDocuments,
     decrireFichier, decrireCollection,
     copierVersCollection, deplacerFichiersCollection,
     rechercheIndex, transcoderVideo, getPermission,
