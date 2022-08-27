@@ -19,6 +19,7 @@ const initialState = {
     userId: '',                 // UserId courant, permet de stocker plusieurs users localement
     intervalle: null,           // Intervalle de temps des donnees, l'effet depend de la source
     listeDechiffrage: [],       // Liste de fichiers a dechiffrer
+    selection: null,            // Fichiers/collections selectionnees
 }
 
 // Actions
@@ -257,6 +258,10 @@ function clearFichiersChiffresAction(state) {
     state.listeDechiffrage = []
 }
 
+function selectionTuuidsAction(state, action) {
+    state.selection = action.payload
+}
+
 // Slice collection
 
 const fichiersSlice = createSlice({
@@ -277,6 +282,7 @@ const fichiersSlice = createSlice({
         setIntervalle: setIntervalleAction,
         pushFichiersChiffres: pushFichiersChiffresAction,
         clearFichiersChiffres: clearFichiersChiffresAction,
+        selectionTuuids: selectionTuuidsAction,
     }
 })
 
@@ -286,7 +292,7 @@ const fichiersSlice = createSlice({
 const { 
     setUserId, setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
     breadcrumbPush, breadcrumbSlice, supprimer, setSortKeys, setSource, setIntervalle,
-    pushFichiersChiffres, clearFichiersChiffres,
+    pushFichiersChiffres, clearFichiersChiffres, selectionTuuids,
 } = fichiersSlice.actions
 
 // Middleware
@@ -877,7 +883,7 @@ function identifierClesHachages(liste) {
 
 export { 
     setUserId, breadcrumbPush, breadcrumbSlice, 
-    setSortKeys, setIntervalle, 
+    setSortKeys, setIntervalle, selectionTuuids,
 }
 
 // Async actions

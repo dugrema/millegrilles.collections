@@ -28,6 +28,7 @@ import {
     changerCollection, afficherPlusrecents, afficherCorbeille,
     breadcrumbPush, breadcrumbSlice, ajouterFichierVolatil, 
     supprimerFichier, restaurerFichier, rafraichirCollection,
+    selectionTuuids,
 } from './redux/fichiersSlice'
 
 function NavigationCollections(props) {
@@ -43,6 +44,8 @@ function NavigationCollections(props) {
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
+    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
+    const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     
     const naviguerCollection = useCallback( cuuid => {
         console.debug("!!! naviguerCollection ", cuuid)
@@ -96,6 +99,7 @@ function NavigationCollections(props) {
                     <AffichagePrincipal 
                         modeView={modeView}
                         naviguerCollection={naviguerCollection}
+                        setContextuel={setContextuel}
                         // colonnes={colonnes}
                         // liste={liste} 
                         // onDoubleClick={onDoubleClick}
@@ -119,7 +123,11 @@ function NavigationCollections(props) {
 
             <Modals 
                 showCreerRepertoire={showCreerRepertoire}
-                setShowCreerRepertoire={setShowCreerRepertoire} />
+                setShowCreerRepertoire={setShowCreerRepertoire} 
+                showSupprimerModal={showSupprimerModal}
+                setShowSupprimerModal={setShowSupprimerModal}
+                contextuel={contextuel}
+                setContextuel={setContextuel} />
         </>
     )
 
@@ -570,7 +578,8 @@ function AffichagePrincipal(props) {
         tuuidSelectionne, 
         naviguerCollection,
         // onClick,
-        onContextMenu, setContextuel, 
+        // onContextMenu, 
+        setContextuel, 
         enteteOnClickCb,
         afficherVideo, setAfficherVideo, showInfoModalOuvrir
     } = props
@@ -596,11 +605,12 @@ function AffichagePrincipal(props) {
     const onSelectionLignes = useCallback(selection=>{
         console.debug("Selection lignes : ", selection)
         // setSelection(selection)
+        dispatch(selectionTuuids(selection))
     }, [dispatch])
     // const onSelectionThumbs = useCallback(selection=>{setSelection(selection.join(', '))}, [setSelection])
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
-        // console.debug("onContextMenuClick event %O, value %O", event, value)
+        console.debug("onContextMenuClick event %O, value %O", event, value)
         onContextMenu(event, value, setContextuel)
     }, [onContextMenu, setContextuel])
 
@@ -739,11 +749,23 @@ function HandlerEvenements(props) {
 
 function Modals(props) {
 
-    const { 
+    const {
         showCreerRepertoire, setShowCreerRepertoire,
+        setShowSupprimerModal, showSupprimerModal, 
+        contextuel, setContextuel,
     } = props
     
-    // const workers = useWorkers()
+    const usager = useUsager()
+    const etatPret = useEtatPret()
+    const liste = useSelector(state => state.fichiers.liste)
+    const cuuid = useSelector(state => state.fichiers.cuuid)
+    const selection = useSelector(state => state.fichiers.selection )
+
+    const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
+    const showSupprimerModalOuvrir = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
+    const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
+
+    const workers = useWorkers()
     // const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
 
     return (
@@ -754,25 +776,24 @@ function Modals(props) {
                     cuuid={cuuidCourant} 
                     chargementListeEnCours={chargementListeEnCours} />*/}
 
-            {/* <MenuContextuelFavoris 
-                workers={props.workers}
+            <MenuContextuel
                 contextuel={contextuel} 
                 fermerContextuel={fermerContextuel}
                 fichiers={liste}
-                tuuidSelectionne={tuuidSelectionne}
+                // tuuidSelectionne={tuuidSelectionne}
                 selection={selection}
-                showPreview={showPreviewAction}
+                // showPreview={showPreviewAction}
                 usager={usager}
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
-                showCopierModalOuvrir={showCopierModalOuvrir}
-                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
-                showInfoModalOuvrir={showInfoModalOuvrir}
-                showRenommerModalOuvrir={showRenommerModalOuvrir}
-                cuuid={cuuidCourant}
-                downloadAction={downloadAction}
-                etatConnexion={etatConnexion}
-                etatAuthentifie={etatAuthentifie}
-            /> */}
+                // showCopierModalOuvrir={showCopierModalOuvrir}
+                // showDeplacerModalOuvrir={showDeplacerModalOuvrir}
+                // showInfoModalOuvrir={showInfoModalOuvrir}
+                // showRenommerModalOuvrir={showRenommerModalOuvrir}
+                cuuid={cuuid}
+                // downloadAction={downloadAction}
+                etatConnexion={etatPret}
+                etatAuthentifie={etatPret}
+            />
 
             {/* <PreviewFichiers 
                 workers={workers}
@@ -788,13 +809,13 @@ function Modals(props) {
                 fermer={()=>{setShowCreerRepertoire(false)}} 
             />
 
-            {/* <SupprimerModal
+            <SupprimerModal
                 show={showSupprimerModal}
                 fermer={showSupprimerModalFermer}
                 fichiers={liste}
                 selection={selection}
                 workers={workers}
-            /> */}
+            />
 
             {/* <CopierModal 
                 show={showCopierModal} 
@@ -1116,22 +1137,28 @@ function preprarerDonnees(liste, workers, opts) {
     return listeMappee
 }
 
-function MenuContextuelFavoris(props) {
+function MenuContextuel(props) {
 
-    const { contextuel, fichiers, selection } = props
+    const { contextuel, selection } = props
+
+    const workers = useWorkers()
+    const fichiers = useSelector(state => state.fichiers.liste)
 
     if(!contextuel.show) return ''
 
-    if( selection && selection.length > 1 ) {
-        return <MenuContextuelMultiselect {...props} />
-    } else if(selection.length>0) {
-        const fichierTuuid = selection[0]
-        const fichier = fichiers.filter(item=>(item.folderId||item.fileId)===fichierTuuid).pop()
-        if(fichier) {
-            if(fichier.folderId) {
-                return <MenuContextuelRepertoire {...props} repertoire={fichier} />
-            } else if(fichier.fileId) {
-                return <MenuContextuelFichier fichier={fichier} {...props} />
+    if(selection && fichiers) {
+        console.debug("Selection : ", selection)
+        if( selection.length > 1 ) {
+            return <MenuContextuelMultiselect {...props} workers={workers} />
+        } else if( selection.length === 1 ) {
+            const fichierTuuid = selection[0]
+            const fichier = fichiers.filter(item=>item.tuuid===fichierTuuid).pop()
+            if(fichier) {
+                if(fichier.mimetype && fichier.mimetype !== 'Repertoire') {
+                    return <MenuContextuelFichier {...props} workers={workers} fichier={fichier} />
+                } else {
+                    return <MenuContextuelRepertoire {...props} workers={workers} repertoire={fichier} />
+                }
             }
         }
     }
@@ -1471,12 +1498,13 @@ async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
     console.debug("traiterContenuCollectionEvenement ", evenement)
 
     const message = evenement.message || {}
-    const { collections_ajoutees } = message
     
     // Conserver liste tuuids (et dedupe)
     const dirtyTuuids = {}
-    if(collections_ajoutees) {
-        collections_ajoutees.forEach(item=>{dirtyTuuids[item] = true})
+    const champs = ['fichiers_ajoutes', 'fichiers_modifies', 'collections_ajoutees', 'collections_modifiees', 'retires']
+    for (const champ of champs) {
+        const value = message[champ]
+        if(value) value.forEach(item=>{dirtyTuuids[item] = true})
     }
     const tuuids = Object.keys(dirtyTuuids)
 
