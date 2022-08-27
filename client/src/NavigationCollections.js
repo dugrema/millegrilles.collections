@@ -18,7 +18,7 @@ import { ListeFichiers, FormatteurTaille, FormatterDate, usagerDao } from '@dugr
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
 import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
-import { mapper, mapDocumentComplet } from './mapperFichier'
+import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import { detecterSupport, uploaderFichiers } from './fonctionsFichiers'
 import useWorkers, { useEtatPret, useUsager, useEtatConnexion, useEtatAuthentifie } from './WorkerContext'
@@ -769,8 +769,8 @@ function Modals(props) {
     const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
     const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
     const showRenommerModalFermer = useCallback(()=>setShowRenommerModal(false), [setShowRenommerModal])
-    
-    
+    const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
+    const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
 
     const workers = useWorkers()
     // const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -794,7 +794,7 @@ function Modals(props) {
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 // showCopierModalOuvrir={showCopierModalOuvrir}
                 // showDeplacerModalOuvrir={showDeplacerModalOuvrir}
-                // showInfoModalOuvrir={showInfoModalOuvrir}
+                showInfoModalOuvrir={showInfoModalOuvrir}
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
                 cuuid={cuuid}
                 // downloadAction={downloadAction}
@@ -842,18 +842,17 @@ function Modals(props) {
                 workers={workers}
             /> */}
 
-            {/* <InfoModal 
+            <InfoModal 
                 show={showInfoModal} 
                 fermer={showInfoModalFermer}
                 fichiers={liste}
                 selection={selection}
                 workers={workers}
-                support={support}
-                downloadAction={downloadAction}
-                etatConnexion={etatConnexion}
-                etatAuthentifie={etatAuthentifie}
+                // downloadAction={downloadAction}
+                etatConnexion={etatPret}
+                etatAuthentifie={etatPret}
                 usager={usager}
-            /> */}
+            />
 
             <RenommerModal
                 show={showRenommerModal} 
@@ -1120,30 +1119,30 @@ function trierMimetype(a, b) {
     return nomA.localeCompare(nomB)
 }
 
-function preprarerDonnees(liste, workers, opts) {
-    opts = opts || {}
-    const tri = opts.tri || {}
+// function preprarerDonnees(liste, workers, opts) {
+//     opts = opts || {}
+//     const tri = opts.tri || {}
 
-    const listeMappee = liste.map(item=>mapper(item, workers))
+//     const listeMappee = liste.map(item=>mapper(item, workers))
 
-    let triFunction = null
-    switch(tri.colonne) {
-        case 'nom': triFunction = trierNom; break
-        case 'taille': triFunction = trierTaille; break
-        case 'mimetype': triFunction = trierMimetype; break
-        case 'dateAjout': triFunction = trierDateAjout; break
-        default: triFunction = null
-    }
+//     let triFunction = null
+//     switch(tri.colonne) {
+//         case 'nom': triFunction = trierNom; break
+//         case 'taille': triFunction = trierTaille; break
+//         case 'mimetype': triFunction = trierMimetype; break
+//         case 'dateAjout': triFunction = trierDateAjout; break
+//         default: triFunction = null
+//     }
 
-    if(triFunction) {
-        listeMappee.sort(triFunction)
-        if(tri.ordre < 0) {
-            listeMappee.reverse()
-        }
-    }
+//     if(triFunction) {
+//         listeMappee.sort(triFunction)
+//         if(tri.ordre < 0) {
+//             listeMappee.reverse()
+//         }
+//     }
 
-    return listeMappee
-}
+//     return listeMappee
+// }
 
 function MenuContextuel(props) {
 
@@ -1175,113 +1174,113 @@ function MenuContextuel(props) {
 }
 
 
-async function chargerFavoris(workers, setFavoris) {
-    // console.debug("Charger favoris")
-    const { connexion } = workers
-    try {
-        const messageFavoris = await connexion.getFavoris()
-        const favoris = messageFavoris.favoris || {}
-        // console.debug("Favoris recus : %O", favoris)
-        setFavoris(favoris)
-    } catch(err) {
-        console.error("Erreur chargement favoris : %O", err)
-    }
-}
+// async function chargerFavoris(workers, setFavoris) {
+//     // console.debug("Charger favoris")
+//     const { connexion } = workers
+//     try {
+//         const messageFavoris = await connexion.getFavoris()
+//         const favoris = messageFavoris.favoris || {}
+//         // console.debug("Favoris recus : %O", favoris)
+//         setFavoris(favoris)
+//     } catch(err) {
+//         console.error("Erreur chargement favoris : %O", err)
+//     }
+// }
 
-async function chargerCollection(workers, cuuid, usager, opts) {
-    opts = opts || {}
-    const { listeCourante, tri } = opts
-    const limit = opts.limit || 20
+// async function chargerCollection(workers, cuuid, usager, opts) {
+//     opts = opts || {}
+//     const { listeCourante, tri } = opts
+//     const limit = opts.limit || 20
 
-    let sort_keys = null
-    if(tri) {
-        let nomColonne
-        switch(tri.colonne) {
-            case 'nom': nomColonne = 'nom'; break
-            case 'taille': nomColonne = 'version_courante.taille'; break
-            case 'mimetype': nomColonne = 'mimetype'; break
-            case 'dateAjout': nomColonne = '_mg-creation'; break
-            default: nomColonne = null
-        }
+//     let sort_keys = null
+//     if(tri) {
+//         let nomColonne
+//         switch(tri.colonne) {
+//             case 'nom': nomColonne = 'nom'; break
+//             case 'taille': nomColonne = 'version_courante.taille'; break
+//             case 'mimetype': nomColonne = 'mimetype'; break
+//             case 'dateAjout': nomColonne = '_mg-creation'; break
+//             default: nomColonne = null
+//         }
 
-        if(nomColonne) {
-            sort_keys = [{colonne: nomColonne, ordre: tri.ordre}]
-        }
-    }
+//         if(nomColonne) {
+//             sort_keys = [{colonne: nomColonne, ordre: tri.ordre}]
+//         }
+//     }
 
-    let skip = 0
-    if(listeCourante) {
-        skip = listeCourante.length
-    }
+//     let skip = 0
+//     if(listeCourante) {
+//         skip = listeCourante.length
+//     }
 
-    // console.debug("Charger collection %s (offset: %s)", cuuid, skip)
-    const { connexion, chiffrage } = workers
-    const reponse = await connexion.getContenuCollection(cuuid, {skip, limit, sort_keys})
-    // console.debug("Reponse contenu collection : %O", reponse)
-    const { documents } = reponse
+//     // console.debug("Charger collection %s (offset: %s)", cuuid, skip)
+//     const { connexion, chiffrage } = workers
+//     const reponse = await connexion.getContenuCollection(cuuid, {skip, limit, sort_keys})
+//     // console.debug("Reponse contenu collection : %O", reponse)
+//     const { documents } = reponse
 
-    // Precharger les cles des images thumbnails, small et posters
-    const fuuidsImages = documents.map(item=>{
-        const { version_courante } = item
-        if(version_courante && version_courante.images) {
-            const fuuidsImages = Object.keys(version_courante.images)
-                .filter(item=>['thumb', 'thumbnail', 'poster', 'small'].includes(item))
-                .map(item=>version_courante.images[item].hachage)
-                .reduce((arr, item)=>{arr.push(item); return arr}, [])
-            return fuuidsImages
-        }
-        return []
-    }).reduce((arr, item)=>{
-        return [...arr, ...item]
-    }, [])
-    // console.debug("Fuuids images : %O", fuuidsImages)
+//     // Precharger les cles des images thumbnails, small et posters
+//     const fuuidsImages = documents.map(item=>{
+//         const { version_courante } = item
+//         if(version_courante && version_courante.images) {
+//             const fuuidsImages = Object.keys(version_courante.images)
+//                 .filter(item=>['thumb', 'thumbnail', 'poster', 'small'].includes(item))
+//                 .map(item=>version_courante.images[item].hachage)
+//                 .reduce((arr, item)=>{arr.push(item); return arr}, [])
+//             return fuuidsImages
+//         }
+//         return []
+//     }).reduce((arr, item)=>{
+//         return [...arr, ...item]
+//     }, [])
+//     // console.debug("Fuuids images : %O", fuuidsImages)
 
-    // Verifier les cles qui sont deja connues
-    let fuuidsInconnus = []
-    for await (const fuuid of fuuidsImages) {
-        const cleFichier = await usagerDao.getCleDechiffree(fuuid)
-        if(!cleFichier) fuuidsInconnus.push(fuuid)
-    }
+//     // Verifier les cles qui sont deja connues
+//     let fuuidsInconnus = []
+//     for await (const fuuid of fuuidsImages) {
+//         const cleFichier = await usagerDao.getCleDechiffree(fuuid)
+//         if(!cleFichier) fuuidsInconnus.push(fuuid)
+//     }
 
-    if(fuuidsInconnus.length > 0) {
-        // console.debug("Get cles manquantes pour fuuids %O", fuuidsInconnus)
-        connexion.getClesFichiers(fuuidsInconnus, usager)
-            .then(async reponse=>{
-                // console.debug("Reponse dechiffrage cles : %O", reponse)
+//     if(fuuidsInconnus.length > 0) {
+//         // console.debug("Get cles manquantes pour fuuids %O", fuuidsInconnus)
+//         connexion.getClesFichiers(fuuidsInconnus, usager)
+//             .then(async reponse=>{
+//                 // console.debug("Reponse dechiffrage cles : %O", reponse)
 
-                for await (const fuuid of Object.keys(reponse.cles)) {
-                    const cleFichier = reponse.cles[fuuid]
-                    // console.debug("Dechiffrer cle %O", cleFichier)
-                    const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
-                    cleFichier.cleSecrete = cleSecrete
-                    // console.debug("Cle secrete fichier %O", cleFichier)
-                    usagerDao.saveCleDechiffree(fuuid, cleSecrete, cleFichier)
-                        .catch(err=>{
-                            console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
-                        })
-                }
+//                 for await (const fuuid of Object.keys(reponse.cles)) {
+//                     const cleFichier = reponse.cles[fuuid]
+//                     // console.debug("Dechiffrer cle %O", cleFichier)
+//                     const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
+//                     cleFichier.cleSecrete = cleSecrete
+//                     // console.debug("Cle secrete fichier %O", cleFichier)
+//                     usagerDao.saveCleDechiffree(fuuid, cleSecrete, cleFichier)
+//                         .catch(err=>{
+//                             console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
+//                         })
+//                 }
             
-            })
-            .catch(err=>{console.error("Erreur chargement cles fichiers %O : %O", fuuidsInconnus, err)})
-    } else {
-        // console.debug("Toutes les cles sont deja chargees")
-    }
+//             })
+//             .catch(err=>{console.error("Erreur chargement cles fichiers %O : %O", fuuidsInconnus, err)})
+//     } else {
+//         // console.debug("Toutes les cles sont deja chargees")
+//     }
 
-    let liste = listeCourante || [],
-        estComplet = false
-    if(documents) {
-        const nouveauxFichiers = preprarerDonnees(documents, workers)
-        if(nouveauxFichiers.length === 0) {
-            // Aucuns fichiers ajoutes, on a la liste au complet
-            estComplet = true
-        }
-        // console.debug("chargerCollection donnees recues : %O", nouveauxFichiers)
-        // setListe( data )
-        liste = [...liste, ...nouveauxFichiers]  // Concatener
-    }
+//     let liste = listeCourante || [],
+//         estComplet = false
+//     if(documents) {
+//         const nouveauxFichiers = preprarerDonnees(documents, workers)
+//         if(nouveauxFichiers.length === 0) {
+//             // Aucuns fichiers ajoutes, on a la liste au complet
+//             estComplet = true
+//         }
+//         // console.debug("chargerCollection donnees recues : %O", nouveauxFichiers)
+//         // setListe( data )
+//         liste = [...liste, ...nouveauxFichiers]  // Concatener
+//     }
 
-    return {data: liste, estComplet}
-}
+//     return {data: liste, estComplet}
+// }
 
 async function enregistrerEvenementsFichiersCollection(workers, cuuid, callback) {
     const { connexion } = workers
@@ -1293,210 +1292,210 @@ async function enregistrerEvenementsFichiersCollection(workers, cuuid, callback)
     }
 }
 
-async function retirerEvenementsFichiersCollection(workers, cuuid, callback) {
-    const { connexion } = workers
-    try {
-        // const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
-        await connexion.retirerCallbackMajFichierCollection({cuuids: [cuuid]}, callback)
-    } catch (err) {
-        console.error("Erreur retirerEvenementsFichiers : %O", err)
-    }
-}
+// async function retirerEvenementsFichiersCollection(workers, cuuid, callback) {
+//     const { connexion } = workers
+//     try {
+//         // const tuuids = liste.filter(item=>item.fileId).map(item=>item.fileId)
+//         await connexion.retirerCallbackMajFichierCollection({cuuids: [cuuid]}, callback)
+//     } catch (err) {
+//         console.error("Erreur retirerEvenementsFichiers : %O", err)
+//     }
+// }
 
-function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe) {
-    const message = evenementFichier.message
-    const tuuid = message.tuuid
-    const tuuidsInclus = {}
-    const listeMaj = liste
-        .filter(item=>{
-            // Detecter retrait/supprime
-            const tuuidItem = item.fileId
-            if(tuuidItem === tuuid) {
-                if(message.supprime === true) return false  // Fichier supprime
-                if(cuuidCourant) {
-                    if(!message.cuuids.includes(cuuidCourant)) return false  // Fichier retire de la collection
-                } else { // Favoris
-                    if(message.favoris !== true) return false
-                }
-                if(tuuidsInclus[tuuidItem]) return false // Duplicata
-            }
-            tuuidsInclus[tuuidItem] = true
-            return true  // Conserver le fichier
-        })
-        .map(item=>{
-            const tuuidItem = item.fileId
-            if(tuuidItem === tuuid) {
-                return mapper(message, workers)
-            }
-            return item
-        })
+// function mapperEvenementFichier(workers, evenementFichier, liste, cuuidCourant, setListe) {
+//     const message = evenementFichier.message
+//     const tuuid = message.tuuid
+//     const tuuidsInclus = {}
+//     const listeMaj = liste
+//         .filter(item=>{
+//             // Detecter retrait/supprime
+//             const tuuidItem = item.fileId
+//             if(tuuidItem === tuuid) {
+//                 if(message.supprime === true) return false  // Fichier supprime
+//                 if(cuuidCourant) {
+//                     if(!message.cuuids.includes(cuuidCourant)) return false  // Fichier retire de la collection
+//                 } else { // Favoris
+//                     if(message.favoris !== true) return false
+//                 }
+//                 if(tuuidsInclus[tuuidItem]) return false // Duplicata
+//             }
+//             tuuidsInclus[tuuidItem] = true
+//             return true  // Conserver le fichier
+//         })
+//         .map(item=>{
+//             const tuuidItem = item.fileId
+//             if(tuuidItem === tuuid) {
+//                 return mapper(message, workers)
+//             }
+//             return item
+//         })
 
-    if(!tuuidsInclus[tuuid] && evenementFichier.nouveau) {
-        listeMaj.push(mapper(message, workers))
-    }
+//     if(!tuuidsInclus[tuuid] && evenementFichier.nouveau) {
+//         listeMaj.push(mapper(message, workers))
+//     }
 
-    setListe(listeMaj)
-}
+//     setListe(listeMaj)
+// }
 
-function mapperUploadFichier(workers, evenement, liste, cuuidCourant, setListe) {
-    // Determiner type evenement upload
-    const { complete } = evenement || {}
-    const uploadEnCours = evenement.uploadEnCours || {}
-    const uploadsPending = evenement.uploadsPending || []
+// function mapperUploadFichier(workers, evenement, liste, cuuidCourant, setListe) {
+//     // Determiner type evenement upload
+//     const { complete } = evenement || {}
+//     const uploadEnCours = evenement.uploadEnCours || {}
+//     const uploadsPending = evenement.uploadsPending || []
 
-    let trouve = false
+//     let trouve = false
 
-    const fichierUpload = mapperUpload(uploadEnCours, evenement)
+//     const fichierUpload = mapperUpload(uploadEnCours, evenement)
 
-    // Upload en cours, mettre a jour le fichier dans la liste avec progres
-    liste = liste.map(item=>{
-        const itemId = item.fileId || item.folderId
-        if(itemId !== fichierUpload.correlation) return item
+//     // Upload en cours, mettre a jour le fichier dans la liste avec progres
+//     liste = liste.map(item=>{
+//         const itemId = item.fileId || item.folderId
+//         if(itemId !== fichierUpload.correlation) return item
 
-        trouve = true
-        const upload = { position: uploadEnCours.position, status: uploadEnCours.status }
-        item = {...item, ...fichierUpload, upload}
-        return item
-    })
+//         trouve = true
+//         const upload = { position: uploadEnCours.position, status: uploadEnCours.status }
+//         item = {...item, ...fichierUpload, upload}
+//         return item
+//     })
 
-    if(complete) {
-        // Evenement complete (succes, erreur), retirer la correlation d'upload
-        trouve = true  // S'assurer de ne pas ajouter le fichier
-        liste = liste.filter(item=>{
-            const itemId = item.fileId || item.folderId
-            return itemId !== complete
-        })
-    }
+//     if(complete) {
+//         // Evenement complete (succes, erreur), retirer la correlation d'upload
+//         trouve = true  // S'assurer de ne pas ajouter le fichier
+//         liste = liste.filter(item=>{
+//             const itemId = item.fileId || item.folderId
+//             return itemId !== complete
+//         })
+//     }
 
-    if(cuuidCourant === fichierUpload.cuuid) {
-        if(fichierUpload.correlation && !trouve) {
-            // Mapper le fichier, ajouter a la liste
-            const fichierMappe = mapper(fichierUpload, workers)
-            liste.push(fichierMappe)
-        }
-    }
+//     if(cuuidCourant === fichierUpload.cuuid) {
+//         if(fichierUpload.correlation && !trouve) {
+//             // Mapper le fichier, ajouter a la liste
+//             const fichierMappe = mapper(fichierUpload, workers)
+//             liste.push(fichierMappe)
+//         }
+//     }
 
-    const uploadsPendingCorrelation = []
-    uploadsPending.forEach(itemPending=>{
-        uploadsPendingCorrelation.push(itemPending.correlation)
-        const fichierPending = mapperUpload(itemPending)
-        if(fichierPending.cuuid === cuuidCourant) {
-            let trouvePending = false
-            // S'assurer que le fichier est affiche
-            liste = liste.map(item=>{
-                const itemId = item.fileId || item.folderId
-                if(itemId !== fichierPending.correlation) return item
-                trouvePending = true
-                item = {...item, ...fichierPending}
-                return item
-            })
-            if(!trouvePending) {
-                const fichierPendingMappe = mapper(fichierPending, workers)
-                liste.push(fichierPendingMappe)
-            }
-        }
-    })
+//     const uploadsPendingCorrelation = []
+//     uploadsPending.forEach(itemPending=>{
+//         uploadsPendingCorrelation.push(itemPending.correlation)
+//         const fichierPending = mapperUpload(itemPending)
+//         if(fichierPending.cuuid === cuuidCourant) {
+//             let trouvePending = false
+//             // S'assurer que le fichier est affiche
+//             liste = liste.map(item=>{
+//                 const itemId = item.fileId || item.folderId
+//                 if(itemId !== fichierPending.correlation) return item
+//                 trouvePending = true
+//                 item = {...item, ...fichierPending}
+//                 return item
+//             })
+//             if(!trouvePending) {
+//                 const fichierPendingMappe = mapper(fichierPending, workers)
+//                 liste.push(fichierPendingMappe)
+//             }
+//         }
+//     })
 
-    // Retirer toutes les anciens pending
-    liste = liste.filter(item=>{
-        if(item.status === 1) return uploadsPendingCorrelation.includes(item.fileId||item.folderId)
-        return true
-    })
+//     // Retirer toutes les anciens pending
+//     liste = liste.filter(item=>{
+//         if(item.status === 1) return uploadsPendingCorrelation.includes(item.fileId||item.folderId)
+//         return true
+//     })
 
-    setListe(liste)
-}
+//     setListe(liste)
+// }
 
-function mapperUpload(uploadFichier, evenement) {
-    evenement = evenement || {}
-    const correlation = evenement.encours || uploadFichier.correlation
-    const status = evenement.status || uploadFichier.status
-    const position = evenement.loadedBytes || uploadFichier.position
-    const { size, transaction } = uploadFichier || {}
-    const { cuuid, mimetype, nom, dateFichier } = transaction || {}
-    return { tuuid: correlation, status, position, size, transaction, correlation, mimetype, nom, cuuid, dateFichier }
-}
+// function mapperUpload(uploadFichier, evenement) {
+//     evenement = evenement || {}
+//     const correlation = evenement.encours || uploadFichier.correlation
+//     const status = evenement.status || uploadFichier.status
+//     const position = evenement.loadedBytes || uploadFichier.position
+//     const { size, transaction } = uploadFichier || {}
+//     const { cuuid, mimetype, nom, dateFichier } = transaction || {}
+//     return { tuuid: correlation, status, position, size, transaction, correlation, mimetype, nom, cuuid, dateFichier }
+// }
 
-function mapperEvenementCollection(evenementCollection, liste, setListe, opts) {
-    opts = opts || {}
-    const favoris = opts.favoris || false
+// function mapperEvenementCollection(evenementCollection, liste, setListe, opts) {
+//     opts = opts || {}
+//     const favoris = opts.favoris || false
 
-    const message = evenementCollection.message
-    const cuuid = message.tuuid
-    const { nom, securite } = message
-    let listeMaj = liste.map(item=>{
-        if(item.tuuid === cuuid) return {...item, nom, securite}
-        return item
-    })
-    if(favoris && message.favoris !== true) {
-        listeMaj = liste.filter(item=>item.tuuid !== cuuid)
-    }
-    setListe(listeMaj)
-}
+//     const message = evenementCollection.message
+//     const cuuid = message.tuuid
+//     const { nom, securite } = message
+//     let listeMaj = liste.map(item=>{
+//         if(item.tuuid === cuuid) return {...item, nom, securite}
+//         return item
+//     })
+//     if(favoris && message.favoris !== true) {
+//         listeMaj = liste.filter(item=>item.tuuid !== cuuid)
+//     }
+//     setListe(listeMaj)
+// }
 
-async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, opts) {
-    opts = opts || {}
+// async function mapperEvenementContenuCollection(workers, evenementContenuCollection, liste, setListe, addEvenementFichier, opts) {
+//     opts = opts || {}
 
-    const message = evenementContenuCollection.message
-    const retires = message.retires || []
-    const listeMaj = liste
-        .filter(item=>{
-            // Detecter retrait/supprime
-            const tuuidItem = item.fileId || item.folderId
-            if(retires.includes(tuuidItem)) {
-                return false  // Retirer l'item
-            }
-            return true  // Conserver item
-        })
+//     const message = evenementContenuCollection.message
+//     const retires = message.retires || []
+//     const listeMaj = liste
+//         .filter(item=>{
+//             // Detecter retrait/supprime
+//             const tuuidItem = item.fileId || item.folderId
+//             if(retires.includes(tuuidItem)) {
+//                 return false  // Retirer l'item
+//             }
+//             return true  // Conserver item
+//         })
 
-    // Maj liste (retraits)
-    setListe(listeMaj)
+//     // Maj liste (retraits)
+//     setListe(listeMaj)
 
-    // Determiner si on a des ajouts. Traitement va etre async, on utilise le meme
-    // mecanisme d'ajout que pour les evenements d'ajout de fichiers / collections.
-    let tuuids = []
-    if(message.fichiers_ajoutes) tuuids = [...tuuids, ...message.fichiers_ajoutes]
-    if(message.collections_ajoutees) tuuids = [...tuuids, ...message.collections_ajoutees]
-    const { connexion } = workers
-    if(tuuids.length > 0) {
-        const reponseDocuments = await connexion.getDocuments(tuuids)
-        const fichiers = reponseDocuments.fichiers
-        if(fichiers) {
-            fichiers.forEach(doc=>{
-                addEvenementFichier({nouveau: true, message: doc})
-            })
-        }
-    }
-}
+//     // Determiner si on a des ajouts. Traitement va etre async, on utilise le meme
+//     // mecanisme d'ajout que pour les evenements d'ajout de fichiers / collections.
+//     let tuuids = []
+//     if(message.fichiers_ajoutes) tuuids = [...tuuids, ...message.fichiers_ajoutes]
+//     if(message.collections_ajoutees) tuuids = [...tuuids, ...message.collections_ajoutees]
+//     const { connexion } = workers
+//     if(tuuids.length > 0) {
+//         const reponseDocuments = await connexion.getDocuments(tuuids)
+//         const fichiers = reponseDocuments.fichiers
+//         if(fichiers) {
+//             fichiers.forEach(doc=>{
+//                 addEvenementFichier({nouveau: true, message: doc})
+//             })
+//         }
+//     }
+// }
 
-function InformationListe(props) {
-    const { chargementListeEnCours, favoris, liste, cuuid } = props
+// function InformationListe(props) {
+//     const { chargementListeEnCours, favoris, liste, cuuid } = props
 
-    if (chargementListeEnCours) return <p>Chargement en cours...</p>
+//     if (chargementListeEnCours) return <p>Chargement en cours...</p>
 
-    if(!cuuid) {
-        const tailleListe = (favoris && favoris.length) || 0
-        if(tailleListe === 0) {
-            return (
-                <div>
-                    <br/>
-                    <Alert>
-                        <Alert.Heading>Aucune collection</Alert.Heading>
-                        <p>
-                            Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
-                        </p>
-                    </Alert>
-                </div>
-            )
-        }
-    } else {
-        const tailleListe = (liste && liste.length) || 0
-        if(tailleListe === 0) {
-            return <p>Aucuns fichiers.</p>
-        }
-    }
+//     if(!cuuid) {
+//         const tailleListe = (favoris && favoris.length) || 0
+//         if(tailleListe === 0) {
+//             return (
+//                 <div>
+//                     <br/>
+//                     <Alert>
+//                         <Alert.Heading>Aucune collection</Alert.Heading>
+//                         <p>
+//                             Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
+//                         </p>
+//                     </Alert>
+//                 </div>
+//             )
+//         }
+//     } else {
+//         const tailleListe = (liste && liste.length) || 0
+//         if(tailleListe === 0) {
+//             return <p>Aucuns fichiers.</p>
+//         }
+//     }
 
-    return ''
-}
+//     return ''
+// }
 
 function traiterCollectionEvenement(workers, dispatch, evenement) {
     console.debug("traiterCollectionEvenement ", evenement)

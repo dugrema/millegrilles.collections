@@ -8,6 +8,7 @@ import Row from 'react-bootstrap/Row'
 
 import { FormatteurTaille, FormatterDate, FormatterDuree, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
 
+import { mapDocumentComplet } from './mapperFichier'
 import { ConversionVideo } from './OperationsVideo'
 
 export function SupprimerModal(props) {
@@ -185,47 +186,36 @@ export function InfoModal(props) {
         show, fermer, cuuid, fichiers, selection, support, downloadAction, 
         usager 
     } = props
-    const { connexion } = workers
 
-    let tuuidSelectionne = null,
-        docSelectionne = null,
-        header = null
-    if(selection && selection.length === 1) {
-        tuuidSelectionne = selection[0]
-        docSelectionne = fichiers.filter(item=>tuuidSelectionne===(item.fileId || item.folderId)).pop()
+    const { mimetype, docSelectionne, header } = useMemo(()=>{
+        if(!show || !selection || !fichiers) return {}
+        const tuuidSelectionne = selection[0]
+        let docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
+        
+        let header = null, mimetype = null
+        if(docSelectionne) {
+            mimetype = docSelectionne.mimetype
+            // Mapper le fichier (thumbnails, etc.)
+            docSelectionne = mapDocumentComplet(workers, docSelectionne)
 
-        if(!docSelectionne) {
+            if(docSelectionne.mimetype) {
+                header = 'Information fichier'
+            } else {
+                header = 'Information collection'
+            }
+        } else {
             header = 'N/D'
-        } else if(docSelectionne.fileId) {
-            header = 'Information fichier'
-        } else if(docSelectionne.folderId) {
-            header = 'Information collection'
         }
-    }
 
-    const [doc, setDoc] = useState('')
-
-    useEffect(()=>{
-        if(!show || !connexion || !tuuidSelectionne) return
-        // console.debug("Charger document '%s' ", tuuidSelectionne)
-        connexion.getDocuments([tuuidSelectionne])
-            .then(reponse => {
-                // console.debug("Reponse getDoc %s = %O", tuuidSelectionne, reponse)
-                if(reponse.ok !== false) {
-                    setDoc(reponse.fichiers[0])
-                }
-            })
-            .catch(err=>{
-                console.error("Erreur getDocument %s : %O", tuuidSelectionne, err)
-            })
-    }, [show, connexion, tuuidSelectionne, setDoc])
+        return {docSelectionne, header, mimetype}
+    }, [workers, show, selection, fichiers])
 
     let Body = InfoVide
     if(!docSelectionne) {
         // Rien a faire
-    } else if(docSelectionne.fileId) {
+    } else if(mimetype) {
         Body = InfoFichier
-    } else if(docSelectionne.folderId) {
+    } else {
         Body = InfoCollection
     }
 
@@ -239,7 +229,7 @@ export function InfoModal(props) {
                     support={support}
                     cuuid={cuuid}
                     valueItem={docSelectionne}
-                    value={doc}
+                    value={docSelectionne}
                     downloadAction={downloadAction}
                     etatConnexion={etatConnexion}
                     etatAuthentifie={etatAuthentifie}
