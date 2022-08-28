@@ -1,14 +1,26 @@
 import axios from 'axios'
 import multibase from 'multibase'
-import { usagerDao } from '@dugrema/millegrilles.reactjs'
+// import { usagerDao } from '@dugrema/millegrilles.reactjs'
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 // import { getThumbnail as getIdbThumbnail, saveThumbnailDechiffre } from '../idbCollections'
 
-var _workers = null
-
-export function setWorkers(workers) {
-    _workers = workers
+function setup(workers) {
+    return {
+        getFichierChiffre(fuuid, opts) {
+            return getFichierChiffre(workers, fuuid, opts)
+        },
+        resLoader,
+        clean,
+    }
 }
+
+export default setup
+
+// var _workers = null
+
+// export function setWorkers(workers) {
+//     _workers = workers
+// }
 
 // export async function getThumbnail(fuuid, opts) {
 //     opts = opts || {}
@@ -16,15 +28,20 @@ export function setWorkers(workers) {
 //     return blob
 // }
 
-export async function getFichierChiffre(fuuid, opts) {
+async function getFichierChiffre(workers, fuuid, opts) {
     opts = opts || {}
     const { dataChiffre, mimetype, controller, progress } = opts
-    const { connexion, chiffrage } = _workers
+    const { connexion, chiffrage, usagerDao } = workers
 
     // Recuperer la cle de fichier
     const cleFichierFct = async () => {
-        let cleFichier = await usagerDao.getCleDechiffree(fuuid)
-        if(cleFichier) return cleFichier
+        let cleFichier = null
+        try {
+            cleFichier = await usagerDao.getCleDechiffree(fuuid)
+            if(cleFichier) return cleFichier
+        } catch(err) {
+            console.error("Erreur acces usagerDao ", err)
+        }
 
         const reponse = await connexion.getClesFichiers([fuuid])
 

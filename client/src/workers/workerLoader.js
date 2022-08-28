@@ -1,9 +1,10 @@
 import { wrap, releaseProxy } from 'comlink'
 
 import { usagerDao } from '@dugrema/millegrilles.reactjs'
-import * as traitementFichiers from './traitementFichiers'
+// import * as traitementFichiers from './traitementFichiers'
 import * as collectionsDao from '../redux/collectionsIdbDao'
 import clesDao from './clesDao'
+import setupTraitementFichiers from './traitementFichiers'
 
 export function setupWorkers() {
 
@@ -20,17 +21,17 @@ export function setupWorkers() {
       }, {})
 
     // Pseudo-worker
-    workers.traitementFichiers = traitementFichiers // Upload et download
     workers.collectionsDao = collectionsDao         // IDB collections
     workers.usagerDao = usagerDao                   // IDB usager
+    workers.traitementFichiers = setupTraitementFichiers(workers) // Upload et download
     workers.clesDao = clesDao(workers)              // Cles asymetriques
 
     // Wiring
-    try {
-        traitementFichiers.setWorkers(workers)
-    } catch(err) {
-        console.error("Erreur chargement traitementFichiers : %O", err)
-    }
+    // try {
+    //     traitementFichiers.setWorkers(workers)
+    // } catch(err) {
+    //     console.error("Erreur chargement traitementFichiers : %O", err)
+    // }
 
     const ready = wireWorkers(workers)
 

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
-import { setWorkers as setWorkersTraitementFichiers } from './workers/traitementFichiers'
 import { init as initCollectionsIdb } from './redux/collectionsIdbDao'
 
 const Context = createContext()
@@ -72,7 +71,7 @@ export function WorkerProvider(props) {
 
     useEffect(()=>{
         if(!workers) return
-        setWorkersTraitementFichiers(workers)
+        // setWorkersTraitementFichiers(workers)
         if(workers.connexion) {
             // setErreur('')
             connecter(workers, setUsager, setEtatConnexion, setFormatteurPret)
