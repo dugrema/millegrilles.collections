@@ -670,7 +670,7 @@ function AfficherVideoView(props) {
         return fichier
     }, [tuuid, liste])
 
-    if(fichier) return (
+    if(!fichier) return (
         <>
             <p>Erreur chargement de video</p>
             <p>Error loading video</p>
