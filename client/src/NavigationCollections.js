@@ -124,7 +124,6 @@ function NavigationCollections(props) {
                 tuuidSelectionne={tuuidSelectionne}
                 showPreviewAction={showPreviewAction}
                 preparationUploadEnCours={preparationUploadEnCours}
-                setPreparationUploadEnCours={setPreparationUploadEnCours}
                 contextuel={contextuel}
                 setContextuel={setContextuel} />
         </>
@@ -716,7 +715,7 @@ function Modals(props) {
     const {
         showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
-        contextuel, setContextuel,
+        contextuel, setContextuel, preparationUploadEnCours,
     } = props
     
     const usager = useUsager()
@@ -822,6 +821,11 @@ function Modals(props) {
                 selection={selection}
                 workers={workers}
             />       
+
+            <PreparationModal 
+                show={typeof(preparationUploadEnCours)==='number'?true:false} 
+                progres={preparationUploadEnCours} 
+              />
         </>
     )
 }
@@ -1012,13 +1016,19 @@ function BoutonUpload(props) {
         console.debug("Files : %O pour usager: %O", acceptedFiles, usager)
         
         setPreparationUploadEnCours(0)  // Debut preparation
-        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: setPreparationUploadEnCours})
-            .then(uploads=>{
-                // const correlationIds = uploads.map(item=>item.correlation)
-                // return dispatch(demarrerUploads(workers, correlationIds))
-              })
-            .catch(err=>console.error("Erreur fichiers : %O", err))
-            .finally( () => setPreparationUploadEnCours(false) )
+
+        // new Promise(resolve=>{
+        //     setTimeout(resolve, 1000)
+        // })
+        // .then(()=>{
+            traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: setPreparationUploadEnCours})
+                .then(uploads=>{
+                    // const correlationIds = uploads.map(item=>item.correlation)
+                    // return dispatch(demarrerUploads(workers, correlationIds))
+                })
+                .catch(err=>console.error("Erreur fichiers : %O", err))
+                .finally( () => setPreparationUploadEnCours(false) )
+        // })
     }, [setPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid])
 
     const fileChange = event => {
@@ -1512,6 +1522,23 @@ function MenuContextuel(props) {
 //         }
 //     }
 // }
+
+function PreparationModal(props) {
+    const { show, progres } = props
+
+    return (
+        <Modal show={show}>
+            <Modal.Header>Preparation de fichiers</Modal.Header>
+            <Modal.Body>
+                {show?
+                    <p>Preparation en cours ... ({progres} %)</p>    
+                    :
+                    <p>Pret</p>
+                }
+            </Modal.Body>
+        </Modal>
+    )
+}
 
 function InformationListe(_props) {
 

@@ -5,6 +5,7 @@ import { getAcceptedFileReader, streamAsyncIterable } from '@dugrema/millegrille
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { ajouterUpload } from '../redux/uploaderSlice'
 import { pki } from '@dugrema/node-forge'
+import * as Comlink from 'comlink'
 
 const UPLOAD_BATCH_SIZE = 5 * 1024 * 1024,
       ETAT_PREPARATION = 1,
@@ -197,7 +198,9 @@ async function clean(urlBlobPromise) {
     }
 }
 
-async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles) {
+async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts) {
+    opts = opts || {}
+    const { setProgres } = opts
     const { clesDao, transfertFichiers } = workers
     const userId = usager.extensions.userId
     console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
@@ -206,7 +209,46 @@ async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFi
     console.debug("Set certificat maitre des cles ", certificatMaitredescles)
     await transfertFichiers.up_setCertificat(certificatMaitredescles.certificat)
 
-    return transfertFichiers.traiterAcceptedFiles(acceptedFiles, userId, cuuid)
+    const ajouterPartProxy = Comlink.proxy((correlation, compteurPosition, chunk) => ajouterPart(workers, correlation, compteurPosition, chunk))
+    const updateFichierProxy = Comlink.proxy((doc, opts) => updateFichier(workers, dispatch, doc, opts))
+    const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
+    const resultat = await transfertFichiers.traiterAcceptedFiles(
+        acceptedFiles, userId, cuuid, 
+        ajouterPartProxy, 
+        updateFichierProxy,
+        setProgresProxy
+    )
+    return resultat
+}
+
+async function ajouterPart(workers, correlation, compteurPosition, chunk) {
+    const { uploadFichiersDao } = workers
+    console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
+    await uploadFichiersDao.ajouterFichierUploadFile(correlation, compteurPosition, chunk)
+}
+
+async function updateFichier(workers, dispatch, doc, opts) {
+    opts = opts || {}
+    const correlation = doc.correlation
+    const demarrer = opts.demarrer || false,
+          err = opts.err
+
+    const { uploadFichiersDao } = workers
+
+    console.debug("Update fichier %s demarrer? %s err? %O : %O", correlation, demarrer, err, doc)
+
+    if(err) {
+        console.error("Erreur upload fichier %s : %O", correlation, err)
+        // Supprimer le fichier dans IDB
+        uploadFichiersDao.supprimerFichier(correlation)
+            .catch(err=>console.error('updateFichier Erreur nettoyage %s suite a une erreur : %O', correlation, err))
+        return
+    }
+    
+    await uploadFichiersDao.updateFichierUpload(doc)
+
+    if(demarrer) dispatch(ajouterUpload(doc))
+
 }
 
 // async function traiterAcceptedFiles(workers, dispatch, usager, acceptedFiles, setProgres) {
