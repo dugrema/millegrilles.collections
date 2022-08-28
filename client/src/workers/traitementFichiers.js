@@ -247,8 +247,8 @@ async function updateFichier(workers, dispatch, doc, opts) {
     
     await uploadFichiersDao.updateFichierUpload(doc)
 
+    // Declencher l'upload si applicable
     if(demarrer) dispatch(ajouterUpload(doc))
-
 }
 
 // async function traiterAcceptedFiles(workers, dispatch, usager, acceptedFiles, setProgres) {

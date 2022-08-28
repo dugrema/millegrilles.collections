@@ -335,6 +335,7 @@ async function tacheUpload(workers, listenerApi, forkApi) {
             nextUpload = getProchainUpload(listenerApi.getState().uploader.liste)
 
         } catch (err) {
+            console.error("Erreur tache upload correlation %s: %O", correlation, err)
             marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_ECHEC})
                 .catch(err=>console.error("Erreur marquer upload echec %s : %O", correlation, err))
             throw err
@@ -344,7 +345,7 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 
 async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     console.debug("Upload fichier workers : ", workers)
-    const { uploadFichiersDao } = workers
+    const { uploadFichiersDao, transfertFichiers, chiffrage } = workers
     const correlation = fichier.correlation
 
     // Charger la liste des parts a uploader
@@ -369,19 +370,38 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
 
     for await (const part of parts) {
         let tailleCumulative = tailleCompletee
-        for(let i=0; i<part.taille; i += 512 * 1024) {
-            await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
-            await new Promise(resolve=>setTimeout(resolve, 250))
-            if(cancelToken && cancelToken.cancelled) {
-                console.warn("Upload cancelled")
-                return
-            }
-            tailleCumulative = tailleCompletee + i
+        const position = part.position,
+              partContent = part.data
+        await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
+        
+        // await new Promise(resolve=>setTimeout(resolve, 250))
+        const opts = {}
+        const resultatUpload = transfertFichiers.partUploader(correlation, position, partContent, opts)
+        await Promise.race([resultatUpload, cancelToken])
+        // console.debug("uploadFichier Resultat upload %s position %d : %O", correlation, resultatUpload, cancelToken)
+
+        if(cancelToken && cancelToken.cancelled) {
+            console.warn("Upload cancelled")
+            return
         }
+
         tailleCompletee += part.taille
-        positionsCompletees = [...positionsCompletees, part.position]
+        positionsCompletees = [...positionsCompletees, position]
         await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee, positionsCompletees})
     }
+
+    // Signer et uploader les transactions
+    const transactionMaitredescles = {...fichier.transactionMaitredescles}
+    const partitionMaitreDesCles = transactionMaitredescles['_partition']
+    delete transactionMaitredescles['_partition']
+    const cles = await chiffrage.formatterMessage(
+        transactionMaitredescles, 'MaitreDesCles', {partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false})
+
+    const transaction = await chiffrage.formatterMessage(
+        fichier.transactionGrosfichiers, 'GrosFichiers', {action: 'nouvelleVersion'})
+
+    // console.debug("Transactions signees : %O, %O", cles, transaction)
+    await transfertFichiers.confirmerUpload(correlation, cles, transaction)
 
     // Upload complete, dispatch nouvel etat
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_COMPLETE})
