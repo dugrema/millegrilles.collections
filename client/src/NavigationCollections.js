@@ -578,12 +578,14 @@ function AffichagePrincipal(props) {
         showPreviewAction,
         setContextuel, 
         enteteOnClickCb,
-        afficherVideo, setAfficherVideo, showInfoModalOuvrir
+        showInfoModalOuvrir
     } = props
 
     const workers = useWorkers()
     const dispatch = useDispatch()
     const liste = useSelector(state => state.fichiers.liste)
+
+    const [afficherVideo, setAfficherVideo] = useState('')
 
     // const mapperDocument = useMemo(()=>{
     //     return (item, idx) => mapDocumentComplet(workers, item, idx)
@@ -620,18 +622,23 @@ function AffichagePrincipal(props) {
         const folderId = value.folderId || dataset.folderId
         const fileId = value.fileId || dataset.fileId
 
-        if(folderId) naviguerCollection(folderId)
-        else if(fileId) showPreviewAction(fileId)
+        if(folderId) {
+            naviguerCollection(folderId)
+        } else if(fileId) {
+            console.debug("dbl click liste : %O, value : %O", liste, value)
+            const fileItem = liste.filter(item=>item.tuuid===value.fileId).pop()
+            const mimetype = fileItem.mimetype || ''
+            if(mimetype.startsWith('video/')) setAfficherVideo(fileId)
+            else showPreviewAction(fileId)
+        }
 
-    }, [naviguerCollection, showPreviewAction])
+    }, [naviguerCollection, showPreviewAction, liste])
 
     if(afficherVideo) {
-        // console.debug("AffichagePrincipal PROPPIES : %O", props)
-        const fileItem = liste.filter(item=>item.fileId===afficherVideo).pop()
         return (
-            <AfficherVideo
-                fichier={fileItem}
-                tuuidSelectionne={tuuidSelectionne}
+            <AfficherVideoView
+                liste={liste}
+                tuuid={afficherVideo}
                 fermer={fermerAfficherVideo} 
                 showInfoModalOuvrir={showInfoModalOuvrir} />
         )
@@ -648,6 +655,35 @@ function AffichagePrincipal(props) {
             onSelection={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
         />
+    )
+}
+
+function AfficherVideoView(props) {
+
+    const { tuuid, liste, fermer, showInfoModalOuvrir } = props
+
+    const workers = useWorkers()
+
+    const fichier = useMemo(()=>{
+        let fichier = liste.filter(item=>item.tuuid===tuuid).pop()
+        if(fichier) fichier = mapDocumentComplet(workers, fichier)
+        return fichier
+    }, [tuuid, liste])
+
+    if(fichier) return (
+        <>
+            <p>Erreur chargement de video</p>
+            <p>Error loading video</p>
+            <Button onClick={fermer}>Retour/Back</Button>
+        </>
+    )
+
+    return (
+        <AfficherVideo
+            fichier={fichier}
+            tuuidSelectionne={tuuid}
+            fermer={fermer} 
+            showInfoModalOuvrir={showInfoModalOuvrir} />
     )
 }
 
@@ -1017,18 +1053,14 @@ function BoutonUpload(props) {
         
         setPreparationUploadEnCours(0)  // Debut preparation
 
-        // new Promise(resolve=>{
-        //     setTimeout(resolve, 1000)
-        // })
-        // .then(()=>{
-            traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: setPreparationUploadEnCours})
-                .then(uploads=>{
-                    // const correlationIds = uploads.map(item=>item.correlation)
-                    // return dispatch(demarrerUploads(workers, correlationIds))
-                })
-                .catch(err=>console.error("Erreur fichiers : %O", err))
-                .finally( () => setPreparationUploadEnCours(false) )
-        // })
+        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: setPreparationUploadEnCours})
+            .then(uploads=>{
+                // const correlationIds = uploads.map(item=>item.correlation)
+                // return dispatch(demarrerUploads(workers, correlationIds))
+            })
+            .catch(err=>console.error("Erreur fichiers : %O", err))
+            .finally( () => setPreparationUploadEnCours(false) )
+
     }, [setPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid])
 
     const fileChange = event => {

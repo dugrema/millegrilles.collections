@@ -141,7 +141,7 @@ export function mapper(row, workers) {
 
 export function mapDocumentComplet(workers, doc) {
 
-    const { traitementFichiers } = workers
+    const { connexion, traitementFichiers } = workers
 
     const copie = {...doc}
     
@@ -166,7 +166,7 @@ export function mapDocumentComplet(workers, doc) {
     }
 
     if(version_courante) {
-        const { anime, taille, images, duration } = version_courante
+        const { anime, taille, images, video, duration, mimetype } = version_courante
         
         if(taille) copie.taille = taille
         if(duration) copie.duration = duration
@@ -178,6 +178,23 @@ export function mapDocumentComplet(workers, doc) {
                 {anime, supporteWebp: true, fuuid: fuuid_v_courante, mimetype}
             )
             copie.imageLoader = imageLoader
+        }
+
+        if(video) {
+            const creerToken = async fuuids => {
+                if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
+                const reponse = await connexion.creerTokenStream(fuuids)
+                return reponse.token
+            }
+
+            if(Object.keys(video).length > 0) {
+                copie.videoLoader = videoResourceLoader(
+                    traitementFichiers.getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
+            } else {
+                // Utilisation du video original seulement
+                copie.videoLoader = videoResourceLoader(
+                    traitementFichiers.getFichierChiffre, {}, {creerToken, fuuid: fuuid_v_courante, version_courante})
+            }
         }
     }
 

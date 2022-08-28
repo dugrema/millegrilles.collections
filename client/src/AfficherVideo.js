@@ -15,7 +15,7 @@ import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessour
 
 function AfficherVideo(props) {
 
-    // console.debug("AfficherVideo PROPPIES : %O", props)
+    console.debug("AfficherVideo PROPPIES : %O", props)
 
     const { support, showInfoModalOuvrir } = props
 
