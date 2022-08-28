@@ -44,6 +44,7 @@ function NavigationCollections(props) {
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ showPreview, setShowPreview ] = useState(false)
+    const [ afficherVideo, setAfficherVideo ] = useState('')
     const [ preparationUploadEnCours, setPreparationUploadEnCours ] = useState(false)
 
     // Preview
@@ -57,6 +58,7 @@ function NavigationCollections(props) {
     }, [setShowPreview, selection, setTuuidSelectionne])
     
     const naviguerCollection = useCallback( cuuid => {
+        setAfficherVideo('')  // Reset affichage
         if(!cuuid) cuuid = ''
         try {
             if(cuuid) {
@@ -74,7 +76,7 @@ function NavigationCollections(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, erreurCb])
+    }, [dispatch, workers, erreurCb, setAfficherVideo])
 
     // Declencher chargement initial des favoris
     useEffect(()=>{
@@ -109,6 +111,8 @@ function NavigationCollections(props) {
                         naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
+                        afficherVideo={afficherVideo}
+                        setAfficherVideo={setAfficherVideo}
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
                     />
                 </Suspense>
@@ -576,6 +580,7 @@ function AffichagePrincipal(props) {
         tuuidSelectionne, 
         naviguerCollection,
         showPreviewAction,
+        afficherVideo, setAfficherVideo,
         setContextuel, 
         enteteOnClickCb,
         showInfoModalOuvrir
@@ -584,8 +589,6 @@ function AffichagePrincipal(props) {
     const workers = useWorkers()
     const dispatch = useDispatch()
     const liste = useSelector(state => state.fichiers.liste)
-
-    const [afficherVideo, setAfficherVideo] = useState('')
 
     // const mapperDocument = useMemo(()=>{
     //     return (item, idx) => mapDocumentComplet(workers, item, idx)
@@ -665,6 +668,7 @@ function AfficherVideoView(props) {
     const workers = useWorkers()
 
     const fichier = useMemo(()=>{
+        if(!tuuid || !liste) return
         let fichier = liste.filter(item=>item.tuuid===tuuid).pop()
         if(fichier) fichier = mapDocumentComplet(workers, fichier)
         return fichier

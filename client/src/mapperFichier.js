@@ -143,10 +143,11 @@ export function mapDocumentComplet(workers, doc) {
 
     const { connexion, traitementFichiers } = workers
 
-    const copie = {...doc}
+    const { nom, tuuid, date_creation, fuuid_v_courante, mimetype } = doc
+    const version_courante = doc.version_courante?{...doc.version_courante}:null
+    const copie = {...doc, version_courante}
     
-    const {nom, tuuid, date_creation, version_courante, fuuid_v_courante, mimetype} = copie
-    
+
     if(tuuid) {
         // Mapper vers fileId ou folderId
         // Utiliser mimetype pour detecter si c'est un repertoire ou fichier
@@ -164,6 +165,9 @@ export function mapDocumentComplet(workers, doc) {
         thumbnailIcon: getThumbnailIcon(mimetype),
         thumbnailCaption: nom,
     }
+
+    // Loader du fichier source (principal), supporte thumbnail pour chargement
+    copie.loader = loadFichierChiffre(traitementFichiers.getFichierChiffre, fuuid_v_courante, mimetype)    
 
     if(version_courante) {
         const { anime, taille, images, video, duration, mimetype } = version_courante
