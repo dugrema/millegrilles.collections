@@ -1,4 +1,4 @@
-import { ouvrirDB } from '../fileManagerRedux/idbCollections'
+import { ouvrirDB } from './idbCollections'
 
 const STORE_UPLOADS = 'uploads',
       STORE_UPLOADS_FICHIERS = 'uploadsFichiers'

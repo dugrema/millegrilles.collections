@@ -1,13 +1,24 @@
 import axios from 'axios'
 import multibase from 'multibase'
-// import { usagerDao } from '@dugrema/millegrilles.reactjs'
+import { v4 as uuidv4 } from 'uuid'
+import { getAcceptedFileReader, streamAsyncIterable } from '@dugrema/millegrilles.reactjs/src/stream'
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
-// import { getThumbnail as getIdbThumbnail, saveThumbnailDechiffre } from '../idbCollections'
+import { ajouterUpload } from '../redux/uploaderSlice'
+import { pki } from '@dugrema/node-forge'
+
+const UPLOAD_BATCH_SIZE = 5 * 1024 * 1024,
+      ETAT_PREPARATION = 1,
+      ETAT_PRET = 2
 
 function setup(workers) {
     return {
         getFichierChiffre(fuuid, opts) {
             return getFichierChiffre(workers, fuuid, opts)
+        },
+        traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, opts) {
+            opts = opts || {}
+            const setProgres = opts.setProgres
+            return traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles)
         },
         resLoader,
         clean,
@@ -185,3 +196,136 @@ async function clean(urlBlobPromise) {
         console.debug("Erreur cleanup URL Blob : %O", err)
     }
 }
+
+async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles) {
+    const { clesDao, transfertFichiers } = workers
+    const userId = usager.extensions.userId
+    console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
+
+    const certificatMaitredescles = await clesDao.getCertificatsMaitredescles()
+    console.debug("Set certificat maitre des cles ", certificatMaitredescles)
+    await transfertFichiers.up_setCertificat(certificatMaitredescles.certificat)
+
+    return transfertFichiers.traiterAcceptedFiles(acceptedFiles, userId, cuuid)
+}
+
+// async function traiterAcceptedFiles(workers, dispatch, usager, acceptedFiles, setProgres) {
+//     const { uploadFichiersDao, clesDao } = workers
+//     const now = new Date().getTime()
+
+//     console.debug("Accepted files ", acceptedFiles)
+//     let tailleTotale = 0
+//     for (const file of acceptedFiles) {
+//         tailleTotale += file.size
+//     }
+//     console.debug("Preparation de %d bytes", tailleTotale)
+
+//     const userId = usager.extensions.userId,
+//           certificatCa = usager.ca
+
+//     const { cipher: transform } = await creerCipher(workers, certificatCa)
+
+//     let taillePreparee = 0
+//     for await (const file of acceptedFiles) {
+//         const correlation = '' + uuidv4()
+//         const stream = file.stream()
+//         console.debug("File %s stream : %O", file.name, stream)
+
+//         const reader = getAcceptedFileReader(file)
+//         const iterReader = streamAsyncIterable(reader, {batchSize: UPLOAD_BATCH_SIZE, transform})
+//         let compteurChunks = 0,
+//             compteurPosition = 0
+
+//         const docIdb = {
+//             // PK
+//             correlation, userId, 
+
+//             // Metadata recue
+//             nom: file.name || correlation,
+//             taille: file.size,
+//             mimetype: file.type || 'application/octet-stream',
+
+//             // Etat initial
+//             etat: ETAT_PREPARATION, 
+//             positionsCompletees: [],
+//             tailleCompletee: 0,
+//             dateCreation: now,
+//             retryCount: -1,  // Incremente sur chaque debut d'upload
+//             transactionGrosfichiers: null,
+//             transactionMaitredescles: null,
+//         }
+
+//         await uploadFichiersDao.updateFichierUpload(docIdb)
+        
+//         const frequenceUpdate = 500
+//         let dernierUpdate = 0
+
+//         try {
+//             for await (const chunk of iterReader) {
+//                 console.debug("Traitement chunk %d transforme taille %d", compteurChunks, chunk.length)
+
+//                 // Conserver dans idb
+//                 await uploadFichiersDao.ajouterFichierUploadFile(correlation, compteurPosition, chunk)
+//                 compteurPosition += chunk.length
+
+//                 taillePreparee += chunk.length
+//                 const now = new Date().getTime()
+//                 if(dernierUpdate + frequenceUpdate < now) {
+//                     dernierUpdate = now
+//                     setProgres(Math.floor(100*taillePreparee/tailleTotale))
+//                 }
+
+//                 compteurChunks ++
+//             }
+
+//             // const hachage_bytes = resultatChiffrage.hachage
+//             // const identificateurs_document = { fuuid: hachage_bytes }
+//             // const commandeMaitreDesCles = await preparerCommandeMaitrecles(
+//             //     [_certificat[0]], transformHandler.secretKey, _domaine, hachage_bytes, identificateurs_document, {...paramsChiffrage, DEBUG: false})
+
+//             docIdb.etat = ETAT_PRET
+//             docIdb.taille = compteurPosition
+            
+//             // Update idb
+//             await uploadFichiersDao.updateFichierUpload(docIdb)
+
+//             // Dispatch pour demarrer upload
+//             dispatch(ajouterUpload(docIdb))
+//         } catch(err) {
+//             uploadFichiersDao.supprimerFichier(correlation)
+//                 .catch(err=>console.error('traiterAcceptedFiles Erreur nettoyage %s suite a une erreur : %O', correlation, err))
+//             throw err
+//         }
+
+//         // Fermer affichage preparation des fichiers
+//         setProgres(false)
+//     }
+// }
+
+// async function creerCipher(workers, certificatCa) {
+//     const { chiffrage, clesDao } = workers
+
+//     const certCa = pki.certificateFromPem(certificatCa)
+//     console.debug("CertCa : ", certCa)
+//     const publicKeyCa = certCa.publicKey.publicKeyBytes
+//     const fingerprintCa = await chiffrage.hacherCertificat(certificatCa)
+//     console.debug("Fingerprint keyCA %O, certificat CA : %s", publicKeyCa, fingerprintCa)
+
+//     const certificatsInfo = await clesDao.getCertificatsMaitredescles()
+//     const certificats = certificatsInfo.certificat
+//     console.debug("CA: %O, Certificats : %O", certificatCa, certificats)
+
+//     const cipherHandler = await chiffrage.chiffrage.preparerCipher({clePubliqueEd25519: publicKeyCa})
+//     console.debug("creerCipher handler : %O", cipherHandler)
+
+//     throw new Error("fix me")
+
+//     const cipher = cipherHandler.cipher
+
+//     // return {
+//     //     cipher(chunk) {
+//     //         return cipher.update(chunk)
+//     //     },
+//     //     handler: cipherHandler,
+//     // }
+// }

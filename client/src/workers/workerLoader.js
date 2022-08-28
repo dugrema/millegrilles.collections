@@ -3,6 +3,7 @@ import { wrap, releaseProxy } from 'comlink'
 import { usagerDao } from '@dugrema/millegrilles.reactjs'
 // import * as traitementFichiers from './traitementFichiers'
 import * as collectionsDao from '../redux/collectionsIdbDao'
+import * as uploadFichiersDao from '../redux/uploaderIdbDao'
 import clesDao from './clesDao'
 import setupTraitementFichiers from './traitementFichiers'
 
@@ -25,6 +26,7 @@ export function setupWorkers() {
     workers.usagerDao = usagerDao                   // IDB usager
     workers.traitementFichiers = setupTraitementFichiers(workers) // Upload et download
     workers.clesDao = clesDao(workers)              // Cles asymetriques
+    workers.uploadFichiersDao = uploadFichiersDao   // IDB upload fichiers
 
     // Wiring
     // try {

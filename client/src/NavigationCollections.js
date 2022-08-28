@@ -44,6 +44,9 @@ function NavigationCollections(props) {
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ showPreview, setShowPreview ] = useState(false)
+    const [ preparationUploadEnCours, setPreparationUploadEnCours ] = useState(false)
+
+    // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
     const showPreviewAction = useCallback( tuuid => {
         if(!tuuid && selection && selection.length > 0) {
@@ -94,8 +97,8 @@ function NavigationCollections(props) {
                         <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                         <BoutonsAction 
                             cuuid={cuuidCourant}
-                            // uploaderFichiersAction={uploaderFichiersAction} 
                             setShowCreerRepertoire={setShowCreerRepertoire}
+                            setPreparationUploadEnCours={setPreparationUploadEnCours}
                         />
                     </Col>
                 </Row>
@@ -106,6 +109,7 @@ function NavigationCollections(props) {
                         naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
+                        setPreparationUploadEnCours={setPreparationUploadEnCours}
                     />
                 </Suspense>
             </div>
@@ -119,6 +123,8 @@ function NavigationCollections(props) {
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 showPreviewAction={showPreviewAction}
+                preparationUploadEnCours={preparationUploadEnCours}
+                setPreparationUploadEnCours={setPreparationUploadEnCours}
                 contextuel={contextuel}
                 setContextuel={setContextuel} />
         </>
@@ -571,8 +577,6 @@ function AffichagePrincipal(props) {
         tuuidSelectionne, 
         naviguerCollection,
         showPreviewAction,
-        // onClick,
-        // onContextMenu, 
         setContextuel, 
         enteteOnClickCb,
         afficherVideo, setAfficherVideo, showInfoModalOuvrir
@@ -640,13 +644,10 @@ function AffichagePrincipal(props) {
             modeView={modeView}
             colonnes={colonnes}
             rows={liste} 
-            // onClick={onClick} 
             onDoubleClick={onDoubleClick}
             onContextMenu={onContextMenuClick}
             onSelection={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
-            // suivantCb={handlerSuivant}
-            // isListeComplete={isListeComplete}
         />
     )
 }
@@ -966,7 +967,7 @@ function BoutonsFormat(props) {
 
 function BoutonsAction(props) {
 
-    const { cuuid, uploaderFichiersAction, setShowCreerRepertoire } = props
+    const { setShowCreerRepertoire, setPreparationUploadEnCours } = props
 
     return (
         <>
@@ -978,7 +979,9 @@ function BoutonsAction(props) {
             >
                 <i className="fa fa-plus"/> Fichier
             </Button> */}
-            <BoutonUpload><i className="fa fa-plus"/> Fichier</BoutonUpload>
+            <BoutonUpload setPreparationUploadEnCours={setPreparationUploadEnCours}>
+                <i className="fa fa-plus"/> Fichier
+            </BoutonUpload>
             &nbsp;
             <Button 
                 variant="secondary" 
@@ -993,31 +996,37 @@ function BoutonsAction(props) {
 
 function BoutonUpload(props) {
 
+    const { setPreparationUploadEnCours } = props
+
     const refUpload = useRef()
     const workers = useWorkers()
+    const usager = useUsager()
     const dispatch = useDispatch()
     const cuuid = useSelector(state=>state.fichiers.cuuid)
 
     const [className, setClassName] = useState('')
 
-    const upload = acceptedFiles => {
-        console.debug("Files : %O", acceptedFiles)
+    const { traitementFichiers } = workers
+
+    const upload = useCallback( acceptedFiles => {
+        console.debug("Files : %O pour usager: %O", acceptedFiles, usager)
         
-        // setPreparationEnCours(true)
-        // traiterAcceptedFiles(workers, dispatch, userId, acceptedFiles, setProgresPrep)
-        //     .then(uploads=>{
-        //         // const correlationIds = uploads.map(item=>item.correlation)
-        //         // return dispatch(demarrerUploads(workers, correlationIds))
-        //       })
-        //     .catch(err=>console.error("Erreur fichiers : %O", err))
-        //     .finally(()=>setPreparationEnCours(false))
-    }
+        setPreparationUploadEnCours(0)  // Debut preparation
+        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: setPreparationUploadEnCours})
+            .then(uploads=>{
+                // const correlationIds = uploads.map(item=>item.correlation)
+                // return dispatch(demarrerUploads(workers, correlationIds))
+              })
+            .catch(err=>console.error("Erreur fichiers : %O", err))
+            .finally( () => setPreparationUploadEnCours(false) )
+    }, [setPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid])
 
     const fileChange = event => {
-        console.debug("File change : %O", event)
+        event.preventDefault()
+        setClassName('')
+
         const acceptedFiles = event.currentTarget.files
         upload(acceptedFiles)
-        setClassName('')
     }
 
     const onButtonDrop = event => {
@@ -1053,7 +1062,7 @@ function BoutonUpload(props) {
                 onClick={handlerOnClick}
                 disabled={!cuuid}
               >
-                <i className="fa fa-plus"/> Fichier
+                {props.children}
             </Button>
             <input
                 id='file_upload'
