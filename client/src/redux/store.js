@@ -1,15 +1,24 @@
 import { configureStore } from '@reduxjs/toolkit'
 import fichiers, { dechiffrageMiddlewareSetup } from './fichiersSlice'
+import uploader, { uploaderMiddlewareSetup } from './uploaderSlice'
 
 function storeSetup(workers) {
   
   // Configurer le store redux
   const store = configureStore({
-    reducer: { fichiers },
+
+    reducer: { fichiers, uploader },
+
     middleware: (getDefaultMiddleware) => {
-      // Prepend, evite le serializability check
+      
       const dechiffrageMiddleware = dechiffrageMiddlewareSetup(workers)
-      return getDefaultMiddleware().prepend(dechiffrageMiddleware.middleware)
+      const uploaderMiddleware = uploaderMiddlewareSetup(workers)
+
+      // Prepend, evite le serializability check
+      return getDefaultMiddleware()
+        .prepend(dechiffrageMiddleware.middleware)
+        .prepend(uploaderMiddleware.middleware)
+
     },
   })
 

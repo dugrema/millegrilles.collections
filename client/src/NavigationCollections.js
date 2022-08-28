@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { proxy as comlinkProxy } from 'comlink'
 
@@ -970,14 +970,16 @@ function BoutonsAction(props) {
 
     return (
         <>
-            <Button 
+            {/* <Button 
                 variant="secondary" 
                 className="individuel"
                 onClick={uploaderFichiersAction}
                 disabled={!cuuid}
             >
                 <i className="fa fa-plus"/> Fichier
-            </Button>
+            </Button> */}
+            <BoutonUpload><i className="fa fa-plus"/> Fichier</BoutonUpload>
+            &nbsp;
             <Button 
                 variant="secondary" 
                 className="individuel"
@@ -986,6 +988,81 @@ function BoutonsAction(props) {
                 <i className="fa fa-folder"/> Collection
             </Button>
         </>
+    )
+}
+
+function BoutonUpload(props) {
+
+    const refUpload = useRef()
+    const workers = useWorkers()
+    const dispatch = useDispatch()
+    const cuuid = useSelector(state=>state.fichiers.cuuid)
+
+    const [className, setClassName] = useState('')
+
+    const upload = acceptedFiles => {
+        console.debug("Files : %O", acceptedFiles)
+        
+        // setPreparationEnCours(true)
+        // traiterAcceptedFiles(workers, dispatch, userId, acceptedFiles, setProgresPrep)
+        //     .then(uploads=>{
+        //         // const correlationIds = uploads.map(item=>item.correlation)
+        //         // return dispatch(demarrerUploads(workers, correlationIds))
+        //       })
+        //     .catch(err=>console.error("Erreur fichiers : %O", err))
+        //     .finally(()=>setPreparationEnCours(false))
+    }
+
+    const fileChange = event => {
+        console.debug("File change : %O", event)
+        const acceptedFiles = event.currentTarget.files
+        upload(acceptedFiles)
+        setClassName('')
+    }
+
+    const onButtonDrop = event => {
+        event.preventDefault()
+        setClassName('')
+
+        const acceptedFiles = event.dataTransfer.files
+        upload(acceptedFiles)
+    }
+
+    const handlerOnDragover = event => {
+        event.preventDefault()
+        setClassName('dropping')
+        event.dataTransfer.dropEffect = "move"
+    }
+
+    const handlerOnDragLeave = event => { event.preventDefault(); setClassName(''); }
+
+    const handlerOnClick = event => {
+        refUpload.current.click()
+    }
+
+    return (
+        <div 
+            className={'upload ' + className}
+            onDrop={onButtonDrop}
+            onDragOver={handlerOnDragover} 
+            onDragLeave={handlerOnDragLeave}
+          >
+            <Button 
+                variant="secondary" 
+                className="individuel"
+                onClick={handlerOnClick}
+                disabled={!cuuid}
+              >
+                <i className="fa fa-plus"/> Fichier
+            </Button>
+            <input
+                id='file_upload'
+                type='file' 
+                ref={refUpload}
+                multiple
+                onChange={fileChange}
+              />
+        </div>
     )
 }
 
