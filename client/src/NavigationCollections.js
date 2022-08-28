@@ -28,6 +28,17 @@ import {
     // ajouterFichierVolatil, supprimerFichier, restaurerFichier, rafraichirCollection,
 } from './redux/fichiersSlice'
 
+import { setUploads } from './redux/uploaderSlice'
+
+const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
+const ETAT_PREPARATION = 1,
+      ETAT_PRET = 2,
+      ETAT_UPLOADING = 3,
+      ETAT_COMPLETE = 4,
+      ETAT_ECHEC = 5,
+      ETAT_CONFIRME = 6,
+      ETAT_UPLOAD_INCOMPLET = 7
+
 function NavigationCollections(props) {
 
     const { erreurCb } = props
@@ -117,6 +128,8 @@ function NavigationCollections(props) {
                     />
                 </Suspense>
             </div>
+
+            <InitialisationUpload />
 
             <HandlerEvenements />
 
@@ -748,6 +761,78 @@ function HandlerEvenements(_props) {
     }, [connexion, etatPret, userId, cuuid, evenementCollectionCb, evenementContenuCollectionCb])
 
     return ''  // Aucun affichage
+}
+
+function InitialisationUpload(props) {
+
+    const workers = useWorkers()
+    const usager = useUsager()
+    const dispatch = useDispatch()
+
+    const { uploadFichiersDao } = workers
+
+    const userId = useMemo(()=>{
+        if(!usager || !usager.extensions) return
+        return usager.extensions.userId
+    }, [usager])
+
+    useEffect(()=>{
+        if(!uploadFichiersDao || !userId) return
+        console.debug("Initialiser uploader")
+        uploadFichiersDao.chargerUploads(userId)
+            .then(async uploads=>{
+                console.debug("Uploads trouves : %O", uploads)
+                // uploads.sort(trierListeUpload)
+                // Reset etat uploads en cours (incomplets)
+
+                const completExpire = new Date().getTime() - CONST_COMPLET_EXPIRE
+
+                uploads = uploads.filter(upload=>{
+                    const { correlation, etat } = upload
+                    if([ETAT_COMPLETE, ETAT_CONFIRME].includes(etat)) {
+                        // Cleanup
+                        if(upload.derniereModification <= completExpire) {
+                            // Complet et expire, on va retirer l'upload
+                            console.debug("Cleanup upload complete ", upload)
+                            uploadFichiersDao.supprimerFichier(correlation)
+                                .catch(err=>console.error("Erreur supprimer fichier ", err))
+                            return false
+                        }
+                    } else if(ETAT_PREPARATION === etat) {
+                        // Cleanup
+                        console.warn("Cleanup upload avec preparation incomplete ", upload)
+                        uploadFichiersDao.supprimerFichier(correlation)
+                            .catch(err=>console.error("Erreur supprimer fichier ", err))
+                        return false
+                    }
+                    return true
+                })
+
+                for await (const upload of uploads) {
+                    const { correlation, etat } = upload
+                    if([ETAT_PRET, ETAT_UPLOADING].includes(etat)) {
+                        upload.etat = ETAT_UPLOAD_INCOMPLET
+
+                        const parts = await uploadFichiersDao.getPartsFichier(correlation)
+                        const positionsCompletees = upload.positionsCompletees
+                        const tailleCompletee = parts.reduce((acc, item)=>{
+                            const position = item.position
+                            if(positionsCompletees.includes(position)) acc += item.taille
+                            return acc
+                        }, 0)
+
+                        upload.tailleCompletee = tailleCompletee
+                        await uploadFichiersDao.updateFichierUpload(upload)
+                    }
+                }
+
+                dispatch(setUploads(uploads))
+            })
+            .catch(err=>console.error("Erreur initialisation uploader ", err))
+    }, [uploadFichiersDao, userId])    
+
+    // Rien a afficher
+    return ''
 }
 
 function Modals(props) {
