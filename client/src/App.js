@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, Suspense, lazy, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Provider as ReduxProvider, useDispatch } from 'react-redux'
+import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 
@@ -64,7 +64,7 @@ function Layout(_props) {
   }, [setErreur])
   const handlerCloseErreur = useCallback(()=>setErreur(''), [setErreur])
 
-  // const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
+  const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
   
   const handlerSelect = useCallback(eventKey => {
@@ -85,6 +85,7 @@ function Layout(_props) {
         etatConnexion={etatConnexion}
         i18n={i18n} 
         manifest={manifest} 
+        showTransfertModal={showTransfertModalOuvrir}
         onSelect={handlerSelect} />
   )
 
@@ -141,6 +142,8 @@ function Modals(props) {
 
   const workers = useWorkers()
   const { t } = useTranslation()
+  const uploads = useSelector(state=>state.uploader.liste)
+  const progresUpload = useSelector(state=>state.uploader.progres)
 
   return (
     <div>
@@ -148,7 +151,10 @@ function Modals(props) {
           workers={workers}
           show={showTransfertModal}
           fermer={showTransfertModalFermer} 
-          setEtatTransfert={etat=>{console.warn("Etat transfert fix me : ", etat)}}
+          uploads={uploads}
+          progresUpload={progresUpload}
+          downloads={''}
+          progresDownload={''}
         />
 
       <ModalErreur 

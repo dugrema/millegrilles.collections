@@ -1,15 +1,26 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSelector } from 'react-redux'
 
+import Badge from 'react-bootstrap/Badge'
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
 import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import { Menu as MenuMillegrilles, DropDownLanguage, ModalInfo } from '@dugrema/millegrilles.reactjs'
 
+const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
+const ETAT_PREPARATION = 1,
+      ETAT_PRET = 2,
+      ETAT_UPLOADING = 3,
+      ETAT_COMPLETE = 4,
+      ETAT_ECHEC = 5,
+      ETAT_CONFIRME = 6,
+      ETAT_UPLOAD_INCOMPLET = 7
+
 function Menu(props) {
 
-  const { i18n, etatConnexion, idmg, manifest, onSelect } = props
+  const { i18n, etatConnexion, idmg, manifest, onSelect, etatTransfert, showTransfertModal } = props
  
   const { t } = useTranslation()
   const [showModalInfo, setShowModalInfo] = useState(false)
@@ -18,7 +29,7 @@ function Menu(props) {
   const handlerChangerLangue = eventKey => {i18n.changeLanguage(eventKey)}
   const brand = (
       <Navbar.Brand>
-          <Nav.Link title={t('titre')}>
+          <Nav.Link eventKey="collections" title={t('titre')}>
               {t('titre')}
           </Nav.Link>
       </Navbar.Brand>
@@ -38,9 +49,11 @@ function Menu(props) {
     <>
       <MenuMillegrilles brand={brand} labelMenu="Menu" etatConnexion={etatConnexion} onSelect={handlerSelect}>
 
-        <Nav.Link eventKey="collections" title={t('menu.collections')}>
-          {t('menu.collections')}
-        </Nav.Link>
+        <Nav.Item>
+            <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
+                <LabelTransfert etatTransfert={etatTransfert} />
+            </Nav.Link>
+        </Nav.Item>
 
         <Nav.Link eventKey="recents">
           <i className="fa fa-clock-o" /> {' '} {t('menu.recents')}
@@ -203,57 +216,74 @@ export default Menu
 
 // }
 
-// function LabelTransfert(props) {
-//   const { etatTransfert } = props
-//   const download = etatTransfert.download || {}
-//   const downloads = download.downloads || []
-//   const pctDownload = download.pct || 100
-//   const upload = etatTransfert.upload || {}
-//   const uploadsCompletes = upload.uploadsCompletes || []
-//   const pctUpload = upload.pctTotal || 100
+function LabelTransfert(props) {
+  const etatTransfert = props.etatTransfert || {}
 
-//   const downloadsResultat = downloads.reduce((nb, item)=>{
-//     let {encours, succes, erreur} = nb
-//     if(item.status===3) succes++
-//     if(item.status===4) erreur++
-//     return {encours, succes, erreur}
-//   }, {encours: 0, succes: 0, erreur: 0})
+  const uploads = useSelector(state=>state.uploader.liste),
+        progresUpload = useSelector(state=>state.uploader.progres)
 
-//   let variantDownload = 'primary'
-//   if(downloadsResultat.erreur>0) variantDownload = 'danger'
-//   else if(downloadsResultat.succes>0) variantDownload = 'success'
+  const download = etatTransfert.download || {}
+  const downloads = download.downloads || []
+  const pctDownload = download.pct || 100
+  // const upload = etatTransfert.upload || {}
+  // const uploadsCompletes = upload.uploadsCompletes || []
+  // const pctUpload = upload.pctTotal || 100
 
-//   const uploadsResultat = uploadsCompletes.reduce((nb, item)=>{
-//     let {encours, succes, erreur} = nb
-//     if(item.status===3) succes++
-//     if(item.status===4) erreur++
-//     return {encours, succes, erreur}
-//   }, {encours: 0, succes: 0, erreur: 0})
-//   if(upload.uploadEnCours) {
-//     uploadsResultat.encours = 1
-//   }
+  const downloadsResultat = downloads.reduce((nb, item)=>{
+    let {encours, succes, erreur} = nb
+    if(item.status===3) succes++
+    if(item.status===4) erreur++
+    return {encours, succes, erreur}
+  }, {encours: 0, succes: 0, erreur: 0})
 
-//   let variantUpload = 'primary'
-//   if(uploadsResultat.erreur>0) variantUpload = 'danger'
-//   else if(uploadsResultat.succes>0) variantUpload = 'success'
+  let variantDownload = 'secondary'
+  if(downloadsResultat.erreur>0) variantDownload = 'danger'
+  else if(downloadsResultat.succes>0) variantDownload = 'success'
 
-//   return (
-//     <div className="transfer-labels">
+  const uploadsResultat = uploads.reduce((nb, item)=>{
+    let {encours, succes, erreur} = nb
+    switch(item.status) {
+      case ETAT_PRET:
+      case ETAT_UPLOADING:
+        encours++
+        break
+      case ETAT_COMPLETE:
+      case ETAT_CONFIRME:
+        succes++
+        break
+      case ETAT_ECHEC:
+      case ETAT_UPLOAD_INCOMPLET:
+        erreur++
+        break
+      default:
+    }
+    return {encours, succes, erreur}
+  }, {encours: 0, succes: 0, erreur: 0})
 
-//       <div>
-//         <i className="fa fa-upload" />
-//         {' '}
-//         <Badge pill bg={variantUpload}>{pctUpload}%</Badge>
-//       </div>
+  let variantUpload = 'secondary'
+  if(uploadsResultat.erreur>0) variantUpload = 'danger'
+  else if(uploadsResultat.succes>0) variantUpload = 'success'
 
-//       {' '}
+  let labelUpload = <span>-</span>
+  if(typeof(progresUpload)==='number') labelUpload = <span>{Math.floor(progresUpload)} %</span>
 
-//       <div>
-//         <i className="fa fa-download" />
-//         {' '}
-//         <Badge pill bg={variantDownload}>{pctDownload}%</Badge>
-//       </div>
+  return (
+    <div className="transfer-labels">
 
-//     </div>
-//   )
-// }
+      <div>
+        <i className="fa fa-upload" />
+        {' '}
+        <Badge pill bg={variantUpload}>{labelUpload}</Badge>
+      </div>
+
+      {' '}
+
+      <div>
+        <i className="fa fa-download" />
+        {' '}
+        <Badge pill bg={variantDownload}>{pctDownload}%</Badge>
+      </div>
+
+    </div>
+  )
+}
