@@ -310,7 +310,7 @@ function InfoMedia(props) {
     const fichier = props.fichier || {}
     const versionCourante = fichier.version_courante
 
-    console.debug("Info videos fichier %O : %O", fichier)
+    // console.debug("Info videos fichier %O : %O", fichier)
 
     if(!versionCourante) return ''
 

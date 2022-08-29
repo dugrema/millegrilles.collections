@@ -412,6 +412,8 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
 
     // Upload complete, dispatch nouvel etat
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_COMPLETE})
+    await dispatch(confirmerUpload(workers, correlation))
+        .catch(err=>console.error("Erreur cleanup fichier upload ", err))
 }
 
 async function marquerUploadEtat(workers, dispatch, correlation, etat) {

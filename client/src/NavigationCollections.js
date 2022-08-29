@@ -502,7 +502,7 @@ function SectionBreadcrumb(props) {
             tuuid = collection.tuuid
             dispatch(breadcrumbSlice(level))
             try {
-                naviguerCollection(tuuid)
+                Promise.resolve(naviguerCollection(tuuid))
                     .catch(err=>console.error("SectionBreadcrumb Erreur navigation ", err))
             } catch(err) {
                 console.error("handlerSliceBreadcrumb Erreur naviguerCollection %s: ", tuuid, err)
