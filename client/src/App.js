@@ -148,12 +148,6 @@ function LayoutMain() {
 
 function Contenu(props) {
 
-  const dispatch = useDispatch()
-
-  // // Set userId dans redux
-  // const usager = useUsager()
-  // useEffect(()=>{ if(!usager) return; dispatch(setUserId(usager.extensions.userId)); }, [dispatch, usager])
-
   let Page
   switch(props.page) {
     case 'Recents': Page = NavigationRecents; break
@@ -164,6 +158,9 @@ function Contenu(props) {
   return (
       <ErrorBoundary erreurCb={props.erreurCb}>
           <Page {...props}/>
+
+          <p></p>
+          
       </ErrorBoundary>
   )
 }

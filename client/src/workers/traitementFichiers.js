@@ -18,8 +18,7 @@ function setup(workers) {
         },
         traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, opts) {
             opts = opts || {}
-            const setProgres = opts.setProgres
-            return traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles)
+            return traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts)
         },
         resLoader,
         clean,

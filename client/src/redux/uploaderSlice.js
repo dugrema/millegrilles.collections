@@ -383,8 +383,9 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         // await new Promise(resolve=>setTimeout(resolve, 250))
         const opts = {}
         const resultatUpload = transfertFichiers.partUploader(correlation, position, partContent, opts)
-        await Promise.race([resultatUpload, cancelToken])
-        // console.debug("uploadFichier Resultat upload %s position %d : %O", correlation, resultatUpload, cancelToken)
+        // await Promise.race([resultatUpload, cancelToken])
+        await resultatUpload
+        console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
 
         if(cancelToken && cancelToken.cancelled) {
             console.warn("Upload cancelled")
@@ -406,7 +407,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     const transaction = await chiffrage.formatterMessage(
         fichier.transactionGrosfichiers, 'GrosFichiers', {action: 'nouvelleVersion'})
 
-    // console.debug("Transactions signees : %O, %O", cles, transaction)
+    console.debug("Transactions signees : %O, %O", cles, transaction)
     await transfertFichiers.confirmerUpload(correlation, cles, transaction)
 
     // Upload complete, dispatch nouvel etat
@@ -441,13 +442,13 @@ function calculerPourcentage(liste, completesCycle) {
     let tailleTotale = 0, 
         tailleCompleteeTotale = 0
 
-    const inclureComplete = [ETAT_PRET, ETAT_COMPLETE, ETAT_ECHEC, ETAT_UPLOADING, ETAT_UPLOAD_INCOMPLET]
+    const inclureEtats = [ETAT_PRET, ETAT_ECHEC, ETAT_UPLOADING, ETAT_UPLOAD_INCOMPLET]
     liste.forEach( upload => {
         const { correlation, etat, tailleCompletee, taille } = upload
 
         let inclure = false
-        if(inclureComplete.includes(etat)) inclure = true
-        else if(etat === ETAT_CONFIRME && completesCycle.includes(correlation)) inclure = true
+        if(inclureEtats.includes(etat)) inclure = true
+        else if([ETAT_COMPLETE, ETAT_CONFIRME] && completesCycle.includes(correlation)) inclure = true
 
         if(inclure) {
             tailleCompleteeTotale += tailleCompletee

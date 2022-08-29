@@ -1062,20 +1062,25 @@ function BoutonUpload(props) {
 
     const { traitementFichiers } = workers
 
+    const handlerPreparationUploadEnCours = useCallback(event=>{
+        console.debug('handlerPreparationUploadEnCours ', event)
+        setPreparationUploadEnCours(event)
+    }, [setPreparationUploadEnCours])
+
     const upload = useCallback( acceptedFiles => {
         console.debug("Files : %O pour usager: %O", acceptedFiles, usager)
         
-        setPreparationUploadEnCours(0)  // Debut preparation
+        handlerPreparationUploadEnCours(0)  // Debut preparation
 
-        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: setPreparationUploadEnCours})
+        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: handlerPreparationUploadEnCours})
             .then(uploads=>{
                 // const correlationIds = uploads.map(item=>item.correlation)
                 // return dispatch(demarrerUploads(workers, correlationIds))
             })
             .catch(err=>console.error("Erreur fichiers : %O", err))
-            .finally( () => setPreparationUploadEnCours(false) )
+            .finally( () => handlerPreparationUploadEnCours(false) )
 
-    }, [setPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid])
+    }, [handlerPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid])
 
     const fileChange = event => {
         event.preventDefault()
@@ -1576,13 +1581,36 @@ function PreparationModal(props) {
         <Modal show={show}>
             <Modal.Header>Preparation de fichiers</Modal.Header>
             <Modal.Body>
-                {show?
-                    <p>Preparation en cours ... ({progres} %)</p>    
-                    :
-                    <p>Pret</p>
-                }
+                <PreparationModalProgress progres={progres} />
             </Modal.Body>
         </Modal>
+    )
+}
+
+function PreparationModalProgress(opts) {
+    const { progres } = opts
+
+    if(isNaN(progres)) return <p>Pret</p>
+
+    return (
+        <div>
+            <Row>
+                <Col>
+                    <p>Chiffrage <i className='fa fa-key'/> en cours ...</p>
+                </Col>
+                <Col>
+                    <ProgressBar now={progres} label={progres + ' %'} />
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    <p>
+                        Noter que l'upload vers le serveur demarre des qu'un fichier est 
+                        completement chiffre meme si plusieurs fichiers sont en attente.
+                    </p>
+                </Col>
+            </Row>
+        </div>
     )
 }
 
