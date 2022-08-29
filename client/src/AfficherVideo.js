@@ -33,7 +33,7 @@ function AfficherVideo(props) {
     const [timeStamp, setTimeStamp] = useState(0)
 
     useEffect(()=>{
-        if(selecteur) return  // Deja initialise
+        if(selecteur || !videoLoader) return  // Deja initialise
         // Identifier un selecteur initial
         const selecteurs = videoLoader.getSelecteurs()
         if(!selecteurs) {
@@ -81,7 +81,7 @@ function AfficherVideo(props) {
     }, [fichier, setPosterObj])
 
     useEffect(()=>{
-        if(!selecteur) return setSrcVideo('')
+        if(!selecteur || !fichier.videoLoader) return setSrcVideo('')
         console.debug("Video utiliser selecteur %s", selecteur)
         fichier.videoLoader.load(selecteur, {genererToken})
             .then(src=>{
@@ -156,6 +156,7 @@ function SelecteurResolution(props) {
 
     useEffect(()=>{
         console.debug("Liste videos : %O", listeVideos)
+        if(!listeVideos || !videoLoader) return
         // const { webm } = support
 
         // const videoKeys = Object.keys()
