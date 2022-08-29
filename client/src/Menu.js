@@ -20,7 +20,10 @@ const ETAT_PREPARATION = 1,
 
 function Menu(props) {
 
-  const { i18n, etatConnexion, idmg, manifest, onSelect, etatTransfert, showTransfertModal } = props
+  const { 
+    i18n, etatConnexion, idmg, manifest, onSelect, etatTransfert, 
+    showTransfertModal,
+  } = props
  
   const { t } = useTranslation()
   const [showModalInfo, setShowModalInfo] = useState(false)
@@ -265,7 +268,7 @@ function LabelTransfert(props) {
   else if(uploadsResultat.succes>0) variantUpload = 'success'
 
   let labelUpload = <span>-</span>
-  if(typeof(progresUpload)==='number') labelUpload = <span>{Math.floor(progresUpload)} %</span>
+  if(!isNaN(progresUpload)) labelUpload = <span>{Math.floor(progresUpload)} %</span>
 
   return (
     <div className="transfer-labels">

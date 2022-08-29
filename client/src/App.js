@@ -11,6 +11,7 @@ import useWorkers, {useEtatConnexion, WorkerProvider, useUsager} from './WorkerC
 import storeSetup from './redux/store'
 
 import { setUserId } from './redux/fichiersSlice'
+import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload } from './redux/uploaderSlice'
 
 import './i18n'
 
@@ -32,13 +33,23 @@ const NavigationCollections = lazy( () => import('./NavigationCollections') )
 const NavigationRecents = lazy( () => import('./NavigationRecents') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
 
+const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
+
+const ETAT_PREPARATION = 1,
+      ETAT_PRET = 2,
+      ETAT_UPLOADING = 3,
+      ETAT_COMPLETE = 4,
+      ETAT_ECHEC = 5,
+      ETAT_CONFIRME = 6,
+      ETAT_UPLOAD_INCOMPLET = 7
+
 function App() {
   
   return (
     <WorkerProvider attente={<Attente />}>
       <ErrorBoundary>
         <Suspense fallback={<Attente />}>
-          <Layout />
+          <ProviderReduxLayer />
         </Suspense>
       </ErrorBoundary>
     </WorkerProvider>
@@ -47,12 +58,28 @@ function App() {
 }
 export default App
 
-function Layout(_props) {
-
-  const { i18n } = useTranslation()
+function ProviderReduxLayer() {
 
   const workers = useWorkers()
+  const store = useMemo(()=>{
+    if(!workers) return
+    return storeSetup(workers)
+  }, [workers])
+
+  return (
+    <ReduxProvider store={store}>
+        <LayoutMain />
+    </ReduxProvider>
+  )
+}
+
+function LayoutMain() {
+
+  const { i18n } = useTranslation()
+  const workers = useWorkers()
+
   const etatConnexion = useEtatConnexion()
+  const dispatch = useDispatch()
 
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [page, setPage] = useState('')
@@ -64,20 +91,35 @@ function Layout(_props) {
   }, [setErreur])
   const handlerCloseErreur = useCallback(()=>setErreur(''), [setErreur])
 
+  // Modal transfert et actions
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
-  
+  const handlerSupprimerUploads = useCallback( params => {
+    const { correlation, tous } = params
+    if(tous === true) {
+      dispatch(supprimerParEtat(workers, ETAT_CONFIRME))
+        .then(()=>dispatch(supprimerParEtat(workers, ETAT_COMPLETE)))
+        .catch(err=>erreurCb(err, "Erreur supprimer uploads"))
+    } else {
+      throw new Error('not implemented')
+    }
+  }, [dispatch, workers])
+  const handlerContinuerUploads = useCallback( params => {
+    const { correlation, tous } = params
+    if(tous === true) {
+      dispatch(continuerUpload(workers))
+        .catch(err=>erreurCb(err, "Erreur continuer uploads"))
+    } else {
+      throw new Error('not implemented')
+    }
+  }, [workers])
+
   const handlerSelect = useCallback(eventKey => {
     switch(eventKey) {
       default:
         setPage('')
     }
   }, [setPage])
-
-  const store = useMemo(()=>{
-    if(!workers) return
-    return storeSetup(workers)
-  }, [workers])
 
   const menu = (
     <Menu 
@@ -90,27 +132,29 @@ function Layout(_props) {
   )
 
   return (
-    <ReduxProvider store={store}>
-      <LayoutMillegrilles menu={menu}>
+    <LayoutMillegrilles menu={menu}>
 
-        <Container className="contenu">
-          <Suspense fallback={<Attente />}>
-            <Contenu 
-                page={page}
-                erreurCb={erreurCb}
-              />
-          </Suspense>
-        </Container>
+      <Container className="contenu">
+        <Suspense fallback={<Attente />}>
+          <Contenu 
+              page={page}
+              erreurCb={erreurCb}
+            />
+        </Suspense>
+      </Container>
 
-        <Modals 
-            showTransfertModal={showTransfertModal}
-            showTransfertModalFermer={showTransfertModalFermer}
-            erreur={erreur}
-            handlerCloseErreur={handlerCloseErreur}
-          />
+      <Modals 
+          showTransfertModal={showTransfertModal}
+          showTransfertModalFermer={showTransfertModalFermer}
+          erreur={erreur}
+          handlerCloseErreur={handlerCloseErreur}
+          supprimerUploads={handlerSupprimerUploads}
+          continuerUploads={handlerContinuerUploads}
+        />
 
-      </LayoutMillegrilles>
-    </ReduxProvider>
+      <InitialisationUpload />
+
+    </LayoutMillegrilles>
   )
 }
 
@@ -118,9 +162,9 @@ function Contenu(props) {
 
   const dispatch = useDispatch()
 
-  // Set userId dans redux
-  const usager = useUsager()
-  useEffect(()=>{ if(!usager) return; dispatch(setUserId(usager.extensions.userId)); }, [dispatch, usager])
+  // // Set userId dans redux
+  // const usager = useUsager()
+  // useEffect(()=>{ if(!usager) return; dispatch(setUserId(usager.extensions.userId)); }, [dispatch, usager])
 
   let Page
   switch(props.page) {
@@ -138,7 +182,10 @@ function Contenu(props) {
 
 function Modals(props) {
 
-  const { showTransfertModal, showTransfertModalFermer, erreur, handlerCloseErreur } = props
+  const { 
+    showTransfertModal, showTransfertModalFermer, erreur, handlerCloseErreur, 
+    supprimerUploads, continuerUploads,
+  } = props
 
   const workers = useWorkers()
   const { t } = useTranslation()
@@ -155,6 +202,8 @@ function Modals(props) {
           progresUpload={progresUpload}
           downloads={''}
           progresDownload={''}
+          supprimerUploads={supprimerUploads}
+          continuerUploads={continuerUploads}
         />
 
       <ModalErreur 
@@ -181,4 +230,81 @@ function Attente(_props) {
           </ol>
       </div>
   )
+}
+
+function InitialisationUpload(props) {
+
+  const workers = useWorkers()
+  const usager = useUsager()
+  const dispatch = useDispatch()
+
+  const { uploadFichiersDao } = workers
+
+  const userId = useMemo(()=>{
+      if(!usager || !usager.extensions) return
+      return usager.extensions.userId
+  }, [usager])
+
+  useEffect(()=>{
+    dispatch(setUserId(userId))
+    dispatch(setUserIdUpload(userId))
+  }, [userId])
+
+  useEffect(()=>{
+      if(!uploadFichiersDao || !userId) return
+      console.debug("Initialiser uploader")
+      uploadFichiersDao.chargerUploads(userId)
+          .then(async uploads=>{
+              console.debug("Uploads trouves : %O", uploads)
+              // uploads.sort(trierListeUpload)
+              // Reset etat uploads en cours (incomplets)
+
+              const completExpire = new Date().getTime() - CONST_COMPLET_EXPIRE
+
+              uploads = uploads.filter(upload=>{
+                  const { correlation, etat } = upload
+                  if([ETAT_COMPLETE, ETAT_CONFIRME].includes(etat)) {
+                      // Cleanup
+                      if(upload.derniereModification <= completExpire) {
+                          // Complet et expire, on va retirer l'upload
+                          console.debug("Cleanup upload complete ", upload)
+                          uploadFichiersDao.supprimerFichier(correlation)
+                              .catch(err=>console.error("Erreur supprimer fichier ", err))
+                          return false
+                      }
+                  } else if(ETAT_PREPARATION === etat) {
+                      // Cleanup
+                      console.warn("Cleanup upload avec preparation incomplete ", upload)
+                      uploadFichiersDao.supprimerFichier(correlation)
+                          .catch(err=>console.error("Erreur supprimer fichier ", err))
+                      return false
+                  }
+                  return true
+              })
+
+              for await (const upload of uploads) {
+                  const { correlation, etat } = upload
+                  if([ETAT_PRET, ETAT_UPLOADING].includes(etat)) {
+                      upload.etat = ETAT_UPLOAD_INCOMPLET
+
+                      const parts = await uploadFichiersDao.getPartsFichier(correlation)
+                      const positionsCompletees = upload.positionsCompletees
+                      const tailleCompletee = parts.reduce((acc, item)=>{
+                          const position = item.position
+                          if(positionsCompletees.includes(position)) acc += item.taille
+                          return acc
+                      }, 0)
+
+                      upload.tailleCompletee = tailleCompletee
+                      await uploadFichiersDao.updateFichierUpload(upload)
+                  }
+              }
+
+              dispatch(setUploads(uploads))
+          })
+          .catch(err=>console.error("Erreur initialisation uploader ", err))
+  }, [uploadFichiersDao, userId])    
+
+  // Rien a afficher
+  return ''
 }

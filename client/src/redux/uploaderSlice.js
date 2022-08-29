@@ -179,7 +179,6 @@ async function traiterClearUploads(workers, dispatch, getState) {
     dispatch(clearUploadsState())
 }
 
-
 export function supprimerParEtat(workers, etat) {
     return (dispatch, getState) => traiterSupprimerParEtat(workers, etat, dispatch, getState)
 }
