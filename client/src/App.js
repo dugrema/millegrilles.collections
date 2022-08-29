@@ -96,7 +96,7 @@ function LayoutMain() {
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
   const handlerSupprimerUploads = useCallback( params => supprimerUploads(workers, dispatch, params, erreurCb), [dispatch, workers, erreurCb])
   const handlerContinuerUploads = useCallback( params => {
-    console.debug("Continuer upload ", params)
+    // console.debug("Continuer upload ", params)
     const { correlation } = params
     dispatch(continuerUpload(workers, {correlation}))
       .catch(err=>erreurCb(err, "Erreur continuer uploads"))
@@ -237,10 +237,10 @@ function InitialisationUpload(props) {
 
   useEffect(()=>{
       if(!uploadFichiersDao || !userId) return
-      console.debug("Initialiser uploader")
+      // console.debug("Initialiser uploader")
       uploadFichiersDao.chargerUploads(userId)
           .then(async uploads=>{
-              console.debug("Uploads trouves : %O", uploads)
+              // console.debug("Uploads trouves : %O", uploads)
               // uploads.sort(trierListeUpload)
               // Reset etat uploads en cours (incomplets)
 
@@ -252,7 +252,7 @@ function InitialisationUpload(props) {
                       // Cleanup
                       if(upload.derniereModification <= completExpire) {
                           // Complet et expire, on va retirer l'upload
-                          console.debug("Cleanup upload complete ", upload)
+                          // console.debug("Cleanup upload complete ", upload)
                           uploadFichiersDao.supprimerFichier(correlation)
                               .catch(err=>console.error("Erreur supprimer fichier ", err))
                           return false
@@ -295,7 +295,7 @@ function InitialisationUpload(props) {
 }
 
 function supprimerUploads(workers, dispatch, params, erreurCb) {
-  console.debug("!!! supprimerUploaders ", params)
+  // console.debug("!!! supprimerUploaders ", params)
   const { correlation, succes, echecs } = params
   if(correlation) {
     dispatch(annulerUpload(workers, correlation))

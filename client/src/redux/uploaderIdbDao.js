@@ -53,7 +53,7 @@ export async function ajouterFichierUploadFile(correlation, position, data) {
     if(typeof(position) !== 'number') throw new Error('ajouterFichierUpload Il faut fournir une position')
     if(data.length === 0) return   // Rien a faire
 
-    console.debug("ajouterFichierUploadFile %s position %d len %d", correlation, position, data.length)
+    // console.debug("ajouterFichierUploadFile %s position %d len %d", correlation, position, data.length)
 
     const db = await ouvrirDB()
     const store = db.transaction(STORE_UPLOADS_FICHIERS, 'readwrite').store
@@ -71,7 +71,7 @@ export async function supprimerFichier(correlation) {
     while(cursorFichiers) {
         const correlationCursor = cursorFichiers.value.correlation
         if(correlationCursor === correlation) {
-            console.debug("Delete cursorFichiers : ", cursorFichiers.value)
+            // console.debug("Delete cursorFichiers : ", cursorFichiers.value)
             await cursorFichiers.delete()
         }
         cursorFichiers = await cursorFichiers.continue()
@@ -92,7 +92,7 @@ export async function clear() {
 }
 
 export async function supprimerParEtat(userId, etat) {
-    console.debug("supprimerParEtat userId %s etat %s ", userId, etat)
+    // console.debug("supprimerParEtat userId %s etat %s ", userId, etat)
     if(!userId) throw new Error("userId est requis pour supprimerParEtat")
     if(etat === undefined) throw new Error("etat est requis pour supprimerParEtat")
 
@@ -106,13 +106,13 @@ export async function supprimerParEtat(userId, etat) {
     while(curseurUpload) {
         const { correlation, userId: userIdCurseur, etat: etatCurseur } = curseurUpload.value
         if(userIdCurseur === userId && etatCurseur === etat) {
-            console.debug("Supprimer ", curseurUpload.value)
+            // console.debug("Supprimer ", curseurUpload.value)
             correlationsSupprimer.push(correlation)
         }
         curseurUpload = await curseurUpload.continue()
     }
 
-    console.debug("Surppimer etat %d, correlations %O", etat, correlationsSupprimer)
+    // console.debug("Surppimer etat %d, correlations %O", etat, correlationsSupprimer)
 
     // Supprimer fichiers
     const storeUploadsFichiers = db.transaction(STORE_UPLOADS_FICHIERS, 'readwrite').store

@@ -7,7 +7,7 @@ import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reac
 import { mapDocumentComplet } from './mapperFichier'
 
 function PreviewFichiers(props) {
-    console.debug("PreviewFichiers proppies : %O", props)
+    // console.debug("PreviewFichiers proppies : %O", props)
 
     const support = useDetecterSupport()
 

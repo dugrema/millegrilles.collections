@@ -48,10 +48,10 @@ function ajouterUploadAction(state, action) {
     const docUpload = action.payload
     const correlation = docUpload.correlation
     const infoUpload = state.liste.filter(item=>item.correlation === correlation).pop()
-    console.debug("ajouterUploadAction correlation %s info existante %O", correlation, infoUpload)
+    // console.debug("ajouterUploadAction correlation %s info existante %O", correlation, infoUpload)
     if(!infoUpload) {
         // Ajouter l'upload, un middleware va charger le reste de l'information
-        console.debug("Ajout upload %O", correlation)
+        // console.debug("Ajout upload %O", correlation)
         state.liste.push(docUpload)
         const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
         state.progres = pourcentage
@@ -161,7 +161,7 @@ export function demarrerUploads(workers, correlationIds) {
 }
 
 async function traiterDemarrerUploads(workers, correlationIds, dispatch, getState) {
-    console.debug("traiterDemarrerUploads ", correlationIds)
+    // console.debug("traiterDemarrerUploads ", correlationIds)
     if(typeof(correlationIds) === 'string') correlationIds = [correlationIds]
     correlationIds.forEach(correlation=>{
         dispatch(ajouterUpload(correlation))
@@ -173,7 +173,7 @@ export function clearUploads(workers) {
 }
 
 async function traiterClearUploads(workers, dispatch, getState) {
-    console.debug("traiterClearUploads")
+    // console.debug("traiterClearUploads")
     const { uploadFichiersDao } = workers
     await uploadFichiersDao.clear()
     dispatch(clearUploadsState())
@@ -184,7 +184,7 @@ export function supprimerParEtat(workers, etat) {
 }
 
 async function traiterSupprimerParEtat(workers, etat, dispatch, getState) {
-    console.debug("traiterSupprimerParEtat ", etat)
+    // console.debug("traiterSupprimerParEtat ", etat)
     const { uploadFichiersDao } = workers
     const state = getState().uploader
     const userId = state.userId
@@ -200,7 +200,7 @@ export function continuerUpload(workers, opts) {
 async function traiterContinuerUpload(workers, dispatch, getState, opts) {
     opts = opts || {}
     const correlation = opts.correlation
-    console.debug("traiterContinuerUpload (correlation %s)", correlation)
+    // console.debug("traiterContinuerUpload (correlation %s)", correlation)
 
     const { uploadFichiersDao } = workers
     const state = getState().uploader
@@ -229,7 +229,7 @@ export function annulerUpload(workers, correlation) {
 }
 
 async function traiterAnnulerUpload(workers, correlation, dispatch, getState) {
-    console.debug("traiterAnnulerUpload ", correlation)
+    // console.debug("traiterAnnulerUpload ", correlation)
     const { uploadFichiersDao } = workers
     const state = getState().uploader
     const upload = state.liste.filter(item=>item.correlation===correlation).pop()
@@ -249,7 +249,7 @@ export function confirmerUpload(workers, correlation) {
 }
 
 async function traiterConfirmerUpload(workers, correlation, dispatch, getState) {
-    console.debug("traiterConfirmerUpload ", correlation)
+    // console.debug("traiterConfirmerUpload ", correlation)
     const { uploadFichiersDao } = workers
     const state = getState().uploader
     const upload = state.liste.filter(item=>item.correlation===correlation).pop()
@@ -282,8 +282,8 @@ export function uploaderMiddlewareSetup(workers) {
 }
 
 async function uploaderMiddlewareListener(workers, action, listenerApi) {
-    console.debug("uploaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
-    console.debug("Arret upload info : %O", arretUpload)
+    // console.debug("uploaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    // console.debug("Arret upload info : %O", arretUpload)
 
     await listenerApi.unsubscribe()
     try {
@@ -294,7 +294,7 @@ async function uploaderMiddlewareListener(workers, action, listenerApi) {
         const stopAction = listenerApi.condition(arretUpload.match)
         await Promise.race([task.result, stopAction])
 
-        console.debug("Task %O\nstopAction %O", task, stopAction)
+        // console.debug("Task %O\nstopAction %O", task, stopAction)
         task.result.catch(err=>console.error("Erreur task : %O", err))
         stopAction
             .then(()=>task.cancel())
@@ -303,21 +303,21 @@ async function uploaderMiddlewareListener(workers, action, listenerApi) {
             })
 
         await task.result  // Attendre fin de la tache en cas d'annulation
-        console.debug("uploaderMiddlewareListener Sequence upload terminee")
+        // console.debug("uploaderMiddlewareListener Sequence upload terminee")
     } finally {
         await listenerApi.subscribe()
     }
 }
 
 async function tacheUpload(workers, listenerApi, forkApi) {
-    console.debug("Fork api : %O", forkApi)
+    // console.debug("Fork api : %O", forkApi)
     const dispatch = listenerApi.dispatch
 
     let nextUpload = getProchainUpload(listenerApi.getState().uploader.liste)
 
     const cancelToken = {cancelled: false}
     const aborted = event => {
-        console.debug("Aborted ", event)
+        // console.debug("Aborted ", event)
         cancelToken.cancelled = true
     }
     forkApi.signal.onabort = aborted
@@ -326,14 +326,14 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 
     // Commencer boucle d'upload
     while(nextUpload) {
-        console.debug("Next upload : %O", nextUpload)
+        // console.debug("Next upload : %O", nextUpload)
         const correlation = nextUpload.correlation
         try {
             await uploadFichier(workers, dispatch, nextUpload, cancelToken)
 
             // Trouver prochain upload
             if (forkApi.signal.aborted) {
-                console.debug("tacheUpload annulee")
+                // console.debug("tacheUpload annulee")
                 marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_UPLOAD_INCOMPLET})
                     .catch(err=>console.error("Erreur marquer upload echec %s : %O", correlation, err))
                 return
@@ -350,7 +350,7 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 }
 
 async function uploadFichier(workers, dispatch, fichier, cancelToken) {
-    console.debug("Upload fichier workers : ", workers)
+    // console.debug("Upload fichier workers : ", workers)
     const { uploadFichiersDao, transfertFichiers, chiffrage } = workers
     const correlation = fichier.correlation
 
@@ -366,7 +366,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         if(dejaTraite) tailleCompletee += item.taille
         return !dejaTraite
     })
-    console.debug("Parts a uploader : ", parts)
+    // console.debug("Parts a uploader : ", parts)
 
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_UPLOADING})
 
@@ -385,7 +385,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         const resultatUpload = transfertFichiers.partUploader(correlation, position, partContent, opts)
         // await Promise.race([resultatUpload, cancelToken])
         await resultatUpload
-        console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
+        // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
 
         if(cancelToken && cancelToken.cancelled) {
             console.warn("Upload cancelled")
@@ -407,7 +407,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     const transaction = await chiffrage.formatterMessage(
         fichier.transactionGrosfichiers, 'GrosFichiers', {action: 'nouvelleVersion'})
 
-    console.debug("Transactions signees : %O, %O", cles, transaction)
+    // console.debug("Transactions signees : %O, %O", cles, transaction)
     await transfertFichiers.confirmerUpload(correlation, cles, transaction)
 
     // Upload complete, dispatch nouvel etat
@@ -462,10 +462,10 @@ function calculerPourcentage(liste, completesCycle) {
 }
 
 function getProchainUpload(liste) {
-    console.debug("Get prochain upload pre-tri ", liste)
+    // console.debug("Get prochain upload pre-tri ", liste)
     const listeCopie = liste.filter(item=>item.etat === ETAT_PRET)
     listeCopie.sort(trierListeUpload)
-    console.debug("Get prochain upload : ", listeCopie)
+    // console.debug("Get prochain upload : ", listeCopie)
     return listeCopie.shift()
 }
 

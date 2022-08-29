@@ -58,14 +58,14 @@ function setCollectionInfoAction(state, action) {
     state.sortKeys = {}
 
     // Transferer le nom vers le breadcrumb
-    console.debug("setCollectionInfoAction ", collection)
+    // console.debug("setCollectionInfoAction ", collection)
     if(collection && collection.nom) {
         const len = state.breadcrumb.length
         if(len > 0) {
             const courant = state.breadcrumb[len-1]
-            console.debug("Breadcrumb courant %s (nom %s)", courant.tuuid, courant.nom)
+            // console.debug("Breadcrumb courant %s (nom %s)", courant.tuuid, courant.nom)
             if(courant.tuuid === collection.tuuid) {
-                console.debug("Changer nom courant pour %s", collection.nom)
+                // console.debug("Changer nom courant pour %s", collection.nom)
                 courant.label = collection.nom
             }
         }
@@ -100,7 +100,7 @@ function clearAction(state) {
 // }
 
 function breadcrumbPushAction(state, action) {
-    console.debug("State breadcrumb ", state.breadcrumb)
+    // console.debug("State breadcrumb ", state.breadcrumb)
 
     let { tuuid, opts } = action.payload
     opts = opts || {}
@@ -116,11 +116,11 @@ function breadcrumbPushAction(state, action) {
     const label = opts.nom || tuuid
     const val = {tuuid, label}
     state.breadcrumb.push(val)
-    console.debug("Breadcrumb etat : ", [...state.breadcrumb])
+    // console.debug("Breadcrumb etat : ", [...state.breadcrumb])
 }
 
 function breadcrumbSliceAction(state, action) {
-    console.debug("Breadcrumb slice : ", action)
+    // console.debug("Breadcrumb slice : ", action)
     const toLevel = action.payload
     // level '' est favoris, 0 est la premiere collection (idx === 0)
     if(!toLevel) state.breadcrumb = []
@@ -129,7 +129,7 @@ function breadcrumbSliceAction(state, action) {
 
 // payload {tuuid, data, images, video}
 function mergeTuuidDataAction(state, action) {
-    console.debug("mergeTuuidDataAction action: %O, cuuid courant: %O", action, state.cuuid)
+    // console.debug("mergeTuuidDataAction action: %O, cuuid courant: %O", action, state.cuuid)
     let { tuuid } = action.payload
     const data = action.payload.data || {},
           cuuids = data.cuuids || [],
@@ -218,7 +218,7 @@ function mergeTuuidDataAction(state, action) {
 
         // Verifier si le fichier fait encore partie de la collection courante
         const cuuids = dataCourant.cuuids || []
-        console.debug("mergeTuuidDataAction Verifier si dataCourant est encore dans %s : %O", cuuidCourant, cuuids)
+        // console.debug("mergeTuuidDataAction Verifier si dataCourant est encore dans %s : %O", cuuidCourant, cuuids)
         let retirer = false
         if( source === SOURCE_CORBEILLE ) {
             // Verifier si le document est toujours supprime
@@ -310,7 +310,7 @@ export function dechiffrageMiddlewareSetup(workers) {
 }
 
 async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
-    console.debug("dechiffrageMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    // console.debug("dechiffrageMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
     const { clesDao, chiffrage, collectionsDao } = workers
     await listenerApi.unsubscribe()
     try {
@@ -366,7 +366,7 @@ async function dechiffrageMiddlewareListener(workers, action, listenerApi) {
             fichiersChiffres = listenerApi.getState().fichiers.listeDechiffrage
         }
 
-        console.debug("dechiffrageMiddlewareListener Sequence dechiffrage terminee")
+        // console.debug("dechiffrageMiddlewareListener Sequence dechiffrage terminee")
     } finally {
         await listenerApi.subscribe()
     }
@@ -386,19 +386,19 @@ async function traiterDechiffrerFichiers(workers, fichiers, dispatch, getState) 
 
     // Detecter les cles requises
     const {clesHachage_bytes, fichiersChiffres} = identifierClesHachages(fichiers)
-    console.debug('traiterDechiffrerFichiers Cles a extraire : %O de fichiers %O', clesHachage_bytes, fichiersChiffres)
+    // console.debug('traiterDechiffrerFichiers Cles a extraire : %O de fichiers %O', clesHachage_bytes, fichiersChiffres)
     if(fichiersChiffres.length > 0) dispatch(pushFichiersChiffres(fichiersChiffres))
 
     const tuuidsChiffres = fichiersChiffres.map(item=>item.tuuid)
     for (const fichier of fichiers) {
-        console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
+        // console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
         const dechiffre = ! tuuidsChiffres.includes(fichier.tuuid)
 
         // Mettre a jour dans IDB
         collectionsDao.updateDocument(fichier, {dechiffre})
             .catch(err=>console.error("Erreur maj document %O dans idb : %O", fichier, err))
 
-        console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
+        // console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
         dispatch(mergeTuuidData({tuuid: fichier.tuuid, data: fichier}))
     }
 }
@@ -408,7 +408,7 @@ function chargerTuuids(workers, tuuids) {
 }
 
 async function traiterChargerTuuids(workers, tuuids, dispatch, getState) {
-    console.debug("Charger detail fichiers tuuids : %O", tuuids)
+    // console.debug("Charger detail fichiers tuuids : %O", tuuids)
 
     const { connexion, collectionsDao } = workers
 
@@ -439,11 +439,11 @@ async function traiterChargerTuuids(workers, tuuids, dispatch, getState) {
 
             if(chiffre) {
                 // Conserver pour dechiffrer une fois la cle disponible
-                console.debug("Attendre dechiffrage pour %s", item.tuuid)
+                // console.debug("Attendre dechiffrage pour %s", item.tuuid)
                 acc.push(item)
             } else {
                 // Traiter immediatement, aucun chiffrage
-                console.debug("Aucun dechiffrage pour %O", item)
+                // console.debug("Aucun dechiffrage pour %O", item)
                 dispatch(mergeTuuidData({tuuid: item.tuuid, data: item}))
             }
 
@@ -467,7 +467,7 @@ async function traiterChangerCollection(workers, cuuid, dispatch, getState) {
 
     const state = getState().fichiers
     const cuuidPrecedent = state.cuuid
-    console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
+    // console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
 
     if(cuuidPrecedent === cuuid) return  // Rien a faire, meme collection
 
@@ -477,18 +477,18 @@ async function traiterChangerCollection(workers, cuuid, dispatch, getState) {
 }
 
 function rafraichirCollection(workers) {
-    console.debug("rafraichirCollection")
+    // console.debug("rafraichirCollection")
     return (dispatch, getState) => traiterRafraichirCollection(workers, dispatch, getState)
 }
 
 async function traiterRafraichirCollection(workers, dispatch, getState, promisesPreparationCollection) {
-    console.debug('traiterRafraichirCollection')
+    // console.debug('traiterRafraichirCollection')
     const { collectionsDao } = workers
 
     const state = getState().fichiers
     const { userId, cuuid } = state
 
-    console.debug("Rafraichir %s", cuuid)
+    // console.debug("Rafraichir %s", cuuid)
 
     // Nettoyer la liste
     dispatch(clear())
@@ -501,10 +501,10 @@ async function traiterRafraichirCollection(workers, dispatch, getState, promises
     const contenuIdb = (await Promise.all(promisesPreparationCollection)).pop()
 
     // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-    console.debug("Contenu idb : %O", contenuIdb)
+    // console.debug("Contenu idb : %O", contenuIdb)
     if(contenuIdb) {
         const { documents, collection } = contenuIdb
-        console.debug("Push documents provenance idb : %O", documents)
+        // console.debug("Push documents provenance idb : %O", documents)
         dispatch(setCollectionInfo(collection))
         dispatch(push(documents))
 
@@ -517,7 +517,7 @@ async function traiterRafraichirCollection(workers, dispatch, getState, promises
     let compteur = 0
     for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
         let resultatSync = await syncCollection(dispatch, workers, cuuid, CONST_SYNC_BATCH_SIZE, compteur)
-        console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+        // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
         if( ! resultatSync || ! resultatSync.liste ) break
         compteur += resultatSync.liste.length
         if( resultatSync.complete ) break
@@ -535,7 +535,7 @@ async function syncCollection(dispatch, workers, cuuid, limit, skip) {
     const { liste } = resultat
     const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
 
-    console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+    // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
     if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
         dispatch(chargerTuuids(workers, listeTuuidsDirty))
             .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
@@ -551,7 +551,7 @@ async function syncPlusrecent(dispatch, workers, intervalle, limit, skip) {
     const { liste } = resultat
     const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
 
-    console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+    // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
     if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
         dispatch(chargerTuuids(workers, listeTuuidsDirty))
             .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
@@ -610,7 +610,7 @@ async function traiterChargerPlusrecents(workers, opts, dispatch, getState) {
     dispatch(setIntervalle(intervalle))
     dispatch(setSortKeys({key: 'derniere_modification', order: -1}))
 
-    console.debug("traiterChargerCorbeille Intervalle ", intervalle)
+    // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
     
     const { collectionsDao } = workers
 
@@ -618,9 +618,9 @@ async function traiterChargerPlusrecents(workers, opts, dispatch, getState) {
     const contenuIdb = await collectionsDao.getPlusrecent(intervalle, userId)
 
     // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-    console.debug("Contenu idb : %O", contenuIdb)
+    // console.debug("Contenu idb : %O", contenuIdb)
     if(contenuIdb) {
-        console.debug("Push documents provenance idb : %O", contenuIdb)
+        // console.debug("Push documents provenance idb : %O", contenuIdb)
         dispatch(push(contenuIdb))
 
         const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
@@ -631,7 +631,7 @@ async function traiterChargerPlusrecents(workers, opts, dispatch, getState) {
     let compteur = 0
     for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
         let resultatSync = await syncPlusrecent(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
-        console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+        // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
         if( ! resultatSync || ! resultatSync.liste ) break
         compteur += resultatSync.liste.length
         if( resultatSync.complete ) break
@@ -676,7 +676,7 @@ async function traiterChargerCorbeille(workers, opts, dispatch, getState) {
     dispatch(setIntervalle(intervalle))
     dispatch(setSortKeys({key: 'date_suppression', order: -1}))
 
-    console.debug("traiterChargerCorbeille Intervalle ", intervalle)
+    // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
     
     const { collectionsDao } = workers
 
@@ -684,9 +684,9 @@ async function traiterChargerCorbeille(workers, opts, dispatch, getState) {
     const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
 
     // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-    console.debug("Contenu idb : %O", contenuIdb)
+    // console.debug("Contenu idb : %O", contenuIdb)
     if(contenuIdb) {
-        console.debug("Push documents provenance idb : %O", contenuIdb)
+        // console.debug("Push documents provenance idb : %O", contenuIdb)
         dispatch(push(contenuIdb))
 
         const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
@@ -697,7 +697,7 @@ async function traiterChargerCorbeille(workers, opts, dispatch, getState) {
     let compteur = 0
     for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
         let resultatSync = await syncCorbeille(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
-        console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+        // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
         if( ! resultatSync || ! resultatSync.liste ) break
         compteur += resultatSync.liste.length
         if( resultatSync.complete ) break
@@ -714,7 +714,7 @@ function ajouterFichierVolatil(workers, fichier) {
 }
 
 async function traiterAjouterFichierVolatil(workers, fichier, dispatch, getState) {
-    console.debug("traiterAjouterFichierVolatil ", fichier)
+    // console.debug("traiterAjouterFichierVolatil ", fichier)
     const entete = fichier['en-tete'] || {},
           tuuid = fichier.tuuid || entete['uuid_transaction']
   
@@ -736,13 +736,13 @@ async function traiterAjouterFichierVolatil(workers, fichier, dispatch, getState
         fichierCopie.user_id = userId
     }
 
-    console.debug("Ajouter fichier volatil : %O", fichierCopie)
+    // console.debug("Ajouter fichier volatil : %O", fichierCopie)
 
     const { collectionsDao } = workers
 
     // Ajouter fichier dans IDB avec flags dirty et expiration
     const expiration = new Date().getTime() + 300000  // Valide 5 minutes (e.g. pour upload)
-    // console.debug("Ajout document avec expiration : %O", new Date(expiration))
+    // // console.debug("Ajout document avec expiration : %O", new Date(expiration))
     collectionsDao.updateDocument(fichierCopie, {dirty: true, expiration})
         .catch(err=>console.error("Erreur maj document %O dans idb : %O", fichierCopie, err))
 
@@ -758,7 +758,7 @@ async function traiterSupprimerFichier(workers, tuuid, dispatch, getState) {
     const cuuid = getState().fichiers.cuuid
 
     const doc = (await collectionsDao.getParTuuids([tuuid])).pop()
-    console.debug("traiterSupprimerFichier Doc charge : %O, retirer de cuuid %s", doc, cuuid)
+    // console.debug("traiterSupprimerFichier Doc charge : %O, retirer de cuuid %s", doc, cuuid)
     if(doc) {
         const cuuids = doc.cuuids || []
         doc.cuuids = cuuids.filter(item=>item!==cuuid)
@@ -780,11 +780,11 @@ async function traiterRestaurerFichier(workers, tuuid, dispatch, getState) {
     const { collectionsDao } = workers
 
     const doc = (await collectionsDao.getParTuuids([tuuid])).pop()
-    console.debug("traiterRestaurerFichier Doc charge : ", doc)
+    // console.debug("traiterRestaurerFichier Doc charge : ", doc)
     if(doc) {
         const cuuid_supprime = doc.cuuid_supprime
         if(cuuid_supprime) {
-            console.debug("traiterRestaurerFichier Remettre dans cuuid %s", cuuid_supprime)
+            // console.debug("traiterRestaurerFichier Remettre dans cuuid %s", cuuid_supprime)
             const cuuids = doc.cuuids || []
             cuuids.push(cuuid_supprime)
 

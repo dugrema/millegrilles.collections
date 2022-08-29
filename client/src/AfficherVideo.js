@@ -15,7 +15,7 @@ import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessour
 
 function AfficherVideo(props) {
 
-    console.debug("AfficherVideo PROPPIES : %O", props)
+    // console.debug("AfficherVideo PROPPIES : %O", props)
 
     const { support, showInfoModalOuvrir } = props
 
@@ -53,12 +53,12 @@ function AfficherVideo(props) {
     }, [selecteur, videoLoader, setSelecteur])
 
     const genererTokenToggle = useCallback(event => {
-        console.debug("Toggle check de %O", genererToken)
+        // console.debug("Toggle check de %O", genererToken)
         setGenererToken(!genererToken)
     }, [genererToken, setGenererToken])
 
     const videoTimeUpdateHandler = useCallback(event=>{
-        console.debug("Video time update event : %O", event)
+        // console.debug("Video time update event : %O", event)
         const currentTime = event.target.currentTime
         setTimeStamp(currentTime)
     }, [setTimeStamp])
@@ -69,23 +69,23 @@ function AfficherVideo(props) {
         loaderImage.load()
             .then(image=>{
                 imageChargee = image
-                console.debug("Image poster chargee : %O", image)
+                // console.debug("Image poster chargee : %O", image)
                 setPosterObj(image)
             })
             .catch(err=>console.error("Erreur chargement poster : %O", err))
         
         return () => {
-            console.debug("Revoking blob %O", imageChargee)
+            // console.debug("Revoking blob %O", imageChargee)
             URL.revokeObjectURL(imageChargee)
         }
     }, [fichier, setPosterObj])
 
     useEffect(()=>{
         if(!selecteur || !fichier.videoLoader) return setSrcVideo('')
-        console.debug("Video utiliser selecteur %s", selecteur)
+        // console.debug("Video utiliser selecteur %s", selecteur)
         fichier.videoLoader.load(selecteur, {genererToken})
             .then(src=>{
-                console.debug("Source video : %O", src)
+                // console.debug("Source video : %O", src)
                 setSrcVideo(src)
             })
             .catch(err=>{
@@ -155,7 +155,7 @@ function SelecteurResolution(props) {
     const [listeOptions, setListeOptions] = useState([])
 
     useEffect(()=>{
-        console.debug("Liste videos : %O", listeVideos)
+        // console.debug("Liste videos : %O", listeVideos)
         if(!listeVideos || !videoLoader) return
         // const { webm } = support
 
@@ -179,7 +179,7 @@ function SelecteurResolution(props) {
     }, [listeVideos, setListeOptions, videoLoader])
 
     const changerSelecteur = useCallback(value=>{
-        console.debug("Valeur : %O", value)
+        // console.debug("Valeur : %O", value)
         setSelecteur(value)
         // const [mimetype, resolution, bitrate] = value.split(';')
         // localStorage.setItem(PLAYER_VIDEORESOLUTION, ''+resolution)
@@ -206,7 +206,7 @@ function AfficherLiensVideo(props) {
 
     if(!show) return ''
 
-    console.debug("VIDEOS : %O", srcVideo)
+    // console.debug("VIDEOS : %O", srcVideo)
 
     return (
         <div>

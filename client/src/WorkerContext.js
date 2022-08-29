@@ -57,7 +57,7 @@ export function WorkerProvider(props) {
     }, [workersPrets, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret])
 
     useEffect(()=>{
-        console.info("Initialiser web workers (ready : %O, workers : %O)", ready, _workers)
+        // console.info("Initialiser web workers (ready : %O, workers : %O)", ready, _workers)
 
         // Initialiser workers et tables collections dans IDB
         const promiseIdb = initCollectionsIdb()

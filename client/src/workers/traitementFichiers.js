@@ -202,16 +202,15 @@ async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFi
     const { setProgres } = opts
     const { clesDao, transfertFichiers } = workers
     const userId = usager.extensions.userId
-    console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
+    // console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
 
     const certificatMaitredescles = await clesDao.getCertificatsMaitredescles()
-    console.debug("Set certificat maitre des cles ", certificatMaitredescles)
+    // console.debug("Set certificat maitre des cles ", certificatMaitredescles)
     await transfertFichiers.up_setCertificat(certificatMaitredescles.certificat)
 
     const ajouterPartProxy = Comlink.proxy((correlation, compteurPosition, chunk) => ajouterPart(workers, correlation, compteurPosition, chunk))
     const updateFichierProxy = Comlink.proxy((doc, opts) => updateFichier(workers, dispatch, doc, opts))
     const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
-    console.trace("Appel transfertFichiers.traiterAcceptedFiles ", transfertFichiers.traiterAcceptedFiles)
     const resultat = await transfertFichiers.traiterAcceptedFiles(
         acceptedFiles, userId, cuuid, 
         ajouterPartProxy, 
@@ -223,7 +222,7 @@ async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFi
 
 async function ajouterPart(workers, correlation, compteurPosition, chunk) {
     const { uploadFichiersDao } = workers
-    console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
+    // console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
     await uploadFichiersDao.ajouterFichierUploadFile(correlation, compteurPosition, chunk)
 }
 
@@ -235,7 +234,7 @@ async function updateFichier(workers, dispatch, doc, opts) {
 
     const { uploadFichiersDao } = workers
 
-    console.debug("Update fichier %s demarrer? %s err? %O : %O", correlation, demarrer, err, doc)
+    // console.debug("Update fichier %s demarrer? %s err? %O : %O", correlation, demarrer, err, doc)
 
     if(err) {
         console.error("Erreur upload fichier %s : %O", correlation, err)

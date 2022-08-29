@@ -51,7 +51,7 @@ async function getPermission(fuuids) {
   // On doit demander une permission en premier
   const params = { fuuids }
   const permission = await ConnexionClient.emitBlocking('getPermissionCle', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
-  console.debug("Permission recue : %O", permission)
+  // console.debug("Permission recue : %O", permission)
 
   return permission
 }
@@ -191,7 +191,7 @@ function syncCollection(cuuid, opts) {
   const requete = {skip, limit}
   if(cuuid) requete.cuuid = cuuid
   const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCollection', ajouterCertificat: true}
-  console.debug("syncCollection %O, %O", requete, params)
+  // console.debug("syncCollection %O, %O", requete, params)
   return ConnexionClient.emitBlocking('syncCollection', requete, params)
 }
 
@@ -266,7 +266,7 @@ function retirerCallbackMajContenuCollection(params, cb) {
 }
 
 function enregistrerCallbackTranscodageProgres(params, cb) { 
-  console.debug("enregistrerCallbackTranscodageProgres params : %O", params)
+  // console.debug("enregistrerCallbackTranscodageProgres params : %O", params)
   return ConnexionClient.subscribe('enregistrerCallbackTranscodageVideo', cb, params) 
 }
 

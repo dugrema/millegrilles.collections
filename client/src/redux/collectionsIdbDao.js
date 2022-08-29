@@ -103,7 +103,7 @@ export async function getParCollection(cuuid, userId) {
         curseur = await curseur.continue()
     }
 
-    console.debug('getParCollection cuuid %s userId: %s resultat collection %O, documents %O', cuuid, userId, collection, docs)
+    // console.debug('getParCollection cuuid %s userId: %s resultat collection %O, documents %O', cuuid, userId, collection, docs)
 
     return { collection, documents: docs }
 }
@@ -114,8 +114,8 @@ export async function getPlusrecent(intervalle, userId) {
 
     const { debut, fin } = intervalle
     if(!debut) throw new Error("Date debut est requise dans l'intervalle")
-    console.debug("Date debut : %O", new Date(debut*1000))
-    if(fin) console.debug("Date fin : %O", new Date(fin*1000))
+    // console.debug("Date debut : %O", new Date(debut*1000))
+    // if(fin) console.debug("Date fin : %O", new Date(fin*1000))
 
     let curseur = await store.openCursor()
     const docs = []
@@ -130,7 +130,7 @@ export async function getPlusrecent(intervalle, userId) {
             champsDate.forEach(champ=>{
                 const valDate = value[champ]
                 if(valDate) {
-                    console.debug("Date %s: %s = %O", value.tuuid, champ, new Date(valDate*1000))
+                    // console.debug("Date %s: %s = %O", value.tuuid, champ, new Date(valDate*1000))
                     if(valDate >= debut) {
                         if(fin) {
                             if(valDate <= fin) conserver = true
@@ -148,7 +148,7 @@ export async function getPlusrecent(intervalle, userId) {
         curseur = await curseur.continue()
     }
 
-    console.debug('getPlusrecent intervalle %O userId: %s resultat documents %O', intervalle, userId, docs)
+    // console.debug('getPlusrecent intervalle %O userId: %s resultat documents %O', intervalle, userId, docs)
 
     return docs
 }
@@ -159,8 +159,8 @@ export async function getSupprime(intervalle, userId) {
 
     const { debut, fin } = intervalle
     if(!debut) throw new Error("getSupprime Date debut est requise dans l'intervalle")
-    console.debug("getSupprime Date debut : %O", new Date(debut*1000))
-    if(fin) console.debug("getSupprime Date fin : %O", new Date(fin*1000))
+    // console.debug("getSupprime Date debut : %O", new Date(debut*1000))
+    // if(fin) console.debug("getSupprime Date fin : %O", new Date(fin*1000))
 
     let curseur = await store.openCursor()
     const docs = []
@@ -175,7 +175,7 @@ export async function getSupprime(intervalle, userId) {
             champsDate.forEach(champ=>{
                 const valDate = value[champ]
                 if(valDate) {
-                    console.debug("Date %s: %s = %O", value.tuuid, champ, new Date(valDate*1000))
+                    // console.debug("Date %s: %s = %O", value.tuuid, champ, new Date(valDate*1000))
                     if(valDate >= debut) {
                         if(fin) {
                             if(valDate <= fin) conserver = true
@@ -193,7 +193,7 @@ export async function getSupprime(intervalle, userId) {
         curseur = await curseur.continue()
     }
 
-    console.debug('getSupprime intervalle %O userId: %s resultat documents %O', intervalle, userId, docs)
+    // console.debug('getSupprime intervalle %O userId: %s resultat documents %O', intervalle, userId, docs)
 
     return docs
 }
