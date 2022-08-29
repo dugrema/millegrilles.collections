@@ -192,18 +192,25 @@ async function traiterSupprimerParEtat(workers, etat, dispatch, getState) {
     dispatch(supprimerUploadsParEtat(etat))
 }
 
-export function continuerUpload(workers) {
-    return (dispatch, getState) => traiterContinuerUpload(workers, dispatch, getState)
+export function continuerUpload(workers, opts) {
+    opts = opts || {}
+    return (dispatch, getState) => traiterContinuerUpload(workers, dispatch, getState, opts)
 }
 
-async function traiterContinuerUpload(workers, dispatch, getState) {
-    console.debug("traiterContinuerUpload")
+async function traiterContinuerUpload(workers, dispatch, getState, opts) {
+    opts = opts || {}
+    const correlation = opts.correlation
+    console.debug("traiterContinuerUpload (correlation %s)", correlation)
+
     const { uploadFichiersDao } = workers
     const state = getState().uploader
     const userId = state.userId
 
     const uploads = await uploadFichiersDao.chargerUploads(userId)
-    const uploadsIncomplets = uploads.filter(item=>[ETAT_UPLOAD_INCOMPLET, ETAT_ECHEC].includes(item.etat))
+    const uploadsIncomplets = uploads.filter(item => {
+        if(correlation) return item.correlation === correlation
+        else return [ETAT_UPLOAD_INCOMPLET, ETAT_ECHEC].includes(item.etat)
+    })
 
     if(uploadsIncomplets.length > 0) {
         for await (const upload of uploadsIncomplets) {

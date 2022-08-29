@@ -212,6 +212,7 @@ async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFi
     const ajouterPartProxy = Comlink.proxy((correlation, compteurPosition, chunk) => ajouterPart(workers, correlation, compteurPosition, chunk))
     const updateFichierProxy = Comlink.proxy((doc, opts) => updateFichier(workers, dispatch, doc, opts))
     const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
+    console.trace("Appel transfertFichiers.traiterAcceptedFiles ", transfertFichiers.traiterAcceptedFiles)
     const resultat = await transfertFichiers.traiterAcceptedFiles(
         acceptedFiles, userId, cuuid, 
         ajouterPartProxy, 

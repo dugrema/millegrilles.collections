@@ -4,9 +4,12 @@ import { init as initCollectionsIdb } from './redux/collectionsIdbDao'
 
 const Context = createContext()
 
+const { workerInstances, workers: _workers, ready } = setupWorkers()
+
 // Hooks
 function useWorkers() {
-    return useContext(Context).workers
+    // return useContext(Context).workers
+    return _workers
 }
 export default useWorkers
 
@@ -37,7 +40,8 @@ export function useEtatPret() {
 // Provider
 export function WorkerProvider(props) {
 
-    const [workers, setWorkers] = useState('')
+    // const [workers, setWorkers] = useState('')
+    const [workersPrets, setWorkersPrets] = useState(false)
     const [usager, setUsager] = useState('')
     const [etatConnexion, setEtatConnexion] = useState('')
     const [formatteurPret, setFormatteurPret] = useState('')
@@ -49,32 +53,34 @@ export function WorkerProvider(props) {
     }, [etatConnexion, usager, formatteurPret])
 
     const value = useMemo(()=>{
-        return { workers, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret }
-    }, [workers, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret])
+        if(workersPrets) return { usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret }
+    }, [workersPrets, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret])
 
     useEffect(()=>{
-        console.info("Initialiser web workers")
-        const { workerInstances, workers, ready } = setupWorkers()
+        console.info("Initialiser web workers (ready : %O, workers : %O)", ready, _workers)
 
         // Initialiser workers et tables collections dans IDB
-        const promiseWorkers = initCollectionsIdb()
-        Promise.all([ready, promiseWorkers])
-            .then(()=>setWorkers(workers))
+        const promiseIdb = initCollectionsIdb()
+        Promise.all([ready, promiseIdb])
+            .then(()=>{
+                console.info("Workers prets")
+                setWorkersPrets(true)
+            })
             .catch(err=>console.error("Erreur initialisation collections IDB / workers ", err))
 
         // Cleanup
-        return () => { 
-            console.info("Cleanup web workers")
-            cleanupWorkers(workerInstances) 
-        }
-    }, [setWorkers])
+        // return () => { 
+        //     console.info("Cleanup web workers")
+        //     cleanupWorkers(workerInstances) 
+        // }
+    }, [setWorkersPrets])
 
     useEffect(()=>{
-        if(!workers) return
+        if(!workersPrets) return
         // setWorkersTraitementFichiers(workers)
-        if(workers.connexion) {
+        if(_workers.connexion) {
             // setErreur('')
-            connecter(workers, setUsager, setEtatConnexion, setFormatteurPret)
+            connecter(_workers, setUsager, setEtatConnexion, setFormatteurPret)
                 .then(infoConnexion=>{
                     // const statusConnexion = JSON.stringify(infoConnexion)
                     if(infoConnexion.ok === false) {
@@ -93,16 +99,17 @@ export function WorkerProvider(props) {
             // setErreur("Pas de worker de connexion")
             console.error("Pas de worker de connexion")
         }
-    }, [ workers, setUsager, setEtatConnexion, setFormatteurPret, setInfoConnexion ])
+    }, [ workersPrets, setUsager, setEtatConnexion, setFormatteurPret, setInfoConnexion ])
 
     useEffect(()=>{
         if(etatAuthentifie) {
           // Preload certificat maitre des cles
-          workers.connexion.getCertificatsMaitredescles().catch(err=>console.error("Erreur preload certificat maitre des cles : %O", err))
+          _workers.connexion.getCertificatsMaitredescles()
+            .catch(err=>console.error("Erreur preload certificat maitre des cles : %O", err))
         }
-    }, [workers, etatAuthentifie])
+    }, [etatAuthentifie])
   
-    if(!workers) return props.attente
+    if(!workersPrets) return props.attente
 
     return <Context.Provider value={value}>{props.children}</Context.Provider>
 }

@@ -7,7 +7,11 @@ import * as uploadFichiersDao from '../redux/uploaderIdbDao'
 import clesDao from './clesDao'
 import setupTraitementFichiers from './traitementFichiers'
 
+let _block = false
+
 export function setupWorkers() {
+    if(_block) throw new Error("double init")
+    _block = true
 
     // Chiffrage et x509 sont combines, reduit taille de l'application
     const connexion = wrapWorker(new Worker(new URL('./connexion.worker', import.meta.url), {type: 'module'}))

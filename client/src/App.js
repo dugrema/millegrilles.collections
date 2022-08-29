@@ -11,7 +11,7 @@ import useWorkers, {useEtatConnexion, WorkerProvider, useUsager} from './WorkerC
 import storeSetup from './redux/store'
 
 import { setUserId } from './redux/fichiersSlice'
-import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload } from './redux/uploaderSlice'
+import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload, annulerUpload } from './redux/uploaderSlice'
 
 import './i18n'
 
@@ -94,24 +94,12 @@ function LayoutMain() {
   // Modal transfert et actions
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
-  const handlerSupprimerUploads = useCallback( params => {
-    const { correlation, tous } = params
-    if(tous === true) {
-      dispatch(supprimerParEtat(workers, ETAT_CONFIRME))
-        .then(()=>dispatch(supprimerParEtat(workers, ETAT_COMPLETE)))
-        .catch(err=>erreurCb(err, "Erreur supprimer uploads"))
-    } else {
-      throw new Error('not implemented')
-    }
-  }, [dispatch, workers])
+  const handlerSupprimerUploads = useCallback( params => supprimerUploads(workers, dispatch, params, erreurCb), [dispatch, workers, erreurCb])
   const handlerContinuerUploads = useCallback( params => {
-    const { correlation, tous } = params
-    if(tous === true) {
-      dispatch(continuerUpload(workers))
-        .catch(err=>erreurCb(err, "Erreur continuer uploads"))
-    } else {
-      throw new Error('not implemented')
-    }
+    console.debug("Continuer upload ", params)
+    const { correlation } = params
+    dispatch(continuerUpload(workers, {correlation}))
+      .catch(err=>erreurCb(err, "Erreur continuer uploads"))
   }, [workers])
 
   const handlerSelect = useCallback(eventKey => {
@@ -307,4 +295,23 @@ function InitialisationUpload(props) {
 
   // Rien a afficher
   return ''
+}
+
+function supprimerUploads(workers, dispatch, params, erreurCb) {
+  console.debug("!!! supprimerUploaders ", params)
+  const { correlation, succes, echecs } = params
+  if(correlation) {
+    dispatch(annulerUpload(workers, correlation))
+      .catch(err=>erreurCb(err, "Erreur supprimer upload"))
+  }
+  if(succes === true) {
+    dispatch(supprimerParEtat(workers, ETAT_CONFIRME))
+      .then(()=>dispatch(supprimerParEtat(workers, ETAT_COMPLETE)))
+      .catch(err=>erreurCb(err, "Erreur supprimer uploads"))
+  }
+  if(echecs === true) {
+    dispatch(supprimerParEtat(workers, ETAT_ECHEC))
+      .then(()=>dispatch(supprimerParEtat(workers, ETAT_UPLOAD_INCOMPLET)))
+      .catch(err=>erreurCb(err, "Erreur supprimer uploads"))
+  }
 }

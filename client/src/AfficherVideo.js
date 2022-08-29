@@ -52,7 +52,7 @@ function AfficherVideo(props) {
         }
     }, [selecteur, videoLoader, setSelecteur])
 
-    const genererTokenToggle = useCallback(()=>{
+    const genererTokenToggle = useCallback(event => {
         console.debug("Toggle check de %O", genererToken)
         setGenererToken(!genererToken)
     }, [genererToken, setGenererToken])
@@ -127,7 +127,7 @@ function AfficherVideo(props) {
                         <Col>
                             <Form.Check type="switch" id="token-switch" label="Generer token" 
                                 checked={genererToken?true:false} 
-                                onClick={genererTokenToggle} />
+                                onChange={genererTokenToggle} />
                         </Col>
                     </Row>
 
@@ -190,9 +190,9 @@ function SelecteurResolution(props) {
             <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
                 {listeOptions.map(item=>{
                     if(item === selecteur) {
-                        return <Dropdown.Item eventKey={item} active>{item}</Dropdown.Item>
+                        return <Dropdown.Item key={item} eventKey={item} active>{item}</Dropdown.Item>
                     } else {
-                        return <Dropdown.Item eventKey={item}>{item}</Dropdown.Item>
+                        return <Dropdown.Item key={item} eventKey={item}>{item}</Dropdown.Item>
                     }
                 })}
             </DropdownButton>
@@ -211,7 +211,7 @@ function AfficherLiensVideo(props) {
         <div>
             <h3>Liens video</h3>
             {srcVideo.map(item=>{
-                return <LienVideo video={item} /> 
+                return <LienVideo key={item.fuuid||item.label} video={item} /> 
             })}
         </div>
     )
