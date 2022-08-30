@@ -29,7 +29,7 @@ function createObjectStores(db, oldVersion) {
     /*eslint no-fallthrough: "off"*/
     switch(oldVersion) {
         case 0:
-            db.createObjectStore(STORE_DOWNLOADS, {keyPath: 'hachage_bytes'})
+            db.createObjectStore(STORE_DOWNLOADS, {keyPath: 'fuuid'})
         case 1: // Plus recent, rien a faire
             db.createObjectStore(STORE_UPLOADS, {keyPath: 'correlation'})
             db.createObjectStore(STORE_FICHIERS, {keyPath: 'tuuid'})

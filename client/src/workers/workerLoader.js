@@ -4,6 +4,7 @@ import { usagerDao } from '@dugrema/millegrilles.reactjs'
 // import * as traitementFichiers from './traitementFichiers'
 import * as collectionsDao from '../redux/collectionsIdbDao'
 import * as uploadFichiersDao from '../redux/uploaderIdbDao'
+import * as downloadFichiersDao from '../redux/downloaderIdbDao'
 import clesDao from './clesDao'
 import setupTraitementFichiers from './traitementFichiers'
 
@@ -31,6 +32,7 @@ export function setupWorkers() {
     workers.traitementFichiers = setupTraitementFichiers(workers) // Upload et download
     workers.clesDao = clesDao(workers)              // Cles asymetriques
     workers.uploadFichiersDao = uploadFichiersDao   // IDB upload fichiers
+    workers.downloadFichiersDao = downloadFichiersDao  // IDB download fichiers
 
     // Wiring
     // try {

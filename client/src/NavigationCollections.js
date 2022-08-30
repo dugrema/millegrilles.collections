@@ -29,8 +29,7 @@ import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 // } from './redux/fichiersSlice'
 
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
-
-import { setUploads } from './redux/uploaderSlice'
+import { ajouterDownload } from './redux/downloaderSlice'
 
 const ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -363,6 +362,7 @@ function Modals(props) {
                 cuuid={cuuid}
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
+                erreurCb={erreurCb}
               />
 
             <PreviewFichiers 
@@ -717,10 +717,19 @@ function FormatterColonneDate(props) {
 
 function MenuContextuel(props) {
 
-    const { contextuel, selection } = props
+    const { contextuel, selection, erreurCb } = props
 
     const workers = useWorkers()
+    const dispatch = useDispatch()
     const fichiers = useSelector(state => state.fichiers.liste)
+    
+    const downloadAction = useCallback(tuuid => {
+        const fichier = fichiers.filter(item=>item.tuuid === tuuid).pop()
+        if(fichier) {
+            dispatch(ajouterDownload(workers, fichier))
+                .catch(err=>erreurCb(err, 'Erreur ajout download'))
+        }
+    }, [workers, dispatch, fichiers])
 
     if(!contextuel.show) return ''
 
@@ -733,9 +742,9 @@ function MenuContextuel(props) {
             const fichier = fichiers.filter(item=>item.tuuid===fichierTuuid).pop()
             if(fichier) {
                 if(fichier.mimetype && fichier.mimetype !== 'Repertoire') {
-                    return <MenuContextuelFichier {...props} workers={workers} fichier={fichier} />
+                    return <MenuContextuelFichier {...props} workers={workers} fichier={fichier} downloadAction={downloadAction} />
                 } else {
-                    return <MenuContextuelRepertoire {...props} workers={workers} repertoire={fichier} />
+                    return <MenuContextuelRepertoire {...props} workers={workers} repertoire={fichier} downloadAction={downloadAction} />
                 }
             }
         }

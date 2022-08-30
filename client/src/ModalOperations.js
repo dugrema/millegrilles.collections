@@ -140,8 +140,6 @@ export function DeplacerModal(props) {
 
 export function ModalNavigationCollections(props) {
 
-    console.debug("CopierModal proppies ", props)
-
     const { titre, show, fermer, erreurCb, BoutonAction } = props
     
     const workers = useWorkers()
@@ -155,18 +153,16 @@ export function ModalNavigationCollections(props) {
     const breadcrumb = useSelector((state) => state.navigationSecondaire.breadcrumb)
 
     const userId = useMemo(()=>{
-        if(!usager || !usager.extensions) return
+        if(!show || !usager || !usager.extensions) return
         return usager.extensions.userId
-    }, [usager])
+    }, [show, usager])
 
     const liste = useMemo(()=>{
-        if(!listeBrute) return []
+        if(!show || !listeBrute) return []
         return listeBrute
           .filter(item=>!item.mimetype)
           .map(item=>mapDocumentComplet(workers, item))
-    }, [listeBrute])
-
-    console.debug("CopierModal selector listeBrute %O, liste %O, cuuid %O, breadcrumb %O", listeBrute, liste, cuuid, breadcrumb)
+    }, [show, listeBrute])
 
     const naviguerCollection = useCallback( cuuid => {
         if(!cuuid) cuuid = ''

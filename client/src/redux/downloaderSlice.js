@@ -47,20 +47,14 @@ function setDownloadsAction(state, action) {
     state.progres = pourcentage
 }
 
-function ajouterDownloadAction(state, action) {
+function pushDownloadAction(state, action) {
     const docDownload = action.payload
-    const fuuid = docDownload.fuuid
-    const infoDownload = state.liste.filter(item=>item.fuuid === fuuid).pop()
-    console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
-    if(!infoDownload) {
-        // Ajouter l'upload, un middleware va charger le reste de l'information
-        // console.debug("Ajout upload %O", correlation)
-        state.liste.push(docDownload)
-        const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
-        state.progres = pourcentage
-    } else {
-        throw new Error(`Upload ${fuuid} existe deja`)
-    }
+
+    console.debug("pushDownloadAction payload : ", docDownload)
+    state.liste.push(docDownload)
+
+    const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
+    state.progres = pourcentage
 }
 
 function updateDownloadAction(state, action) {
@@ -142,7 +136,7 @@ const downloaderSlice = createSlice({
     reducers: {
         setUserId: setUserIdAction,
         setDownloads: setDownloadsAction,
-        ajouterDownload: ajouterDownloadAction,
+        pushDownload: pushDownloadAction,
         continuerDownload: continuerDownloadAction,
         retirerDownload: retirerDownloadAction,
         clearDownloads: clearDownloadsAction,
@@ -155,13 +149,49 @@ const downloaderSlice = createSlice({
 
 export const { 
     setUserId, setDownloads, 
-    ajouterDownload, continuerDownload, retirerDownload, arretDownload,
+    pushDownload, continuerDownload, retirerDownload, arretDownload,
     clearDownloads, supprimerDownloadsParEtat, clearCycleDownload,
     updateDownload,
 } = downloaderSlice.actions
 export default downloaderSlice.reducer
 
 // Thunks
+
+export function ajouterDownload(workers, docDownload) {
+    return (dispatch, getState) => traiterAjouterDownload(workers, docDownload, dispatch, getState)
+}
+
+async function traiterAjouterDownload(workers, docDownload, dispatch, getState) {
+    const { downloadFichiersDao } = workers
+    
+    // console.debug("traiterCompleterDownload ", fuuid)
+    console.debug("traiterAjouterDownload payload : ", docDownload)
+    
+    const userId = getState()[SLICE_NAME].userId
+    if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
+
+    const fuuid = docDownload.fuuid || docDownload.fuuid_v_courante
+    const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
+    console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
+    if(!infoDownload) {
+        // Ajouter l'upload, un middleware va charger le reste de l'information
+        // console.debug("Ajout upload %O", correlation)
+        const nouveauDownload = {
+            ...docDownload,
+            fuuid,
+            userId,
+            etat: ETAT_PRET,
+            dateCreation: new Date().getTime(),
+        }
+
+        // Conserver le nouveau download dans IDB
+        await downloadFichiersDao.updateFichierDownload(nouveauDownload)
+
+        dispatch(pushDownload(nouveauDownload))
+    } else {
+        throw new Error(`Download ${fuuid} existe deja`)
+    }    
+}
 
 export function completerDownload(workers, fuuid) {
     return (dispatch, getState) => traiterCompleterDownload(workers, fuuid, dispatch, getState)
@@ -176,9 +206,6 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
         const downloadCopie = {...upload}
         downloadCopie.etat = ETAT_SUCCES
         downloadCopie.dateConfirmation = new Date().getTime()
-
-        // Supprimer parts
-        await downloadFichiersDao.supprimerPartsFichier(fuuid)
 
         // Maj contenu upload
         await downloadFichiersDao.updateFichierDownload(downloadCopie)
@@ -201,7 +228,7 @@ export function downloaderMiddlewareSetup(workers) {
 }
 
 async function downloaderMiddlewareListener(workers, action, listenerApi) {
-    // console.debug("uploaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
     // console.debug("Arret upload info : %O", arretUpload)
 
     await listenerApi.unsubscribe()
@@ -213,16 +240,16 @@ async function downloaderMiddlewareListener(workers, action, listenerApi) {
         const stopAction = listenerApi.condition(arretDownload.match)
         await Promise.race([task.result, stopAction])
 
-        // console.debug("Task %O\nstopAction %O", task, stopAction)
+        console.debug("downloaderMiddlewareListener Task %O\nstopAction %O", task, stopAction)
         task.result.catch(err=>console.error("Erreur task : %O", err))
-        stopAction
-            .then(()=>task.cancel())
-            .catch(()=>{
-                // Aucun impact
-            })
+        // stopAction
+        //     .then(()=>task.cancel())
+        //     .catch(()=>{
+        //         // Aucun impact
+        //     })
 
-        await task.result  // Attendre fin de la tache en cas d'annulation
-        // console.debug("uploaderMiddlewareListener Sequence upload terminee")
+        const resultat = await task.result  // Attendre fin de la tache en cas d'annulation
+        console.debug("downloaderMiddlewareListener Sequence download terminee, resultat %O", resultat)
     } finally {
         await listenerApi.subscribe()
     }
@@ -245,7 +272,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
     // Commencer boucle d'upload
     while(nextDownload) {
-        // console.debug("Next upload : %O", nextDownload)
+        console.debug("Next download : %O", nextDownload)
         const fuuid = nextDownload.fuuid
         try {
             await downloadFichier(workers, dispatch, nextDownload, cancelToken)
@@ -260,7 +287,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
             nextDownload = getProchainDownload(listenerApi.getState()[SLICE_NAME].liste)
 
         } catch (err) {
-            console.error("Erreur tache upload fuuid %s: %O", fuuid, err)
+            console.error("Erreur tache download fuuid %s: %O", fuuid, err)
             marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_ECHEC})
                 .catch(err=>console.error("Erreur marquer upload echec %s : %O", fuuid, err))
             throw err
@@ -270,61 +297,17 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // console.debug("Upload fichier workers : ", workers)
-    const { uploadFichiersDao, transfertFichiers, chiffrage } = workers
+    const { downloadFichiersDao, transfertFichiers } = workers
     const fuuid = fichier.fuuid
 
-    // Charger la liste des parts a uploader
-    let parts = await uploadFichiersDao.getPartsFichier(fuuid)
-    
-    // Retirer les partis qui sont deja uploadees
-    let tailleCompletee = 0,
-        positionsCompletees = fichier.positionsCompletees,
-        retryCount = fichier.retryCount
-    parts = parts.filter(item=>{
-        const dejaTraite = positionsCompletees.includes(item.position)
-        if(dejaTraite) tailleCompletee += item.taille
-        return !dejaTraite
-    })
-    // console.debug("Parts a uploader : ", parts)
+    // await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS})
 
-    await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS})
+    // transfertFichiers.download() ...
 
-    // Mettre a jour le retryCount
-    retryCount++
-    await marquerDownloadEtat(workers, dispatch, fuuid, {retryCount})
-
-    for await (const part of parts) {
-        let tailleCumulative = tailleCompletee
-        const position = part.position,
-              partContent = part.data
-        await marquerDownloadEtat(workers, dispatch, fuuid, {tailleCompletee: tailleCumulative})
-        
-        // await new Promise(resolve=>setTimeout(resolve, 250))
-        const opts = {}
-        const resultatUpload = transfertFichiers.partUploader(fuuid, position, partContent, opts)
-        // await Promise.race([resultatUpload, cancelToken])
-        await resultatUpload
-        // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", fuuid, cancelToken, resultatUpload)
-
-        if(cancelToken && cancelToken.cancelled) {
-            console.warn("Upload cancelled")
-            return
-        }
-
-        tailleCompletee += part.taille
-        positionsCompletees = [...positionsCompletees, position]
-        await marquerDownloadEtat(workers, dispatch, fuuid, {tailleCompletee, positionsCompletees})
+    if(cancelToken && cancelToken.cancelled) {
+        console.warn("Upload cancelled")
+        return
     }
-
-    // Signer et uploader les transactions
-    const transactionMaitredescles = {...fichier.transactionMaitredescles}
-    const partitionMaitreDesCles = transactionMaitredescles['_partition']
-    delete transactionMaitredescles['_partition']
-    const cles = await chiffrage.formatterMessage(
-        transactionMaitredescles, 'MaitreDesCles', {partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false})
-
-    const transaction = await chiffrage.formatterMessage(
-        fichier.transactionGrosfichiers, 'GrosFichiers', {action: 'nouvelleVersion'})
 
     // Upload complete, dispatch nouvel etat
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_SUCCES})
@@ -333,13 +316,10 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
 }
 
 async function marquerDownloadEtat(workers, dispatch, fuuid, etat) {
-    throw new Error("todo")
-    // const contenu = {fuuid, ...etat}
-    // const { uploadFichiersDao } = workers
-    
-    // await uploadFichiersDao.updateFichierUpload(contenu)
-    
-    // return dispatch(updateUpload(contenu))
+    const contenu = {fuuid, ...etat}
+    const { downloadFichiersDao } = workers
+    await downloadFichiersDao.updateFichierDownload(contenu)
+    return dispatch(updateDownload(contenu))
 }
 
 function getProchainDownload(liste) {

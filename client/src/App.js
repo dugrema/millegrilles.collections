@@ -12,6 +12,7 @@ import storeSetup from './redux/store'
 
 import fichiersActions, { thunks as fichiersThunks } from './redux/fichiersSlice'
 import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload, annulerUpload } from './redux/uploaderSlice'
+import { setUserId as setUserIdDownload } from './redux/downloaderSlice'
 
 import './i18n'
 
@@ -140,6 +141,7 @@ function LayoutMain() {
           continuerUploads={handlerContinuerUploads}
         />
 
+      <InitialisationDownload />
       <InitialisationUpload />
 
     </LayoutMillegrilles>
@@ -215,6 +217,22 @@ function Attente(_props) {
           </ol>
       </div>
   )
+}
+
+function InitialisationDownload(props) {
+
+  const usager = useUsager()
+  const dispatch = useDispatch()
+
+  const userId = useMemo(()=>{
+    if(!usager || !usager.extensions) return
+    return usager.extensions.userId
+  }, [usager])
+
+  useEffect(()=>{
+    dispatch(setUserIdDownload(userId))
+  }, [userId])
+
 }
 
 function InitialisationUpload(props) {
