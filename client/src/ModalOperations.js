@@ -105,6 +105,28 @@ export function CopierModal(props) {
         }
     }, [dispatch, workers, erreurCb])
 
+    const handlerSliceBreadcrumb = useCallback(level => {
+        let tuuid = ''
+        if(level) {
+            const collection = breadcrumb[level]
+            tuuid = collection.tuuid
+            dispatch(actionsNavigationSecondaire.breadcrumbSlice(level))
+            try {
+                Promise.resolve(naviguerCollection(tuuid))
+                    .catch(err=>console.error("SectionBreadcrumb Erreur navigation ", err))
+            } catch(err) {
+                console.error("handlerSliceBreadcrumb Erreur naviguerCollection %s: ", tuuid, err)
+            }
+        } else {
+            try {
+                Promise.resolve(naviguerCollection())
+                    .catch(err=>console.error("SectionBreadcrumb Erreur navigation vers favoris", err))
+            } catch(err) {
+                console.error("handlerSliceBreadcrumb Erreur naviguerCollection favoris : ", err)
+            }
+        }
+    }, [dispatch, breadcrumb, naviguerCollection])
+
     const copier = useCallback( () => {
         if(cuuid) {
             connexion.copierVersCollection(cuuid, selection)
@@ -122,11 +144,6 @@ export function CopierModal(props) {
             erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
         }
     }, [connexion, cuuid, fermer])
-
-    const actionPath = useCallback( event => {
-        console.debug("Set path : %O", event)
-        // setPath(cuuidpath)
-    }, [dispatch])
 
     useEffect(()=>{
         if(!show) return
@@ -151,7 +168,9 @@ export function CopierModal(props) {
             <FilePicker 
                 liste={liste} 
                 breadcrumb={breadcrumb} 
-                setPath={actionPath} />
+                toBreadrumbIdx={handlerSliceBreadcrumb}
+                toCollection={naviguerCollection}
+                />
 
             <Modal.Footer>
                 <Button onClick={copier} disabled={breadcrumb.length===0}>Copier</Button>
