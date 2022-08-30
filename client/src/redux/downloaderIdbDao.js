@@ -31,3 +31,25 @@ export async function updateFichierDownload(doc) {
 
     await store.put(docExistant)
 }
+
+export async function supprimerDownload(fuuid) {
+    const db = await ouvrirDB()
+    const storeUploads = db.transaction(STORE_DOWNLOADS, 'readwrite').store
+    await storeUploads.delete(fuuid)
+}
+
+export async function chargerDownloads(userId) {
+    if(!userId) throw new Error("Il faut fournir le userId")
+    const db = await ouvrirDB()
+    const store = db.transaction(STORE_DOWNLOADS, 'readonly').store
+    let curseur = await store.openCursor()
+    const uploads = []
+    while(curseur) {
+        const userIdCurseur = curseur.value.userId
+        if(userIdCurseur === userId) uploads.push(curseur.value)
+        curseur = await curseur.continue()
+    }
+    return uploads
+}
+
+

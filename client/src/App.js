@@ -12,7 +12,7 @@ import storeSetup from './redux/store'
 
 import fichiersActions, { thunks as fichiersThunks } from './redux/fichiersSlice'
 import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload, annulerUpload } from './redux/uploaderSlice'
-import { setUserId as setUserIdDownload } from './redux/downloaderSlice'
+import { setUserId as setUserIdDownload, supprimerDownloadsParEtat, continuerDownload, arreterDownload, setDownloads } from './redux/downloaderSlice'
 
 import './i18n'
 
@@ -34,7 +34,8 @@ const NavigationCollections = lazy( () => import('./NavigationCollections') )
 const NavigationRecents = lazy( () => import('./NavigationRecents') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
 
-const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
+const CONST_UPLOAD_COMPLET_EXPIRE = 2 * 60 * 60 * 1000,  // Auto-cleanup apres 2 heures (millisecs) de l'upload,
+      CONST_DOWNLOAD_COMPLET_EXPIRE = 48 * 60 * 60 * 1000  // Auto-cleanup apres 2 jours (millisecs) du download
 
 const ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -43,6 +44,13 @@ const ETAT_PREPARATION = 1,
       ETAT_ECHEC = 5,
       ETAT_CONFIRME = 6,
       ETAT_UPLOAD_INCOMPLET = 7
+
+const CONST_ETATS_DOWNLOAD = {
+  ETAT_PRET: 1,
+  ETAT_EN_COURS: 2,
+  ETAT_SUCCES: 3,
+  ETAT_ECHEC: 4
+}
 
 function App() {
   
@@ -102,6 +110,13 @@ function LayoutMain() {
     dispatch(continuerUpload(workers, {correlation}))
       .catch(err=>erreurCb(err, "Erreur continuer uploads"))
   }, [workers])
+  const handlerSupprimerDownloads = useCallback( params => supprimerDownloads(workers, dispatch, params, erreurCb), [dispatch, workers, erreurCb])
+  const handlerContinuerDownloads = useCallback( params => {
+    // console.debug("Continuer upload ", params)
+    const { fuuid } = params
+    dispatch(continuerDownload(workers, {fuuid}))
+      .catch(err=>erreurCb(err, "Erreur continuer uploads"))
+  }, [workers])
 
   const handlerSelect = useCallback(eventKey => {
     switch(eventKey) {
@@ -139,6 +154,8 @@ function LayoutMain() {
           handlerCloseErreur={handlerCloseErreur}
           supprimerUploads={handlerSupprimerUploads}
           continuerUploads={handlerContinuerUploads}
+          supprimerDownloads={handlerSupprimerDownloads}
+          continuerDownloads={handlerContinuerDownloads}
         />
 
       <InitialisationDownload />
@@ -172,12 +189,15 @@ function Modals(props) {
   const { 
     showTransfertModal, showTransfertModalFermer, erreur, handlerCloseErreur, 
     supprimerUploads, continuerUploads,
+    supprimerDownloads, continuerDownloads,
   } = props
 
   const workers = useWorkers()
   const { t } = useTranslation()
   const uploads = useSelector(state=>state.uploader.liste)
   const progresUpload = useSelector(state=>state.uploader.progres)
+  const downloads = useSelector(state=>state.downloader.liste)
+  const progresDownload = useSelector(state=>state.downloader.progres)
 
   return (
     <div>
@@ -187,10 +207,12 @@ function Modals(props) {
           fermer={showTransfertModalFermer} 
           uploads={uploads}
           progresUpload={progresUpload}
-          downloads={''}
-          progresDownload={''}
+          downloads={downloads}
+          progresDownload={progresDownload}
           supprimerUploads={supprimerUploads}
           continuerUploads={continuerUploads}
+          supprimerDownloads={supprimerDownloads}
+          continuerDownloads={continuerDownloads}
         />
 
       <ModalErreur 
@@ -221,8 +243,11 @@ function Attente(_props) {
 
 function InitialisationDownload(props) {
 
+  const workers = useWorkers()
   const usager = useUsager()
   const dispatch = useDispatch()
+
+  const { downloadFichiersDao } = workers
 
   const userId = useMemo(()=>{
     if(!usager || !usager.extensions) return
@@ -233,6 +258,44 @@ function InitialisationDownload(props) {
     dispatch(setUserIdDownload(userId))
   }, [userId])
 
+  useEffect(()=>{
+    if(!downloadFichiersDao || !userId) return
+    // console.debug("Initialiser uploader")
+    downloadFichiersDao.chargerDownloads(userId)
+        .then(async downloads=>{
+            console.debug("Download trouves : %O", downloads)
+
+            const completExpire = new Date().getTime() - CONST_DOWNLOAD_COMPLET_EXPIRE
+
+            downloads = downloads.filter(download=>{
+                const { fuuid, etat } = download
+                if([CONST_ETATS_DOWNLOAD.ETAT_SUCCES].includes(etat)) {
+                    // Cleanup
+                    if(download.derniereModification <= completExpire) {
+                        // Complet et expire, on va retirer l'upload
+                        downloadFichiersDao.supprimerFichier(fuuid)
+                            .catch(err=>console.error("Erreur supprimer fichier ", err))
+                        return false
+                    }
+                }
+                return true
+            })
+
+            for await (const download of downloads) {
+                const { etat } = download
+                if([CONST_ETATS_DOWNLOAD.ETAT_PRET, CONST_ETATS_DOWNLOAD.ETAT_EN_COURS].includes(etat)) {
+                  download.etat = CONST_ETATS_DOWNLOAD.ETAT_ECHEC
+                    download.tailleCompletee = 0
+                    await downloadFichiersDao.updateFichierDownload(download)
+                }
+            }
+
+            dispatch(setDownloads(downloads))
+        })
+        .catch(err=>console.error("Erreur initialisation uploader ", err))
+  }, [downloadFichiersDao, userId])      
+
+  return ''
 }
 
 function InitialisationUpload(props) {
@@ -262,7 +325,7 @@ function InitialisationUpload(props) {
               // uploads.sort(trierListeUpload)
               // Reset etat uploads en cours (incomplets)
 
-              const completExpire = new Date().getTime() - CONST_COMPLET_EXPIRE
+              const completExpire = new Date().getTime() - CONST_UPLOAD_COMPLET_EXPIRE
 
               uploads = uploads.filter(upload=>{
                   const { correlation, etat } = upload
@@ -328,5 +391,21 @@ function supprimerUploads(workers, dispatch, params, erreurCb) {
     dispatch(supprimerParEtat(workers, ETAT_ECHEC))
       .then(()=>dispatch(supprimerParEtat(workers, ETAT_UPLOAD_INCOMPLET)))
       .catch(err=>erreurCb(err, "Erreur supprimer uploads"))
+  }
+}
+
+function supprimerDownloads(workers, dispatch, params, erreurCb) {
+  const { fuuid, succes, echecs } = params
+  if(fuuid) {
+    Promise.resolve(dispatch(arreterDownload(workers, fuuid)))
+      .catch(err=>erreurCb(err, "Erreur supprimer download"))
+  }
+  if(succes === true) {
+    Promise.resolve(dispatch(supprimerDownloadsParEtat(workers, CONST_ETATS_DOWNLOAD.ETAT_SUCCES)))
+      .catch(err=>erreurCb(err, "Erreur supprimer downloads"))
+  }
+  if(echecs === true) {
+    Promise.resolve(dispatch(supprimerDownloadsParEtat(workers, CONST_ETATS_DOWNLOAD.ETAT_ECHEC)))
+      .catch(err=>erreurCb(err, "Erreur supprimer downloads"))
   }
 }

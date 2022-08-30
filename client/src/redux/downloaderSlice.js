@@ -28,14 +28,14 @@ function setUserIdAction(state, action) {
 
 function setDownloadsAction(state, action) {
     // Merge listes
-    const listeUploads = action.payload
+    const listeDownloads = action.payload
     const listeExistanteMappee = state.liste.reduce((acc, item)=>{
         acc[item.fuuid] = item
         return acc
     }, {})
 
     // Retirer les uploads connus
-    const nouvelleListe = listeUploads.filter(item=>!listeExistanteMappee[item.fuuid])
+    const nouvelleListe = listeDownloads.filter(item=>!listeExistanteMappee[item.fuuid])
     
     // Push les items manquants a la fin de la liste
     nouvelleListe.forEach(item=>state.liste.push(item))
@@ -107,19 +107,9 @@ function clearDownloadsAction(state, action) {
     state.progres = null
 }
 
-function supprimerDownloadsParEtatAction(state, action) {
-    const etat = action.payload
-    state.liste = state.liste.filter(item=>{
-        // Nettoyer liste completes
-        const fuuid = item.fuuid
-        state.completesCycle.filter(item=>item.fuuid !== fuuid)
-
-        // Filtrer etat a retirer
-        return item.etat !== etat
-    })
-
-    const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
-    state.progres = pourcentage
+function supprimerDownloadAction(state, action) {
+    const fuuid = action.payload
+    state.liste = state.liste.filter(item=>item.fuuid !== fuuid)
 }
 
 function arretDownloadAction(state, action) {
@@ -140,7 +130,7 @@ const downloaderSlice = createSlice({
         continuerDownload: continuerDownloadAction,
         retirerDownload: retirerDownloadAction,
         clearDownloads: clearDownloadsAction,
-        supprimerDownloadsParEtat: supprimerDownloadsParEtatAction,
+        supprimerDownload: supprimerDownloadAction,
         arretDownload: arretDownloadAction,
         clearCycleDownload: clearCycleDownloadAction,
         updateDownload: updateDownloadAction,
@@ -150,8 +140,8 @@ const downloaderSlice = createSlice({
 export const { 
     setUserId, setDownloads, 
     pushDownload, continuerDownload, retirerDownload, arretDownload,
-    clearDownloads, supprimerDownloadsParEtat, clearCycleDownload,
-    updateDownload,
+    clearDownloads, clearCycleDownload,
+    updateDownload, supprimerDownload,
 } = downloaderSlice.actions
 export default downloaderSlice.reducer
 
@@ -193,6 +183,25 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     }    
 }
 
+export function arreterDownload(workers, fuuid) {
+    return (dispatch, getState) => traiterArreterDownload(workers, fuuid, dispatch, getState)
+}
+
+async function traiterArreterDownload(workers, fuuid, dispatch, getState) {
+    // console.debug("traiterCompleterDownload ", fuuid)
+    const { downloadFichiersDao } = workers
+    const state = getState()[SLICE_NAME]
+    const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
+    if(download) {
+        
+        // Arreter et retirer download state (interrompt le middleware au besoin)
+        dispatch(supprimerDownload(fuuid))
+
+        // Supprimer le download dans IDB, cache
+        await downloadFichiersDao.supprimerDownload(fuuid)
+    }
+}
+
 export function completerDownload(workers, fuuid) {
     return (dispatch, getState) => traiterCompleterDownload(workers, fuuid, dispatch, getState)
 }
@@ -201,17 +210,35 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
     // console.debug("traiterCompleterDownload ", fuuid)
     const { downloadFichiersDao } = workers
     const state = getState()[SLICE_NAME]
-    const upload = state.liste.filter(item=>item.fuuid===fuuid).pop()
-    if(upload) {
-        const downloadCopie = {...upload}
+    const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
+    if(download) {
+        const downloadCopie = {...download}
         downloadCopie.etat = ETAT_SUCCES
         downloadCopie.dateConfirmation = new Date().getTime()
 
-        // Maj contenu upload
+        // Maj contenu download
         await downloadFichiersDao.updateFichierDownload(downloadCopie)
 
         // Maj redux state
         return dispatch(updateDownload(downloadCopie))
+    }
+}
+
+export function supprimerDownloadsParEtat(workers, etat) {
+    return (dispatch, getState) => traiterSupprimerDownloadsParEtat(workers, etat, dispatch, getState)
+}
+
+async function traiterSupprimerDownloadsParEtat(workers, etat, dispatch, getState) {
+    const { downloadFichiersDao } = workers
+    const downloads = getState()[SLICE_NAME].liste.filter(item=>item.etat === etat)
+    for await (const download of downloads) {
+        const fuuid = download.fuuid
+
+        // Arreter et retirer download state (interrompt le middleware au besoin)
+        dispatch(supprimerDownload(fuuid))
+
+        // Supprimer le download dans IDB, cache
+        await downloadFichiersDao.supprimerDownload(fuuid)
     }
 }
 

@@ -18,6 +18,13 @@ const ETAT_PREPARATION = 1,
       ETAT_CONFIRME = 6,
       ETAT_UPLOAD_INCOMPLET = 7
 
+const CONST_ETATS_DOWNLOAD = {
+  ETAT_PRET: 1,
+  ETAT_EN_COURS: 2,
+  ETAT_SUCCES: 3,
+  ETAT_ECHEC: 4
+}
+
 function Menu(props) {
 
   const { 
@@ -223,25 +230,45 @@ function LabelTransfert(props) {
   const etatTransfert = props.etatTransfert || {}
 
   const uploads = useSelector(state=>state.uploader.liste),
-        progresUpload = useSelector(state=>state.uploader.progres)
+        progresUpload = useSelector(state=>state.uploader.progres),
+        downloads = useSelector(state=>state.downloader.liste),
+        progresDownload = useSelector(state=>state.downloader.progres)
 
-  const download = etatTransfert.download || {}
-  const downloads = download.downloads || []
-  const pctDownload = download.pct || 100
+  // const download = etatTransfert.download || {}
+  // const downloads = download.downloads || []
+  // const pctDownload = download.pct || 100
   // const upload = etatTransfert.upload || {}
   // const uploadsCompletes = upload.uploadsCompletes || []
   // const pctUpload = upload.pctTotal || 100
 
+  // const downloadsResultat = downloads.reduce((nb, item)=>{
+  //   let {encours, succes, erreur} = nb
+  //   if(item.status===3) succes++
+  //   if(item.status===4) erreur++
+  //   return {encours, succes, erreur}
+  // }, {encours: 0, succes: 0, erreur: 0})
+
   const downloadsResultat = downloads.reduce((nb, item)=>{
     let {encours, succes, erreur} = nb
-    if(item.status===3) succes++
-    if(item.status===4) erreur++
+    switch(item.status) {
+      case CONST_ETATS_DOWNLOAD.ETAT_PRET:
+      case CONST_ETATS_DOWNLOAD.ETAT_EN_COURS:
+          encours++
+        break
+      case CONST_ETATS_DOWNLOAD.ETAT_SUCCES:
+        succes++
+        break
+      case CONST_ETATS_DOWNLOAD.ETAT_ECHEC:
+        erreur++
+        break
+      default:
+    }
     return {encours, succes, erreur}
   }, {encours: 0, succes: 0, erreur: 0})
 
   let variantDownload = 'secondary'
   if(downloadsResultat.erreur>0) variantDownload = 'danger'
-  else if(downloadsResultat.succes>0) variantDownload = 'success'
+  else if(downloads.length>0) variantDownload = 'success'
 
   const uploadsResultat = uploads.reduce((nb, item)=>{
     let {encours, succes, erreur} = nb
@@ -267,8 +294,11 @@ function LabelTransfert(props) {
   if(uploadsResultat.erreur>0) variantUpload = 'danger'
   else if(uploadsResultat.succes>0) variantUpload = 'success'
 
-  let labelUpload = <span>-</span>
+  let labelUpload = <span>---</span>
   if(!isNaN(progresUpload)) labelUpload = <span>{Math.floor(progresUpload)} %</span>
+
+  let labelDownload = <span>---</span>
+  if(!isNaN(progresDownload)) labelDownload = <span>{Math.floor(progresDownload)} %</span>
 
   return (
     <div className="transfer-labels">
@@ -284,7 +314,7 @@ function LabelTransfert(props) {
       <div>
         <i className="fa fa-download" />
         {' '}
-        <Badge pill bg={variantDownload}>{pctDownload}%</Badge>
+        <Badge pill bg={variantDownload}>{labelDownload}</Badge>
       </div>
 
     </div>
