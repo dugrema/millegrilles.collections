@@ -163,6 +163,8 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
 
     const fuuid = docDownload.fuuid || docDownload.fuuid_v_courante
+    const version_courante = docDownload.version_courante || {}
+    const taille = version_courante.taille
     const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
     console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
     if(!infoDownload) {
@@ -174,6 +176,7 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
         const nouveauDownload = {
             ...docDownload,
             fuuid,
+            taille,
             userId,
             etat: ETAT_PRET,
             dateCreation: new Date().getTime(),
@@ -222,6 +225,7 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
         const downloadCopie = {...download}
         downloadCopie.etat = ETAT_SUCCES
         downloadCopie.dateConfirmation = new Date().getTime()
+        downloadCopie.tailleCompletee = downloadCopie.taille
 
         // Maj contenu download
         await downloadFichiersDao.updateFichierDownload(downloadCopie)
@@ -353,8 +357,15 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // valueCles.cleSecrete = base64.encode(valueCles.cleSecrete)
 
     // transfertFichiers.download() ...
-    const progressCb = proxy(params => {
-        console.debug("!!! Progres download ", params)
+    const frequenceUpdate = 500
+    let dernierUpdate = 0
+    const progressCb = proxy( tailleCompletee => {
+        const now = new Date().getTime()
+        if(now - frequenceUpdate > dernierUpdate) {
+            dernierUpdate = now
+            marquerDownloadEtat(workers, dispatch, fuuid, {tailleCompletee})
+                .catch(err=>console.warn("progressCb Erreur maj download ", err))
+        }
     })
 
     const url = ''+fuuid
