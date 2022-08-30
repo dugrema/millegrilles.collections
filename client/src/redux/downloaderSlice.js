@@ -1,4 +1,6 @@
 import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit'
+import path from 'path'
+import { proxy } from 'comlink'
 
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       DECHIFFRAGE_TAILLE_BLOCK = 64 * 1024,
@@ -152,7 +154,7 @@ export function ajouterDownload(workers, docDownload) {
 }
 
 async function traiterAjouterDownload(workers, docDownload, dispatch, getState) {
-    const { downloadFichiersDao } = workers
+    const { downloadFichiersDao, clesDao } = workers
     
     // console.debug("traiterCompleterDownload ", fuuid)
     console.debug("traiterAjouterDownload payload : ", docDownload)
@@ -166,6 +168,9 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     if(!infoDownload) {
         // Ajouter l'upload, un middleware va charger le reste de l'information
         // console.debug("Ajout upload %O", correlation)
+
+        await clesDao.getCles([fuuid])  // Fetch pour cache (ne pas stocker dans redux)
+
         const nouveauDownload = {
             ...docDownload,
             fuuid,
@@ -189,13 +194,15 @@ export function arreterDownload(workers, fuuid) {
 
 async function traiterArreterDownload(workers, fuuid, dispatch, getState) {
     // console.debug("traiterCompleterDownload ", fuuid)
-    const { downloadFichiersDao } = workers
+    const { downloadFichiersDao, transfertFichiers } = workers
     const state = getState()[SLICE_NAME]
     const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
     if(download) {
         
         // Arreter et retirer download state (interrompt le middleware au besoin)
         dispatch(supprimerDownload(fuuid))
+
+        await transfertFichiers.down_supprimerDownloadsCache(fuuid)
 
         // Supprimer le download dans IDB, cache
         await downloadFichiersDao.supprimerDownload(fuuid)
@@ -229,13 +236,15 @@ export function supprimerDownloadsParEtat(workers, etat) {
 }
 
 async function traiterSupprimerDownloadsParEtat(workers, etat, dispatch, getState) {
-    const { downloadFichiersDao } = workers
+    const { downloadFichiersDao, transfertFichiers } = workers
     const downloads = getState()[SLICE_NAME].liste.filter(item=>item.etat === etat)
     for await (const download of downloads) {
         const fuuid = download.fuuid
 
         // Arreter et retirer download state (interrompt le middleware au besoin)
         dispatch(supprimerDownload(fuuid))
+
+        await transfertFichiers.down_supprimerDownloadsCache(fuuid)
 
         // Supprimer le download dans IDB, cache
         await downloadFichiersDao.supprimerDownload(fuuid)
@@ -324,12 +333,29 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // console.debug("Upload fichier workers : ", workers)
-    const { downloadFichiersDao, transfertFichiers } = workers
+    const { downloadFichiersDao, transfertFichiers, clesDao } = workers
     const fuuid = fichier.fuuid
 
     // await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS})
+    const cles = await clesDao.getCles([fuuid])  // Fetch pour cache (ne pas stocker dans redux)
+    const valueCles = Object.values(cles).pop()
+    delete valueCles.date
+    // valueCles.cleSecrete = base64.encode(valueCles.cleSecrete)
 
     // transfertFichiers.download() ...
+    const progressCb = proxy(params => {
+        console.debug("!!! Progres download ", params)
+    })
+
+    const url = ''+fuuid
+    const paramsDownload = {
+        url,
+        fuuid, hachage_bytes: fuuid, filename: fichier.nom, mimetype: fichier.mimetype,
+        password: valueCles.cleSecrete, ...valueCles,
+    }
+    console.debug("Params download : ", paramsDownload)
+    const resultat = await transfertFichiers.downloadCacheFichier(paramsDownload, progressCb)
+    console.debug("Resultat download fichier : ", resultat)
 
     if(cancelToken && cancelToken.cancelled) {
         console.warn("Upload cancelled")
