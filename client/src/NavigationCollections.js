@@ -325,7 +325,7 @@ function Modals(props) {
 
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
-    // const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
 
@@ -338,6 +338,8 @@ function Modals(props) {
     const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
     const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
     const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
+    const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
+    const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
 
     const workers = useWorkers()
 
@@ -355,13 +357,13 @@ function Modals(props) {
                 usager={usager}
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 showCopierModalOuvrir={showCopierModalOuvrir}
-                // showDeplacerModalOuvrir={showDeplacerModalOuvrir}
+                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
                 showInfoModalOuvrir={showInfoModalOuvrir}
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
                 cuuid={cuuid}
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
-            />
+              />
 
             <PreviewFichiers 
                 workers={workers}
@@ -369,12 +371,12 @@ function Modals(props) {
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
-            />
+              />
 
             <ModalCreerRepertoire 
                 show={showCreerRepertoire} 
                 fermer={()=>{setShowCreerRepertoire(false)}} 
-            />
+              />
 
             <SupprimerModal
                 show={showSupprimerModal}
@@ -383,7 +385,7 @@ function Modals(props) {
                 fichiers={liste}
                 selection={selection}
                 workers={workers}
-            />
+              />
 
             <CopierModal 
                 show={showCopierModal} 
@@ -391,16 +393,15 @@ function Modals(props) {
                 selection={selection}
                 workers={workers}
                 erreurCb={erreurCb}
-            />
+              />
 
-            {/* <DeplacerModal 
+            <DeplacerModal 
                 show={showDeplacerModal} 
                 fermer={showDeplacerModalFermer}
-                favoris={favoris}
-                cuuid={cuuidCourant}
                 selection={selection}
                 workers={workers}
-            /> */}
+                erreurCb={erreurCb}
+              />
 
             <InfoModal 
                 show={showInfoModal} 
@@ -411,7 +412,7 @@ function Modals(props) {
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
                 usager={usager}
-            />
+              />
 
             <RenommerModal
                 show={showRenommerModal} 
@@ -419,7 +420,7 @@ function Modals(props) {
                 fichiers={liste}
                 selection={selection}
                 workers={workers}
-            />       
+              />       
 
             <PreparationModal 
                 show={typeof(preparationUploadEnCours)==='number'?true:false} 

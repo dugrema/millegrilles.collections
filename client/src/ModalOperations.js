@@ -58,19 +58,102 @@ export function SupprimerModal(props) {
 
 export function CopierModal(props) {
 
-    console.debug("CopierModal proppies ", props)
+    const { show, fermer, selection, erreurCb } = props
+
+    const { connexion } = useWorkers()
+
+    const copier = useCallback( cuuid => {
+        if(cuuid) {
+            console.debug("Copier vers cuuid ", cuuid)
+            connexion.copierVersCollection(cuuid, selection)
+                .then(reponse=>{
+                    // console.debug("Reponse copierVersCollection : %O", reponse)
+                    if(reponse.ok === false) {
+                        erreurCb(reponse.message, "Erreur copierVersCollection")
+                    } else {
+                        fermer()
+                    }
+                  })
+                .catch(err=>erreurCb(err, "Erreur copier vers collection"))
+        } else {
+            // Ajouter au favoris?
+            erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
+        }
+    }, [connexion, selection, fermer])
+
+    const BoutonAction = props => (
+        <Button onClick={()=>copier(props.cuuid)} disabled={props.disabled}>Copier</Button>
+    )
+
+    return (
+        <ModalNavigationCollections 
+            titre="Copier"
+            show={show}
+            BoutonAction={BoutonAction}
+            fermer={fermer}
+            erreurCb={erreurCb} />
+    )
+
+}
+
+export function DeplacerModal(props) {
 
     const { show, fermer, selection, erreurCb } = props
+
+    const { connexion } = useWorkers()
+
+    const cuuidOrigine = useSelector(state=>state.fichiers.cuuid)  // Cuuid courant
+
+    const deplacer = useCallback( cuuidDestination => {
+        if(cuuidDestination) {
+            console.debug("Deplacer de cuuid %s vers cuuid %s", cuuidOrigine, cuuidDestination)
+            connexion.deplacerFichiersCollection(cuuidOrigine, cuuidDestination, selection)
+                .then(reponse=>{
+                    // console.debug("Reponse copierVersCollection : %O", reponse)
+                    if(reponse.ok === false) {
+                        erreurCb(reponse.message, "Erreur copierVersCollection")
+                    } else {
+                        fermer()
+                    }
+                  })
+                .catch(err=>erreurCb(err, "Erreur copier vers collection"))
+        } else {
+            // Ajouter au favoris?
+            erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
+        }
+    }, [connexion, cuuidOrigine, selection, fermer])
+
+    const BoutonAction = props => (
+        <Button onClick={()=>deplacer(props.cuuid)} disabled={props.disabled}>Deplacer</Button>
+    )
+
+    return (
+        <ModalNavigationCollections
+            titre="Deplacer" 
+            show={show}
+            BoutonAction={BoutonAction}
+            fermer={fermer}
+            erreurCb={erreurCb} />
+    )
+
+}
+
+export function ModalNavigationCollections(props) {
+
+    console.debug("CopierModal proppies ", props)
+
+    const { titre, show, fermer, erreurCb, BoutonAction } = props
     
     const workers = useWorkers()
     const dispatch = useDispatch()
     const usager = useUsager()
 
+    const [initComplete, setInitComplete] = useState(false)
+
     const listeBrute = useSelector(state=>state.navigationSecondaire.liste)
     const cuuid = useSelector(state=>state.navigationSecondaire.cuuid)
     const breadcrumb = useSelector((state) => state.navigationSecondaire.breadcrumb)
 
-    const { connexion } = workers
     const userId = useMemo(()=>{
         if(!usager || !usager.extensions) return
         return usager.extensions.userId
@@ -127,31 +210,14 @@ export function CopierModal(props) {
         }
     }, [dispatch, breadcrumb, naviguerCollection])
 
-    const copier = useCallback( () => {
-        if(cuuid) {
-            connexion.copierVersCollection(cuuid, selection)
-                .then(reponse=>{
-                    // console.debug("Reponse copierVersCollection : %O", reponse)
-                    if(reponse.ok === false) {
-                        erreurCb(reponse.message, "Erreur copierVersCollection")
-                    } else {
-                        fermer()
-                    }
-                  })
-                .catch(err=>erreurCb(err, "Erreur copier vers collection"))
-        } else {
-            // Ajouter au favoris?
-            erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
-        }
-    }, [connexion, cuuid, fermer])
-
     useEffect(()=>{
-        if(!show) return
+        if(!show || initComplete) return
         // Charger position initiale (favoris)
         console.debug("ModalCopier Set collection favoris")
         Promise.resolve(naviguerCollection())
+          .then(()=>setInitComplete(true))
           .catch(err=>console.error("CopierModal Erreur navigation ", err))
-    }, [naviguerCollection, show])
+    }, [naviguerCollection, show, initComplete, setInitComplete])
 
     useEffect(()=>{
         if(!userId) return
@@ -162,7 +228,7 @@ export function CopierModal(props) {
         <Modal show={show} onHide={fermer}>
 
             <Modal.Header closeButton={true}>
-                Copier
+                {titre}
             </Modal.Header>
 
             <FilePicker 
@@ -173,77 +239,77 @@ export function CopierModal(props) {
                 />
 
             <Modal.Footer>
-                <Button onClick={copier} disabled={breadcrumb.length===0}>Copier</Button>
+                <BoutonAction cuuid={cuuid} disabled={breadcrumb.length === 0} />
             </Modal.Footer>
 
         </Modal>
     )
 }
 
-export function DeplacerModal(props) {
+// export function DeplacerModal(props) {
 
-    const { workers, show, fermer, favoris, cuuid, selection } = props
-    const { connexion } = workers
+//     const { workers, show, fermer, favoris, cuuid, selection } = props
+//     const { connexion } = workers
 
-    const [ path, setPath ] = useState([])
+//     const [ path, setPath ] = useState([])
 
-    const deplacer = useCallback( () => {
-        const tuuidSelectionne = path.length>0?path[path.length-1]:''
+//     const deplacer = useCallback( () => {
+//         const tuuidSelectionne = path.length>0?path[path.length-1]:''
 
-        if(tuuidSelectionne) {
-            connexion.deplacerFichiersCollection(cuuid, tuuidSelectionne, selection)
-                .then(reponse=>{
-                    // console.debug("Reponse deplacerFichiersCollection : %O", reponse)
-                    if(reponse.ok === false) {
-                        console.error("Erreur deplacerFichiersCollection : %O", reponse.message)
-                    } else {
-                        fermer()
-                    }
-                })
-                .catch(err=>{
-                    console.error("Erreur deplacerFichiersCollection : %O", err)
-                })
-        } else {
-            // Ajouter au favoris?
-            console.error("Erreur deplacerFichiersCollection - aucune collection selectionnee")
-        }
-    }, [connexion, cuuid, selection, path, fermer])
+//         if(tuuidSelectionne) {
+//             connexion.deplacerFichiersCollection(cuuid, tuuidSelectionne, selection)
+//                 .then(reponse=>{
+//                     // console.debug("Reponse deplacerFichiersCollection : %O", reponse)
+//                     if(reponse.ok === false) {
+//                         console.error("Erreur deplacerFichiersCollection : %O", reponse.message)
+//                     } else {
+//                         fermer()
+//                     }
+//                 })
+//                 .catch(err=>{
+//                     console.error("Erreur deplacerFichiersCollection : %O", err)
+//                 })
+//         } else {
+//             // Ajouter au favoris?
+//             console.error("Erreur deplacerFichiersCollection - aucune collection selectionnee")
+//         }
+//     }, [connexion, cuuid, selection, path, fermer])
 
-    const actionPath = useCallback( cuuidpath => {
-        // console.debug("Set path : %O", cuuidpath)
-        setPath(cuuidpath)
-    }, [setPath])
+//     const actionPath = useCallback( cuuidpath => {
+//         // console.debug("Set path : %O", cuuidpath)
+//         setPath(cuuidpath)
+//     }, [setPath])
 
-    const loadCollection = useCallback( cuuid => {
-        if(!cuuid) {
-            // Root, utiliser favoris
-            // console.debug("CopierModalFAVORIS : %O", favoris)
-            return Promise.resolve(favoris)
-        } else {
-            return connexion.getContenuCollection(cuuid)
-                .then(reponse=>{
-                    // console.debug("Reponse contenu collection: %O", reponse)
-                    const docs = reponse.documents.filter(item=>!item.fuuid_v_courante)
-                    return docs
-                })
-        }
-    }, [connexion, favoris])
+//     const loadCollection = useCallback( cuuid => {
+//         if(!cuuid) {
+//             // Root, utiliser favoris
+//             // console.debug("CopierModalFAVORIS : %O", favoris)
+//             return Promise.resolve(favoris)
+//         } else {
+//             return connexion.getContenuCollection(cuuid)
+//                 .then(reponse=>{
+//                     // console.debug("Reponse contenu collection: %O", reponse)
+//                     const docs = reponse.documents.filter(item=>!item.fuuid_v_courante)
+//                     return docs
+//                 })
+//         }
+//     }, [connexion, favoris])
 
-    return (
-        <Modal show={show} onHide={fermer} className="modal-picklist">
-            <Modal.Header closeButton={true}>
-                Deplacer
-            </Modal.Header>
+//     return (
+//         <Modal show={show} onHide={fermer} className="modal-picklist">
+//             <Modal.Header closeButton={true}>
+//                 Deplacer
+//             </Modal.Header>
 
-            <FilePicker setPath={actionPath} loadCollection={loadCollection} />
+//             <FilePicker setPath={actionPath} loadCollection={loadCollection} />
 
-            <Modal.Footer>
-                <Button onClick={deplacer} disabled={path.length===0}>Deplacer</Button>
-            </Modal.Footer>
-        </Modal>
-    )
+//             <Modal.Footer>
+//                 <Button onClick={deplacer} disabled={path.length===0}>Deplacer</Button>
+//             </Modal.Footer>
+//         </Modal>
+//     )
 
-}
+// }
 
 export function InfoModal(props) {
     const { 
