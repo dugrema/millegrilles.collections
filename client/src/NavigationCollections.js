@@ -22,11 +22,13 @@ import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultisel
 // import { uploaderFichiers } from './fonctionsFichiers'
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 
-import { 
-    chargerTuuids, changerCollection, breadcrumbPush, breadcrumbSlice, selectionTuuids,
-    // setUserId, afficherPlusrecents, afficherCorbeille,
-    // ajouterFichierVolatil, supprimerFichier, restaurerFichier, rafraichirCollection,
-} from './redux/fichiersSlice'
+// import { 
+//     chargerTuuids, changerCollection, breadcrumbPush, breadcrumbSlice, selectionTuuids,
+//     // setUserId, afficherPlusrecents, afficherCorbeille,
+//     // ajouterFichierVolatil, supprimerFichier, restaurerFichier, rafraichirCollection,
+// } from './redux/fichiersSlice'
+
+import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 
 import { setUploads } from './redux/uploaderSlice'
 
@@ -72,15 +74,15 @@ function NavigationCollections(props) {
         if(!cuuid) cuuid = ''
         try {
             if(cuuid) {
-                dispatch(breadcrumbPush({tuuid: cuuid}))
+                dispatch(fichiersActions.breadcrumbPush({tuuid: cuuid}))
             } else {
-                dispatch(breadcrumbSlice())
+                dispatch(fichiersActions.breadcrumbSlice())
             }
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
         }
         try {
-            dispatch(changerCollection(workers, cuuid))
+            dispatch(fichiersThunks.changerCollection(workers, cuuid))
                 // .then(()=>console.debug("Succes changerCollection : ", cuuid))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
@@ -166,7 +168,7 @@ function AffichagePrincipal(props) {
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
 
     const onSelectionLignes = useCallback(selection=>{
-        dispatch(selectionTuuids(selection))
+        dispatch(fichiersActions.selectionTuuids(selection))
     }, [dispatch])
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
@@ -500,7 +502,7 @@ function SectionBreadcrumb(props) {
             let level = Number.parseInt(value)
             const collection = breadcrumb[level]
             tuuid = collection.tuuid
-            dispatch(breadcrumbSlice(level))
+            dispatch(fichiersActions.breadcrumbSlice(level))
             try {
                 Promise.resolve(naviguerCollection(tuuid))
                     .catch(err=>console.error("SectionBreadcrumb Erreur navigation ", err))
@@ -829,7 +831,7 @@ async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
 
     if(tuuids.length > 0) {
         // console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
-        return dispatch(chargerTuuids(workers, tuuids))
+        return dispatch(fichiersThunks.chargerTuuids(workers, tuuids))
     }
 
 }
