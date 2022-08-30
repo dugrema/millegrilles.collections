@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
@@ -10,6 +11,10 @@ import { FormatteurTaille, FormatterDate, FormatterDuree, Thumbnail, FilePicker 
 
 import { mapDocumentComplet } from './mapperFichier'
 import { ConversionVideo } from './OperationsVideo'
+
+import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
+
+import actionsNavigationSecondaire, {thunks as thunksNavigationSecondaire} from './redux/navigationSecondaireSlice'
 
 export function SupprimerModal(props) {
 
@@ -53,64 +58,105 @@ export function SupprimerModal(props) {
 
 export function CopierModal(props) {
 
-    const { workers, show, fermer, favoris, selection } = props
-    const { connexion } = workers
+    console.debug("CopierModal proppies ", props)
 
-    const [ path, setPath ] = useState([])
+    const { show, fermer, selection, erreurCb } = props
+    
+    const workers = useWorkers()
+    const dispatch = useDispatch()
+    const usager = useUsager()
+
+    const listeBrute = useSelector(state=>state.navigationSecondaire.liste)
+    const cuuid = useSelector(state=>state.navigationSecondaire.cuuid)
+    const breadcrumb = useSelector((state) => state.navigationSecondaire.breadcrumb)
+
+    const { connexion } = workers
+    const userId = useMemo(()=>{
+        if(!usager || !usager.extensions) return
+        return usager.extensions.userId
+    }, [usager])
+
+    const liste = useMemo(()=>{
+        if(!listeBrute) return []
+        return listeBrute
+          .filter(item=>!item.mimetype)
+          .map(item=>mapDocumentComplet(workers, item))
+    }, [listeBrute])
+
+    console.debug("CopierModal selector listeBrute %O, liste %O, cuuid %O, breadcrumb %O", listeBrute, liste, cuuid, breadcrumb)
+
+    const naviguerCollection = useCallback( cuuid => {
+        if(!cuuid) cuuid = ''
+        try {
+            if(cuuid) {
+                dispatch(actionsNavigationSecondaire.breadcrumbPush({tuuid: cuuid}))
+            } else {
+                dispatch(actionsNavigationSecondaire.breadcrumbSlice())
+            }
+        } catch(err) {
+            console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
+        }
+        try {
+            dispatch(thunksNavigationSecondaire.changerCollection(workers, cuuid))
+                .then(()=>console.debug("Succes changerCollection : ", cuuid))
+                .catch(err=>erreurCb(err, 'Erreur changer collection'))
+        } catch(err) {
+            console.error("naviguerCollection Erreur dispatch changerCollection", err)
+        }
+    }, [dispatch, workers, erreurCb])
 
     const copier = useCallback( () => {
-        const tuuidSelectionne = path.length>0?path[path.length-1]:''
-
-        if(tuuidSelectionne) {
-            connexion.copierVersCollection(tuuidSelectionne, selection)
+        if(cuuid) {
+            connexion.copierVersCollection(cuuid, selection)
                 .then(reponse=>{
                     // console.debug("Reponse copierVersCollection : %O", reponse)
                     if(reponse.ok === false) {
-                        console.error("Erreur copierVersCollection : %O", reponse.message)
+                        erreurCb(reponse.message, "Erreur copierVersCollection")
                     } else {
                         fermer()
                     }
-                })
-                .catch(err=>{
-                    console.error("Erreur copierVersCollection : %O", err)
-                })
+                  })
+                .catch(err=>erreurCb(err, "Erreur copier vers collection"))
         } else {
             // Ajouter au favoris?
-            console.error("Erreur copierVersCollection - aucune collection selectionnee")
+            erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
         }
-    }, [connexion, selection, path, fermer])
+    }, [connexion, cuuid, fermer])
 
-    const actionPath = useCallback( cuuidpath => {
-        // console.debug("Set path : %O", cuuidpath)
-        setPath(cuuidpath)
-    }, [setPath])
+    const actionPath = useCallback( event => {
+        console.debug("Set path : %O", event)
+        // setPath(cuuidpath)
+    }, [dispatch])
 
-    const loadCollection = useCallback( cuuid => {
-        if(!cuuid) {
-            // Root, utiliser favoris
-            // console.debug("CopierModalFAVORIS : %O", favoris)
-            return Promise.resolve(favoris)
-        } else {
-            return connexion.getContenuCollection(cuuid)
-                .then(reponse=>{
-                    // console.debug("Reponse contenu collection: %O", reponse)
-                    const docs = reponse.documents.filter(item=>!item.fuuid_v_courante)
-                    return docs
-                })
-        }
-    }, [connexion, favoris])
+    useEffect(()=>{
+        if(!show) return
+        // Charger position initiale (favoris)
+        console.debug("ModalCopier Set collection favoris")
+        Promise.resolve(naviguerCollection())
+          .catch(err=>console.error("CopierModal Erreur navigation ", err))
+    }, [naviguerCollection, show])
+
+    useEffect(()=>{
+        if(!userId) return
+        dispatch(actionsNavigationSecondaire.setUserId(userId))
+    }, [userId])
 
     return (
         <Modal show={show} onHide={fermer}>
+
             <Modal.Header closeButton={true}>
                 Copier
             </Modal.Header>
 
-            <FilePicker setPath={actionPath} loadCollection={loadCollection} />
+            <FilePicker 
+                liste={liste} 
+                breadcrumb={breadcrumb} 
+                setPath={actionPath} />
 
             <Modal.Footer>
-                <Button onClick={copier} disabled={path.length===0}>Copier</Button>
+                <Button onClick={copier} disabled={breadcrumb.length===0}>Copier</Button>
             </Modal.Footer>
+
         </Modal>
     )
 }

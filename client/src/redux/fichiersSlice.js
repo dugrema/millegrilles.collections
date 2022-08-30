@@ -1,12 +1,14 @@
 import { creerSlice, creerThunks, creerMiddleware } from './grosfichiersSlice'
 
-const slice = creerSlice('fichiers')
+const NOM_SLICE = 'fichiers'
+
+const slice = creerSlice(NOM_SLICE)
 export const { reducer } = slice
 export default slice.actions
-export const thunks = creerThunks(slice.actions)
+export const thunks = creerThunks(slice.actions, NOM_SLICE)
 
 export function setup(workers) {
-    return creerMiddleware(workers, slice.actions, thunks)
+    return creerMiddleware(workers, slice.actions, thunks, NOM_SLICE)
 }
 
 // import { base64 } from 'multiformats/bases/base64'

@@ -290,7 +290,7 @@ export function creerSlice(name) {
 
 }
 
-export function creerThunks(actions) {
+export function creerThunks(actions, nomSlice) {
 
     // Action creators are generated for each case reducer function
     const { 
@@ -393,9 +393,9 @@ export function creerThunks(actions) {
     async function traiterChangerCollection(workers, cuuid, dispatch, getState) {
         if(cuuid === undefined) cuuid = ''  // Favoris
     
-        const state = getState().fichiers
+        const state = getState()[nomSlice]
         const cuuidPrecedent = state.cuuid
-        // console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
+        console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
     
         if(cuuidPrecedent === cuuid) return  // Rien a faire, meme collection
     
@@ -413,10 +413,10 @@ export function creerThunks(actions) {
         // console.debug('traiterRafraichirCollection')
         const { collectionsDao } = workers
     
-        const state = getState().fichiers
+        const state = getState()[nomSlice]
         const { userId, cuuid } = state
     
-        // console.debug("Rafraichir %s", cuuid)
+        console.debug("Rafraichir %s", cuuid)
     
         // Nettoyer la liste
         dispatch(clear())
@@ -432,7 +432,7 @@ export function creerThunks(actions) {
         // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
             const { documents, collection } = contenuIdb
-            // console.debug("Push documents provenance idb : %O", documents)
+            console.debug("Push documents provenance idb : %O", documents)
             dispatch(setCollectionInfo(collection))
             dispatch(push(documents))
     
@@ -524,7 +524,7 @@ export function creerThunks(actions) {
     async function traiterChargerPlusrecents(workers, opts, dispatch, getState) {
         opts = opts || {}
     
-        const stateInitial = getState().fichiers
+        const stateInitial = getState()[nomSlice]
         const { userId } = stateInitial
     
         // Changer source, nettoyer la liste
@@ -590,7 +590,7 @@ export function creerThunks(actions) {
     async function traiterChargerCorbeille(workers, opts, dispatch, getState) {
         opts = opts || {}
     
-        const stateInitial = getState().fichiers
+        const stateInitial = getState()[nomSlice]
         const { userId } = stateInitial
     
         // Changer source, nettoyer la liste
@@ -654,7 +654,7 @@ export function creerThunks(actions) {
         }
         fichierCopie.cuuids = cuuids
     
-        const state = getState().fichiers
+        const state = getState()[nomSlice]
         const cuuidCourant = state.cuuid
         if(!cuuidCourant) fichierCopie.favoris = true  // Conserver comme favoris
     
@@ -683,7 +683,7 @@ export function creerThunks(actions) {
     
     async function traiterSupprimerFichier(workers, tuuid, dispatch, getState) {
         const { collectionsDao } = workers
-        const cuuid = getState().fichiers.cuuid
+        const cuuid = getState()[nomSlice].cuuid
     
         const doc = (await collectionsDao.getParTuuids([tuuid])).pop()
         // console.debug("traiterSupprimerFichier Doc charge : %O, retirer de cuuid %s", doc, cuuid)
@@ -745,25 +745,25 @@ export function creerThunks(actions) {
     return thunks
 }
 
-export function creerMiddleware(workers, actions, thunks) {
+export function creerMiddleware(workers, actions, thunks, nomSlice) {
     // Setup du middleware
     const dechiffrageMiddleware = createListenerMiddleware()
 
     dechiffrageMiddleware.startListening({
         matcher: isAnyOf(actions.pushFichiersChiffres),
-        effect: (action, listenerApi) => dechiffrageMiddlewareListener(workers, actions, thunks, action, listenerApi)
+        effect: (action, listenerApi) => dechiffrageMiddlewareListener(workers, actions, thunks, nomSlice, action, listenerApi)
     }) 
     
     return { dechiffrageMiddleware }
 }
 
-async function dechiffrageMiddlewareListener(workers, actions, _thunks, _action, listenerApi) {
+async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice, _action, listenerApi) {
     // console.debug("dechiffrageMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
     const { clesDao, chiffrage, collectionsDao } = workers
     await listenerApi.unsubscribe()
     try {
         // Recuperer la liste des fichiers chiffres
-        let fichiersChiffres = listenerApi.getState().fichiers.listeDechiffrage
+        let fichiersChiffres = listenerApi.getState()[nomSlice].listeDechiffrage
         while(fichiersChiffres.length > 0) {
             listenerApi.dispatch(actions.clearFichiersChiffres())
 
@@ -811,7 +811,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, _action,
             }
 
             // Continuer tant qu'il reste des fichiers chiffres
-            fichiersChiffres = listenerApi.getState().fichiers.listeDechiffrage
+            fichiersChiffres = listenerApi.getState()[nomSlice].listeDechiffrage
         }
 
         // console.debug("dechiffrageMiddlewareListener Sequence dechiffrage terminee")

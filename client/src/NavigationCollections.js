@@ -141,7 +141,8 @@ function NavigationCollections(props) {
                 showPreviewAction={showPreviewAction}
                 preparationUploadEnCours={preparationUploadEnCours}
                 contextuel={contextuel}
-                setContextuel={setContextuel} />
+                setContextuel={setContextuel} 
+                erreurCb={erreurCb} />
         </>
     )
 
@@ -313,6 +314,7 @@ function Modals(props) {
         showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, preparationUploadEnCours,
+        erreurCb,
     } = props
     
     const usager = useUsager()
@@ -322,7 +324,7 @@ function Modals(props) {
     const selection = useSelector(state => state.fichiers.selection )
 
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
-    // const [ showCopierModal, setShowCopierModal ] = useState(false)
+    const [ showCopierModal, setShowCopierModal ] = useState(false)
     // const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
@@ -334,6 +336,8 @@ function Modals(props) {
     const showRenommerModalFermer = useCallback(()=>setShowRenommerModal(false), [setShowRenommerModal])
     const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
     const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
+    const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
+    const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
 
     const workers = useWorkers()
 
@@ -350,7 +354,7 @@ function Modals(props) {
                 showPreview={showPreviewAction}
                 usager={usager}
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
-                // showCopierModalOuvrir={showCopierModalOuvrir}
+                showCopierModalOuvrir={showCopierModalOuvrir}
                 // showDeplacerModalOuvrir={showDeplacerModalOuvrir}
                 showInfoModalOuvrir={showInfoModalOuvrir}
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
@@ -381,13 +385,13 @@ function Modals(props) {
                 workers={workers}
             />
 
-            {/* <CopierModal 
+            <CopierModal 
                 show={showCopierModal} 
                 fermer={showCopierModalFermer}
-                favoris={favoris}
                 selection={selection}
                 workers={workers}
-            /> */}
+                erreurCb={erreurCb}
+            />
 
             {/* <DeplacerModal 
                 show={showDeplacerModal} 
