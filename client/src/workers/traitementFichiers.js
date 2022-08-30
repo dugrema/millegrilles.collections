@@ -11,6 +11,8 @@ const UPLOAD_BATCH_SIZE = 5 * 1024 * 1024,
       ETAT_PREPARATION = 1,
       ETAT_PRET = 2
 
+const CACHE_TEMP_NAME = 'fichiersDechiffresTmp'
+
 function setup(workers) {
     return {
         getFichierChiffre(fuuid, opts) {
@@ -22,6 +24,7 @@ function setup(workers) {
         },
         resLoader,
         clean,
+        downloadCache,
     }
 }
 
@@ -249,6 +252,43 @@ async function updateFichier(workers, dispatch, doc, opts) {
     // Declencher l'upload si applicable
     if(demarrer) dispatch(ajouterUpload(doc))
 }
+
+export async function downloadCache(fuuid, opts) {
+    opts = opts || {}
+    if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
+    // console.debug("Download fichier : %s = %O", fuuid, opts)
+    const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+    const cacheFichier = await cacheTmp.match('/'+fuuid)
+    // console.debug("Cache fichier : %O", cacheFichier)
+    if(cacheFichier) {
+        promptSaveFichier(await cacheFichier.blob(), opts)
+    } else {
+        console.warn("Fichier '%s' non present dans le cache", fuuid)
+    }
+}
+
+function promptSaveFichier(blob, opts) {
+    opts = opts || {}
+    const filename = opts.filename
+    let objectUrl = null
+    try {
+        objectUrl = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = objectUrl
+        if (filename) a.download = filename
+        if (opts.newTab) a.target = '_blank'
+        a.click()
+    } finally {
+        if (objectUrl) {
+            try {
+                URL.revokeObjectURL(objectUrl)
+            } catch (err) {
+                console.debug("Erreur revokeObjectURL : %O", err)
+            }
+        }
+    }
+}
+
 
 // async function traiterAcceptedFiles(workers, dispatch, usager, acceptedFiles, setProgres) {
 //     const { uploadFichiersDao, clesDao } = workers

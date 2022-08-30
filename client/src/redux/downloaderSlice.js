@@ -215,7 +215,7 @@ export function completerDownload(workers, fuuid) {
 
 async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
     // console.debug("traiterCompleterDownload ", fuuid)
-    const { downloadFichiersDao } = workers
+    const { downloadFichiersDao, traitementFichiers } = workers
     const state = getState()[SLICE_NAME]
     const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
     if(download) {
@@ -227,7 +227,17 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
         await downloadFichiersDao.updateFichierDownload(downloadCopie)
 
         // Maj redux state
-        return dispatch(updateDownload(downloadCopie))
+        dispatch(updateDownload(downloadCopie))
+
+        try {
+            // Prompt sauvegarder
+            console.debug("TraitementFichiers ", traitementFichiers)
+            const fuuid = download.fuuid,
+                filename = download.nom
+            await traitementFichiers.downloadCache(fuuid, {filename})
+        } catch(err) {
+            console.warn("Erreur prompt pour sauvgarder fichier downloade ", err)
+        }
     }
 }
 
@@ -333,7 +343,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // console.debug("Upload fichier workers : ", workers)
-    const { downloadFichiersDao, transfertFichiers, clesDao } = workers
+    const { transfertFichiers, clesDao } = workers
     const fuuid = fichier.fuuid
 
     // await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS})
