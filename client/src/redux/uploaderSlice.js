@@ -154,7 +154,7 @@ export const {
 } = uploadSlice.actions
 export default uploadSlice.reducer
 
-// Actions async
+// Thunks
 
 export function demarrerUploads(workers, correlationIds) {
     return (dispatch, getState) => traiterDemarrerUploads(workers, correlationIds, dispatch, getState)
@@ -450,7 +450,7 @@ function calculerPourcentage(liste, completesCycle) {
 
         let inclure = false
         if(inclureEtats.includes(etat)) inclure = true
-        else if([ETAT_COMPLETE, ETAT_CONFIRME] && completesCycle.includes(correlation)) inclure = true
+        else if([ETAT_COMPLETE, ETAT_CONFIRME].includes(etat) && completesCycle.includes(correlation)) inclure = true
 
         if(inclure) {
             tailleCompleteeTotale += tailleCompletee
