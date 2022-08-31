@@ -381,10 +381,9 @@ export function creerThunks(actions, nomSlice) {
             fichiers = fichiers.reduce((acc, item)=>{
                 let chiffre = false
                 
-                if(item.champs_proteges) chiffre = true
-                
                 const version_courante = item.version_courante || {},
-                      images = version_courante.images
+                      { images, metadata } = version_courante
+                if(metadata && metadata.data_chiffre) chiffre = true
                 if(images) Object.values(images).forEach(image=>{
                     if(image.data_chiffre) chiffre = true
                 })
@@ -823,7 +822,22 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
 
                 const docCourant = (await collectionsDao.getParTuuids([tuuid])).pop()
                 const version_courante = docCourant.version_courante || {}
-                const images = version_courante.images || {}
+                const { metadata } = version_courante,
+                      images = version_courante.images || {}
+
+                if( metadata ) {
+                    // Dechiffrer champs de metadata chiffres (e.g. nom, date du fichier)
+                    const hachage_bytes = metadata.ref_hachage_bytes || metadata.hachage_bytes
+                    let cleMetadata = cles[hachage_bytes]
+                    if(cleMetadata) {
+                        const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cleMetadata)
+                        console.debug("Contenu dechiffre : ", metaDechiffree)
+                        // Ajout/override champs de metadonne avec contenu dechiffre
+                        Object.assign(docCourant, metaDechiffree)
+                    } else {
+                        dechiffre = false  // Cle inconnue
+                    }
+                }
 
                 for await (const image of Object.values(images)) {
                     if(image.data_chiffre) {
@@ -909,24 +923,28 @@ function genererTriListe(sortKeys) {
 
 function identifierClesHachages(liste) {
     const fichiersChiffres = []
-    const clesHachage_bytes = liste.reduce( (acc, item) => {
+    const clesHachage_bytes = Object.keys( liste.reduce( (acc, item) => {
 
         let chiffre = false
 
-        // Champs proteges
-        if(item.champs_proteges) {
-            const champs_proteges = item.champs_proteges
-            const hachage_bytes = champs_proteges.ref_hachage_bytes
-            acc.push(hachage_bytes)
-            chiffre = true
-        }
-        
         // Images inline chiffrees (thumbnail)
         const version_courante = item.version_courante || {},
-              images = version_courante.images
+              {metadata, images} = version_courante
+
+        if(metadata) {
+            // Champs proteges
+            if(metadata.hachage_bytes) {
+                acc[metadata.hachage_bytes] = true
+                chiffre = true
+            }
+            if(metadata.ref_hachage_bytes) {
+                acc[metadata.ref_hachage_bytes] = true
+                chiffre = true
+            }
+        }
         if(images) Object.values(images).forEach(image=>{
             if(image.data_chiffre) {
-                acc.push(image.hachage)
+                acc[image.hachage] = true
                 chiffre = true
             }
         })
@@ -935,7 +953,8 @@ function identifierClesHachages(liste) {
         if(chiffre) fichiersChiffres.push(item)
 
         return acc
-    }, [])    
+
+    }, {}))
 
     return {clesHachage_bytes, fichiersChiffres}
 }

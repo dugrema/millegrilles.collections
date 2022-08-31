@@ -156,6 +156,9 @@ export function mapDocumentComplet(workers, doc) {
             copie.mimetype = 'Repertoire'
             copie.folderId = tuuid
         }
+
+        // Remplacer le nom temporairement durant le dechiffrage
+        if(!nom) copie.nom = tuuid
     }
     
     if(date_creation) copie.dateAjout = date_creation
