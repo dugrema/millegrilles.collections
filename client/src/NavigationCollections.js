@@ -449,7 +449,7 @@ function ModalCreerRepertoire(props) {
     const workers = useWorkers()
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
 
-    const { connexion } = workers
+    const { connexion, chiffrage } = workers
 
     const [ nomCollection, setNomCollection ] = useState('')
 
@@ -461,19 +461,30 @@ function ModalCreerRepertoire(props) {
     const creerCollection = useCallback(event=>{
         event.preventDefault()
         event.stopPropagation()
+        
+        new Promise(async resolve => {
+            const metadataDechiffre = {nom: nomCollection}
+            const identificateurs_document = {type: 'collection'}
+            const certificatChiffrage = await connexion.getCertificatsMaitredescles()
+            console.debug("creerCollection certificatChiffrage ", certificatChiffrage)
+            const certificatChiffragePem = certificatChiffrage.certificat
+            const {doc: metadataChiffre, commandeMaitrecles} = await chiffrage.chiffrerDocument(
+                metadataDechiffre, 'GrosFichiers', certificatChiffragePem, {identificateurs_document, DEBUG: true})
+            console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
 
-        const opts = {}
-        if(cuuidCourant) opts.cuuid = cuuidCourant
-        else opts.favoris = true
+            const opts = {}
+            if(cuuidCourant) opts.cuuid = cuuidCourant
+            else opts.favoris = true
 
-        connexion.creerCollection(nomCollection, opts)
+            resolve(connexion.creerCollection(metadataChiffre, commandeMaitrecles, opts))
+          })
             .then(()=>{
                 setNomCollection('')  // Reset
                 fermer()
-            })
+              })
             .catch(err=>{
                 console.error("Erreur creation collection : %O", err)
-            })
+              })
     }, [connexion, nomCollection, cuuidCourant, setNomCollection, fermer])
 
     return (

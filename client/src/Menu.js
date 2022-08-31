@@ -9,6 +9,8 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import { Menu as MenuMillegrilles, DropDownLanguage, ModalInfo } from '@dugrema/millegrilles.reactjs'
 
+import { useInfoConnexion } from './WorkerContext'
+
 const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
 const ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -28,11 +30,15 @@ const CONST_ETATS_DOWNLOAD = {
 function Menu(props) {
 
   const { 
-    i18n, etatConnexion, idmg, manifest, onSelect, etatTransfert, 
+    i18n, etatConnexion, manifest, onSelect, etatTransfert, 
     showTransfertModal,
   } = props
  
   const { t } = useTranslation()
+  const infoConnexion = useInfoConnexion()
+
+  const idmg = infoConnexion.idmg
+
   const [showModalInfo, setShowModalInfo] = useState(false)
   const handlerCloseModalInfo = useCallback(()=>setShowModalInfo(false), [setShowModalInfo])
 

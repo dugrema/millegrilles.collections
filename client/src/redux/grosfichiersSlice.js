@@ -382,7 +382,8 @@ export function creerThunks(actions, nomSlice) {
                 let chiffre = false
                 
                 const version_courante = item.version_courante || {},
-                      { images, metadata } = version_courante
+                      { images } = version_courante,
+                      metadata = version_courante.metadata || item.metadata
                 if(metadata && metadata.data_chiffre) chiffre = true
                 if(images) Object.values(images).forEach(image=>{
                     if(image.data_chiffre) chiffre = true
@@ -822,7 +823,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
 
                 const docCourant = (await collectionsDao.getParTuuids([tuuid])).pop()
                 const version_courante = docCourant.version_courante || {}
-                const { metadata } = version_courante,
+                const metadata = version_courante.metadata || docCourant.metadata,
                       images = version_courante.images || {}
 
                 if( metadata ) {
@@ -929,7 +930,8 @@ function identifierClesHachages(liste) {
 
         // Images inline chiffrees (thumbnail)
         const version_courante = item.version_courante || {},
-              {metadata, images} = version_courante
+              images = version_courante.images,
+              metadata = version_courante.metadata || item.metadata
 
         if(metadata) {
             // Champs proteges

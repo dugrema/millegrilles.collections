@@ -44,11 +44,11 @@ async function getCles(workers, liste_hachage_bytes) {
         }
     }
 
-    // console.debug("Cles connues : %d, cles manquantes : %d", Object.keys(clesDechiffrees).length, clesManquantes.length)
+    console.debug("Cles connues : %d, cles manquantes : %d", Object.keys(clesDechiffrees).length, clesManquantes.length)
     if(clesManquantes.length > 0) {
         // Recuperer les cles du serveur
         const reponseClesChiffrees = await connexion.getClesFichiers(liste_hachage_bytes)
-        // console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
+        console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
         for await(const cleHachage_bytes of Object.keys(reponseClesChiffrees.cles)) {
             const infoCle = reponseClesChiffrees.cles[cleHachage_bytes]
             const cleSecrete = await chiffrage.dechiffrerCleSecrete(infoCle.cle)

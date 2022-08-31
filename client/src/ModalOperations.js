@@ -500,7 +500,7 @@ function InfoCollection(props) {
 
 export function RenommerModal(props) {
     const { workers, show, fermer, fichiers, selection } = props
-    const { connexion } = workers
+    const { connexion, chiffrage } = workers
 
     // let tuuidSelectionne = null,
     //     docSelectionne = null
@@ -532,6 +532,7 @@ export function RenommerModal(props) {
             let reponse = null
             const tuuid = docSelectionne.tuuid,
                   mimetype = docSelectionne.mimetype
+
             if(mimetype) {
                 // Fichier
                 reponse = await connexion.decrireFichier(tuuid, {nom})
@@ -548,7 +549,7 @@ export function RenommerModal(props) {
         }
 
         fermer()
-    }, [connexion, docSelectionne, nom, fermer])
+    }, [connexion, chiffrage, docSelectionne, nom, fermer])
 
     const changerNom = useCallback(event=>{
         const { value } = event.currentTarget

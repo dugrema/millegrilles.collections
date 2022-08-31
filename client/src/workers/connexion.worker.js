@@ -23,7 +23,7 @@ function getContenuCollection(tuuidsDocuments, opts) {
   return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
 }
 
-function getClesFichiers(fuuids, usager, opts) {
+async function getClesFichiers(fuuids, usager, opts) {
   opts = opts || {}
 
   if(opts.cache) console.warn("TODO - supporter cache cles dans idb")
@@ -37,13 +37,19 @@ function getClesFichiers(fuuids, usager, opts) {
   if(!delegationGlobale) {
     // On doit demander une permission en premier
     const params = { fuuids }
-    return ConnexionClient.emitBlocking('getPermissionCles', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
+    console.debug("!!! Get cles fichiers (!delegation globale)", params)
+    const reponse = await ConnexionClient.emitBlocking('getPermissionCles', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
+    console.debug("!!! reponse get cles fichiers ", reponse)
+    return reponse
   } else {
     const params = {
       liste_hachage_bytes: fuuids,
       permission,
     }
-    return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
+    console.debug("!!! Get cles fichiers ", params)
+    const reponse = await ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
+    console.debug("!!! reponse get cles fichiers ", reponse)
+    return reponse
   }
 }
 
@@ -56,11 +62,16 @@ async function getPermission(fuuids) {
   return permission
 }
 
-function creerCollection(nomCollection, opts) {
+async function creerCollection(metadataChiffre, commandeMaitrecles, opts) {
   opts = opts || {}
-  const params = {nom: nomCollection}
+  const params = {
+    metadata: metadataChiffre,
+  }
   if(opts.cuuid) params.cuuid = opts.cuuid
   if(opts.favoris) params.favoris = true
+
+  params['_commandeMaitrecles'] = commandeMaitrecles
+
   return ConnexionClient.emitBlocking(
     'creerCollection', 
     params, 

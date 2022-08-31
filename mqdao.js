@@ -66,7 +66,12 @@ function syncCorbeille(socket, params) {
   return transmettreRequete(socket, params, 'syncCorbeille')
 }
 
-function creerCollection(socket, params) {
+async function creerCollection(socket, params) {
+    const commandeMaitrecles = params['_commandeMaitrecles']
+    delete params['_commandeMaitrecles']
+    const partition = commandeMaitrecles['_partition']
+    delete commandeMaitrecles['_partition']
+    await transmettreCommande(socket, commandeMaitrecles, 'sauvegarderCle', {partition, domaine: CONST_DOMAINE_MAITREDESCLES})
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }
 
@@ -169,13 +174,14 @@ async function transmettreCommande(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS
     const exchange = opts.exchange || L2Prive
+    const partition = opts.partition
     const nowait = opts.nowait
     try {
         verifierMessage(params, domaine, action)
         return await socket.amqpdao.transmettreCommande(
             domaine, 
             params, 
-            {action, exchange, noformat: true, decoder: true, nowait}
+            {action, exchange, partition, noformat: true, decoder: true, nowait}
         )
     } catch(err) {
         console.error("mqdao.transmettreCommande ERROR : %O", err)
