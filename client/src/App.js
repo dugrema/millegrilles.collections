@@ -178,7 +178,7 @@ function Contenu(props) {
       <ErrorBoundary erreurCb={props.erreurCb}>
           <Page {...props}/>
 
-          <p></p>
+          <br/><br/>
           
       </ErrorBoundary>
   )

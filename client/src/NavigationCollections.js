@@ -48,6 +48,7 @@ function NavigationCollections(props) {
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
+    const liste = useSelector(state => state.fichiers.liste )
 
     const [modeView, setModeView] = useState('')
 
@@ -96,17 +97,28 @@ function NavigationCollections(props) {
         naviguerCollection('')
     }, [naviguerCollection, etatPret, cuuidCourant, userId])
 
+    let nombreFichiers = ''
+    if(liste) {
+        if(liste.length > 1) {
+            nombreFichiers = <span>{liste.length} fichiers</span>
+        }
+    }
+
     return (
         <>
             <h1>Collections</h1>
 
             <div>
                 <Row className='fichiers-header-buttonbar'>
-                    <Col xs={12} lg={7}>
+                    <Col xs={12} lg={5}>
                         <SectionBreadcrumb naviguerCollection={naviguerCollection} />
                     </Col>
 
-                    <Col xs={12} lg={5} className="buttonbars">
+                    <Col xs={12} sm={3} md={4} lg={2}>
+                        {nombreFichiers}
+                    </Col>
+
+                    <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
                         <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                         <BoutonsAction 
                             cuuid={cuuidCourant}

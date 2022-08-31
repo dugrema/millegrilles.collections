@@ -20,6 +20,7 @@ const initialState = {
     intervalle: null,           // Intervalle de temps des donnees, l'effet depend de la source
     listeDechiffrage: [],       // Liste de fichiers a dechiffrer
     selection: null,            // Fichiers/collections selectionnees
+    mergeVersion: 0,            // Utilise pour flagger les changements
 }
 
 // Actions
@@ -73,12 +74,19 @@ function setCollectionInfoAction(state, action) {
 }
 
 function pushAction(state, action) {
+    const mergeVersion = state.mergeVersion
+    state.mergeVersion++
+
     let payload = action.payload
     let liste = state.liste || []
     if( Array.isArray(payload) ) {
-        liste = liste.concat(payload)    
+        const ajouts = payload.map(item=>{return {...item, '_mergeVersion': mergeVersion}})
+        console.debug("pushAction ajouter ", ajouts)
+        liste = liste.concat(ajouts)
     } else {
-        liste.push(payload)            
+        const ajout = {...payload, '_mergeVersion': mergeVersion}
+        console.debug("pushAction ajouter ", ajout)
+        liste.push(ajout)
     }
 
     // Trier
@@ -129,118 +137,132 @@ function breadcrumbSliceAction(state, action) {
 
 // payload {tuuid, data, images, video}
 function mergeTuuidDataAction(state, action) {
-    // console.debug("mergeTuuidDataAction action: %O, cuuid courant: %O", action, state.cuuid)
-    let { tuuid } = action.payload
-    const data = action.payload.data || {},
-          cuuids = data.cuuids || [],
-          images = action.payload.images || data.images,
-          video = action.payload.video || data.video
+    const mergeVersion = state.mergeVersion
+    state.mergeVersion++
 
-    const liste = state.liste || []
-    const cuuidCourant = state.cuuid,
-          source = state.source,
-          intervalle = state.intervalle
-    
-    let peutAppend = false
-    if(source === SOURCE_COLLECTION) {
-        if(data.supprime === true) {
-            // false
-        } else if(cuuidCourant) {
-            // Verifier si le fichier est sous le cuuid courant
-            peutAppend = cuuids.includes(cuuidCourant)
-        } else if( ! data.mimetype ) {
-            peutAppend = data.favoris === true  // Inclure si le dossier est un favoris
-        }
-    } else if(source === SOURCE_CORBEILLE) {
-        peutAppend = data.supprime === true
-    } else if(source === SOURCE_PLUS_RECENT) {
-        if(data.supprime === true) {
-            // False
-        } else if(intervalle) {
-            const { debut, fin } = intervalle
-            const champsDate = ['derniere_modification', 'date_creation']
-            champsDate.forEach(champ=>{
-                const valDate = data[champ]
-                if(valDate) {
-                    if(valDate >= debut) {
-                        if(fin) {
-                            if(valDate <= fin) peutAppend = true
-                        } else {
-                            // Pas de date de fin
-                            peutAppend = true
+    let payload = action.payload
+    if(!Array.isArray(payload)) {
+        payload = [payload]
+    }
+
+    for (const payloadFichier of payload) {
+        // console.debug("mergeTuuidDataAction action: %O, cuuid courant: %O", action, state.cuuid)
+        let { tuuid } = payloadFichier
+
+        // Ajout flag _mergeVersion pour rafraichissement ecran
+        const data = {...(payloadFichier.data || {})}
+        data['_mergeVersion'] = mergeVersion
+
+        const cuuids = data.cuuids || [],
+        images = payloadFichier.images || data.images,
+        video = payloadFichier.video || data.video
+
+        const liste = state.liste || []
+        const cuuidCourant = state.cuuid,
+            source = state.source,
+            intervalle = state.intervalle
+        
+        let peutAppend = false
+        if(source === SOURCE_COLLECTION) {
+            if(data.supprime === true) {
+                // false
+            } else if(cuuidCourant) {
+                // Verifier si le fichier est sous le cuuid courant
+                peutAppend = cuuids.includes(cuuidCourant)
+            } else if( ! data.mimetype ) {
+                peutAppend = data.favoris === true  // Inclure si le dossier est un favoris
+            }
+        } else if(source === SOURCE_CORBEILLE) {
+            peutAppend = data.supprime === true
+        } else if(source === SOURCE_PLUS_RECENT) {
+            if(data.supprime === true) {
+                // False
+            } else if(intervalle) {
+                const { debut, fin } = intervalle
+                const champsDate = ['derniere_modification', 'date_creation']
+                champsDate.forEach(champ=>{
+                    const valDate = data[champ]
+                    if(valDate) {
+                        if(valDate >= debut) {
+                            if(fin) {
+                                if(valDate <= fin) peutAppend = true
+                            } else {
+                                // Pas de date de fin
+                                peutAppend = true
+                            }
                         }
                     }
+                })
+            }
+        }
+
+        // Maj du breadcrumb au besoin
+        if(data.nom) {
+            state.breadcrumb.forEach(item=>{
+                if(item.tuuid === tuuid) {
+                    item.label = data.nom
                 }
             })
         }
-    }
 
-    // Maj du breadcrumb au besoin
-    if(data.nom) {
-        state.breadcrumb.forEach(item=>{
-            if(item.tuuid === tuuid) {
-                item.label = data.nom
-            }
-        })
-    }
-
-    let dataCourant
-    if(cuuidCourant === tuuid) {
-        // Mise a jour de la collection active
-        dataCourant = state.collection || {}
-        state.collection = dataCourant
-    } else {
-        // Trouver un fichier correspondant
-        dataCourant = liste.filter(item=>item.tuuid === tuuid).pop()
-    }
-
-    // Copier donnees vers state
-    if(dataCourant) {
-        if(data) {
-            const copie = {...data}
-
-            // Retirer images et video, traiter separement
-            delete copie.images
-            delete copie.video
-
-            Object.assign(dataCourant, copie)
-        }
-        if(images) {
-            const imagesCourantes = dataCourant.images || {}
-            Object.assign(imagesCourantes, images)
-            dataCourant.images = imagesCourantes
-        }
-        if(video) {
-            const videoCourants = dataCourant.video || {}
-            Object.assign(videoCourants, video)
-            dataCourant.video = videoCourants
-        }
-
-        // Verifier si le fichier fait encore partie de la collection courante
-        const cuuids = dataCourant.cuuids || []
-        // console.debug("mergeTuuidDataAction Verifier si dataCourant est encore dans %s : %O", cuuidCourant, cuuids)
-        let retirer = false
-        if( source === SOURCE_CORBEILLE ) {
-            // Verifier si le document est toujours supprime
-            retirer = dataCourant.supprime !== true
+        let dataCourant
+        if(cuuidCourant === tuuid) {
+            // Mise a jour de la collection active
+            dataCourant = state.collection || {}
+            state.collection = dataCourant
         } else {
-            if(dataCourant.supprime === true) {
-                // Le document est supprime
-                retirer = true
-            } else if( cuuidCourant ) {
-                // Verifier si le fichier est encore candidat pour la liste courante
-                retirer = ! cuuids.includes(cuuidCourant) 
-            } else {
-                // Favoris
-                retirer = dataCourant.favoris !== true
-            }
+            // Trouver un fichier correspondant
+            dataCourant = liste.filter(item=>item.tuuid === tuuid).pop()
         }
 
-        if(retirer) state.liste = liste.filter(item=>item.tuuid !== tuuid)
+        // Copier donnees vers state
+        if(dataCourant) {
+            if(data) {
+                const copie = {...data}
 
-    } else if(peutAppend === true) {
-        liste.push(data)
-        state.liste = liste
+                // Retirer images et video, traiter separement
+                delete copie.images
+                delete copie.video
+
+                Object.assign(dataCourant, copie)
+            }
+            if(images) {
+                const imagesCourantes = dataCourant.images || {}
+                Object.assign(imagesCourantes, images)
+                dataCourant.images = imagesCourantes
+            }
+            if(video) {
+                const videoCourants = dataCourant.video || {}
+                Object.assign(videoCourants, video)
+                dataCourant.video = videoCourants
+            }
+
+            // Verifier si le fichier fait encore partie de la collection courante
+            const cuuids = dataCourant.cuuids || []
+            // console.debug("mergeTuuidDataAction Verifier si dataCourant est encore dans %s : %O", cuuidCourant, cuuids)
+            let retirer = false
+            if( source === SOURCE_CORBEILLE ) {
+                // Verifier si le document est toujours supprime
+                retirer = dataCourant.supprime !== true
+            } else {
+                if(dataCourant.supprime === true) {
+                    // Le document est supprime
+                    retirer = true
+                } else if( cuuidCourant ) {
+                    // Verifier si le fichier est encore candidat pour la liste courante
+                    retirer = ! cuuids.includes(cuuidCourant) 
+                } else {
+                    // Favoris
+                    retirer = dataCourant.favoris !== true
+                }
+            }
+
+            if(retirer) state.liste = liste.filter(item=>item.tuuid !== tuuid)
+
+        } else if(peutAppend === true) {
+            liste.push(data)
+            state.liste = liste
+        }
     }
 
     // Trier
@@ -251,6 +273,10 @@ function mergeTuuidDataAction(state, action) {
 function pushFichiersChiffresAction(state, action) {
     const fichiers = action.payload
     state.listeDechiffrage = [...state.listeDechiffrage, ...fichiers]
+}
+
+function setFichiersChiffresAction(state, action) {
+    state.listeDechiffrage = action.payload
 }
 
 // Retourne un fichier de la liste a dechiffrer
@@ -285,6 +311,7 @@ export function creerSlice(name) {
             pushFichiersChiffres: pushFichiersChiffresAction,
             clearFichiersChiffres: clearFichiersChiffresAction,
             selectionTuuids: selectionTuuidsAction,
+            setFichiersChiffres: setFichiersChiffresAction,
         }
     })
 
@@ -297,6 +324,7 @@ export function creerThunks(actions, nomSlice) {
         setUserId, setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
         breadcrumbPush, breadcrumbSlice, setSortKeys, setSource, setIntervalle,
         pushFichiersChiffres, clearFichiersChiffres, selectionTuuids,
+        setFichiersChiffres,
         // supprimer, 
     } = actions
 
@@ -759,20 +787,35 @@ export function creerMiddleware(workers, actions, thunks, nomSlice) {
 
 async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice, _action, listenerApi) {
     // console.debug("dechiffrageMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    const getState = () => listenerApi.getState()[nomSlice]
+
     const { clesDao, chiffrage, collectionsDao } = workers
     await listenerApi.unsubscribe()
     try {
         // Recuperer la liste des fichiers chiffres
-        let fichiersChiffres = listenerApi.getState()[nomSlice].listeDechiffrage
+        let fichiersChiffres = [...getState().listeDechiffrage]
         while(fichiersChiffres.length > 0) {
-            listenerApi.dispatch(actions.clearFichiersChiffres())
+            // Trier et slicer une batch de fichiers a dechiffrer
+            const sortKeys = getState().sortKeys
+            fichiersChiffres.sort(genererTriListe(sortKeys))
+            const batchFichiers = fichiersChiffres.slice(0, 20)  // Batch de 20 fichiers a la fois
+            fichiersChiffres = fichiersChiffres.slice(20)  // Clip 
+            listenerApi.dispatch(actions.setFichiersChiffres(fichiersChiffres))
+            console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
 
             // Extraire toutes les cles a charger
-            const {clesHachage_bytes} = identifierClesHachages(fichiersChiffres)
-            const cles = await clesDao.getCles(clesHachage_bytes)
-            // console.debug("dechiffrageMiddlewareListener Recu cles : ", cles)
+            const {clesHachage_bytes} = identifierClesHachages(batchFichiers)
+            let cles = null
+            try {
+                cles = await clesDao.getCles(clesHachage_bytes)
+            } catch(err) {
+                console.error("Erreur chargement cles %O : %O", clesHachage_bytes, err)
+                continue  // Prochaine batch
+            }
 
-            for await (const fichierChiffre of fichiersChiffres) {
+            const fichiersDechiffres = []
+
+            for await (const fichierChiffre of batchFichiers) {
                 // console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
                 // Images inline chiffrees (thumbnail)
                 const tuuid = fichierChiffre.tuuid
@@ -805,13 +848,14 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
                 collectionsDao.updateDocument(docCourant, {dirty: false, dechiffre})
                     .catch(err=>console.error("Erreur maj document %O dans idb : %O", docCourant, err))
 
-                    // Mettre a jour a l'ecran
-                listenerApi.dispatch(actions.mergeTuuidData({tuuid, data: docCourant}))
-
+                // Mettre a jour a l'ecran
+                fichiersDechiffres.push({tuuid, data: docCourant})
             }
 
+            listenerApi.dispatch(actions.mergeTuuidData(fichiersDechiffres))
+
             // Continuer tant qu'il reste des fichiers chiffres
-            fichiersChiffres = listenerApi.getState()[nomSlice].listeDechiffrage
+            fichiersChiffres = [...getState().listeDechiffrage]
         }
 
         // console.debug("dechiffrageMiddlewareListener Sequence dechiffrage terminee")
