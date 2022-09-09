@@ -447,9 +447,11 @@ function ModalCreerRepertoire(props) {
     const { show, fermer } = props
 
     const workers = useWorkers()
+    const usager = useUsager()
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
 
     const { connexion, chiffrage } = workers
+    const userId = usager?usager.extensions.userId:''
 
     const [ nomCollection, setNomCollection ] = useState('')
 
@@ -469,7 +471,7 @@ function ModalCreerRepertoire(props) {
             console.debug("creerCollection certificatChiffrage ", certificatChiffrage)
             const certificatChiffragePem = certificatChiffrage.certificat
             const {doc: metadataChiffre, commandeMaitrecles} = await chiffrage.chiffrerDocument(
-                metadataDechiffre, 'GrosFichiers', certificatChiffragePem, {identificateurs_document, DEBUG: true})
+                metadataDechiffre, 'GrosFichiers', certificatChiffragePem, {identificateurs_document, userId, DEBUG: true})
             console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
 
             const opts = {}
@@ -485,7 +487,7 @@ function ModalCreerRepertoire(props) {
             .catch(err=>{
                 console.error("Erreur creation collection : %O", err)
               })
-    }, [connexion, nomCollection, cuuidCourant, setNomCollection, fermer])
+    }, [connexion, userId, nomCollection, cuuidCourant, setNomCollection, fermer])
 
     return (
         <Modal show={show} onHide={fermer}>
