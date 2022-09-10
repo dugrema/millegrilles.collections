@@ -44,7 +44,7 @@ export default setup
 
 async function getFichierChiffre(workers, fuuid, opts) {
     opts = opts || {}
-    const { dataChiffre, mimetype, controller, progress } = opts
+    const { dataChiffre, mimetype, controller, progress, ref_hachage_bytes } = opts
     const { connexion, chiffrage, usagerDao } = workers
 
     // Recuperer la cle de fichier
@@ -57,14 +57,16 @@ async function getFichierChiffre(workers, fuuid, opts) {
             console.error("Erreur acces usagerDao ", err)
         }
 
-        const reponse = await connexion.getClesFichiers([fuuid])
+        const hachage_bytes = ref_hachage_bytes || fuuid
 
-        cleFichier = reponse.cles[fuuid]
+        const reponse = await connexion.getClesFichiers([hachage_bytes])
+
+        cleFichier = reponse.cles[hachage_bytes]
         const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
         cleFichier.cleSecrete = cleSecrete
 
         // Sauvegarder la cle pour reutilisation
-        usagerDao.saveCleDechiffree(fuuid, cleSecrete, cleFichier)
+        usagerDao.saveCleDechiffree(hachage_bytes, cleSecrete, cleFichier)
             .catch(err=>{
                 console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
             })
@@ -99,7 +101,14 @@ async function getFichierChiffre(workers, fuuid, opts) {
     if(cleFichier && abFichier) {
         // console.debug("Dechiffrer : cle %O, contenu : %O", cleFichier, abFichier)
         try {
-            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, abFichier, cleFichier)
+            const champsOverrides = ['header', 'format']
+            const overrides = {}
+            for (const champ of champsOverrides) {
+                if(opts[champ]) overrides[champ] = opts[champ]
+            }
+            const cleEffective = {...cleFichier, ...overrides}  // Permet override par header, format, etc pour images/video
+            // console.debug("Dechiffre avec cle effective %O (cle %O)", cleEffective, cleFichier)
+            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, abFichier, cleEffective)
             // console.debug("Contenu dechiffre : %O", ab)
             const blob = new Blob([ab], {type: mimetype})
             return blob
