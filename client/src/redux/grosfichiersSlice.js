@@ -822,7 +822,8 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
                 let dechiffre = true
 
                 const docCourant = (await collectionsDao.getParTuuids([tuuid])).pop()
-                const version_courante = docCourant.version_courante || {}
+                const fuuid_v_courante = docCourant.fuuid_v_courante,
+                      version_courante = docCourant.version_courante || {}
                 const metadata = version_courante.metadata || docCourant.metadata,
                       images = version_courante.images || {}
 
@@ -843,11 +844,12 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
                 for await (const image of Object.values(images)) {
                     if(image.data_chiffre) {
                         // Dechiffrer
-                        const hachage_bytes = image.hachage
+                        const hachage_bytes = fuuid_v_courante  // image.hachage
                         const cleFichier = cles[hachage_bytes]
                         if(cleFichier) {
+                            const cleImage = {...cleFichier, ...image}  // Injecter header/format de l'image
                             const dataChiffre = base64.decode(image.data_chiffre)
-                            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, dataChiffre, cleFichier)
+                            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, dataChiffre, cleImage)
                             const dataDechiffre = base64.encode(ab)
                             image.data = dataDechiffre
                             delete image.data_chiffre
@@ -924,13 +926,14 @@ function genererTriListe(sortKeys) {
 
 function identifierClesHachages(liste) {
     const fichiersChiffres = []
+
     const clesHachage_bytes = Object.keys( liste.reduce( (acc, item) => {
 
         let chiffre = false
 
         // Images inline chiffrees (thumbnail)
         const version_courante = item.version_courante || {},
-              images = version_courante.images,
+              { fuuid_v_courante, images } = version_courante,
               metadata = version_courante.metadata || item.metadata
 
         if(metadata) {
@@ -946,7 +949,7 @@ function identifierClesHachages(liste) {
         }
         if(images) Object.values(images).forEach(image=>{
             if(image.data_chiffre) {
-                acc[image.hachage] = true
+                acc[fuuid_v_courante] = true  // Le ref_hachage_bytes est le fuuid
                 chiffre = true
             }
         })
