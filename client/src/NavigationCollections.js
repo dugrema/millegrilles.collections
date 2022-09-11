@@ -152,15 +152,23 @@ function AffichagePrincipal(props) {
         showPreviewAction,
         afficherVideo, setAfficherVideo,
         setContextuel, 
-        enteteOnClickCb,
         showInfoModalOuvrir
     } = props
 
     const workers = useWorkers()
     const dispatch = useDispatch()
     const liste = useSelector(state => state.fichiers.liste)
-
+    const sortKeys = useSelector(state => state.fichiers.sortKeys)
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
+
+    const colonnesEffectives = useMemo(()=>{
+        const tri = {
+            colonne: sortKeys.key,
+            ordre: sortKeys.ordre,
+        }
+        console.debug("tri pour colonnes effectives : ", tri)
+        return {...colonnes, tri}
+    }, [colonnes, sortKeys])
 
     const onSelectionLignes = useCallback(selection=>{
         dispatch(fichiersActions.selectionTuuids(selection))
@@ -189,6 +197,16 @@ function AffichagePrincipal(props) {
 
     }, [naviguerCollection, showPreviewAction, liste])
 
+    const enteteOnClickCb = useCallback(colonne=>{
+        console.debug("Entete onclick ", colonne)
+        // Verifier si on toggle l'ordre
+        const key = colonne
+        let ordre = 1
+        if(key === sortKeys.key) ordre = sortKeys.ordre * -1
+        console.debug("Trier liste : ", liste)
+        dispatch(fichiersActions.setSortKeys({key, ordre}))
+    }, [dispatch, sortKeys, liste])
+
     if(afficherVideo) {
         return (
             <AfficherVideoView
@@ -203,7 +221,7 @@ function AffichagePrincipal(props) {
     return (
         <ListeFichiers 
             modeView={modeView}
-            colonnes={colonnes}
+            colonnes={colonnesEffectives}
             rows={liste} 
             onDoubleClick={onDoubleClick}
             onContextMenu={onContextMenuClick}

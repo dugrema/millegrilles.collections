@@ -11,7 +11,7 @@ const SOURCE_COLLECTION = 'collection',
 const initialState = {
     idbInitialise: false,       // Flag IDB initialise
     cuuid: null,                // Identificateur de collection
-    sortKeys: {},               // Ordre de tri
+    sortKeys: {key: 'nom', ordre: 1}, // Ordre de tri
     source: SOURCE_COLLECTION,  // Source de la requete - collection, plusrecent, corbeille, index, etc.
     liste: null,                // Liste triee de fichiers
     collection: '',             // Information sur la collection courante
@@ -56,7 +56,7 @@ function setCollectionInfoAction(state, action) {
     const collection = action.payload
     state.collection = collection
     state.source = SOURCE_COLLECTION
-    state.sortKeys = {}
+    // state.sortKeys = {}
 
     // Transferer le nom vers le breadcrumb
     // console.debug("setCollectionInfoAction ", collection)
@@ -892,8 +892,16 @@ function genererTriListe(sortKeys) {
         if(!a) return 1
         if(!b) return -1
 
-        const valA = a[key],
-              valB = b[key]
+        let valA = a[key], valB = b[key]
+        if(key === 'dateFichier') {
+            valA = a.dateFichier || a.derniere_modification || a.date_creation
+            valB = b.dateFichier || b.derniere_modification || b.date_creation
+        } else if(key === 'taille') {
+            const version_couranteA = a.version_courante || {},
+                  version_couranteB = b.version_courante || {}
+            valA = version_couranteA.taille || a.taille
+            valB = version_couranteB.taille || b.taille
+        }
 
         if(valA === valB) return 0
         if(!valA) return 1
