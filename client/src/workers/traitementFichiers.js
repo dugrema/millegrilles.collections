@@ -49,15 +49,15 @@ async function getFichierChiffre(workers, fuuid, opts) {
 
     // Recuperer la cle de fichier
     const cleFichierFct = async () => {
+        const hachage_bytes = ref_hachage_bytes || fuuid
+
         let cleFichier = null
         try {
-            cleFichier = await usagerDao.getCleDechiffree(fuuid)
+            cleFichier = await usagerDao.getCleDechiffree(hachage_bytes)
             if(cleFichier) return cleFichier
         } catch(err) {
             console.error("Erreur acces usagerDao ", err)
         }
-
-        const hachage_bytes = ref_hachage_bytes || fuuid
 
         const reponse = await connexion.getClesFichiers([hachage_bytes])
 
