@@ -71,12 +71,7 @@ function NavigationRecents(props) {
                 dispatch(fichiersThunks.changerCollection(workers, cuuid))
                     .catch(err=>erreurCb(err, 'Erreur changer collection'))
             } else {
-                // Charger la liste de fichiers en fonction du range precise
-                
-                console.warn("!!! Fix me - plus recents !!!")
-                // Set tri par date modification desc
-                // dispatch(fichiersActions.setSortKeys({key: 'dateAjout', ordre: -1}))
-                dispatch(fichiersThunks.afficherPlusrecents(workers, {}))
+                dispatch(fichiersThunks.afficherPlusrecents(workers))
                     .catch(err=>erreurCb(err, 'Erreur changer collection'))
             }
         } catch(err) {

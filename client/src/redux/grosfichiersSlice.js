@@ -506,7 +506,7 @@ export function creerThunks(actions, nomSlice) {
     
     async function syncPlusrecent(dispatch, workers, intervalle, limit, skip) {
         const { connexion, collectionsDao } = workers
-        const resultat = await connexion.syncPlusrecent(intervalle.debut, intervalle.fin, {limit, skip})
+        const resultat = await connexion.syncRecents(intervalle.debut, intervalle.fin, {limit, skip})
     
         const { liste } = resultat
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
@@ -593,7 +593,7 @@ export function creerThunks(actions, nomSlice) {
         let compteur = 0
         for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
             let resultatSync = await syncPlusrecent(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
-            // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+            console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
             if( ! resultatSync || ! resultatSync.liste ) break
             compteur += resultatSync.liste.length
             if( resultatSync.complete ) break
