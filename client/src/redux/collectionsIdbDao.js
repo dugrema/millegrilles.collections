@@ -90,15 +90,15 @@ export async function getParCollection(cuuid, userId) {
         const value = curseur.value
         // console.debug("Message %O = %O", key, value)
         const { tuuid, cuuids, favoris, user_id, supprime } = value
-        if(supprime !== true) {
-            if(!cuuid) {
-                // Favoris
-                if(user_id === userId && favoris === true) docs.push(value)
-            } else if(tuuid === cuuid) {
-                collection = value
-            } else if(cuuids && cuuids.includes(cuuid)) {
-                docs.push(value)
-            }
+        if(supprime === true) {
+            // Supprime
+        } else if(!cuuid) {
+            // Favoris
+            if(user_id === userId && favoris === true) docs.push(value)
+        } else if(tuuid === cuuid) {
+            collection = value
+        } else if(cuuids && cuuids.includes(cuuid)) {
+            docs.push(value)
         }
         curseur = await curseur.continue()
     }

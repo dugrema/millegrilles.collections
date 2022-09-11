@@ -446,7 +446,7 @@ export function creerThunks(actions, nomSlice) {
         const state = getState()[nomSlice]
         const { userId, cuuid } = state
     
-        console.debug("Rafraichir %s", cuuid)
+        // console.debug("Rafraichir '%s' pour userId", cuuid, userId)
     
         // Nettoyer la liste
         dispatch(clear())

@@ -154,9 +154,9 @@ export function ModalNavigationCollections(props) {
     const breadcrumb = useSelector((state) => state.navigationSecondaire.breadcrumb)
 
     const userId = useMemo(()=>{
-        if(!show || !usager || !usager.extensions) return
+        if(!usager || !usager.extensions) return
         return usager.extensions.userId
-    }, [show, usager])
+    }, [usager])
 
     const liste = useMemo(()=>{
         if(!show || !listeBrute) return []
