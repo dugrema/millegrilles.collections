@@ -386,7 +386,7 @@ function InfoFichier(props) {
     const versionCourante = fichier.version_courante || {}
     const { mimetype, taille } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
-    const dateFichier = versionCourante.dateFichier
+    const dateFichier = valueItem.dateFichier
 
     return (
         <div>
@@ -411,11 +411,11 @@ function InfoFichier(props) {
                     </Row>
                     <Row>
                         <Col xs={12} md={3}>Date</Col>
-                        <Col xs={12} md={9}><FormatterDate value={derniereModification} /></Col>
+                        <Col xs={12} md={9}><FormatterDate value={dateFichier} /></Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={3}>Date originale</Col>
-                        <Col xs={12} md={9}><FormatterDate value={dateFichier} /></Col>
+                        <Col xs={12} md={3}>Modification</Col>
+                        <Col xs={12} md={9}><FormatterDate value={derniereModification} /></Col>
                     </Row>
                     <InfoMedia fichier={fichier} />
                 </Col>

@@ -162,6 +162,7 @@ export function mapDocumentComplet(workers, doc) {
     }
     
     if(date_creation) copie.dateAjout = date_creation
+    copie.dateFichier = doc.dateFichier || date_creation
 
     // Icones et image
     copie.thumbnail = {
