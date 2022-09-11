@@ -310,19 +310,19 @@ function LabelTransfert(props) {
   return (
     <div className="transfer-labels">
 
-      <div>
+      <span>
         <i className="fa fa-upload" />
         {' '}
         <Badge pill bg={variantUpload}>{labelUpload}</Badge>
-      </div>
+      </span>
 
       {' '}
 
-      <div>
+      <span>
         <i className="fa fa-download" />
         {' '}
         <Badge pill bg={variantDownload}>{labelDownload}</Badge>
-      </div>
+      </span>
 
     </div>
   )
