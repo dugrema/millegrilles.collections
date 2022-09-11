@@ -1,17 +1,17 @@
-import { 
-    supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled,
-} from '@dugrema/millegrilles.reactjs'
+// import { 
+//     supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled,
+// } from '@dugrema/millegrilles.reactjs'
 
-export async function detecterSupport(setSupport) {
-    const webp = await supporteFormatWebp()
-    const webm = supporteFormatWebm()
-    const fileStream = await supporteFileStream()
-    const touch = isTouchEnabled()
+// export async function detecterSupport(setSupport) {
+//     const webp = await supporteFormatWebp()
+//     const webm = supporteFormatWebm()
+//     const fileStream = await supporteFileStream()
+//     const touch = isTouchEnabled()
 
-    const support = {webp, webm, fileStream, touch}
-    console.info("Support du navigateur : %O", support)
-    setSupport(support)
-}
+//     const support = {webp, webm, fileStream, touch}
+//     console.info("Support du navigateur : %O", support)
+//     setSupport(support)
+// }
 
 export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
     opts = opts || {}
@@ -68,4 +68,37 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
         else console.error("Erreur durant la preparation d'upload du fichier : %O", err)
     }
     
+}
+
+export async function majFichiersMetadata(workers, tuuid, data) {
+    const { connexion, chiffrage, clesDao } = workers
+    const chiffrageUtils = chiffrage.chiffrage
+    const fichiers = await connexion.getDocuments([tuuid])
+    const fichier = fichiers.fichiers.pop()
+    
+    console.debug("majFichiersMetadata %O", fichier)
+
+    const version_courante = fichier.version_courante
+    const metadataChiffre = version_courante.metadata
+    const ref_hachage_bytes = fichier.fuuid_v_courante
+
+    // Recuperer cle
+    const cles = await clesDao.getCles([ref_hachage_bytes])
+    console.debug("Cles rechiffres : %O", cles)
+    const cle = cles[ref_hachage_bytes],
+          cleSecrete = cle.cleSecrete
+
+    // Dechiffrer metadata
+    const metaDechiffree = await chiffrageUtils.dechiffrerChampsChiffres(metadataChiffre, cle)
+    console.debug("metadata dechiffre : %O", metaDechiffree)
+
+    const metaMaj = {...metaDechiffree, ...data}
+    console.debug("Data mise a jour : %O", metaMaj)
+
+    // Chiffrer metadata maj
+    const champsChiffres = await chiffrageUtils.updateChampsChiffres(metaMaj, cleSecrete)
+    console.debug("Metadata rechiffre : %O", champsChiffres)
+
+    const reponse = await connexion.decrireFichier(tuuid, {metadata: champsChiffres})
+    console.debug("Reponse maj metadata chiffre : %O", reponse)
 }

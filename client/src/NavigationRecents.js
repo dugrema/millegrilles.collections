@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 
 import { 
     ListeFichiers, 
+    useDetecterSupport,
 } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
@@ -9,7 +10,7 @@ import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultisel
 import { SupprimerModal, CopierModal, InfoModal, RenommerModal } from './ModalOperations'
 
 import { mapper } from './mapperFichier'
-import { detecterSupport } from './fonctionsFichiers'
+// import { detecterSupport } from './fonctionsFichiers'
 
 function Recents(props) {
     const { workers, etatConnexion, usager } = props
@@ -36,11 +37,12 @@ function NavigationRecents(props) {
 
     const { workers, recents, usager } = props
 
+    const support = useDetecterSupport()
+
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ selection, setSelection ] = useState('')
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState('')
     const [ showPreview, setShowPreview ] = useState(false)
-    const [ support, setSupport ] = useState({})
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
@@ -79,9 +81,6 @@ function NavigationRecents(props) {
     const fermerContextuel = useCallback(()=>{
         setContextuel(false)
     }, [setContextuel])
-
-    // Detect support divers de l'appareil/navigateur
-    useEffect(()=>detecterSupport(setSupport), [setSupport])
 
     return (
         <div>

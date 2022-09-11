@@ -26,30 +26,19 @@ function getContenuCollection(tuuidsDocuments, opts) {
 async function getClesFichiers(fuuids, usager, opts) {
   opts = opts || {}
 
-  if(opts.cache) console.warn("TODO - supporter cache cles dans idb")
-
-  // Todo - tenter de charger 
-
   const extensions = usager || {}
   const delegationGlobale = extensions.delegationGlobale
 
-  let permission = null
   if(!delegationGlobale) {
     // On doit demander une permission en premier
     const params = { fuuids }
-    console.debug("!!! Get cles fichiers (!delegation globale)", params)
-    const reponse = await ConnexionClient.emitBlocking('getPermissionCles', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
-    console.debug("!!! reponse get cles fichiers ", reponse)
-    return reponse
+    return ConnexionClient.emitBlocking('getPermissionCles', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
   } else {
     const params = {
       liste_hachage_bytes: fuuids,
-      permission,
+      domaine: CONST_DOMAINE_GROSFICHIERS,
     }
-    console.debug("!!! Get cles fichiers ", params)
-    const reponse = await ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
-    console.debug("!!! reponse get cles fichiers ", reponse)
-    return reponse
+    return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
   }
 }
 
