@@ -77,7 +77,9 @@ function pushAction(state, action) {
     const mergeVersion = state.mergeVersion
     state.mergeVersion++
 
-    let payload = action.payload
+    let {liste: payload, clear} = action.payload
+    if(clear === true) state.liste = []  // Reset liste
+
     let liste = state.liste || []
     if( Array.isArray(payload) ) {
         const ajouts = payload.map(item=>{return {...item, '_mergeVersion': mergeVersion}})
@@ -462,12 +464,14 @@ export function creerThunks(actions, nomSlice) {
             const { documents, collection } = contenuIdb
             console.debug("Push documents provenance idb : %O", documents)
             dispatch(setCollectionInfo(collection))
-            dispatch(push(documents))
+            dispatch(push({liste: documents}))
     
             // Detecter les documents connus qui sont dirty ou pas encore dechiffres
             const tuuids = documents.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-            dispatch(chargerTuuids(workers, tuuids))
-                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+            if(tuuids.length > 0) {
+                dispatch(chargerTuuids(workers, tuuids))
+                    .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+            }
         }
     
         let compteur = 0
@@ -481,7 +485,7 @@ export function creerThunks(actions, nomSlice) {
         if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCollection")
     
         // On marque la fin du chargement/sync
-        dispatch(push([]))
+        dispatch(push({liste: []}))
     }
     
     async function syncCollection(dispatch, workers, cuuid, limit, skip) {
@@ -551,7 +555,7 @@ export function creerThunks(actions, nomSlice) {
     
     async function traiterChargerPlusrecents(workers, opts, dispatch, getState) {
         opts = opts || {}
-    
+
         const stateInitial = getState()[nomSlice]
         const { userId } = stateInitial
     
@@ -564,7 +568,7 @@ export function creerThunks(actions, nomSlice) {
             intervalle = stateInitial.intervalle
         }
         dispatch(setIntervalle(intervalle))
-        dispatch(setSortKeys({key: 'derniere_modification', order: -1}))
+        dispatch(setSortKeys({key: 'derniere_modification', ordre: -1}))
     
         // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
         
@@ -577,11 +581,13 @@ export function creerThunks(actions, nomSlice) {
         // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
             // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push(contenuIdb))
+            dispatch(push({liste: contenuIdb, clear: true}))
     
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-            dispatch(chargerTuuids(workers, tuuids))
-                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+            if(tuuids.length > 0) {
+                dispatch(chargerTuuids(workers, tuuids))
+                    .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+            }
         }
     
         let compteur = 0
@@ -595,7 +601,7 @@ export function creerThunks(actions, nomSlice) {
         if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncPlusrecent")
     
         // On marque la fin du chargement/sync
-        dispatch(push([]))
+        dispatch(push({liste: []}))
     }
     
     // Async corbeille
@@ -643,7 +649,7 @@ export function creerThunks(actions, nomSlice) {
         // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
             // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push(contenuIdb))
+            dispatch(push({liste: contenuIdb}))
     
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
             dispatch(chargerTuuids(workers, tuuids))
@@ -661,7 +667,7 @@ export function creerThunks(actions, nomSlice) {
         if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCorbeille")
     
         // On marque la fin du chargement/sync
-        dispatch(push([]))
+        dispatch(push({liste: []}))
     }
     
     // Ajouter un nouveau fichier (e.g. debut upload)

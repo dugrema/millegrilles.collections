@@ -19,25 +19,10 @@ import AfficherVideo from './AfficherVideo'
 import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
-// import { uploaderFichiers } from './fonctionsFichiers'
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
-
-// import { 
-//     chargerTuuids, changerCollection, breadcrumbPush, breadcrumbSlice, selectionTuuids,
-//     // setUserId, afficherPlusrecents, afficherCorbeille,
-//     // ajouterFichierVolatil, supprimerFichier, restaurerFichier, rafraichirCollection,
-// } from './redux/fichiersSlice'
 
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload } from './redux/downloaderSlice'
-
-const ETAT_PREPARATION = 1,
-      ETAT_PRET = 2,
-      ETAT_UPLOADING = 3,
-      ETAT_COMPLETE = 4,
-      ETAT_ECHEC = 5,
-      ETAT_CONFIRME = 6,
-      ETAT_UPLOAD_INCOMPLET = 7
 
 function NavigationCollections(props) {
 
@@ -83,7 +68,6 @@ function NavigationCollections(props) {
         }
         try {
             dispatch(fichiersThunks.changerCollection(workers, cuuid))
-                // .then(()=>console.debug("Succes changerCollection : ", cuuid))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
@@ -92,7 +76,6 @@ function NavigationCollections(props) {
 
     // Declencher chargement initial des favoris
     useEffect(()=>{
-        // console.debug("Declencher chargement initial? etatPret %O, cuuidCourant %O", etatPret, cuuidCourant)
         if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
         naviguerCollection('')
     }, [naviguerCollection, etatPret, cuuidCourant, userId])

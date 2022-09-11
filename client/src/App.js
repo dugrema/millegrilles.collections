@@ -119,7 +119,12 @@ function LayoutMain() {
   }, [workers])
 
   const handlerSelect = useCallback(eventKey => {
+    console.debug("handlerSelect %O", eventKey)
     switch(eventKey) {
+      case 'recents': 
+      case 'corbeille': 
+        setPage(eventKey)
+        break
       default:
         setPage('')
     }
@@ -169,8 +174,8 @@ function Contenu(props) {
 
   let Page
   switch(props.page) {
-    case 'Recents': Page = NavigationRecents; break
-    case 'Corbeille': Page = NavigationCorbeille; break
+    case 'recents': Page = NavigationRecents; break
+    case 'corbeille': Page = NavigationCorbeille; break
     default: Page = NavigationCollections
   }
 

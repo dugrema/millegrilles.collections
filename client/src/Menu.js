@@ -43,13 +43,6 @@ function Menu(props) {
   const handlerCloseModalInfo = useCallback(()=>setShowModalInfo(false), [setShowModalInfo])
 
   const handlerChangerLangue = eventKey => {i18n.changeLanguage(eventKey)}
-  const brand = (
-      <Navbar.Brand>
-          <Nav.Link eventKey="collections" title={t('titre')}>
-              {t('titre')}
-          </Nav.Link>
-      </Navbar.Brand>
-  )
 
   const handlerSelect = eventKey => {
     switch(eventKey) {
@@ -60,6 +53,14 @@ function Menu(props) {
         onSelect(eventKey)
     }
   }
+
+  const brand = (
+    <Navbar.Brand>
+        <Nav.Link title={t('titre')} onClick={()=>handlerSelect('')}>
+            {t('titre')}
+        </Nav.Link>
+    </Navbar.Brand>
+  )
 
   return (
     <>

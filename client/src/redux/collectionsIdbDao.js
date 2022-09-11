@@ -121,11 +121,15 @@ export async function getPlusrecent(intervalle, userId) {
     const docs = []
     while(curseur) {
         const value = curseur.value
+        const { tuuid, cuuids, favoris, user_id, supprime } = value
         // console.debug("Message %O = %O", key, value)
-        const { supprime } = value
         let conserver = false
 
-        if(supprime !== true) {
+        if(user_id !== userId) {
+            // User different, ignorer
+        } else if(supprime === true) {
+            // Supprime, ignorer
+        } else {
             const champsDate = ['derniere_modification', 'date_creation']
             champsDate.forEach(champ=>{
                 const valDate = value[champ]
