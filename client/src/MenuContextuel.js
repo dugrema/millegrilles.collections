@@ -166,11 +166,11 @@ export function MenuContextuelMultiselect(props) {
 
 export function MenuContextuelCorbeille(props) {
 
-    const { workers, selection, contextuel, fermerContextuel } = props
+    const { workers, selection, contextuel, fermerContextuel, onRecuperer } = props
 
     const recupererAction = useCallback( 
-        () => recupererMultiple(workers, fermerContextuel, selection), 
-        [workers, fermerContextuel, selection] 
+        () => recupererMultiple(workers, fermerContextuel, selection, onRecuperer), 
+        [workers, fermerContextuel, selection, onRecuperer] 
     )
 
     return (
@@ -185,7 +185,7 @@ function supprimerDocuments(fermer, showSupprimerModalOuvrir) {
     fermer()
 }
 
-function recupererMultiple(workers, fermer, selection) {
+function recupererMultiple(workers, fermer, selection, onRecuperer) {
 
     const connexion = workers.connexion
 
@@ -194,10 +194,11 @@ function recupererMultiple(workers, fermer, selection) {
         console.debug("Recuperer selection %O", selection)
         connexion.recupererDocuments(selection)
         .then(reponse=>{
-            console.debug("Retirer documents %O, reponse : %O", selection, reponse)
+            console.debug("Recuperer documents %O, reponse : %O", selection, reponse)
+            if(reponse.ok === true && onRecuperer) onRecuperer(selection)
         })
         .catch(err=>{
-            console.error("Erreur retrait documents de collection")
+            console.error("Erreur retrait documents de collection : %O", err)
         })
 
     }

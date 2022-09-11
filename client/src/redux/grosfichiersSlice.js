@@ -744,28 +744,22 @@ export function creerThunks(actions, nomSlice) {
         const doc = (await collectionsDao.getParTuuids([tuuid])).pop()
         // console.debug("traiterRestaurerFichier Doc charge : ", doc)
         if(doc) {
+
+            // Corriger champs suppression
+            doc.supprime = false
+            doc.date_supprime = null
+            doc.cuuid_supprime = null
+
             const cuuid_supprime = doc.cuuid_supprime
             if(cuuid_supprime) {
                 // console.debug("traiterRestaurerFichier Remettre dans cuuid %s", cuuid_supprime)
                 const cuuids = doc.cuuids || []
                 cuuids.push(cuuid_supprime)
-    
-                // Corriger champs suppression
                 doc.cuuids = cuuids
-                doc.supprime = false
-                doc.date_supprime = null
-                doc.cuuid_supprime = null
-    
-                await collectionsDao.updateDocument(doc, {dirty: true, expiration: new Date().getTime() + 120000})
-                return dispatch(mergeTuuidData({tuuid, data: doc}))
-            } else if(doc.favoris === true) {
-                // C'est un favoris, on met a jour l'affichage
-                doc.supprime = false
-                doc.date_supprime = null
-                doc.cuuid_supprime = null
-                await collectionsDao.updateDocument(doc, {dirty: true, expiration: new Date().getTime() + 120000})
-                return dispatch(mergeTuuidData({tuuid, data: doc}))
             }
+
+            await collectionsDao.updateDocument(doc, {dirty: true, expiration: new Date().getTime() + 120000})
+            return dispatch(mergeTuuidData({tuuid, data: doc}))
         }
     }
     

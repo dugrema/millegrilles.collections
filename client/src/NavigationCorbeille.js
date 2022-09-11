@@ -138,6 +138,7 @@ function NavigationCorbeille(props) {
                 preparationUploadEnCours={preparationUploadEnCours}
                 contextuel={contextuel}
                 setContextuel={setContextuel} 
+                naviguerCollection={naviguerCollection}
                 erreurCb={erreurCb} />
         </>
     )
@@ -310,7 +311,7 @@ function Modals(props) {
         showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, preparationUploadEnCours,
-        erreurCb,
+        erreurCb, naviguerCollection,
     } = props
     
     const usager = useUsager()
@@ -347,6 +348,7 @@ function Modals(props) {
                 contextuel={contextuel} 
                 fermerContextuel={fermerContextuel}
                 fichiers={liste}
+                naviguerCollection={naviguerCollection}
                 tuuidSelectionne={tuuidSelectionne}
                 selection={selection}
                 showPreview={showPreviewAction}
@@ -614,25 +616,26 @@ function FormatterColonneDate(props) {
 
 function MenuContextuel(props) {
 
-    const { contextuel, selection, erreurCb } = props
+    const { contextuel, selection, naviguerCollection, erreurCb } = props
 
     const workers = useWorkers()
     const dispatch = useDispatch()
     const fichiers = useSelector(state => state.fichiers.liste)
     
-    const downloadAction = useCallback(tuuid => {
-        const fichier = fichiers.filter(item=>item.tuuid === tuuid).pop()
-        if(fichier) {
-            dispatch(ajouterDownload(workers, fichier))
-                .catch(err=>erreurCb(err, 'Erreur ajout download'))
-        }
-    }, [workers, dispatch, fichiers])
+    const recyclerAction = useCallback(tuuids => {
+        Promise.resolve().then(async ()=>{
+            for await (const tuuid of tuuids) {
+                await dispatch(fichiersThunks.restaurerFichier(workers, tuuid))
+            }
+            // naviguerCollection('')  // Reload ecran
+        })
+    }, [workers, dispatch, fichiers, naviguerCollection])
 
     if(!contextuel.show) return ''
 
     if(selection && fichiers) {
         // console.debug("Selection : ", selection)
-        return <MenuContextuelCorbeille {...props} workers={workers} />
+        return <MenuContextuelCorbeille {...props} workers={workers} onRecuperer={recyclerAction} />
         // if( selection.length > 1 ) {
         //     return <MenuContextuelMultiselect {...props} workers={workers} />
         // } else if( selection.length === 1 ) {
