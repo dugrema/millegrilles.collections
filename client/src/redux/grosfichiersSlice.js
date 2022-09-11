@@ -649,7 +649,7 @@ export function creerThunks(actions, nomSlice) {
         // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
             // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push({liste: contenuIdb}))
+            dispatch(push({liste: contenuIdb, clear: true}))
     
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
             dispatch(chargerTuuids(workers, tuuids))
