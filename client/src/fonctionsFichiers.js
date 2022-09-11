@@ -70,13 +70,13 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
     
 }
 
-export async function majFichiersMetadata(workers, tuuid, data) {
+export async function majFichierMetadata(workers, tuuid, data) {
     const { connexion, chiffrage, clesDao } = workers
     const chiffrageUtils = chiffrage.chiffrage
     const fichiers = await connexion.getDocuments([tuuid])
     const fichier = fichiers.fichiers.pop()
     
-    console.debug("majFichiersMetadata %O", fichier)
+    console.debug("majFichierMetadata %O", fichier)
 
     const version_courante = fichier.version_courante
     const metadataChiffre = version_courante.metadata
@@ -100,5 +100,37 @@ export async function majFichiersMetadata(workers, tuuid, data) {
     console.debug("Metadata rechiffre : %O", champsChiffres)
 
     const reponse = await connexion.decrireFichier(tuuid, {metadata: champsChiffres})
+    console.debug("Reponse maj metadata chiffre : %O", reponse)
+}
+
+export async function majCollectionMetadata(workers, tuuid, data) {
+    const { connexion, chiffrage, clesDao } = workers
+    const chiffrageUtils = chiffrage.chiffrage
+    const fichiers = await connexion.getDocuments([tuuid])
+    const fichier = fichiers.fichiers.pop()
+    
+    console.debug("majCollectionMetadata %O", fichier)
+
+    const metadataChiffre = fichier.metadata
+    const ref_hachage_bytes = metadataChiffre.ref_hachage_bytes
+
+    // Recuperer cle
+    const cles = await clesDao.getCles([ref_hachage_bytes])
+    console.debug("Cles rechiffres : %O", cles)
+    const cle = cles[ref_hachage_bytes],
+          cleSecrete = cle.cleSecrete
+
+    // Dechiffrer metadata
+    const metaDechiffree = await chiffrageUtils.dechiffrerChampsChiffres(metadataChiffre, cle, {ref_hachage_bytes})
+    console.debug("metadata dechiffre : %O", metaDechiffree)
+
+    const metaMaj = {...metaDechiffree, ...data}
+    console.debug("Data mise a jour : %O", metaMaj)
+
+    // Chiffrer metadata maj
+    const champsChiffres = await chiffrageUtils.updateChampsChiffres(metaMaj, cleSecrete, {ref_hachage_bytes})
+    console.debug("Metadata rechiffre : %O", champsChiffres)
+
+    const reponse = await connexion.decrireCollection(tuuid, {metadata: champsChiffres})
     console.debug("Reponse maj metadata chiffre : %O", reponse)
 }

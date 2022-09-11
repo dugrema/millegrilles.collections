@@ -829,7 +829,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
 
                 if( metadata ) {
                     // Dechiffrer champs de metadata chiffres (e.g. nom, date du fichier)
-                    const hachage_bytes = metadata.ref_hachage_bytes || metadata.hachage_bytes
+                    const hachage_bytes = metadata.ref_hachage_bytes || metadata.hachage_bytes || fuuid_v_courante
                     let cleMetadata = cles[hachage_bytes]
                     if(cleMetadata) {
                         const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cleMetadata)
@@ -933,19 +933,17 @@ function identifierClesHachages(liste) {
 
         // Images inline chiffrees (thumbnail)
         const version_courante = item.version_courante || {},
-              { fuuid_v_courante, images } = version_courante,
+              { fuuid_v_courante } = item,
+              { images } = version_courante,
               metadata = version_courante.metadata || item.metadata
 
         if(metadata) {
             // Champs proteges
-            if(metadata.hachage_bytes) {
-                acc[metadata.hachage_bytes] = true
-                chiffre = true
-            }
-            if(metadata.ref_hachage_bytes) {
-                acc[metadata.ref_hachage_bytes] = true
-                chiffre = true
-            }
+            if(metadata.hachage_bytes) acc[metadata.hachage_bytes] = true
+            else if(metadata.ref_hachage_bytes) acc[metadata.ref_hachage_bytes] = true
+            else acc[fuuid_v_courante] = true  // Default, cle du fichier
+
+            chiffre = true
         }
         if(images) Object.values(images).forEach(image=>{
             if(image.data_chiffre) {

@@ -10,7 +10,7 @@ import Row from 'react-bootstrap/Row'
 import { FormatteurTaille, FormatterDate, FormatterDuree, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
 
 import { mapDocumentComplet } from './mapperFichier'
-import { majFichiersMetadata } from './fonctionsFichiers'
+import { majFichierMetadata, majCollectionMetadata } from './fonctionsFichiers'
 import { ConversionVideo } from './OperationsVideo'
 
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
@@ -535,22 +535,11 @@ export function RenommerModal(props) {
                   mimetype = docSelectionne.mimetype
             
             if(mimetype) {
-                await majFichiersMetadata(workers, tuuid, {nom})
+                await majFichierMetadata(workers, tuuid, {nom})
             } else {
-
+                await majCollectionMetadata(workers, tuuid, {nom})
             }
 
-            // if(mimetype) {
-            //     // Fichier
-            //     reponse = await connexion.decrireFichier(tuuid, {nom})
-            // } else {
-            //     // Collection
-            //     reponse = await connexion.decrireCollection(tuuid, {nom})
-            // }
-
-            // if(reponse.ok === false) {
-            //     console.error("Erreur renommer fichier/collection : %O", reponse.message)
-            // }
         } catch(err) {
             console.error("Erreur renommer fichier/collection : %O", err)
         }
