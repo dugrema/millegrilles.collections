@@ -408,6 +408,7 @@ function Modals(props) {
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
                 usager={usager}
+                erreurCb={erreurCb}
               />
 
             <RenommerModal

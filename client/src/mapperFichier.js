@@ -232,3 +232,16 @@ function getThumbnailIcon(mimetype) {
 
     return ICONE_FICHIER
 }
+
+export function estMimetypeMedia(mimetype) {
+    if(mimetype === 'application/pdf') return true
+    
+    const mimetypeBase = mimetype.split('/').shift()
+    if(mimetypeBase === 'image') {
+        return true
+    } else if(mimetypeBase === 'video') {
+        return true
+    }
+
+    return false
+}

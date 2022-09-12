@@ -308,10 +308,8 @@ function HandlerEvenements(_props) {
 function Modals(props) {
 
     const {
-        showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
-        contextuel, setContextuel, preparationUploadEnCours,
-        erreurCb, naviguerCollection,
+        contextuel, setContextuel, erreurCb, naviguerCollection,
     } = props
     
     const usager = useUsager()
@@ -320,23 +318,7 @@ function Modals(props) {
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
 
-    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
-    const [ showCopierModal, setShowCopierModal ] = useState(false)
-    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
-    const [ showInfoModal, setShowInfoModal ] = useState(false)
-    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
-
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
-    const showSupprimerModalOuvrir = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
-    const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
-    const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
-    const showRenommerModalFermer = useCallback(()=>setShowRenommerModal(false), [setShowRenommerModal])
-    const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
-    const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
-    const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
-    const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
-    const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
-    const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
 
     const workers = useWorkers()
 
@@ -353,11 +335,6 @@ function Modals(props) {
                 selection={selection}
                 showPreview={showPreviewAction}
                 usager={usager}
-                showSupprimerModalOuvrir={showSupprimerModalOuvrir}
-                showCopierModalOuvrir={showCopierModalOuvrir}
-                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
-                showInfoModalOuvrir={showInfoModalOuvrir}
-                showRenommerModalOuvrir={showRenommerModalOuvrir}
                 cuuid={cuuid}
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
@@ -371,55 +348,6 @@ function Modals(props) {
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
               />
-
-            <ModalCreerRepertoire 
-                show={showCreerRepertoire} 
-                fermer={()=>{setShowCreerRepertoire(false)}} 
-              />
-
-            <SupprimerModal
-                show={showSupprimerModal}
-                fermer={showSupprimerModalFermer}
-                cuuid={cuuid}
-                fichiers={liste}
-                selection={selection}
-                workers={workers}
-              />
-
-            <CopierModal 
-                show={showCopierModal} 
-                fermer={showCopierModalFermer}
-                selection={selection}
-                workers={workers}
-                erreurCb={erreurCb}
-              />
-
-            <DeplacerModal 
-                show={showDeplacerModal} 
-                fermer={showDeplacerModalFermer}
-                selection={selection}
-                workers={workers}
-                erreurCb={erreurCb}
-              />
-
-            <InfoModal 
-                show={showInfoModal} 
-                fermer={showInfoModalFermer}
-                fichiers={liste}
-                selection={selection}
-                workers={workers}
-                etatConnexion={etatPret}
-                etatAuthentifie={etatPret}
-                usager={usager}
-              />
-
-            <RenommerModal
-                show={showRenommerModal} 
-                fermer={showRenommerModalFermer}
-                fichiers={liste}
-                selection={selection}
-                workers={workers}
-              />       
 
         </>
     )

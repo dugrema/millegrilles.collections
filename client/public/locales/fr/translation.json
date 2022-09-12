@@ -19,6 +19,8 @@
         "modal-info-version": "Version",
         "modal-info-date": "Date",
         "modal-info-systeme": "Système",
-        "idmg": "Identificateur MilleGrille (IDMG)"
+        "idmg": "Identificateur MilleGrille (IDMG)",
+        "usager-titre": "Usager",
+        "usager-nom": "Nom"
     }
 }

@@ -35,6 +35,7 @@ function configurerEvenements(socket) {
       { eventName: 'syncCollection', callback: (params, cb) => traiter(socket, mqdao.syncCollection, {params, cb}) },
       { eventName: 'syncRecents', callback: (params, cb) => traiter(socket, mqdao.syncRecents, {params, cb}) },
       { eventName: 'syncCorbeille', callback: (params, cb) => traiter(socket, mqdao.syncCorbeille, {params, cb}) },
+      { eventName: 'completerPreviews', callback: (params, cb) => traiter(socket, mqdao.completerPreviews, {params, cb}) },
 
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},

@@ -9,7 +9,7 @@ import Row from 'react-bootstrap/Row'
 
 import { FormatteurTaille, FormatterDate, FormatterDuree, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
 
-import { mapDocumentComplet } from './mapperFichier'
+import { mapDocumentComplet, estMimetypeMedia } from './mapperFichier'
 import { majFichierMetadata, majCollectionMetadata } from './fonctionsFichiers'
 import { ConversionVideo } from './OperationsVideo'
 
@@ -312,7 +312,7 @@ export function InfoModal(props) {
     const { 
         workers, etatConnexion, etatAuthentifie, 
         show, fermer, cuuid, fichiers, selection, support, downloadAction, 
-        usager 
+        usager, erreurCb
     } = props
 
     const { mimetype, docSelectionne, header } = useMemo(()=>{
@@ -362,6 +362,7 @@ export function InfoModal(props) {
                     etatConnexion={etatConnexion}
                     etatAuthentifie={etatAuthentifie}
                     usager={usager}
+                    erreurCb={erreurCb}
                 />
             </Modal.Body>
 
@@ -374,7 +375,7 @@ function InfoVide(props) {
 }
 
 function InfoFichier(props) {
-    const { workers, etatConnexion, etatAuthentifie, support, downloadAction, usager } = props
+    const { workers, etatConnexion, etatAuthentifie, support, downloadAction, usager, erreurCb } = props
 
     const valueItem = props.valueItem || {}
     const thumbnail = valueItem.thumbnail || {}
@@ -383,6 +384,7 @@ function InfoFichier(props) {
 
     const fichier = props.value || {}
     const nom = valueItem.nom
+    const { tuuid } = fichier
     const versionCourante = fichier.version_courante || {}
     const { mimetype, taille } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
@@ -417,7 +419,11 @@ function InfoFichier(props) {
                         <Col xs={12} md={3}>Modification</Col>
                         <Col xs={12} md={9}><FormatterDate value={derniereModification} /></Col>
                     </Row>
-                    <InfoMedia fichier={fichier} />
+                    <Row>
+                        <Col xs={12} md={3}>id systeme</Col>
+                        <Col xs={12} md={9}>{tuuid}</Col>
+                    </Row>
+                    <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
                 </Col>
             </Row>
 
@@ -438,9 +444,17 @@ function InfoMedia(props) {
     const fichier = props.fichier || {}
     const versionCourante = fichier.version_courante
 
-    // console.debug("Info videos fichier %O : %O", fichier)
+    const fuuid = fichier.fuuid_v_courante
+    const connexion = props.workers.connexion
+    const erreurCb = props.erreurCb
+    const genererPreviewHandler = useCallback(()=>{
+        connexion.regenererPreviews([fuuid])
+            .catch(err=>erreurCb(err, 'Erreur generer images'))
+    }, [connexion, fuuid])
 
-    if(!versionCourante) return ''
+    // console.debug("Info videos fichier %O : %O", fichier)
+    const estMedia = estMimetypeMedia(fichier.mimetype)
+    if(!versionCourante || !estMedia) return ''
 
     const infoRows = []
     if(versionCourante.height && versionCourante.width) {
@@ -457,6 +471,9 @@ function InfoMedia(props) {
         infoRows.push({label: 'Duree', value: <FormatterDuree value={versionCourante.duration} />})
     }
 
+    const images = versionCourante.images || {}
+    const imagesGenerees = Object.keys(images).length > 2
+
     return (
         <>
             {infoRows.map(item=>(
@@ -465,6 +482,14 @@ function InfoMedia(props) {
                     <Col xs={12} md={9}>{item.value}</Col>
                 </Row>
             ))}
+            {!imagesGenerees?
+                <Row>
+                    <Col xs={12} md={3}>Thumbnail</Col>
+                    <Col xs={12} md={9}>
+                        <Button onClick={genererPreviewHandler}>Generer</Button>
+                    </Col>
+                </Row>
+            :''}
         </>
     )
 }
@@ -503,13 +528,6 @@ export function RenommerModal(props) {
     const { workers, show, fermer, fichiers, selection } = props
     const { connexion, chiffrage } = workers
 
-    // let tuuidSelectionne = null,
-    //     docSelectionne = null
-    // if(fichiers && selection && selection.length === 1) {
-    //     tuuidSelectionne = selection[0]
-    //     docSelectionne = fichiers.filter(item=>tuuidSelectionne===(item.fileId || item.folderId)).pop()
-    // }
-
     const { docSelectionne } = useMemo(()=>{
         if(!fichiers || !selection) return {}
         const tuuidSelectionne = selection[0]
@@ -518,11 +536,13 @@ export function RenommerModal(props) {
     }, [fichiers, selection])
 
     const [nom, setNom] = useState('')
+    const [mimetype, setMimetype] = useState('')
 
     useEffect(()=>{ 
         if(!docSelectionne) return
         setNom(docSelectionne.nom) 
-    }, [docSelectionne])
+        setMimetype(docSelectionne.mimetype)
+    }, [docSelectionne, setNom, setMimetype])
 
     const appliquer = useCallback( async event => {
         event.preventDefault()
@@ -532,10 +552,10 @@ export function RenommerModal(props) {
         try {
             let reponse = null
             const tuuid = docSelectionne.tuuid,
-                  mimetype = docSelectionne.mimetype
+                  estFichier = docSelectionne.mimetype?true:false
             
-            if(mimetype) {
-                await majFichierMetadata(workers, tuuid, {nom})
+            if(estFichier) {
+                await majFichierMetadata(workers, tuuid, {nom}, {mimetype})
             } else {
                 await majCollectionMetadata(workers, tuuid, {nom})
             }
@@ -545,14 +565,21 @@ export function RenommerModal(props) {
         }
 
         fermer()
-    }, [connexion, chiffrage, docSelectionne, nom, fermer])
+    }, [connexion, chiffrage, docSelectionne, nom, mimetype, fermer])
 
     const changerNom = useCallback(event=>{
         const { value } = event.currentTarget
         setNom(value)
     }, [setNom])
 
+    const changerMimetype = useCallback(event=>{
+        const { value } = event.currentTarget
+        setMimetype(value)
+    }, [setMimetype])
+
     if(!docSelectionne) return ''
+
+    const estFichier = docSelectionne.mimetype?true:false
 
     return (
         <Modal show={show} onHide={fermer}>
@@ -573,12 +600,22 @@ export function RenommerModal(props) {
                             onChange={changerNom}
                         />
                     </Form.Group>
+                    {estFichier?
+                        <Form.Group controlId="formMimetype">
+                            <Form.Label>Mimetype</Form.Label>
+                            <Form.Control 
+                                type="text"
+                                value={mimetype}
+                                onChange={changerMimetype}
+                            />
+                        </Form.Group>
+                    :''}
                 </Form>
 
             </Modal.Body>
 
             <Modal.Footer>
-                <Button onClick={appliquer}>OK</Button>
+                <Button disabled={estFichier&&!mimetype||!nom} onClick={appliquer}>OK</Button>
             </Modal.Footer>
 
         </Modal>

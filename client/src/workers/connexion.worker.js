@@ -222,14 +222,14 @@ function indexerContenu(reset) {
   )
 }
 
-// async function regenererPreviews(uuidFichiers) {
-//   const commande = { uuid: uuidFichiers }
-//   return connexionClient.emitBlocking(
-//     'grosfichiers/regenererPreviews',
-//     commande,
-//     {domaine: 'GrosFichiers', action: 'completerPreviews', attacherCertificat: true}
-//   )
-// }
+async function regenererPreviews(fuuids) {
+  const commande = { fuuids, reset: true }
+  return ConnexionClient.emitBlocking(
+    'completerPreviews',
+    commande,
+    {domaine: 'GrosFichiers', action: 'completerPreviews', attacherCertificat: true}
+  )
+}
 
 // Listeners
 
@@ -287,6 +287,7 @@ expose({
     copierVersCollection, deplacerFichiersCollection,
     rechercheIndex, transcoderVideo, getPermission,
     ajouterFichier, creerTokenStream, supprimerVideo,
+    regenererPreviews,
 
     syncCollection, syncRecents, syncCorbeille,
 

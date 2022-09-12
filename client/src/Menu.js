@@ -9,7 +9,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import { Menu as MenuMillegrilles, DropDownLanguage, ModalInfo } from '@dugrema/millegrilles.reactjs'
 
-import { useInfoConnexion } from './WorkerContext'
+import { useInfoConnexion, useUsager } from './WorkerContext'
 
 const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
 const ETAT_PREPARATION = 1,
@@ -36,6 +36,8 @@ function Menu(props) {
  
   const { t } = useTranslation()
   const infoConnexion = useInfoConnexion()
+  const usager = useUsager()
+  console.debug("UseUsager usager ", usager)
 
   const idmg = infoConnexion.idmg
 
@@ -103,7 +105,8 @@ function Menu(props) {
           show={showModalInfo} 
           fermer={handlerCloseModalInfo} 
           manifest={manifest} 
-          idmg={idmg} />
+          idmg={idmg} 
+          usager={usager} />
     </>
   )
 }

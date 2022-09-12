@@ -70,13 +70,13 @@ export async function uploaderFichiers(workers, cuuid, acceptedFiles, opts) {
     
 }
 
-export async function majFichierMetadata(workers, tuuid, data) {
+export async function majFichierMetadata(workers, tuuid, dataChiffre, data) {
     const { connexion, chiffrage, clesDao } = workers
     const chiffrageUtils = chiffrage.chiffrage
     const fichiers = await connexion.getDocuments([tuuid])
     const fichier = fichiers.fichiers.pop()
     
-    console.debug("majFichierMetadata %O", fichier)
+    console.debug("majFichierMetadata %O dataChiffre %O data %O", fichier, dataChiffre, data)
 
     const version_courante = fichier.version_courante
     const metadataChiffre = version_courante.metadata
@@ -92,14 +92,14 @@ export async function majFichierMetadata(workers, tuuid, data) {
     const metaDechiffree = await chiffrageUtils.dechiffrerChampsChiffres(metadataChiffre, cle)
     console.debug("metadata dechiffre : %O", metaDechiffree)
 
-    const metaMaj = {...metaDechiffree, ...data}
+    const metaMaj = {...metaDechiffree, ...dataChiffre}
     console.debug("Data mise a jour : %O", metaMaj)
 
     // Chiffrer metadata maj
     const champsChiffres = await chiffrageUtils.updateChampsChiffres(metaMaj, cleSecrete)
     console.debug("Metadata rechiffre : %O", champsChiffres)
 
-    const reponse = await connexion.decrireFichier(tuuid, {metadata: champsChiffres})
+    const reponse = await connexion.decrireFichier(tuuid, {metadata: champsChiffres, ...data})
     console.debug("Reponse maj metadata chiffre : %O", reponse)
 }
 

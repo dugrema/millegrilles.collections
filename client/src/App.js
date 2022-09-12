@@ -10,7 +10,7 @@ import ErrorBoundary from './ErrorBoundary'
 import useWorkers, {useEtatConnexion, WorkerProvider, useUsager} from './WorkerContext'
 import storeSetup from './redux/store'
 
-import fichiersActions, { thunks as fichiersThunks } from './redux/fichiersSlice'
+import fichiersActions from './redux/fichiersSlice'
 import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload, annulerUpload } from './redux/uploaderSlice'
 import { setUserId as setUserIdDownload, supprimerDownloadsParEtat, continuerDownload, arreterDownload, setDownloads } from './redux/downloaderSlice'
 
