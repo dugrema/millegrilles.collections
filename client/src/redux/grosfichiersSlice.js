@@ -83,11 +83,11 @@ function pushAction(state, action) {
     let liste = state.liste || []
     if( Array.isArray(payload) ) {
         const ajouts = payload.map(item=>{return {...item, '_mergeVersion': mergeVersion}})
-        console.debug("pushAction ajouter ", ajouts)
+        // console.debug("pushAction ajouter ", ajouts)
         liste = liste.concat(ajouts)
     } else {
         const ajout = {...payload, '_mergeVersion': mergeVersion}
-        console.debug("pushAction ajouter ", ajout)
+        // console.debug("pushAction ajouter ", ajout)
         liste.push(ajout)
     }
 
@@ -425,7 +425,7 @@ export function creerThunks(actions, nomSlice) {
     
         const state = getState()[nomSlice]
         const cuuidPrecedent = state.cuuid
-        console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
+        // console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
     
         if(cuuidPrecedent === cuuid) return  // Rien a faire, meme collection
     
@@ -462,7 +462,7 @@ export function creerThunks(actions, nomSlice) {
         // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
             const { documents, collection } = contenuIdb
-            console.debug("Push documents provenance idb : %O", documents)
+            // console.debug("Push documents provenance idb : %O", documents)
             dispatch(setCollectionInfo(collection))
             dispatch(push({liste: documents}))
     

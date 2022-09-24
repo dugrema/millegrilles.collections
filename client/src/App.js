@@ -268,7 +268,7 @@ function InitialisationDownload(props) {
     // console.debug("Initialiser uploader")
     downloadFichiersDao.chargerDownloads(userId)
         .then(async downloads=>{
-            console.debug("Download trouves : %O", downloads)
+            // console.debug("Download trouves : %O", downloads)
 
             const completExpire = new Date().getTime() - CONST_DOWNLOAD_COMPLET_EXPIRE
 

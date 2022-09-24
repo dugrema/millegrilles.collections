@@ -278,7 +278,7 @@ export function downloaderMiddlewareSetup(workers) {
 }
 
 async function downloaderMiddlewareListener(workers, action, listenerApi) {
-    console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    //console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
     // console.debug("Arret upload info : %O", arretUpload)
 
     await listenerApi.unsubscribe()
@@ -290,7 +290,7 @@ async function downloaderMiddlewareListener(workers, action, listenerApi) {
         const stopAction = listenerApi.condition(arretDownload.match)
         await Promise.race([task.result, stopAction])
 
-        console.debug("downloaderMiddlewareListener Task %O\nstopAction %O", task, stopAction)
+        // console.debug("downloaderMiddlewareListener Task %O\nstopAction %O", task, stopAction)
         task.result.catch(err=>console.error("Erreur task : %O", err))
         // stopAction
         //     .then(()=>task.cancel())
@@ -299,7 +299,7 @@ async function downloaderMiddlewareListener(workers, action, listenerApi) {
         //     })
 
         const resultat = await task.result  // Attendre fin de la tache en cas d'annulation
-        console.debug("downloaderMiddlewareListener Sequence download terminee, resultat %O", resultat)
+        // console.debug("downloaderMiddlewareListener Sequence download terminee, resultat %O", resultat)
     } finally {
         await listenerApi.subscribe()
     }

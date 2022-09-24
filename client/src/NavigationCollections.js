@@ -166,7 +166,7 @@ function AffichagePrincipal(props) {
             colonne: sortKeys.key,
             ordre: sortKeys.ordre,
         }
-        console.debug("tri pour colonnes effectives : ", tri)
+        //console.debug("tri pour colonnes effectives : ", tri)
         return {...colonnes, tri}
     }, [colonnes, sortKeys])
 

@@ -37,7 +37,7 @@ function Menu(props) {
   const { t } = useTranslation()
   const infoConnexion = useInfoConnexion()
   const usager = useUsager()
-  console.debug("UseUsager usager ", usager)
+  // console.debug("UseUsager usager ", usager)
 
   const idmg = infoConnexion.idmg
 

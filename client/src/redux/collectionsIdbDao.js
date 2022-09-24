@@ -59,6 +59,7 @@ export async function updateDocument(doc, opts) {
         const val = opts[flag]
         if(val !== undefined) fichierDoc[flag] = val
     })
+    if(doc.favoris || fichierDoc.favoris) fichierDoc.favorisIdx = 1
 
     await store.put(fichierDoc)
 }
@@ -81,22 +82,35 @@ export async function getParTuuids(tuuids) {
 // cuuid falsy donne favoris
 export async function getParCollection(cuuid, userId) {
     const db = await ouvrirDB()
-    const store = db.transaction(STORE_FICHIERS, 'readonly').store
 
-    let curseur = await store.openCursor()
     let collection = null
+    if(cuuid) {
+        const store = db.transaction(STORE_FICHIERS, 'readonly').store
+        collection = await store.get(cuuid)
+    }
+
+    let curseur = null
+    const store = db.transaction(STORE_FICHIERS, 'readonly').store        
+    //curseur = await store.openCursor()
+    if(cuuid) {
+        const index = store.index('cuuids')
+        curseur = await index.openCursor(cuuid)
+    } else {
+        // Favoris
+        const index = store.index('userFavoris')
+        curseur = await index.openCursor([userId, 1])
+    }
+
     const docs = []
     while(curseur) {
         const value = curseur.value
-        // console.debug("Message %O = %O", key, value)
-        const { tuuid, cuuids, favoris, user_id, supprime } = value
+        // console.debug("getParCollection Row %O = %O", curseur, value)
+        const { cuuids, favoris, user_id, supprime } = value
         if(supprime === true) {
             // Supprime
         } else if(!cuuid) {
             // Favoris
             if(user_id === userId && favoris === true) docs.push(value)
-        } else if(tuuid === cuuid) {
-            collection = value
         } else if(cuuids && cuuids.includes(cuuid)) {
             docs.push(value)
         }
