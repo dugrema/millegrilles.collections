@@ -44,6 +44,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         const certificatPem = fullchain.join('')
 
         // Initialiser le CertificateStore
+        await connexion.initialiserCertificateStore(caPem)
         await chiffrage.initialiserCertificateStore(caPem, {isPEM: true, DEBUG: false})
 
         // await x509.init(caPem)

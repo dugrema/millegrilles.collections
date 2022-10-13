@@ -323,11 +323,8 @@ export function creerThunks(actions, nomSlice) {
 
     // Action creators are generated for each case reducer function
     const { 
-        setUserId, setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
-        breadcrumbPush, breadcrumbSlice, setSortKeys, setSource, setIntervalle,
-        pushFichiersChiffres, clearFichiersChiffres, selectionTuuids,
-        setFichiersChiffres,
-        // supprimer, 
+        setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
+        setSortKeys, setSource, setIntervalle, pushFichiersChiffres, 
     } = actions
 
     // Async thunks
@@ -343,7 +340,8 @@ export function creerThunks(actions, nomSlice) {
         const { collectionsDao } = workers
     
         // Detecter les cles requises
-        const {clesHachage_bytes, fichiersChiffres} = identifierClesHachages(fichiers)
+        const {fichiersChiffres} = identifierClesHachages(fichiers)
+
         // console.debug('traiterDechiffrerFichiers Cles a extraire : %O de fichiers %O', clesHachage_bytes, fichiersChiffres)
         if(fichiersChiffres.length > 0) dispatch(pushFichiersChiffres(fichiersChiffres))
     
@@ -804,12 +802,12 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
 
             // Extraire toutes les cles a charger
-            const {clesHachage_bytes} = identifierClesHachages(batchFichiers)
+            const {liste_hachage_bytes} = identifierClesHachages(batchFichiers)
             let cles = null
             try {
-                cles = await clesDao.getCles(clesHachage_bytes)
+                cles = await clesDao.getCles(liste_hachage_bytes)
             } catch(err) {
-                console.error("Erreur chargement cles %O : %O", clesHachage_bytes, err)
+                console.error("Erreur chargement cles %O : %O", liste_hachage_bytes, err)
                 continue  // Prochaine batch
             }
 
@@ -935,7 +933,7 @@ function genererTriListe(sortKeys) {
 function identifierClesHachages(liste) {
     const fichiersChiffres = []
 
-    const clesHachage_bytes = Object.keys( liste.reduce( (acc, item) => {
+    const liste_hachage_bytes = Object.keys( liste.reduce( (acc, item) => {
 
         let chiffre = false
 
@@ -947,15 +945,16 @@ function identifierClesHachages(liste) {
 
         if(metadata) {
             // Champs proteges
-            if(metadata.hachage_bytes) acc[metadata.hachage_bytes] = true
-            else if(metadata.ref_hachage_bytes) acc[metadata.ref_hachage_bytes] = true
+            //if(metadata.hachage_bytes) acc[metadata.hachage_bytes] = true
+            //else 
+            if(metadata.ref_hachage_bytes) acc[metadata.ref_hachage_bytes] = true
             else acc[fuuid_v_courante] = true  // Default, cle du fichier
 
             chiffre = true
         }
         if(images) Object.values(images).forEach(image=>{
             if(image.data_chiffre) {
-                acc[fuuid_v_courante] = true  // Le ref_hachage_bytes est le fuuid
+                //acc[fuuid_v_courante] = true  // Le ref_hachage_bytes est le fuuid
                 chiffre = true
             }
         })
@@ -967,5 +966,5 @@ function identifierClesHachages(liste) {
 
     }, {}))
 
-    return {clesHachage_bytes, fichiersChiffres}
+    return {liste_hachage_bytes, fichiersChiffres}
 }
