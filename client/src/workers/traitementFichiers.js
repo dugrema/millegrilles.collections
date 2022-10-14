@@ -216,9 +216,12 @@ async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFi
     const userId = usager.extensions.userId
     // console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
 
-    const certificatMaitredescles = await clesDao.getCertificatsMaitredescles()
-    // console.debug("Set certificat maitre des cles ", certificatMaitredescles)
-    await transfertFichiers.up_setCertificat(certificatMaitredescles.certificat)
+    const certificatsMaitredescles = await clesDao.getCertificatsMaitredescles()
+    // console.debug("Set certificat maitre des cles ", certificatsMaitredescles)
+    if(!certificatsMaitredescles || certificatsMaitredescles.length === 0) {
+        throw new Error("Aucun certificat de chiffrage n'est disponible")
+    }
+    await transfertFichiers.up_setCertificats(certificatsMaitredescles)
 
     const ajouterPartProxy = Comlink.proxy((correlation, compteurPosition, chunk) => ajouterPart(workers, correlation, compteurPosition, chunk))
     const updateFichierProxy = Comlink.proxy((doc, opts) => updateFichier(workers, dispatch, doc, opts))

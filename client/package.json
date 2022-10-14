@@ -1,6 +1,6 @@
 {
   "name": "millegriles.collection-client",
-  "version": "2022.6.0",
+  "version": "2022.7.0",
   "private": true,
   "proxy": "https://localhost:3037",
   "homepage": "/collections",
@@ -22,7 +22,7 @@
     "stream-browserify": "^3.0.0"
   },
   "peerDependencies": {
-    "@dugrema/millegrilles.reactjs": "git+ssh://git.maceroc.com/git/millegrilles.reactjs#2022.6",
+    "@dugrema/millegrilles.reactjs": "git+ssh://git.maceroc.com/git/millegrilles.reactjs#2022.7",
     "@reduxjs/toolkit": "^1.8",
     "bootstrap": "^5.1",
     "react": "^18",
