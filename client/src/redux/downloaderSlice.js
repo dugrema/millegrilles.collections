@@ -363,7 +363,7 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
         const now = new Date().getTime()
         if(now - frequenceUpdate > dernierUpdate) {
             dernierUpdate = now
-            marquerDownloadEtat(workers, dispatch, fuuid, {tailleCompletee})
+            marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS, tailleCompletee})
                 .catch(err=>console.warn("progressCb Erreur maj download ", err))
         }
     })
