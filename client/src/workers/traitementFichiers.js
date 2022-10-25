@@ -11,7 +11,8 @@ const UPLOAD_BATCH_SIZE = 5 * 1024 * 1024,
       ETAT_PREPARATION = 1,
       ETAT_PRET = 2
 
-const CACHE_TEMP_NAME = 'fichiersDechiffresTmp'
+const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
+      CONST_TIMEOUT_DOWNLOAD = 120_000
 
 function setup(workers) {
     return {
@@ -88,7 +89,7 @@ async function getFichierChiffre(workers, fuuid, opts) {
                 method: 'GET',
                 url: `/collections/fichiers/${fuuid}`,
                 responseType: 'arraybuffer',
-                timeout: 20000,
+                timeout: CONST_TIMEOUT_DOWNLOAD,
                 progress,
                 // signal,
             })
