@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useMemo, useEffect } from '
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
 import { init as initCollectionsIdb } from './redux/collectionsIdbDao'
 
+const CONST_INTERVAL_VERIF_SESSION = 600_000
+
 const Context = createContext()
 
 const { workerInstances, workers: _workers, ready } = setupWorkers()
@@ -76,6 +78,19 @@ export function WorkerProvider(props) {
     }, [setWorkersPrets])
 
     useEffect(()=>{
+        if(etatConnexion) {
+            // Verifier etat connexion
+            let interval = null
+            verifierSession()
+                .then(() => {interval = setInterval(verifierSession, CONST_INTERVAL_VERIF_SESSION)})
+                .catch(redirigerPortail)
+            return () => {
+                if(interval) clearInterval(interval)
+            }
+        }
+    }, [etatConnexion])
+
+    useEffect(()=>{
         if(!workersPrets) return
         // setWorkersTraitementFichiers(workers)
         if(_workers.connexion) {
@@ -121,4 +136,21 @@ export function WorkerContext(props) {
 async function connecter(workers, setUsager, setEtatConnexion, setFormatteurPret) {
     const { connecter: connecterWorker } = await import('./workers/connecter')
     return connecterWorker(workers, setUsager, setEtatConnexion, setFormatteurPret)
+}
+
+async function verifierSession() {
+    try {
+        const importAxios = await import('axios')
+        const reponse = await importAxios.default.get('/millegrilles/authentification/verifier')
+        console.debug("Reponse verifier session sur connexion : ", reponse)
+    } catch(err) {
+        redirigerPortail(err)
+    }
+}
+
+function redirigerPortail(err) {
+    console.error("Erreur verification session : ", err)
+    const url = new URL(window.location.href)
+    url.pathname = '/millegrilles'
+    window.location = url
 }
