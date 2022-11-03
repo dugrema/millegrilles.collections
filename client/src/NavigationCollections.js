@@ -33,9 +33,9 @@ function NavigationCollections(props) {
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
-    const liste = useSelector(state => state.fichiers.liste )
-    const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
-    const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
+    // const liste = useSelector(state => state.fichiers.liste )
+    // const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
+    // const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
 
     const [modeView, setModeView] = useState('')
 
@@ -82,47 +82,18 @@ function NavigationCollections(props) {
         naviguerCollection('')
     }, [naviguerCollection, etatPret, cuuidCourant, userId])
 
-    let nombreFichiers = ''
-    if(liste) {
-        if(liste.length > 1) {
-            nombreFichiers = (
-                <div>
-                    <div>
-                        {dechiffrageInitialComplete?
-                            '':
-                            <i className="fa fa-spinner fa-spin" />
-                        }
-                        {' '}{liste.length} fichiers
-                    </div>
-                    <div><FormatteurTaille value={bytesTotalDossier} /></div>
-                </div>
-            )
-        }
-    }
-
     return (
         <>
             <h1>Collections</h1>
 
             <div>
-                <Row className='fichiers-header-buttonbar'>
-                    <Col xs={12} lg={5}>
-                        <SectionBreadcrumb naviguerCollection={naviguerCollection} />
-                    </Col>
-
-                    <Col xs={12} sm={3} md={4} lg={2}>
-                        {nombreFichiers}
-                    </Col>
-
-                    <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
-                        <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                        <BoutonsAction 
-                            cuuid={cuuidCourant}
-                            setShowCreerRepertoire={setShowCreerRepertoire}
-                            setPreparationUploadEnCours={setPreparationUploadEnCours}
-                        />
-                    </Col>
-                </Row>
+                <BarreInformation 
+                    naviguerCollection={naviguerCollection}
+                    modeView={modeView}
+                    setModeView={setModeView} 
+                    setShowCreerRepertoire={setShowCreerRepertoire} 
+                    setPreparationUploadEnCours={setPreparationUploadEnCours} 
+                    afficherVideo={afficherVideo} />
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
@@ -156,6 +127,62 @@ function NavigationCollections(props) {
 }
 
 export default NavigationCollections
+
+function BarreInformation(props) {
+
+    const { 
+        afficherVideo, naviguerCollection, modeView, setModeView, 
+        setShowCreerRepertoire, setPreparationUploadEnCours,
+    } = props
+
+    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
+    const liste = useSelector(state => state.fichiers.liste )
+    const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
+    const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
+
+    let nombreFichiers = ''
+    if(liste) {
+        if(liste.length > 1) {
+            nombreFichiers = (
+                <div>
+                    <div>
+                        {dechiffrageInitialComplete?
+                            '':
+                            <i className="fa fa-spinner fa-spin" />
+                        }
+                        {' '}{liste.length} fichiers
+                    </div>
+                    <div><FormatteurTaille value={bytesTotalDossier} /></div>
+                </div>
+            )
+        }
+    }
+
+    return (
+        <Row className='fichiers-header-buttonbar'>
+            <Col xs={12} lg={5}>
+                <SectionBreadcrumb naviguerCollection={naviguerCollection} />
+            </Col>
+
+            <Col xs={12} sm={3} md={4} lg={2}>
+                {afficherVideo?'':nombreFichiers}
+            </Col>
+
+            <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
+                {afficherVideo?'':
+                    <div>
+                        <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                        <BoutonsAction 
+                            cuuid={cuuidCourant}
+                            setShowCreerRepertoire={setShowCreerRepertoire}
+                            setPreparationUploadEnCours={setPreparationUploadEnCours}
+                        />
+                    </div>
+                }
+            </Col>
+        </Row>            
+    )
+}
 
 function AffichagePrincipal(props) {
 
