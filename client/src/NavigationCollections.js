@@ -45,6 +45,7 @@ function NavigationCollections(props) {
     const [ showPreview, setShowPreview ] = useState(false)
     const [ afficherVideo, setAfficherVideo ] = useState('')
     const [ preparationUploadEnCours, setPreparationUploadEnCours ] = useState(false)
+    const [ showInfoModal, setShowInfoModal ] = useState(false)
 
     // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
@@ -76,6 +77,8 @@ function NavigationCollections(props) {
         }
     }, [dispatch, workers, erreurCb, setAfficherVideo])
 
+    const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
+
     // Declencher chargement initial des favoris
     useEffect(()=>{
         if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
@@ -104,6 +107,7 @@ function NavigationCollections(props) {
                         afficherVideo={afficherVideo}
                         setAfficherVideo={setAfficherVideo}
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
+                        showInfoModalOuvrir={showInfoModalOuvrir}
                     />
                 </Suspense>
             </div>
@@ -120,6 +124,8 @@ function NavigationCollections(props) {
                 preparationUploadEnCours={preparationUploadEnCours}
                 contextuel={contextuel}
                 setContextuel={setContextuel} 
+                showInfoModal={showInfoModal}
+                setShowInfoModal={setShowInfoModal}
                 erreurCb={erreurCb} />
         </>
     )
@@ -380,6 +386,7 @@ function Modals(props) {
         showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, preparationUploadEnCours,
+        showInfoModal, setShowInfoModal,
         erreurCb,
     } = props
     
@@ -392,7 +399,7 @@ function Modals(props) {
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
-    const [ showInfoModal, setShowInfoModal ] = useState(false)
+    // const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
 
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])

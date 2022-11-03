@@ -273,7 +273,7 @@ function FormConversionVideo(props) {
     }, [setCodecVideo])
 
     const versionCourante = (fichier?fichier.version_courante:{}) || {}
-    console.debug("Version courante : %O", versionCourante)
+    // console.debug("Version courante : %O", versionCourante)
     const dimensionsFichier = [versionCourante.width, versionCourante.height].filter(item=>!isNaN(item))
     const resolutionOriginal = Math.min(...dimensionsFichier)
     const maxValueFilterResolution = useCallback(option=>option.value <= resolutionOriginal, [resolutionOriginal])
@@ -339,7 +339,7 @@ function SelectGroup(props) {
 
   const { formLabel, name, onChange, value, options, maxValueFilter, disabled } = props
 
-  console.debug("SelectGroup options: %O, maxValue: %O", options, maxValueFilter)
+  // console.debug("SelectGroup options: %O, maxValue: %O", options, maxValueFilter)
 
   let optionsFiltrees = options
   if(maxValueFilter) {
@@ -368,7 +368,7 @@ function SelectGroup(props) {
 
 async function convertirVideo(workers, fichier, params, erreurCb, opts) {
   opts = opts || {}
-  console.debug("Convertir video %O (opts: %O)", params, opts)
+  // console.debug("Convertir video %O (opts: %O)", params, opts)
   const { connexion } = workers
 
   const usager = opts.usager || {},
@@ -404,7 +404,7 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
     commande.permission_hachage_bytes = [fichier.fuuid_v_courante]
   }
 
-  console.debug("Commande transcodage : %O", commande)
+  // console.debug("Commande transcodage : %O", commande)
   connexion.transcoderVideo(commande)
     .then(reponse=>{
       console.debug("convertirVideo Reponse commande transcodage : %O", reponse)
@@ -420,7 +420,7 @@ function Videos(props) {
   const videos = versionCourante.video || {}
 
   const supprimerVideo = useCallback(fuuidVideo=>{
-    console.debug("Supprimer video : %s", fuuidVideo)
+    // console.debug("Supprimer video : %s", fuuidVideo)
     workers.connexion.supprimerVideo(fuuidVideo)
   }, [workers])
 
@@ -538,7 +538,7 @@ function AfficherLigneFormatVideo(props) {
   const { fichier, video, /*support,*/ downloadAction, supprimerVideo } = props
 
   const download = useCallback(event => {
-    console.debug("Downloader fichier %O", fichier)
+    // console.debug("Downloader fichier %O", fichier)
 
     const extension = video.mimetype.split('/').pop().toLowerCase()
     const resolutionListe = [video.height, video.width].filter(item=>!isNaN(item))
@@ -558,7 +558,7 @@ function AfficherLigneFormatVideo(props) {
     }
     // const fuuid = video.fuuid_video
 
-    console.debug("Downloader %O", infoDownload)
+    // console.debug("Downloader %O", infoDownload)
     downloadAction(infoDownload)
 
   }, [fichier, video, downloadAction])
