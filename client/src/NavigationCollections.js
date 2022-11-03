@@ -34,6 +34,8 @@ function NavigationCollections(props) {
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
     const liste = useSelector(state => state.fichiers.liste )
+    const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
+    const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
 
     const [modeView, setModeView] = useState('')
 
@@ -83,7 +85,18 @@ function NavigationCollections(props) {
     let nombreFichiers = ''
     if(liste) {
         if(liste.length > 1) {
-            nombreFichiers = <span>{liste.length} fichiers</span>
+            nombreFichiers = (
+                <div>
+                    <div>
+                        {dechiffrageInitialComplete?
+                            '':
+                            <i className="fa fa-spinner fa-spin" />
+                        }
+                        {' '}{liste.length} fichiers
+                    </div>
+                    <div><FormatteurTaille value={bytesTotalDossier} /></div>
+                </div>
+            )
         }
     }
 
@@ -157,9 +170,17 @@ function AffichagePrincipal(props) {
 
     const workers = useWorkers()
     const dispatch = useDispatch()
+    const tailleAffichee = useSelector(state => state.fichiers.maxNombreAffiches)
     const liste = useSelector(state => state.fichiers.liste)
     const sortKeys = useSelector(state => state.fichiers.sortKeys)
+    const listeComplete = tailleAffichee?false:true
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
+
+    const listeAffichee = useMemo(()=>{
+        if(!liste) return ''                // Liste vide
+        if(!tailleAffichee) return liste    // Liste complete
+        return liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
+    }, [liste, tailleAffichee])
 
     const colonnesEffectives = useMemo(()=>{
         const tri = {
@@ -207,6 +228,11 @@ function AffichagePrincipal(props) {
         dispatch(fichiersActions.setSortKeys({key, ordre}))
     }, [dispatch, sortKeys, liste])
 
+    const suivantCb = useCallback(params => {
+        console.debug("SuivantCb ", params)
+        dispatch(fichiersActions.incrementerNombreAffiches())
+    }, [dispatch])
+
     if(afficherVideo) {
         return (
             <AfficherVideoView
@@ -222,11 +248,12 @@ function AffichagePrincipal(props) {
         <ListeFichiers 
             modeView={modeView}
             colonnes={colonnesEffectives}
-            rows={liste} 
+            rows={listeAffichee} 
             onDoubleClick={onDoubleClick}
             onContextMenu={onContextMenuClick}
             onSelection={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
+            suivantCb={listeComplete?'':suivantCb}
         />
     )
 }
@@ -824,8 +851,9 @@ function InformationListe(_props) {
 
     const liste = useSelector(state => state.fichiers.liste)
     const cuuid = useSelector(state => state.fichiers.cuuid)
+    const chargementTermine = useSelector(state => state.fichiers.dechiffrageInitialComplete)?true:false
 
-    if (!liste) return <p>Chargement en cours...</p>
+    if (!liste && !chargementTermine) return <p>Chargement en cours...</p>
 
     if(!cuuid) {
         const tailleListe = (liste && liste.length) || 0
@@ -845,7 +873,11 @@ function InformationListe(_props) {
     } else {
         const tailleListe = (liste && liste.length) || 0
         if(tailleListe === 0) {
-            return <p>Aucuns fichiers.</p>
+            if(chargementTermine) {
+                return <p>Aucuns fichiers.</p>
+            } else {
+                return <p>Chargement en cours...</p>
+            }
         }
     }
 

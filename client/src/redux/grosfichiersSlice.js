@@ -6,7 +6,9 @@ const SOURCE_COLLECTION = 'collection',
       SOURCE_CORBEILLE = 'corbeille',
       // SOURCE_INDEX = 'index'
       CONST_SYNC_BATCH_SIZE = 250,
-      SAFEGUARD_BATCH_MAX = 1000
+      SAFEGUARD_BATCH_MAX = 1000,
+      TAILLE_AFFICHEE_INIT = 10,
+      INCREMENT_TAILLE_AFFICHEE = 10
 
 const initialState = {
     idbInitialise: false,       // Flag IDB initialise
@@ -21,6 +23,9 @@ const initialState = {
     listeDechiffrage: [],       // Liste de fichiers a dechiffrer
     selection: null,            // Fichiers/collections selectionnees
     mergeVersion: 0,            // Utilise pour flagger les changements
+    maxNombreAffiches: TAILLE_AFFICHEE_INIT,
+    dechiffrageInitialComplete: false,
+    bytesTotalDossier: 0,       // Nombre de bytes dans le dossier
 }
 
 // Actions
@@ -95,6 +100,10 @@ function pushAction(state, action) {
     liste.sort(genererTriListe(state.sortKeys))
     // console.debug("pushAction liste triee : %O", liste)
 
+    state.bytesTotalDossier = liste
+        .filter(item=>item.version_courante && item.version_courante.taille)
+        .reduce((acc, item)=>acc+item.version_courante.taille, 0)
+
     state.liste = liste
 }
 
@@ -102,6 +111,8 @@ function clearAction(state) {
     state.liste = null
     // state.cuuid = null
     state.collection = null
+    state.maxNombreAffiches = TAILLE_AFFICHEE_INIT
+    state.dechiffrageInitialComplete = false
 }
 
 // function supprimerAction(state, action) {
@@ -269,6 +280,11 @@ function mergeTuuidDataAction(state, action) {
 
     // Trier
     state.liste.sort(genererTriListe(state.sortKeys))
+
+    state.bytesTotalDossier = state.liste
+        .filter(item=>item.version_courante && item.version_courante.taille)
+        .reduce((acc, item)=>acc+item.version_courante.taille, 0)
+
 }
 
 // Ajouter des fichiers a la liste de fichiers a dechiffrer
@@ -288,6 +304,31 @@ function clearFichiersChiffresAction(state) {
 
 function selectionTuuidsAction(state, action) {
     state.selection = action.payload
+}
+
+function incrementerNombreAffichesAction(state, action) {
+    if(action.payload === true) {
+        // Desactiver la limite
+        state.maxNombreAffiches = null
+    } else {
+        state.maxNombreAffiches = state.maxNombreAffiches + INCREMENT_TAILLE_AFFICHEE
+        if(state.dechiffrageInitialComplete === true) {
+            // Verifier taille totale des fichiers
+            const nombreFichiers = state.liste.length
+            if(state.maxNombreAffiches >= nombreFichiers) {
+                state.maxNombreAffiches = null
+            }
+        }
+        console.debug("Nombre affiches : " + state.maxNombreAffiches?state.maxNombreAffiches:'tous')
+    }
+}
+
+function setDechiffrageCompleteAction(state, action) {
+    state.dechiffrageInitialComplete = true
+    console.debug("Dechiffrage complete")
+    if(state.maxNombreAffiches >= state.liste.length) {
+        state.maxNombreAffiches = null
+    }
 }
 
 // Slice collection
@@ -314,6 +355,8 @@ export function creerSlice(name) {
             clearFichiersChiffres: clearFichiersChiffresAction,
             selectionTuuids: selectionTuuidsAction,
             setFichiersChiffres: setFichiersChiffresAction,
+            incrementerNombreAffiches: incrementerNombreAffichesAction,
+            setDechiffrageComplete: setDechiffrageCompleteAction,
         }
     })
 
@@ -324,7 +367,7 @@ export function creerThunks(actions, nomSlice) {
     // Action creators are generated for each case reducer function
     const { 
         setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
-        setSortKeys, setSource, setIntervalle, pushFichiersChiffres, 
+        setSortKeys, setSource, setIntervalle, pushFichiersChiffres, setDechiffrageComplete,
     } = actions
 
     // Async thunks
@@ -497,6 +540,8 @@ export function creerThunks(actions, nomSlice) {
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             dispatch(chargerTuuids(workers, listeTuuidsDirty))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+        } else {
+            dispatch(setDechiffrageComplete())
         }
     
         return resultat
@@ -513,6 +558,8 @@ export function creerThunks(actions, nomSlice) {
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             dispatch(chargerTuuids(workers, listeTuuidsDirty))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+        } else {
+            dispatch(setDechiffrageComplete())
         }
     
         return resultat
@@ -529,6 +576,8 @@ export function creerThunks(actions, nomSlice) {
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             dispatch(chargerTuuids(workers, listeTuuidsDirty))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+        } else {
+            dispatch(setDechiffrageComplete())
         }
     
         return resultat
@@ -872,6 +921,8 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             // Continuer tant qu'il reste des fichiers chiffres
             fichiersChiffres = [...getState().listeDechiffrage]
         }
+
+        listenerApi.dispatch(actions.setDechiffrageComplete())
 
         // console.debug("dechiffrageMiddlewareListener Sequence dechiffrage terminee")
     } finally {
