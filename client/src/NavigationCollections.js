@@ -77,7 +77,24 @@ function NavigationCollections(props) {
         }
     }, [dispatch, workers, erreurCb, setAfficherVideo])
 
+    const signalAnnuler = useMemo(()=>{
+        let valeur = false
+        return {
+            setValeur: v => { valeur = v },
+            signal: comlinkProxy(() => valeur)
+        }
+    }, [])
+
     const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
+    const annulerPreparationUpload = useCallback(()=>{
+        console.debug("Annuler preparation upload")
+        signalAnnuler.setValeur(true)
+    }, [signalAnnuler])
+
+    // Reset signal annuler
+    useEffect(()=>{
+        if(!preparationUploadEnCours) signalAnnuler.setValeur(false)
+    }, [preparationUploadEnCours, signalAnnuler])
 
     // Declencher chargement initial des favoris
     useEffect(()=>{
@@ -96,7 +113,9 @@ function NavigationCollections(props) {
                     setModeView={setModeView} 
                     setShowCreerRepertoire={setShowCreerRepertoire} 
                     setPreparationUploadEnCours={setPreparationUploadEnCours} 
-                    afficherVideo={afficherVideo} />
+                    afficherVideo={afficherVideo} 
+                    signalAnnuler={signalAnnuler.signal} 
+                    />
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
@@ -126,6 +145,7 @@ function NavigationCollections(props) {
                 setContextuel={setContextuel} 
                 showInfoModal={showInfoModal}
                 setShowInfoModal={setShowInfoModal}
+                annulerPreparationCb={annulerPreparationUpload}
                 erreurCb={erreurCb} />
         </>
     )
@@ -139,6 +159,7 @@ function BarreInformation(props) {
     const { 
         afficherVideo, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
+        signalAnnuler,
     } = props
 
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -182,6 +203,7 @@ function BarreInformation(props) {
                             cuuid={cuuidCourant}
                             setShowCreerRepertoire={setShowCreerRepertoire}
                             setPreparationUploadEnCours={setPreparationUploadEnCours}
+                            signalAnnuler={signalAnnuler}
                         />
                     </div>
                 }
@@ -386,7 +408,7 @@ function Modals(props) {
         showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, preparationUploadEnCours,
-        showInfoModal, setShowInfoModal,
+        showInfoModal, setShowInfoModal, annulerPreparationCb,
         erreurCb,
     } = props
     
@@ -500,6 +522,7 @@ function Modals(props) {
             <PreparationModal 
                 show={typeof(preparationUploadEnCours)==='number'?true:false} 
                 progres={preparationUploadEnCours} 
+                annulerCb={annulerPreparationCb}
               />
         </>
     )
@@ -658,11 +681,11 @@ function BoutonsFormat(props) {
 
 function BoutonsAction(props) {
 
-    const { setShowCreerRepertoire, setPreparationUploadEnCours } = props
+    const { setShowCreerRepertoire, setPreparationUploadEnCours, signalAnnuler } = props
 
     return (
         <>
-            <BoutonUpload setPreparationUploadEnCours={setPreparationUploadEnCours}>
+            <BoutonUpload setPreparationUploadEnCours={setPreparationUploadEnCours} signalAnnuler={signalAnnuler}>
                 <i className="fa fa-plus"/> Fichier
             </BoutonUpload>
             &nbsp;
@@ -679,7 +702,7 @@ function BoutonsAction(props) {
 
 function BoutonUpload(props) {
 
-    const { setPreparationUploadEnCours } = props
+    const { setPreparationUploadEnCours, signalAnnuler, resetAnnuler } = props
 
     const refUpload = useRef()
     const workers = useWorkers()
@@ -697,11 +720,11 @@ function BoutonUpload(props) {
     }, [setPreparationUploadEnCours])
 
     const upload = useCallback( acceptedFiles => {
-        // console.debug("Files : %O pour usager: %O", acceptedFiles, usager)
+        console.debug("Files : %O pour usager: %O, signalAnnuler: %O", acceptedFiles, usager, signalAnnuler)
         
         handlerPreparationUploadEnCours(0)  // Debut preparation
 
-        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {setProgres: handlerPreparationUploadEnCours})
+        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {signalAnnuler, setProgres: handlerPreparationUploadEnCours})
             .then(uploads=>{
                 // const correlationIds = uploads.map(item=>item.correlation)
                 // return dispatch(demarrerUploads(workers, correlationIds))
@@ -842,7 +865,7 @@ function MenuContextuel(props) {
 }
 
 function PreparationModal(props) {
-    const { show, progres } = props
+    const { show, progres, annulerCb } = props
 
     return (
         <Modal show={show}>
@@ -850,6 +873,9 @@ function PreparationModal(props) {
             <Modal.Body>
                 <PreparationModalProgress progres={progres} />
             </Modal.Body>
+            <Modal.Footer>
+                <Button onClick={annulerCb}>Annuler</Button>
+            </Modal.Footer>
         </Modal>
     )
 }

@@ -212,7 +212,7 @@ async function clean(urlBlobPromise) {
 
 async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts) {
     opts = opts || {}
-    const { setProgres } = opts
+    const { setProgres, signalAnnuler } = opts
     const { clesDao, transfertFichiers } = workers
     const userId = usager.extensions.userId
     // console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
@@ -231,7 +231,8 @@ async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFi
         acceptedFiles, userId, cuuid, 
         ajouterPartProxy, 
         updateFichierProxy,
-        setProgresProxy
+        setProgresProxy,
+        signalAnnuler
     )
     return resultat
 }
