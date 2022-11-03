@@ -93,7 +93,7 @@ function NavigationCollections(props) {
 
     // Reset signal annuler
     useEffect(()=>{
-        if(!preparationUploadEnCours) signalAnnuler.setValeur(false)
+        if(preparationUploadEnCours===false) signalAnnuler.setValeur(false)
     }, [preparationUploadEnCours, signalAnnuler])
 
     // Declencher chargement initial des favoris
@@ -889,7 +889,7 @@ function PreparationModalProgress(opts) {
         <div>
             <Row>
                 <Col>
-                    <p>Chiffrage <i className='fa fa-key'/> en cours ...</p>
+                    <p><i className='fa fa-key'/> Chiffrage en cours ...</p>
                 </Col>
                 <Col>
                     <ProgressBar now={progres} label={progres + ' %'} />
@@ -899,7 +899,7 @@ function PreparationModalProgress(opts) {
                 <Col>
                     <p>
                         Noter que l'upload vers le serveur demarre des qu'un fichier est 
-                        completement chiffre meme si plusieurs fichiers sont en attente.
+                        completement chiffre meme si plusieurs fichiers sont en traitement.
                     </p>
                 </Col>
             </Row>
