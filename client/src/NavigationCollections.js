@@ -219,17 +219,17 @@ function AffichagePrincipal(props) {
     }, [naviguerCollection, showPreviewAction, liste])
 
     const enteteOnClickCb = useCallback(colonne=>{
-        console.debug("Entete onclick ", colonne)
+        // console.debug("Entete onclick ", colonne)
         // Verifier si on toggle l'ordre
         const key = colonne
         let ordre = 1
         if(key === sortKeys.key) ordre = sortKeys.ordre * -1
-        console.debug("Trier liste : ", liste)
+        // console.debug("Trier liste : ", liste)
         dispatch(fichiersActions.setSortKeys({key, ordre}))
     }, [dispatch, sortKeys, liste])
 
     const suivantCb = useCallback(params => {
-        console.debug("SuivantCb ", params)
+        // console.debug("SuivantCb ", params)
         dispatch(fichiersActions.incrementerNombreAffiches())
     }, [dispatch])
 

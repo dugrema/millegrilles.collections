@@ -7,8 +7,8 @@ const SOURCE_COLLECTION = 'collection',
       // SOURCE_INDEX = 'index'
       CONST_SYNC_BATCH_SIZE = 250,
       SAFEGUARD_BATCH_MAX = 1000,
-      TAILLE_AFFICHEE_INIT = 10,
-      INCREMENT_TAILLE_AFFICHEE = 10
+      TAILLE_AFFICHEE_INIT = 100,
+      INCREMENT_TAILLE_AFFICHEE = 100
 
 const initialState = {
     idbInitialise: false,       // Flag IDB initialise
@@ -319,7 +319,7 @@ function incrementerNombreAffichesAction(state, action) {
                 state.maxNombreAffiches = null
             }
         }
-        console.debug("Nombre affiches : " + state.maxNombreAffiches?state.maxNombreAffiches:'tous')
+        // console.debug("Nombre affiches : " + state.maxNombreAffiches?state.maxNombreAffiches:'tous')
     }
 }
 
