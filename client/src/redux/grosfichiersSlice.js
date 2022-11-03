@@ -325,7 +325,7 @@ function incrementerNombreAffichesAction(state, action) {
 
 function setDechiffrageCompleteAction(state, action) {
     state.dechiffrageInitialComplete = true
-    console.debug("Dechiffrage complete")
+    // console.debug("Dechiffrage complete")
     if(state.maxNombreAffiches >= state.liste.length) {
         state.maxNombreAffiches = null
     }
@@ -572,7 +572,7 @@ export function creerThunks(actions, nomSlice) {
         const { liste } = resultat
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
     
-        console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             dispatch(chargerTuuids(workers, listeTuuidsDirty))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
@@ -640,7 +640,7 @@ export function creerThunks(actions, nomSlice) {
         let compteur = 0
         for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
             let resultatSync = await syncPlusrecent(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
-            console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+            // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
             if( ! resultatSync || ! resultatSync.liste ) break
             compteur += resultatSync.liste.length
             if( resultatSync.complete ) break
@@ -848,7 +848,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const batchFichiers = fichiersChiffres.slice(0, 20)  // Batch de 20 fichiers a la fois
             fichiersChiffres = fichiersChiffres.slice(20)  // Clip 
             listenerApi.dispatch(actions.setFichiersChiffres(fichiersChiffres))
-            console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
+            // console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
 
             // Extraire toutes les cles a charger
             const {liste_hachage_bytes} = identifierClesHachages(batchFichiers)
@@ -880,7 +880,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
                     let cleMetadata = cles[hachage_bytes]
                     if(cleMetadata) {
                         const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cleMetadata)
-                        console.debug("Contenu dechiffre : ", metaDechiffree)
+                        // console.debug("Contenu dechiffre : ", metaDechiffree)
                         // Ajout/override champs de metadonne avec contenu dechiffre
                         Object.assign(docCourant, metaDechiffree)
                     } else {

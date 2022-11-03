@@ -79,6 +79,7 @@ export function mapper(row, workers) {
                 if(video && Object.keys(video).length > 0) {
                     videoLoader = videoResourceLoader(getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
                 } else {
+                    console.debug("Video - original seulement")
                     videoLoader = videoResourceLoader(getFichierChiffre, {}, {creerToken, fuuid: fuuid_v_courante, version_courante})
                 }
             }
@@ -141,6 +142,8 @@ export function mapper(row, workers) {
 
 export function mapDocumentComplet(workers, doc) {
 
+    // console.debug("mapDocumentComplet : ", doc)
+
     const { connexion, traitementFichiers } = workers
 
     const { nom, tuuid, date_creation, fuuid_v_courante, mimetype } = doc
@@ -188,14 +191,13 @@ export function mapDocumentComplet(workers, doc) {
             copie.imageLoader = imageLoader
         }
 
-        if(video) {
+        if(mimetype.toLowerCase().startsWith('video/')) {
             const creerToken = async fuuids => {
                 if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
                 const reponse = await connexion.creerTokenStream(fuuids)
                 return reponse.token
             }
-
-            if(Object.keys(video).length > 0) {
+            if(video) {
                 copie.videoLoader = videoResourceLoader(
                     traitementFichiers.getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
             } else {
@@ -203,6 +205,8 @@ export function mapDocumentComplet(workers, doc) {
                 copie.videoLoader = videoResourceLoader(
                     traitementFichiers.getFichierChiffre, {}, {creerToken, fuuid: fuuid_v_courante, version_courante})
             }
+
+            // console.debug("videoLoader : ", copie.videoLoader.getSelecteurs())
         }
     }
 

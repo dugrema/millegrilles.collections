@@ -64,7 +64,9 @@ function AfficherVideo(props) {
     }, [setTimeStamp])
 
     useEffect(()=>{
+        if(!fichier || !fichier.imageLoader) return // Metadata n'est pas encore genere
         const loaderImage = fichier.imageLoader
+
         let imageChargee = null
         loaderImage.load()
             .then(image=>{
