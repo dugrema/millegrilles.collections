@@ -143,6 +143,8 @@ async function verifierSession() {
         const importAxios = await import('axios')
         const reponse = await importAxios.default.get('/millegrilles/authentification/verifier')
         console.debug("Reponse verifier session sur connexion : ", reponse)
+        const reponseCollections = await importAxios.default.get('/collections/initSession')
+        console.debug("Reponse verifier session sur collections : ", reponseCollections)
     } catch(err) {
         redirigerPortail(err)
     }
