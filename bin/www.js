@@ -10,6 +10,7 @@ debug("Demarrer server6")
 app()
     .catch(err=>{
         console.error("serveur5.www Erreur execution app : %O", err)
+        process.exit()
     })
     .finally(()=>{
         debug("Fin initialisation serveur5.www")
