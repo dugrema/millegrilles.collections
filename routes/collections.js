@@ -14,12 +14,13 @@ function app(amqpdao, opts) {
     let fichierUploadUrl = process.env['MG_CONSIGNATION_URL']
     if(fichierUploadUrl) {
         new URL(fichierUploadUrl)  // Validation du format
-    } else {
-        // Mettre url par defaut pour upload sur instance protegee (MQ_HOST, port 443)
-        const hostMQ = process.env['MQ_HOST']
-        const urlConsignation = new URL(`https://${hostMQ}/fichiers_transfert`)
-        fichierUploadUrl = ''+urlConsignation
-    }
+    } 
+    // else {
+    //     // Mettre url par defaut pour upload sur instance protegee (MQ_HOST, port 443)
+    //     const hostMQ = process.env['MQ_HOST']
+    //     const urlConsignation = new URL(`https://${hostMQ}/fichiers_transfert`)
+    //     fichierUploadUrl = ''+urlConsignation
+    // }
 
     const route = express.Router()
     route.use((req, res, next)=>{console.debug("Req path %s", req.url); next()})

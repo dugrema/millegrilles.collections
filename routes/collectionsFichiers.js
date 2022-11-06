@@ -9,7 +9,7 @@ function init(amqpdao, fichierUploadUrl, opts) {
 
     debug("collectionsFichiers url upload consignation : %s", fichierUploadUrl)
 
-    backingStore.configurerThreadPutFichiersConsignation(fichierUploadUrl, amqpdao)
+    backingStore.configurerThreadPutFichiersConsignation(amqpdao, {url: fichierUploadUrl})
 
     const route = express.Router()
 
