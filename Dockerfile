@@ -1,8 +1,7 @@
 # FROM node:18
 FROM docker.maceroc.com/millegrilles_webappbase:2022.7.0
 
-ENV MG_CONSIGNATION_HTTP=https://fichiers \
-    APP_FOLDER=/usr/src/app \
+ENV APP_FOLDER=/usr/src/app \
     NODE_ENV=production \
     PORT=443 \
     MG_MQ_URL=amqps://mq:5673
@@ -13,6 +12,6 @@ EXPOSE 80 443
 # WORKDIR $APP_FOLDER
 
 COPY . $APP_FOLDER/
-RUN npm install --production
+RUN npm install --omit=dev
 
 CMD [ "npm", "run", "server" ]
