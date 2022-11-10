@@ -1,6 +1,7 @@
 const debug = require('debug')('mqdao')
 const { getRandom } = require('@dugrema/millegrilles.utiljs/src/random')
 const { hacher } = require('@dugrema/millegrilles.nodejs/src/hachage')
+const { signerTokenFichier, verifierTokenFichier } = require('@dugrema/millegrilles.nodejs/src/jwt')
 
 const L2Prive = '2.prive'
 
@@ -383,16 +384,28 @@ async function creerTokenStream(socket, requete) {
     debug("creerTokenStream Resultat verification acces : %O", resultat)
     if(resultat.acces_tous === true) {
         debug("creerTokenStream Acces stream OK")
-        const randomBytes = getRandom(32)
-        const token = (await hacher(randomBytes, {hashingCode: 'blake2s-256', encoding: 'base58btc'})).slice(1)
-        for await (let fuuid of fuuids) {
-          const cleStream = `streamtoken:${fuuid}:${token}`
-          // Conserver token dans Redis
-          const redisClient = socket.redisClient
-          await redisClient.set(cleStream, 'ok', {NX: true, EX: CONST_TIMEOUT_STREAMTOKEN})
-        }
+        // const randomBytes = getRandom(32)
+        // const token = (await hacher(randomBytes, {hashingCode: 'blake2s-256', encoding: 'base58btc'})).slice(1)
+        // for await (let fuuid of fuuids) {
+        //   const cleStream = `streamtoken:${fuuid}:${token}`
+        //   // Conserver token dans Redis
+        //   const redisClient = socket.redisClient
+        //   await redisClient.set(cleStream, 'ok', {NX: true, EX: CONST_TIMEOUT_STREAMTOKEN})
+        // }
   
-        return {ok: true, token}
+        const pki = socket.amqpdao.pki
+        // debug("!!! PKI : ", pki)
+        const { cle: clePriveePem, fingerprint } = pki
+        const userId = socket.userId
+
+        const jwts = {}
+        for await (const fuuid of fuuids) {
+          const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuid)
+          debug("JWT cree pour userId %s sur fuuid %s : %O", userId, fuuid, jwt)
+          jwts[fuuid] = jwt
+        }
+
+        return {ok: true, /*token,*/ jwts}
     } else {
         debug("creerTokenStream Acces stream refuse")
         return {ok: false, err: 'Acces refuse'}

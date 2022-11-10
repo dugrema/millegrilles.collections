@@ -35,7 +35,8 @@ export function mapper(row, workers) {
     const creerToken = async fuuids => {
         if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
         const reponse = await workers.connexion.creerTokenStream(fuuids)
-        return reponse.token
+        console.debug("!!! creerToken reponse : ", reponse)
+        return reponse.jwts
     }
 
     let date_version = '', 
@@ -195,7 +196,8 @@ export function mapDocumentComplet(workers, doc) {
             const creerToken = async fuuids => {
                 if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
                 const reponse = await connexion.creerTokenStream(fuuids)
-                return reponse.token
+                console.debug("!!! creerToken reponse : ", reponse)
+                return reponse.jwts
             }
             if(video) {
                 copie.videoLoader = videoResourceLoader(
