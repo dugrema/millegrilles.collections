@@ -176,8 +176,8 @@ function supprimerVideo(fuuidVideo) {
   )
 }
 
-function creerTokenStream(fuuids) {
-  const commande = {fuuids}
+function creerTokenStream(commande) {
+  // const commande = {fuuids}
   return ConnexionClient.emitBlocking(
     'creerTokenStream', 
     commande, 

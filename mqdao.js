@@ -362,9 +362,12 @@ function retirerCallbackTranscodageVideo(socket, params, cb) {
   socket.unsubscribe(opts, cb)
 }
 
-async function creerTokenStream(socket, requete) {
+async function creerTokenStream(socket, params) {
   try {
-    const fuuids = requete.fuuids
+    const fuuids = params.fuuids,
+          fuuidVideo = params.fuuidVideo,
+          mimetype = params.mimetype,
+          dechiffrageVideo = params.dechiffrageVideo || {}
 
     debug("Fuuid a charger : %O", fuuids)
 
@@ -379,8 +382,8 @@ async function creerTokenStream(socket, requete) {
 
     // const requete = { user_id: userId, fuuids }
     // const mq = socket.amqpdao
-    // const resultat = await mq.transmettreRequete('GrosFichiers', requete, {action: 'verifierAccesFuuids'})
-    const resultat = await transmettreRequete(socket, requete, 'verifierAccesFuuids')
+    // const resultat = await mq.transmettreRequete('GrosFichiers', params, {action: 'verifierAccesFuuids'})
+    const resultat = await transmettreRequete(socket, params, 'verifierAccesFuuids')
     debug("creerTokenStream Resultat verification acces : %O", resultat)
     if(resultat.acces_tous === true) {
         debug("creerTokenStream Acces stream OK")
@@ -394,7 +397,6 @@ async function creerTokenStream(socket, requete) {
         // }
   
         const pki = socket.amqpdao.pki
-        // debug("!!! PKI : ", pki)
         const { cle: clePriveePem, fingerprint } = pki
         const userId = socket.userId
 
@@ -403,9 +405,15 @@ async function creerTokenStream(socket, requete) {
           const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuid)
           debug("JWT cree pour userId %s sur fuuid %s : %O", userId, fuuid, jwt)
           jwts[fuuid] = jwt
+
+          if(fuuidVideo) {
+            const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuidVideo, {ref: fuuid, mimetype, ...dechiffrageVideo})
+            debug("JWT cree pour userId %s sur video %s (fuuid %s) : %O", userId, fuuidVideo, fuuid, jwt)
+            jwts[fuuidVideo] = jwt
+          }
         }
 
-        return {ok: true, /*token,*/ jwts}
+        return {ok: true, jwts}
     } else {
         debug("creerTokenStream Acces stream refuse")
         return {ok: false, err: 'Acces refuse'}
