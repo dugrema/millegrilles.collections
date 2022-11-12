@@ -37,7 +37,7 @@ export function mapper(row, workers) {
     const creerToken = async fuuids => {
         if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
         const reponse = await workers.connexion.creerTokenStream(fuuids)
-        console.debug("!!! creerToken reponse : ", reponse)
+        // console.debug("!!! creerToken reponse : ", reponse)
         return reponse.jwts
     }
 
@@ -82,7 +82,7 @@ export function mapper(row, workers) {
                 if(video && Object.keys(video).length > 0) {
                     videoLoader = videoResourceLoader(getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
                 } else {
-                    console.debug("Video - original seulement")
+                    // console.debug("Video - original seulement")
                     videoLoader = videoResourceLoader(getFichierChiffre, {}, {creerToken, fuuid: fuuid_v_courante, version_courante})
                 }
             }
@@ -197,7 +197,7 @@ export function mapDocumentComplet(workers, doc) {
         if(mimetype.toLowerCase().startsWith('video/')) {
             const creerToken = async fuuidVideo => {
                 if(Array.isArray(fuuidVideo)) fuuidVideo = fuuidVideo[0]
-                console.debug("mapDocumentComplet.creerToken fuuidVideo : %O, info version courante : ", fuuidVideo, version_courante)
+                // console.debug("mapDocumentComplet.creerToken fuuidVideo : %O, info version courante : ", fuuidVideo, version_courante)
                 const videoInfo = Object.values(video).filter(item=>item.fuuid_video === fuuidVideo).pop()
                 const fuuids = [fuuid_v_courante]
 
@@ -213,7 +213,7 @@ export function mapDocumentComplet(workers, doc) {
                     dechiffrageVideo,
                 }
                 const reponse = await connexion.creerTokenStream(commande)
-                console.debug("!!! creerToken reponse : ", reponse)
+                // console.debug("!!! creerToken reponse : ", reponse)
                 return reponse.jwts
             }
             if(video) {
@@ -229,7 +229,7 @@ export function mapDocumentComplet(workers, doc) {
         } else if(mimetype.toLowerCase().startsWith('audio/')) {
             const creerToken = async fuuidAudio => {
                 if(Array.isArray(fuuidAudio)) fuuidAudio = fuuidAudio[0]
-                console.debug("mapDocumentComplet.creerToken fuuidAudio : %O, info version courante : ", fuuidAudio, version_courante)
+                // console.debug("mapDocumentComplet.creerToken fuuidAudio : %O, info version courante : ", fuuidAudio, version_courante)
                 const fuuids = [fuuid_v_courante]
                 const commande = {
                     fuuids,
@@ -237,7 +237,7 @@ export function mapDocumentComplet(workers, doc) {
                     mimetype,
                 }
                 const reponse = await connexion.creerTokenStream(commande)
-                console.debug("!!! creerToken reponse : ", reponse)
+                // console.debug("!!! creerToken reponse : ", reponse)
                 return reponse.jwts
             }
             copie.audioLoader = audioResourceLoader(fuuid_v_courante, {creerToken, version_courante})

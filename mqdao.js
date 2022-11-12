@@ -402,7 +402,7 @@ async function creerTokenStream(socket, params) {
 
         const jwts = {}
         for await (const fuuid of fuuids) {
-          const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuid)
+          const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuid, {mimetype})
           debug("JWT cree pour userId %s sur fuuid %s : %O", userId, fuuid, jwt)
           jwts[fuuid] = jwt
 
