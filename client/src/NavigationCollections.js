@@ -16,6 +16,7 @@ import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegr
 
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
+import AfficherAudio from './AfficherAudio'
 import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
@@ -44,6 +45,7 @@ function NavigationCollections(props) {
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
     const [ showPreview, setShowPreview ] = useState(false)
     const [ afficherVideo, setAfficherVideo ] = useState('')
+    const [ afficherAudio, setAfficherAudio ] = useState('')
     const [ preparationUploadEnCours, setPreparationUploadEnCours ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
 
@@ -59,6 +61,7 @@ function NavigationCollections(props) {
     
     const naviguerCollection = useCallback( cuuid => {
         setAfficherVideo('')  // Reset affichage
+        setAfficherAudio('')  // Reset affichage
         if(!cuuid) cuuid = ''
         try {
             if(cuuid) {
@@ -75,7 +78,7 @@ function NavigationCollections(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, erreurCb, setAfficherVideo])
+    }, [dispatch, workers, erreurCb, setAfficherVideo, setAfficherAudio])
 
     const signalAnnuler = useMemo(()=>{
         let valeur = false
@@ -114,6 +117,7 @@ function NavigationCollections(props) {
                     setShowCreerRepertoire={setShowCreerRepertoire} 
                     setPreparationUploadEnCours={setPreparationUploadEnCours} 
                     afficherVideo={afficherVideo} 
+                    afficherAudio={afficherAudio}
                     signalAnnuler={signalAnnuler.signal} 
                     />
 
@@ -124,7 +128,9 @@ function NavigationCollections(props) {
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
                         afficherVideo={afficherVideo}
+                        afficherAudio={afficherAudio}
                         setAfficherVideo={setAfficherVideo}
+                        setAfficherAudio={setAfficherAudio}
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
                         showInfoModalOuvrir={showInfoModalOuvrir}
                     />
@@ -157,7 +163,7 @@ export default NavigationCollections
 function BarreInformation(props) {
 
     const { 
-        afficherVideo, naviguerCollection, modeView, setModeView, 
+        afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
         signalAnnuler,
     } = props
@@ -166,6 +172,8 @@ function BarreInformation(props) {
     const liste = useSelector(state => state.fichiers.liste )
     const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
     const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
+
+    const afficherMedia = afficherVideo || afficherAudio
 
     let nombreFichiers = ''
     if(liste) {
@@ -192,11 +200,11 @@ function BarreInformation(props) {
             </Col>
 
             <Col xs={12} sm={3} md={4} lg={2}>
-                {afficherVideo?'':nombreFichiers}
+                {afficherMedia?'':nombreFichiers}
             </Col>
 
             <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
-                {afficherVideo?'':
+                {afficherMedia?'':
                     <div>
                         <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                         <BoutonsAction 
@@ -219,6 +227,7 @@ function AffichagePrincipal(props) {
         naviguerCollection,
         showPreviewAction,
         afficherVideo, setAfficherVideo,
+        afficherAudio, setAfficherAudio,
         setContextuel, 
         showInfoModalOuvrir
     } = props
@@ -250,6 +259,7 @@ function AffichagePrincipal(props) {
         dispatch(fichiersActions.selectionTuuids(selection))
     }, [dispatch])
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
+    const fermerAfficherAudio = useCallback(()=>setAfficherAudio(false), [setAfficherAudio])
     const onContextMenuClick = useCallback((event, value)=>{
         onContextMenu(event, value, setContextuel)
     }, [setContextuel])
@@ -268,6 +278,7 @@ function AffichagePrincipal(props) {
             const fileItem = liste.filter(item=>item.tuuid===value.fileId).pop()
             const mimetype = fileItem.mimetype || ''
             if(mimetype.startsWith('video/')) setAfficherVideo(fileId)
+            else if(mimetype.startsWith('audio/')) setAfficherAudio(fileId)
             else showPreviewAction(fileId)
         }
 
@@ -294,6 +305,14 @@ function AffichagePrincipal(props) {
                 liste={liste}
                 tuuid={afficherVideo}
                 fermer={fermerAfficherVideo} 
+                showInfoModalOuvrir={showInfoModalOuvrir} />
+        )
+    } else if(afficherAudio) {
+        return (
+            <AfficherAudioView
+                liste={liste}
+                tuuid={afficherAudio}
+                fermer={fermerAfficherAudio} 
                 showInfoModalOuvrir={showInfoModalOuvrir} />
         )
     }
@@ -336,6 +355,36 @@ function AfficherVideoView(props) {
 
     return (
         <AfficherVideo
+            fichier={fichier}
+            tuuidSelectionne={tuuid}
+            fermer={fermer} 
+            showInfoModalOuvrir={showInfoModalOuvrir} />
+    )
+}
+
+function AfficherAudioView(props) {
+
+    const { tuuid, liste, fermer, showInfoModalOuvrir } = props
+
+    const workers = useWorkers()
+
+    const fichier = useMemo(()=>{
+        if(!tuuid || !liste) return
+        let fichier = liste.filter(item=>item.tuuid===tuuid).pop()
+        if(fichier) fichier = mapDocumentComplet(workers, fichier)
+        return fichier
+    }, [tuuid, liste])
+
+    if(!fichier) return (
+        <>
+            <p>Erreur chargement de fichier audio</p>
+            <p>Error loading audio file</p>
+            <Button onClick={fermer}>Retour/Back</Button>
+        </>
+    )
+
+    return (
+        <AfficherAudio
             fichier={fichier}
             tuuidSelectionne={tuuid}
             fermer={fermer} 

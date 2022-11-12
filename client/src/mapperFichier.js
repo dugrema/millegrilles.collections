@@ -1,4 +1,6 @@
-import {loadFichierChiffre, fileResourceLoader, imageResourceLoader, videoResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
+import {
+    loadFichierChiffre, fileResourceLoader, imageResourceLoader, videoResourceLoader, audioResourceLoader
+} from '@dugrema/millegrilles.reactjs/src/imageLoading'
 import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>
@@ -224,6 +226,21 @@ export function mapDocumentComplet(workers, doc) {
             }
 
             // console.debug("videoLoader : ", copie.videoLoader.getSelecteurs())
+        } else if(mimetype.toLowerCase().startsWith('audio/')) {
+            const creerToken = async fuuidAudio => {
+                if(Array.isArray(fuuidAudio)) fuuidAudio = fuuidAudio[0]
+                console.debug("mapDocumentComplet.creerToken fuuidAudio : %O, info version courante : ", fuuidAudio, version_courante)
+                const fuuids = [fuuid_v_courante]
+                const commande = {
+                    fuuids,
+                    fuuidMedia: fuuidAudio,
+                    mimetype,
+                }
+                const reponse = await connexion.creerTokenStream(commande)
+                console.debug("!!! creerToken reponse : ", reponse)
+                return reponse.jwts
+            }
+            copie.audioLoader = audioResourceLoader(fuuid_v_courante, {creerToken, version_courante})
         }
     }
 
