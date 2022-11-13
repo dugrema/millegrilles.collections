@@ -198,20 +198,32 @@ export function mapDocumentComplet(workers, doc) {
             const creerToken = async fuuidVideo => {
                 if(Array.isArray(fuuidVideo)) fuuidVideo = fuuidVideo[0]
                 // console.debug("mapDocumentComplet.creerToken fuuidVideo : %O, info version courante : ", fuuidVideo, version_courante)
-                const videoInfo = Object.values(video).filter(item=>item.fuuid_video === fuuidVideo).pop()
+                let dechiffrageVideo = null,
+                    mimetypeVideo = mimetype
+                if(fuuidVideo === fuuid_v_courante) {
+                    // Rien a faire
+                } else {
+                    const videoInfo = Object.values(video).filter(item=>item.fuuid_video === fuuidVideo).pop()
+
+                    // Changer mimetype pour celui du video selectionne
+                    mimetypeVideo = videoInfo.mimetype
+
+                    // Inserer valeurs de dechiffrage dans la reponse
+                    const champsDechiffrage = ['format', 'header', 'iv', 'tag']
+                    dechiffrageVideo = {}
+                    for (const champ of champsDechiffrage) {
+                        if(videoInfo[champ]) dechiffrageVideo[champ] = videoInfo[champ]
+                    }
+                }
                 const fuuids = [fuuid_v_courante]
 
-                const champsDechiffrage = ['format', 'header', 'iv', 'tag']
-                const dechiffrageVideo = {}
-                for (const champ of champsDechiffrage) {
-                    if(videoInfo[champ]) dechiffrageVideo[champ] = videoInfo[champ]
-                }
                 const commande = {
                     fuuids,
                     fuuidVideo,
-                    mimetype,
-                    dechiffrageVideo,
+                    mimetype: mimetypeVideo,
                 }
+                if(dechiffrageVideo) commande.dechiffrageVideo = dechiffrageVideo
+
                 const reponse = await connexion.creerTokenStream(commande)
                 // console.debug("!!! creerToken reponse : ", reponse)
                 return reponse.jwts
