@@ -29,6 +29,11 @@ export async function connecter(workers, setUsagerState, setEtatConnexion, setEt
 
 async function setUsager(workers, nomUsager, setUsagerState, opts) {
     opts = opts || {}
+
+    // Desactiver usager si deja connecte - permet de reauthentifier 
+    // (i.e. useEtatPret === false tant que socket serveur pas pret)
+    await setUsagerState('')
+
     // console.debug("setUsager '%s'", nomUsager)
     const { usagerDao, forgecommon } = await import('@dugrema/millegrilles.reactjs')
     const { pki } = await import('@dugrema/node-forge')

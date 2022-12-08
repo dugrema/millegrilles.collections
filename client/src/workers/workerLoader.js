@@ -35,19 +35,13 @@ export function setupWorkers() {
     workers.downloadFichiersDao = downloadFichiersDao  // IDB download fichiers
 
     // Wiring
-    // try {
-    //     traitementFichiers.setWorkers(workers)
-    // } catch(err) {
-    //     console.error("Erreur chargement traitementFichiers : %O", err)
-    // }
-
     const ready = wireWorkers(workers)
 
     return { workerInstances, workers, ready }
 }
 
 async function wireWorkers(workers) {
-    const { connexion, chiffrage, transfertFichiers } = workers
+    const { chiffrage, transfertFichiers } = workers
     // connexion.setX509Worker(chiffrage).catch(err=>console.error("Erreur chargement connexion worker : %O", err))
     transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
     transfertFichiers.up_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/up worker : %O", err))
