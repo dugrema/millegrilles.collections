@@ -1,4 +1,5 @@
 import {useState, useEffect, useCallback, useMemo} from 'react'
+import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -25,6 +26,8 @@ function AfficherVideo(props) {
     const [posterObj, setPosterObj] = useState('')
     // const [genererToken, setGenererToken] = useState(false)
     const [timeStamp, setTimeStamp] = useState(0)
+    const [videoChargePret, setVideoChargePret] = useState(false)
+    const [errVideo, setErrVideo] = useState('')
 
     useEffect(()=>{
         if(selecteur || !videoLoader) return  // Deja initialise
@@ -75,49 +78,68 @@ function AfficherVideo(props) {
 
     useEffect(()=>{
         if(!selecteur || !fichier.videoLoader) return setSrcVideo('')
+
+        // Reset indicateurs
+        setVideoChargePret(false)
+        setErrVideo('')
+
         fichier.videoLoader.load(selecteur, {genererToken: true})
             .then(src=>setSrcVideo(src))
             .catch(err=>console.error("AfficherVideo erreur chargement video : %O", err))
-    }, [fichier, selecteur, setSrcVideo])
+    }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setErrVideo])
+
+    const onProgress = useCallback(param => console.debug("onProgress ", param), [])
+    const onPlay = useCallback(param => console.debug("onPlay ", param), [])
+    const onError = useCallback(param => {
+        console.debug("onError ", param)
+        setErrVideo('Erreur chargement video')
+        setVideoChargePret(false)
+    }, [setVideoChargePret, setErrVideo])
+    const onWaiting = useCallback(param => console.debug("onWaiting ", param), [])
+    const onCanPlay = useCallback(param => {
+        console.debug("onCanPlay ", param)
+        setVideoChargePret(true)
+        setErrVideo('')
+    }, [setVideoChargePret, setErrVideo])
+    const onAbort = useCallback(param => console.debug("onAbort ", param), [])
+    const onEmptied = useCallback(param => console.debug("onEmptied ", param), [])
 
     return (
         <div>
             <Row>
                 
                 <Col md={12} lg={8}>
-                    {posterObj&&srcVideo?
-                        <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' 
-                            selecteur={selecteur} 
-                            onTimeUpdate={videoTimeUpdateHandler} 
-                            timeStamp={timeStamp} />
-                    :(
-                        <div>
-                            <p>
-                                    <i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...
-                            </p>
-                        </div>
-                    )}
+                    <PlayerEtatPassthrough
+                        posterObj={posterObj}
+                        srcVideo={srcVideo}
+                        videoChargePret={videoChargePret}
+                        errVideo={errVideo} >
+                            <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' 
+                                selecteur={selecteur} 
+                                onTimeUpdate={videoTimeUpdateHandler} 
+                                timeStamp={timeStamp} 
+                                onProgress={onProgress}
+                                onPlay={onPlay}
+                                onError={onError}
+                                onWaiting={onWaiting}
+                                onCanPlay={onCanPlay}
+                                onAbort={onAbort}
+                                onEmptied={onEmptied}
+                                />
+                    </PlayerEtatPassthrough>
                 </Col>
 
                 <Col>
-                    <h3>{nomFichier}</h3>
-                    
-                    <Button onClick={props.fermer}>Retour</Button>
-
-                    <h3>Operation</h3>
-                    <Row>
-                        <Col>
-                            <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
-                        </Col>
-                    </Row>
-
-                    <h3>Afficher</h3>
-
-                    <SelecteurResolution 
-                        listeVideos={videos} 
+                    <PanneauInformation 
+                        fichier={fichier}
+                        nomFichier={nomFichier}
+                        fermer={props.fermer}
+                        showInfoModalOuvrir={showInfoModalOuvrir}
+                        videos={videos}
                         support={support}
-                        selecteur={selecteur} setSelecteur={setSelecteur} 
-                        videoLoader={fichier.videoLoader} />
+                        selecteur={selecteur}
+                        setSelecteur={setSelecteur}
+                        />
                 </Col>
 
             </Row>
@@ -129,6 +151,71 @@ function AfficherVideo(props) {
 }
 
 export default AfficherVideo
+
+function PlayerEtatPassthrough(props) {
+
+    const {posterObj, srcVideo, videoChargePret, errVideo} = props
+
+    if(!posterObj || !srcVideo) {
+        return (
+            <div>
+                <p>
+                    <i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...
+                </p>
+            </div>
+        )
+    }
+
+    if(errVideo) {
+        return (
+            <Alert variant="danger">
+                <Alert.Heading>Erreur</Alert.Heading>
+                <p>Erreur durant le chargement du video.</p>
+            </Alert>
+        )
+    }
+
+    return (
+        <div>
+            {props.children}
+            {(!errVideo && !videoChargePret)?
+                <p>
+                    <i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...
+                </p>
+            :''}
+        </div>
+    )
+}
+
+
+function PanneauInformation(props) {
+
+    const { fichier, nomFichier, fermer, showInfoModalOuvrir, videos, support, selecteur, setSelecteur } = props
+
+    return (
+        <div>
+            <h3>{nomFichier}</h3>
+                    
+                <Button onClick={fermer}>Retour</Button>
+
+                <h3>Operation</h3>
+                <Row>
+                    <Col>
+                        <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
+                    </Col>
+                </Row>
+
+                <h3>Afficher</h3>
+
+                <SelecteurResolution 
+                    listeVideos={videos} 
+                    support={support}
+                    selecteur={selecteur} setSelecteur={setSelecteur} 
+                    videoLoader={fichier.videoLoader} />
+        </div>
+    )
+}
+
 
 function SelecteurResolution(props) {
     const { listeVideos, /*support,*/ selecteur, setSelecteur, videoLoader } = props
