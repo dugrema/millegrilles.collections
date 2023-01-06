@@ -1,5 +1,5 @@
 # FROM node:18
-FROM docker.maceroc.com/millegrilles_webappbase:2022.7.0
+FROM docker.maceroc.com/millegrilles_webappbase:2023.0.0
 
 ENV APP_FOLDER=/usr/src/app \
     NODE_ENV=production \
