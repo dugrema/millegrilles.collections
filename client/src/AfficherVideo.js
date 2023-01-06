@@ -4,18 +4,12 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
-import Form from 'react-bootstrap/Form'
 
 import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 
 import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 
-
-// const PLAYER_VIDEORESOLUTION = 'player.videoResolution'
-
 function AfficherVideo(props) {
-
-    // console.debug("AfficherVideo PROPPIES : %O", props)
 
     const { support, showInfoModalOuvrir } = props
 
@@ -52,11 +46,6 @@ function AfficherVideo(props) {
         }
     }, [selecteur, videoLoader, setSelecteur])
 
-    // const genererTokenToggle = useCallback(event => {
-    //     // console.debug("Toggle check de %O", genererToken)
-    //     setGenererToken(!genererToken)
-    // }, [genererToken, setGenererToken])
-
     const videoTimeUpdateHandler = useCallback(event=>{
         // console.debug("Video time update event : %O", event)
         const currentTime = event.target.currentTime
@@ -66,6 +55,8 @@ function AfficherVideo(props) {
     useEffect(()=>{
         if(!fichier || !fichier.imageLoader) return // Metadata n'est pas encore genere
         const loaderImage = fichier.imageLoader
+
+        // console.debug("Fichier video loader : ", loaderImage)
 
         let imageChargee = null
         loaderImage.load()
@@ -84,16 +75,10 @@ function AfficherVideo(props) {
 
     useEffect(()=>{
         if(!selecteur || !fichier.videoLoader) return setSrcVideo('')
-        // console.debug("Video utiliser selecteur %s", selecteur)
         fichier.videoLoader.load(selecteur, {genererToken: true})
-            .then(src=>{
-                // console.debug("Source video : %O", src)
-                setSrcVideo(src)
-            })
-            .catch(err=>{
-                console.error("AfficherVideo erreur chargement video : %O", err)
-            })
-    }, [fichier, selecteur, /*genererToken, */ setSrcVideo])
+            .then(src=>setSrcVideo(src))
+            .catch(err=>console.error("AfficherVideo erreur chargement video : %O", err))
+    }, [fichier, selecteur, setSrcVideo])
 
     return (
         <div>
@@ -125,15 +110,9 @@ function AfficherVideo(props) {
                             <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
                         </Col>
                     </Row>
-                    {/* <Row>
-                        <Col>
-                            <Form.Check type="switch" id="token-switch" label="Generer token" 
-                                checked={genererToken?true:false} 
-                                onChange={genererTokenToggle} />
-                        </Col>
-                    </Row> */}
 
                     <h3>Afficher</h3>
+
                     <SelecteurResolution 
                         listeVideos={videos} 
                         support={support}
@@ -157,22 +136,8 @@ function SelecteurResolution(props) {
     const [listeOptions, setListeOptions] = useState([])
 
     useEffect(()=>{
-        // console.debug("Liste videos : %O", listeVideos)
         if(!listeVideos || !videoLoader) return
-        // const { webm } = support
 
-        // const videoKeys = Object.keys()
-        //  let options = videoKeys.filter(item=>{
-        //     const [mimetype, codecVideo, resolution, bitrate] = item.split(';')
-        //     if(mimetype.endsWith('/webm')) {
-        //         if(!webm) return false
-        //     } 
-        //     // else {
-        //     //     if(webm) return false
-        //     // }
-
-        //     return true
-        // })
         const options = videoLoader.getSelecteurs()
         options.sort(trierLabelsVideos)
 
@@ -180,12 +145,7 @@ function SelecteurResolution(props) {
 
     }, [listeVideos, setListeOptions, videoLoader])
 
-    const changerSelecteur = useCallback(value=>{
-        // console.debug("Valeur : %O", value)
-        setSelecteur(value)
-        // const [mimetype, resolution, bitrate] = value.split(';')
-        // localStorage.setItem(PLAYER_VIDEORESOLUTION, ''+resolution)
-    }, [setSelecteur])
+    const changerSelecteur = useCallback(value=>setSelecteur(value), [setSelecteur])
 
     return (
         <>
@@ -203,31 +163,31 @@ function SelecteurResolution(props) {
     )
 }
 
-function AfficherLiensVideo(props) {
-    const { show, srcVideo } = props
+// function AfficherLiensVideo(props) {
+//     const { show, srcVideo } = props
 
-    if(!show) return ''
+//     if(!show) return ''
 
-    // console.debug("VIDEOS : %O", srcVideo)
+//     // console.debug("VIDEOS : %O", srcVideo)
 
-    return (
-        <div>
-            <h3>Liens video</h3>
-            {srcVideo.map(item=>{
-                return <LienVideo key={item.fuuid||item.label} video={item} /> 
-            })}
-        </div>
-    )
-}
+//     return (
+//         <div>
+//             <h3>Liens video</h3>
+//             {srcVideo.map(item=>{
+//                 return <LienVideo key={item.fuuid||item.label} video={item} /> 
+//             })}
+//         </div>
+//     )
+// }
 
-function LienVideo(props) {
-    const video = props.video
-    const nomVideo = video.codecVideo || video.mimetype || video.src
-    return (
-        <Row>
-            <Col>
-                <a href={video.src} target="_top">{nomVideo}</a>
-            </Col>
-        </Row>
-    )
-}
+// function LienVideo(props) {
+//     const video = props.video
+//     const nomVideo = video.codecVideo || video.mimetype || video.src
+//     return (
+//         <Row>
+//             <Col>
+//                 <a href={video.src} target="_top">{nomVideo}</a>
+//             </Col>
+//         </Row>
+//     )
+// }

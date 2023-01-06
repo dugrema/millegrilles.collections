@@ -80,10 +80,10 @@ export function mapper(row, workers) {
 
             if(mimetypeBase === 'video') {
                 if(video && Object.keys(video).length > 0) {
-                    videoLoader = videoResourceLoader(getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
+                    videoLoader = videoResourceLoader(video, {creerToken, fuuid: fuuid_v_courante, version_courante})
                 } else {
                     // console.debug("Video - original seulement")
-                    videoLoader = videoResourceLoader(getFichierChiffre, {}, {creerToken, fuuid: fuuid_v_courante, version_courante})
+                    videoLoader = videoResourceLoader({}, {creerToken, fuuid: fuuid_v_courante, version_courante})
                 }
             }
         
@@ -229,12 +229,10 @@ export function mapDocumentComplet(workers, doc) {
                 return reponse.jwts
             }
             if(video) {
-                copie.videoLoader = videoResourceLoader(
-                    traitementFichiers.getFichierChiffre, video, {creerToken, fuuid: fuuid_v_courante, version_courante})
+                copie.videoLoader = videoResourceLoader(video, {creerToken, fuuid: fuuid_v_courante, version_courante})
             } else {
                 // Utilisation du video original seulement
-                copie.videoLoader = videoResourceLoader(
-                    traitementFichiers.getFichierChiffre, {}, {creerToken, fuuid: fuuid_v_courante, version_courante})
+                copie.videoLoader = videoResourceLoader({}, {creerToken, fuuid: fuuid_v_courante, version_courante})
             }
 
             // console.debug("videoLoader : ", copie.videoLoader.getSelecteurs())

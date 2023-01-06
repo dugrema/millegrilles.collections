@@ -1,6 +1,6 @@
 {
   "name": "millegrilles.collections",
-  "version": "2022.8.3",
+  "version": "2023.0.0",
   "description": "Collections pour MilleGrilles",
   "main": "index.js",
   "scripts": {
@@ -16,11 +16,11 @@
   "author": "Mathieu Dugre",
   "license": "MIT",
   "dependencies": {
-    "@dugrema/millegrilles.nodejs": "https://github.com/dugrema/millegrilles.nodejs.git#2022.8",
+    "@dugrema/millegrilles.nodejs": "https://github.com/dugrema/millegrilles.nodejs.git#2023.0",
     "express": "~4.18.2"
   },
   "peerDependencies": {
-    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2022.8",
+    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2023.0",
     "axios": "^1",
     "debug": "^4"
   }
