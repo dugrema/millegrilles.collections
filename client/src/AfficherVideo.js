@@ -89,19 +89,24 @@ function AfficherVideo(props) {
     }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setErrVideo])
 
     const onProgress = useCallback(event => {
-        console.debug("onProgress ", event)
+        // console.debug("onProgress ", event)
         // Le video n'est pas necessairement pret, mais onCanPlay n'est pas lance sur mobiles (iOS)
         setVideoChargePret(true)
     }, [setVideoChargePret])
     const onPlay = useCallback(param => console.debug("onPlay ", param), [])
-    const onError = useCallback(param => {
-        console.debug("onError ", param)
-        setErrVideo('Erreur chargement video')
-        setVideoChargePret(false)
+    const onError = useCallback(event => {
+        const target = event.target
+        if(target && target.nodeName === 'SOURCE') {
+            // Iterer les sources (automatique). Declarer erreur juste s'il n'y a pas de source suivante.
+            if(!target.nextSibling) {
+                setErrVideo('Erreur chargement video')
+                setVideoChargePret(false)
+            }
+        }
     }, [setVideoChargePret, setErrVideo])
     const onWaiting = useCallback(param => console.debug("onWaiting ", param), [])
     const onCanPlay = useCallback(param => {
-        console.debug("onCanPlay ", param)
+        // console.debug("onCanPlay ", param)
         setVideoChargePret(true)
         setErrVideo('')
     }, [setVideoChargePret, setErrVideo])
