@@ -116,6 +116,7 @@ function AfficherVideo(props) {
                     <PlayerEtatPassthrough
                         posterObj={posterObj}
                         srcVideo={srcVideo}
+                        selecteur={selecteur}
                         videoChargePret={videoChargePret}
                         errVideo={errVideo} >
                             <VideoViewer videos={srcVideo} poster={posterObj} height='100%' width='100%' 
@@ -158,9 +159,19 @@ export default AfficherVideo
 
 function PlayerEtatPassthrough(props) {
 
-    const {posterObj, srcVideo, videoChargePret, errVideo} = props
+    const {posterObj, srcVideo, selecteur, videoChargePret, errVideo} = props
 
-    if(!posterObj || !srcVideo) {
+    const [delaiSelecteur, setDelaiSelecteur] = useState(false)
+
+    useEffect(()=>{
+        // Fait un de-bump sur switch de stream
+        if(selecteur) {
+            const t = setTimeout(()=>setDelaiSelecteur(selecteur), 300)
+            return () => clearTimeout(t)
+        }
+    }, [srcVideo, setDelaiSelecteur])
+
+    if(!posterObj || !srcVideo || delaiSelecteur !== selecteur) {
         return (
             <div>
                 <p>
