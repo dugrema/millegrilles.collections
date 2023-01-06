@@ -88,7 +88,11 @@ function AfficherVideo(props) {
             .catch(err=>console.error("AfficherVideo erreur chargement video : %O", err))
     }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setErrVideo])
 
-    const onProgress = useCallback(param => console.debug("onProgress ", param), [])
+    const onProgress = useCallback(event => {
+        console.debug("onProgress ", event)
+        // Le video n'est pas necessairement pret, mais onCanPlay n'est pas lance sur mobiles (iOS)
+        setVideoChargePret(true)
+    }, [setVideoChargePret])
     const onPlay = useCallback(param => console.debug("onPlay ", param), [])
     const onError = useCallback(param => {
         console.debug("onError ", param)
