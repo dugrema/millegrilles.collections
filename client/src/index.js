@@ -2,6 +2,8 @@ import {StrictMode, Suspense, lazy} from 'react';
 import {createRoot} from 'react-dom/client';
 import ErrorBoundary from './ErrorBoundary';
 
+import Button from 'react-bootstrap/Button'
+
 const App = lazy(()=>import('./App'))
 
 const root = createRoot(document.getElementById('root'));
@@ -31,6 +33,11 @@ function Loading(props) {
         <li>Initialisation</li>
         <li>Chargement des composants dynamiques</li>
       </ol>
+
+      <p>
+        <Button href="/millegrilles">Retour</Button>
+      </p>
+
     </div>
   )
 }

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, Suspense, lazy, useEffect } from
 import { useTranslation } from 'react-i18next'
 import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux'
 
+import Button from 'react-bootstrap/Button'
 import Container from 'react-bootstrap/Container'
 
 import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'
@@ -13,6 +14,7 @@ import storeSetup from './redux/store'
 import fichiersActions from './redux/fichiersSlice'
 import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload, annulerUpload } from './redux/uploaderSlice'
 import { setUserId as setUserIdDownload, supprimerDownloadsParEtat, continuerDownload, arreterDownload, setDownloads } from './redux/downloaderSlice'
+import { setUserId as setUserIdMediaJobs, } from './redux/mediaJobsSlice'
 
 import './i18n'
 
@@ -235,13 +237,17 @@ function Modals(props) {
 function Attente(_props) {
   return (
       <div>
-          <p className="titleinit">Preparation de Coup D'Oeil</p>
+          <p className="titleinit">Preparation de Collections</p>
           <p>Veuillez patienter durant le chargement de la page.</p>
           <ol>
               <li>Initialisation</li>
               <li>Chargement des composants dynamiques</li>
               <li>Connexion a la page</li>
           </ol>
+
+          <p>
+            <Button href="/millegrilles">Retour</Button>
+          </p>
       </div>
   )
 }
@@ -318,6 +324,7 @@ function InitialisationUpload(props) {
 
   useEffect(()=>{
     dispatch(fichiersActions.setUserId(userId))
+    dispatch(setUserIdMediaJobs(userId))
     dispatch(setUserIdUpload(userId))
   }, [userId])
 

@@ -3,6 +3,7 @@ import { reducer as fichiers, setup as setupFichiers } from './fichiersSlice'
 import { reducer as navigationSecondaire, setup as setupNavigationSecondaire } from './navigationSecondaireSlice'
 import uploader, { uploaderMiddlewareSetup } from './uploaderSlice'
 import downloader, { downloaderMiddlewareSetup } from './downloaderSlice'
+import mediaJobs from './mediaJobsSlice'
 
 function storeSetup(workers) {
 
@@ -14,6 +15,7 @@ function storeSetup(workers) {
       navigationSecondaire,  // Utilise pour modal de navigation (copier, deplacer)
       uploader, 
       downloader,
+      mediaJobs,
     },
 
     middleware: (getDefaultMiddleware) => {
