@@ -41,7 +41,7 @@ export function setupWorkers() {
 }
 
 async function wireWorkers(workers) {
-    const { chiffrage, transfertFichiers } = workers
+    const { connexion, chiffrage, transfertFichiers } = workers
     // connexion.setX509Worker(chiffrage).catch(err=>console.error("Erreur chargement connexion worker : %O", err))
     transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
     transfertFichiers.up_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/up worker : %O", err))
@@ -56,6 +56,24 @@ async function wireWorkers(workers) {
     const uploadHref = urlLocal.href
     console.debug("Upload path : %O", uploadHref)
     transfertFichiers.up_setPathServeur('/collections/upload')
+
+    const location = new URL(window.location)
+    location.pathname = '/fiche.json'
+    // console.debug("Charger fiche ", location.href)
+  
+    const axiosImport = await import('axios')
+    const axios = axiosImport.default
+    const reponse = await axios.get(location.href)
+    // console.debug("Reponse fiche ", reponse)
+    const fiche = reponse.data || {}
+    const ca = fiche.ca
+    if(ca) {
+        // console.debug("initialiserCertificateStore (connexion, chiffrage)")
+        await Promise.all([
+            connexion.initialiserCertificateStore(ca, {isPEM: true, DEBUG: false}),
+            chiffrage.initialiserCertificateStore(ca, {isPEM: true, DEBUG: false})
+        ])
+    }
 }
 
 function wrapWorker(worker) {
