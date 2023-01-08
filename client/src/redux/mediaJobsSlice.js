@@ -53,7 +53,7 @@ function mergeAction(state, action) {
     }
 
     if(trier) {
-        console.warn("TODO - trier liste")
+        // console.warn("TODO - trier liste")
     }
 
 }

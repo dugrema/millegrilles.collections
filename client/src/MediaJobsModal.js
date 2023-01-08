@@ -9,6 +9,7 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
+import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { merge, clearCompletes } from './redux/mediaJobsSlice'
 
@@ -65,6 +66,9 @@ function ModalInfoMediaJobs(props) {
                         <Button onClick={clearCompletesHandler}>Clear completes</Button>
                     </Col>
                 </Row>
+
+                <p></p>
+
                 <AfficherListeJobs
                     listeJobs={listeJobs} />
             </Container>
@@ -87,7 +91,9 @@ function AfficherListeJobs(props) {
     return listeJobs.map(item=>{
         let progres = 'N/D'
         if(!isNaN(item.pct_progres) && item.pct_progres !== null) {
-            progres = item.pct_progres + '%'
+            progres = <ProgressBar now={item.pct_progres} label={`${item.pct_progres}%`} />
+        } else if(item.etat === 1) {
+            progres = 'Pending'
         }
 
         let label = item.nom || item.tuuid || item.fuuid || 'N/D'
@@ -97,9 +103,11 @@ function AfficherListeJobs(props) {
 
         return (
             <Row key={`${item.fuuid}/${item.cle_conversion}`}>
-                <Col lg={8}>{label}</Col>
+                <Col lg={6}>{label}</Col>
                 <Col lg={3}>{etat}</Col>
-                <Col>{progres}</Col>
+                <Col>
+                    {progres}
+                </Col>
             </Row>
         )
     })

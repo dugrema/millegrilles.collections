@@ -67,7 +67,12 @@ function Menu(props) {
 
   return (
     <>
-      <MenuMillegrilles brand={brand} labelMenu="Menu" etatConnexion={etatConnexion} onSelect={handlerSelect}>
+      <MenuMillegrilles 
+        brand={brand} 
+        labelMenu="Menu" 
+        etatConnexion={etatConnexion} 
+        onSelect={handlerSelect}
+        expand="lg">
 
         <Nav.Item>
             <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
