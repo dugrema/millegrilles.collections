@@ -100,7 +100,7 @@ function chargerInfoFichiers(workers) {
 async function traiterChargerInfoFichiers(workers, dispatch, getState) {
     const { connexion, clesDao, collectionsDao } = workers
     
-    console.debug("traiterChargerInfoFichiers")
+    // console.debug("traiterChargerInfoFichiers")
     
     const jobsIncompletes = getState()[SLICE_NAME].liste.filter(item=>{
         return item.charge !== true
@@ -114,7 +114,7 @@ async function traiterChargerInfoFichiers(workers, dispatch, getState) {
         if(tuuid) {
             const fichier = (await collectionsDao.getParTuuids([tuuid])).pop()
             if(fichier) {
-                console.debug("Fichier existant : ", fichier)
+                // console.debug("Fichier existant : ", fichier)
                 const jobMaj = {...fichier, ...job, charge: true}
                 if(!fichier.nom) {
                     fuuidsChiffres.add(fuuid)  // Le fichier n'est pas dechiffre
@@ -130,11 +130,19 @@ async function traiterChargerInfoFichiers(workers, dispatch, getState) {
         }
     }
 
+    // console.debug("Tuuids a charger : ", tuuids)
+
+    tuuids = [...tuuids]  // Convertir HashSet en array
     if(tuuids.length > 0) {
-        tuuids = [...tuuids]  // Convertir HashSet en array
         const documentsInfo = await connexion.getDocuments(tuuids)
-        console.debug("Recu docs info pour jobs ", documentsInfo)
-        throw new Error('todo')
+        // console.debug("Recu docs info pour jobs ", documentsInfo)
+        if(documentsInfo.fichiers && documentsInfo.fichiers.length > 0) {
+            for(const fichier of documentsInfo.fichiers) {
+                dispatch(merge({...fichier, fuuid: fichier.fuuid_v_courante, charge: true}))
+                collectionsDao.updateDocument(fichier)
+                    .catch(err=>console.error("Erreur sauvegarde fichier"))
+            }
+        }
     }
 
 }
@@ -146,16 +154,16 @@ function dechiffrerInfoFichiers(workers) {
 async function traiterDechiffrerInfoFichiers(workers, dispatch, getState) {
     const { connexion, clesDao, collectionsDao, chiffrage } = workers
     
-    console.debug("traiterDechiffrerInfoFichiers")
+    // console.debug("traiterDechiffrerInfoFichiers")
 
     const fuuidsChiffres = getState()[SLICE_NAME].liste.filter(item=>{
         return item.dechiffre !== true
     }).map(item=>item.fuuid)
 
-    console.debug("Charger cles pour ", fuuidsChiffres)
+    // console.debug("Charger cles pour ", fuuidsChiffres)
     if(fuuidsChiffres.length > 0) {
         const cles = await clesDao.getCles(fuuidsChiffres)
-        console.debug("Cles recues ", cles)
+        // console.debug("Cles recues ", cles)
 
         for await (const job of getState()[SLICE_NAME].liste) {
             const { tuuid, fuuid } = job
@@ -164,9 +172,9 @@ async function traiterDechiffrerInfoFichiers(workers, dispatch, getState) {
                 const version_courante = job.version_courante || {}
                 const metadata = version_courante.metadata
                 if(metadata) {
-                    console.debug("Dechiffrer ", job)
+                    // console.debug("Dechiffrer ", job)
                     const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cle)
-                    console.debug("Fichier dechiffre : ", metaDechiffree)
+                    // console.debug("Fichier dechiffre : ", metaDechiffree)
                     const jobMaj = {...job, ...metaDechiffree, dechiffre: true}
                     dispatch(merge(jobMaj))
                 }
@@ -190,35 +198,18 @@ export function middlewareSetup(workers) {
 }
 
 async function middlewareListener(workers, action, listenerApi) {
-    console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    // console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
     // console.debug("Arret upload info : %O", arretUpload)
 
     await listenerApi.unsubscribe()
     try {
         if(action.type === entretien.type) {
-            console.debug("Action entretien")
+            // console.debug("Action entretien")
         }
 
         await listenerApi.dispatch(chargerInfoFichiers(workers))
         await listenerApi.dispatch(dechiffrerInfoFichiers(workers))
 
-        // // Reset liste de fichiers completes utilises pour calculer pourcentage upload
-        // listenerApi.dispatch(clearCycleDownload())
-
-        // const task = listenerApi.fork( forkApi => tacheDownload(workers, listenerApi, forkApi) )
-        // const stopAction = listenerApi.condition(arretDownload.match)
-        // await Promise.race([task.result, stopAction])
-
-        // // console.debug("downloaderMiddlewareListener Task %O\nstopAction %O", task, stopAction)
-        // task.result.catch(err=>console.error("Erreur task : %O", err))
-        // // stopAction
-        // //     .then(()=>task.cancel())
-        // //     .catch(()=>{
-        // //         // Aucun impact
-        // //     })
-
-        // const resultat = await task.result  // Attendre fin de la tache en cas d'annulation
-        // // console.debug("downloaderMiddlewareListener Sequence download terminee, resultat %O", resultat)
     } finally {
         await listenerApi.subscribe()
     }

@@ -13,6 +13,8 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { merge, clearCompletes, entretien } from './redux/mediaJobsSlice'
 
+import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
+
 function ModalInfoMediaJobs(props) {
     const { show, fermer } = props
 
@@ -28,10 +30,10 @@ function ModalInfoMediaJobs(props) {
 
     useEffect(()=>{
         if(!etatPret) return
-        console.debug("Initialiser liste media jobs")
+        // console.debug("Initialiser liste media jobs")
         workers.connexion.getMediaJobs()
             .then(reponse=>{
-                console.debug("Reponse get media jobs ", reponse)
+                // console.debug("Reponse get media jobs ", reponse)
                 const jobs = reponse.jobs
                 if(jobs && jobs.length > 0) dispatch(merge(jobs))
             })
@@ -84,7 +86,7 @@ function ModalInfoMediaJobs(props) {
 export default ModalInfoMediaJobs
 
 function traiterMessageTranscodage(dispatch, eventMessage) {
-    console.debug("Evenement transcodage ", eventMessage)
+    // console.debug("Evenement transcodage ", eventMessage)
     const message = eventMessage.message
     dispatch(merge(message))
 }
@@ -99,27 +101,47 @@ export function AfficherListeJobs(props) {
         return item.fuuid === fuuid
     })
 
-    return listeJobs.map(item=>{
-        let progres = 'N/D'
-        if(!isNaN(item.pct_progres) && item.pct_progres !== null) {
-            progres = <ProgressBar now={item.pct_progres} label={`${item.pct_progres}%`} />
-        } else if(item.etat === 1) {
-            progres = 'Pending'
-        }
-
-        let label = item.nom || item.tuuid || item.fuuid || 'N/D'
-        label = label.substring(0, 50)
-
-        let etat = item.etat || ''
-
-        return (
-            <Row key={`${item.fuuid}/${item.cle_conversion}`}>
-                <Col lg={6}>{label}</Col>
-                <Col lg={3}>{etat}</Col>
-                <Col>
-                    {progres}
-                </Col>
-            </Row>
-        )
-    })
+    return listeJobs.map(item=>(
+        <AfficherLigneFormatVideo 
+            key={`${item.fuuid}/${item.cle_conversion}`} 
+            showNomFichier={true}
+            job={item} />
+    ))
 }
+
+export function AfficherLigneFormatVideo(props) {
+    const { showNomFichier, job } = props
+  
+    let label = job.nom || job.tuuid || job.fuuid || 'N/D'
+    // label = label.substring(0, 50)
+
+    let etat = job.etat || ''
+
+    let progres = null
+    if(!isNaN(job.pct_progres) && job.pct_progres !== null) {
+        progres = <ProgressBar now={job.pct_progres} label={`${job.pct_progres}%`} />
+    } else if(job.etat === 1) {
+        progres = 'Pending'
+    } else {
+        progres = job.etat
+    }
+
+    const version_courante = job.version_courante || {}
+    const tailleFichier = version_courante.taille
+    const bitrate_quality = job.quality
+    const [_mimetype, codec, resolution] = job.cle_conversion.split(';')
+  
+    return (
+      <Row>
+        {showNomFichier?
+            <Col xs={12} lg={5}>{label}</Col>
+            :''
+        }
+        <Col xs={3} lg={1}>{codec}</Col>
+        <Col xs={3} lg={1}>{resolution}</Col>
+        <Col xs={6} lg={2}><FormatteurTaille value={tailleFichier} /></Col>
+        <Col>{progres}</Col>
+      </Row>
+    )
+  
+  }
