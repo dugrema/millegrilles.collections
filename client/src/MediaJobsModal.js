@@ -20,8 +20,6 @@ function ModalInfoMediaJobs(props) {
     const workers = useWorkers()
     const etatPret = useEtatPret()
 
-    const listeJobs = useSelector(state=>state.mediaJobs.liste)
-
     const messageTranscodageHandler = useMemo(()=>{
         return comlinkProxy(message=>traiterMessageTranscodage(dispatch, message))
     }, [dispatch])
@@ -56,7 +54,7 @@ function ModalInfoMediaJobs(props) {
     // Timer pour entretien des jobs
     useEffect(()=>{
         if(etatPret) {
-            const interval = setInterval(()=>dispatch(entretien()), 10_000)
+            const interval = setInterval(()=>dispatch(entretien()), 30_000)
             return () => clearInterval(interval)  // Cleanup timer
         }
     }, [dispatch, etatPret])
@@ -77,8 +75,7 @@ function ModalInfoMediaJobs(props) {
 
                 <p></p>
 
-                <AfficherListeJobs
-                    listeJobs={listeJobs} />
+                <AfficherListeJobs />
             </Container>
         </Modal>
     )
@@ -92,9 +89,15 @@ function traiterMessageTranscodage(dispatch, eventMessage) {
     dispatch(merge(message))
 }
 
-function AfficherListeJobs(props) {
+export function AfficherListeJobs(props) {
 
-    const { listeJobs } = props
+    const { fuuid } = props
+
+    let listeJobs = useSelector(state=>state.mediaJobs.liste)
+    if(fuuid) listeJobs = listeJobs.filter(item=>{
+        if([5, 'termine'].includes(item.etat)) return false
+        return item.fuuid === fuuid
+    })
 
     return listeJobs.map(item=>{
         let progres = 'N/D'

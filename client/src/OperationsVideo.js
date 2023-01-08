@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { proxy } from 'comlink'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
@@ -8,6 +9,8 @@ import Form from 'react-bootstrap/Form'
 import Col from 'react-bootstrap/Col'
 import Row from 'react-bootstrap/Row'
 import ProgressBar from 'react-bootstrap/ProgressBar'
+
+import { AfficherListeJobs } from './MediaJobsModal'
 
 const VIDEO_CODEC = [
   {label: 'HEVC (mp4)', value: "hevc"},
@@ -179,36 +182,36 @@ export function ConversionVideo(props) {
     const mimetype = versionCourante.mimetype || ''
     const mimetypeBase = mimetype.split('/').shift()
     
-    const [transcodage, setTranscodage] = useState('')
-    const [evenementTranscodage, addEvenementTranscodage] = useState('')
-    const evenementTranscodageCb = useMemo(()=>proxy(addEvenementTranscodage), [addEvenementTranscodage])
+    // const [transcodage, setTranscodage] = useState('')
+    // const [evenementTranscodage, addEvenementTranscodage] = useState('')
+    // const evenementTranscodageCb = useMemo(()=>proxy(addEvenementTranscodage), [addEvenementTranscodage])
 
     const erreurCb = (err, message) => {
       console.error("ConversionVideo Erreur %s : %O", message, err)
     }
 
-    useEffect(()=>{
-      // console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
-      const {connexion} = workers
-      if(etatConnexion && etatAuthentifie) {
-        connexion.enregistrerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
-          .catch(err=>console.error("Erreur enregistrement evenements transcodage : %O", err))
-        return () => {
-          connexion.retirerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
-            .catch(err=>console.error("Erreur retrait evenements transcodage : %O", err))
-        }
-      }
-    }, [workers, fuuid, etatConnexion, etatAuthentifie, evenementTranscodageCb])
+    // useEffect(()=>{
+    //   // console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
+    //   const {connexion} = workers
+    //   if(etatConnexion && etatAuthentifie) {
+    //     connexion.enregistrerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
+    //       .catch(err=>console.error("Erreur enregistrement evenements transcodage : %O", err))
+    //     return () => {
+    //       connexion.retirerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
+    //         .catch(err=>console.error("Erreur retrait evenements transcodage : %O", err))
+    //     }
+    //   }
+    // }, [workers, fuuid, etatConnexion, etatAuthentifie, evenementTranscodageCb])
 
-    useEffect(()=>{
-      if(evenementTranscodage) {
-        // console.debug("Traiter evenement transcodage : %O", evenementTranscodage)
-        const [cle, params] = parseEvenementTranscodage(evenementTranscodage)
-        setTranscodage({...transcodage, [cle]: params})
+    // useEffect(()=>{
+    //   if(evenementTranscodage) {
+    //     // console.debug("Traiter evenement transcodage : %O", evenementTranscodage)
+    //     const [cle, params] = parseEvenementTranscodage(evenementTranscodage)
+    //     setTranscodage({...transcodage, [cle]: params})
 
-        addEvenementTranscodage('')  // Clear
-      }
-    }, [transcodage, evenementTranscodage, addEvenementTranscodage, setTranscodage])
+    //     addEvenementTranscodage('')  // Clear
+    //   }
+    // }, [transcodage, evenementTranscodage, addEvenementTranscodage, setTranscodage])
 
     if(mimetypeBase !== 'video') return ''
 
@@ -218,13 +221,11 @@ export function ConversionVideo(props) {
             <FormConversionVideo 
                 workers={workers}
                 fichier={fichier}
-                setTranscodage={setTranscodage}
                 usager={usager}
                 erreurCb={erreurCb}
             />
 
             <Videos 
-              transcodage={transcodage}
               workers={workers}
               fichier={fichier}
               support={support}
@@ -415,7 +416,7 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
 }
 
 function Videos(props) {
-  const { workers, fichier, support, downloadAction, transcodage } = props
+  const { workers, fichier, support, downloadAction } = props
   const versionCourante = fichier.version_courante || {}
   const videos = versionCourante.video || {}
 
@@ -454,7 +455,7 @@ function Videos(props) {
         )
       })}
 
-      <TranscodageEnCours transcodage={transcodage} />
+      <AfficherListeJobs fuuid={fichier.fuuid_v_courante} />
     </>
   )
 }
@@ -485,36 +486,36 @@ function sortVideos(a, b) {
     return 0
 }
 
-function TranscodageEnCours(props) {
+// function TranscodageEnCours(props) {
 
-  const { transcodage } = props
+//   const { transcodage } = props
 
-  if(!transcodage) return ''
+//   if(!transcodage) return ''
 
-  const transcodageFiltre = Object.values(transcodage).filter(item=>item.pctProgres!==100)
-  transcodageFiltre.sort(triCleTranscodage)
+//   const transcodageFiltre = Object.values(transcodage).filter(item=>item.pctProgres!==100)
+//   transcodageFiltre.sort(triCleTranscodage)
 
-  // console.debug("Transcodage filtre : %O", transcodageFiltre)
+//   // console.debug("Transcodage filtre : %O", transcodageFiltre)
 
-  return (
-    <>
-      {transcodageFiltre.filter(item=>item&&item.mimetype).map((video, idx)=>{
-        const mimetype = video.mimetype || ''
-      return (
-        <Row key={idx}>
-          <Col xs={12} md={3}>{mimetype.split('/').pop()}</Col>
-          <Col xs={12} md={3}>{video.resolution}p</Col>
-          <Col xs={10} md={5}>
-            <ProgressBar now={video.pctProgres} />
-          </Col>
-          <Col xs={2} md={1}>
-            {video.pctProgres}%
-          </Col>
-        </Row>
-      )})}
-    </>
-  )
-}
+//   return (
+//     <>
+//       {transcodageFiltre.filter(item=>item&&item.mimetype).map((video, idx)=>{
+//         const mimetype = video.mimetype || ''
+//       return (
+//         <Row key={idx}>
+//           <Col xs={12} md={3}>{mimetype.split('/').pop()}</Col>
+//           <Col xs={12} md={3}>{video.resolution}p</Col>
+//           <Col xs={10} md={5}>
+//             <ProgressBar now={video.pctProgres} />
+//           </Col>
+//           <Col xs={2} md={1}>
+//             {video.pctProgres}%
+//           </Col>
+//         </Row>
+//       )})}
+//     </>
+//   )
+// }
 
 function triCleTranscodage(a,b) {
   if(a===b) return 0
