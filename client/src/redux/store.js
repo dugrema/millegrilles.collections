@@ -3,7 +3,7 @@ import { reducer as fichiers, setup as setupFichiers } from './fichiersSlice'
 import { reducer as navigationSecondaire, setup as setupNavigationSecondaire } from './navigationSecondaireSlice'
 import uploader, { uploaderMiddlewareSetup } from './uploaderSlice'
 import downloader, { downloaderMiddlewareSetup } from './downloaderSlice'
-import mediaJobs from './mediaJobsSlice'
+import mediaJobs, { middlewareSetup as middlewareSetupMedia } from './mediaJobsSlice'
 
 function storeSetup(workers) {
 
@@ -24,6 +24,7 @@ function storeSetup(workers) {
       const { dechiffrageMiddleware: dechiffrageNavigationSecondaire } = setupNavigationSecondaire(workers)
       const uploaderMiddleware = uploaderMiddlewareSetup(workers)
       const downloaderMiddleware = downloaderMiddlewareSetup(workers)
+      const mediaJobsMiddleware = middlewareSetupMedia(workers)
 
       // Prepend, evite le serializability check
       return getDefaultMiddleware()
@@ -31,6 +32,7 @@ function storeSetup(workers) {
         .prepend(dechiffrageNavigationSecondaire.middleware)
         .prepend(uploaderMiddleware.middleware)
         .prepend(downloaderMiddleware.middleware)
+        .prepend(mediaJobsMiddleware.middleware)
 
     },
   })

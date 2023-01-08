@@ -11,7 +11,7 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import { merge, clearCompletes } from './redux/mediaJobsSlice'
+import { merge, clearCompletes, entretien } from './redux/mediaJobsSlice'
 
 function ModalInfoMediaJobs(props) {
     const { show, fermer } = props
@@ -53,6 +53,14 @@ function ModalInfoMediaJobs(props) {
         }
       }, [workers, etatPret, messageTranscodageHandler])
   
+    // Timer pour entretien des jobs
+    useEffect(()=>{
+        if(etatPret) {
+            const interval = setInterval(()=>dispatch(entretien()), 10_000)
+            return () => clearInterval(interval)  // Cleanup timer
+        }
+    }, [dispatch, etatPret])
+
     return (
         <Modal show={show} onHide={fermer} size="lg">
             <Modal.Header closeButton={true}>

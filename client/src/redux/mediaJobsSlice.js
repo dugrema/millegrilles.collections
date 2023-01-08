@@ -71,6 +71,10 @@ function clearCompletesAction(state, action) {
     })
 }
 
+function entretienAction(state, action) {
+    // Dummy pour declencher middleware
+}
+
 const mediaJobsSlice = createSlice({
     name: SLICE_NAME,
     initialState,
@@ -78,67 +82,146 @@ const mediaJobsSlice = createSlice({
         setUserId: setUserIdAction,
         merge: mergeAction,
         clearCompletes: clearCompletesAction,
+        entretien: entretienAction,
     }
 })
 
 export const { 
-    setUserId, merge, clearCompletes,
+    setUserId, merge, clearCompletes, entretien,
 } = mediaJobsSlice.actions
 export default mediaJobsSlice.reducer
 
 // Thunks
 
-export function mergeJobs(workers, jobs) {
-    return (dispatch, getState) => traiterMergeJobs(workers, jobs, dispatch, getState)
+function chargerInfoFichiers(workers) {
+    return (dispatch, getState) => traiterChargerInfoFichiers(workers, dispatch, getState)
 }
 
-async function traiterMergeJobs(workers, jobs, dispatch, getState) {
-    const { clesDao } = workers
+async function traiterChargerInfoFichiers(workers, dispatch, getState) {
+    const { connexion, clesDao, collectionsDao } = workers
     
-    // console.debug("traiterAjouterJob ", job.tuuid)
-    console.debug("traiterMergeJobs payload : ", jobs)
+    console.debug("traiterChargerInfoFichiers")
     
-    const userId = getState()[SLICE_NAME].userId
-    if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
+    const jobsIncompletes = getState()[SLICE_NAME].liste.filter(item=>{
+        return item.charge !== true
+    })
 
-    let fuuids = Set()
-    for await (const job of jobs) {
-        const { fuuid } = job
-        fuuids.push(fuuid)
+    let tuuids = new Set(), fuuidsChiffres = new Set()
+    for await (const job of jobsIncompletes) {
+        const { fuuid, tuuid } = job
+
+        // Tenter de charger information locale
+        if(tuuid) {
+            const fichier = (await collectionsDao.getParTuuids([tuuid])).pop()
+            if(fichier) {
+                console.debug("Fichier existant : ", fichier)
+                const jobMaj = {...fichier, ...job, charge: true}
+                if(!fichier.nom) {
+                    fuuidsChiffres.add(fuuid)  // Le fichier n'est pas dechiffre
+                } else {
+                    jobMaj.dechiffre = true
+                }
+                dispatch(merge(jobMaj))
+            } else {
+                tuuids.add(tuuid)
+            }
+        } else {
+            console.warn("Job sans tuuid ", job)
+        }
     }
 
-    fuuids = [...fuuids]  // Convertir HashSet en array
+    if(tuuids.length > 0) {
+        tuuids = [...tuuids]  // Convertir HashSet en array
+        const documentsInfo = await connexion.getDocuments(tuuids)
+        console.debug("Recu docs info pour jobs ", documentsInfo)
+        throw new Error('todo')
+    }
 
-    console.debug("Charger cles pour ", fuuids)
-    const cles = await clesDao.getCles(fuuids)
-    console.debug("Cles recues ", cles)
+}
 
-    // dispatch(pushMediaJob(job))
+function dechiffrerInfoFichiers(workers) {
+    return (dispatch, getState) => traiterDechiffrerInfoFichiers(workers, dispatch, getState)
+}
 
-    // const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
-    // console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
-    // if(!infoDownload) {
-    //     // Ajouter l'upload, un middleware va charger le reste de l'information
-    //     // console.debug("Ajout upload %O", correlation)
+async function traiterDechiffrerInfoFichiers(workers, dispatch, getState) {
+    const { connexion, clesDao, collectionsDao, chiffrage } = workers
+    
+    console.debug("traiterDechiffrerInfoFichiers")
 
-    //     await clesDao.getCles([fuuid])  // Fetch pour cache (ne pas stocker dans redux)
+    const fuuidsChiffres = getState()[SLICE_NAME].liste.filter(item=>{
+        return item.dechiffre !== true
+    }).map(item=>item.fuuid)
 
-    //     const nouveauDownload = {
-    //         ...docDownload,
-    //         fuuid,
-    //         taille,
-    //         userId,
-    //         etat: ETAT_PRET,
-    //         dateCreation: new Date().getTime(),
-    //     }
+    console.debug("Charger cles pour ", fuuidsChiffres)
+    if(fuuidsChiffres.length > 0) {
+        const cles = await clesDao.getCles(fuuidsChiffres)
+        console.debug("Cles recues ", cles)
 
-    //     // Conserver le nouveau download dans IDB
-    //     await downloadFichiersDao.updateFichierDownload(nouveauDownload)
+        for await (const job of getState()[SLICE_NAME].liste) {
+            const { tuuid, fuuid } = job
+            const cle = cles[fuuid]
+            if(cle) {
+                const version_courante = job.version_courante || {}
+                const metadata = version_courante.metadata
+                if(metadata) {
+                    console.debug("Dechiffrer ", job)
+                    const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cle)
+                    console.debug("Fichier dechiffre : ", metaDechiffree)
+                    const jobMaj = {...job, ...metaDechiffree, dechiffre: true}
+                    dispatch(merge(jobMaj))
+                }
+            }
+        }
 
-    //     dispatch(pushDownload(nouveauDownload))
-    // } else {
-    //     throw new Error(`Download ${fuuid} existe deja`)
-    // }    
+    }
+    
+}
+
+// Middleware
+export function middlewareSetup(workers) {
+    const uploaderMiddleware = createListenerMiddleware()
+    
+    uploaderMiddleware.startListening({
+        matcher: isAnyOf(merge, entretien),
+        effect: (action, listenerApi) => middlewareListener(workers, action, listenerApi)
+    }) 
+    
+    return uploaderMiddleware
+}
+
+async function middlewareListener(workers, action, listenerApi) {
+    console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    // console.debug("Arret upload info : %O", arretUpload)
+
+    await listenerApi.unsubscribe()
+    try {
+        if(action.type === entretien.type) {
+            console.debug("Action entretien")
+        }
+
+        await listenerApi.dispatch(chargerInfoFichiers(workers))
+        await listenerApi.dispatch(dechiffrerInfoFichiers(workers))
+
+        // // Reset liste de fichiers completes utilises pour calculer pourcentage upload
+        // listenerApi.dispatch(clearCycleDownload())
+
+        // const task = listenerApi.fork( forkApi => tacheDownload(workers, listenerApi, forkApi) )
+        // const stopAction = listenerApi.condition(arretDownload.match)
+        // await Promise.race([task.result, stopAction])
+
+        // // console.debug("downloaderMiddlewareListener Task %O\nstopAction %O", task, stopAction)
+        // task.result.catch(err=>console.error("Erreur task : %O", err))
+        // // stopAction
+        // //     .then(()=>task.cancel())
+        // //     .catch(()=>{
+        // //         // Aucun impact
+        // //     })
+
+        // const resultat = await task.result  // Attendre fin de la tache en cas d'annulation
+        // // console.debug("downloaderMiddlewareListener Sequence download terminee, resultat %O", resultat)
+    } finally {
+        await listenerApi.subscribe()
+    }
 }
 
 // Correction de mapping d'evenements/autre sources
