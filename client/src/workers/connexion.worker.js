@@ -211,6 +211,12 @@ function syncCorbeille(debut, fin, opts) {
   return ConnexionClient.emitBlocking('syncCorbeille', requete, params)
 }
 
+function getMediaJobs(opts) {
+  opts = opts || {}
+  const requete = {...opts}
+  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'requeteJobsVideo', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('requeteJobsVideo', requete, params)
+}
 
 // Fonctions delegues
 
@@ -290,6 +296,7 @@ expose({
     regenererPreviews,
 
     syncCollection, syncRecents, syncCorbeille,
+    getMediaJobs,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,

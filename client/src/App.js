@@ -35,6 +35,7 @@ import Menu from './Menu'
 const NavigationCollections = lazy( () => import('./NavigationCollections') )
 const NavigationRecents = lazy( () => import('./NavigationRecents') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
+const MediaJobsModal = lazy( () => import('./MediaJobsModal') )
 
 const CONST_UPLOAD_COMPLET_EXPIRE = 2 * 60 * 60 * 1000,  // Auto-cleanup apres 2 heures (millisecs) de l'upload,
       CONST_DOWNLOAD_COMPLET_EXPIRE = 48 * 60 * 60 * 1000  // Auto-cleanup apres 2 jours (millisecs) du download
@@ -93,6 +94,7 @@ function LayoutMain() {
   const dispatch = useDispatch()
 
   const [showTransfertModal, setShowTransfertModal] = useState(false)
+  const [showMediaJobs, setShowMediaJobs] = useState(false)
   const [page, setPage] = useState('')
   
   const [erreur, setErreur] = useState('')
@@ -101,6 +103,9 @@ function LayoutMain() {
     setErreur({err, message})
   }, [setErreur])
   const handlerCloseErreur = useCallback(()=>setErreur(''), [setErreur])
+
+  const showMediaJobsOuvrir = useCallback(()=>{ setShowMediaJobs(true) }, [setShowMediaJobs])
+  const showMediaJobsFermer = useCallback(()=>{ setShowMediaJobs(false) }, [setShowMediaJobs])
 
   // Modal transfert et actions
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
@@ -139,6 +144,7 @@ function LayoutMain() {
         i18n={i18n} 
         manifest={manifest} 
         showTransfertModal={showTransfertModalOuvrir}
+        showMediaJobs={showMediaJobsOuvrir}
         onSelect={handlerSelect} />
   )
 
@@ -163,6 +169,8 @@ function LayoutMain() {
           continuerUploads={handlerContinuerUploads}
           supprimerDownloads={handlerSupprimerDownloads}
           continuerDownloads={handlerContinuerDownloads}
+          showMediaJobs={showMediaJobs}
+          showMediaJobsFermer={showMediaJobsFermer}
         />
 
       <InitialisationDownload />
@@ -197,6 +205,7 @@ function Modals(props) {
     showTransfertModal, showTransfertModalFermer, erreur, handlerCloseErreur, 
     supprimerUploads, continuerUploads,
     supprimerDownloads, continuerDownloads,
+    showMediaJobs, showMediaJobsFermer,
   } = props
 
   const workers = useWorkers()
@@ -229,6 +238,11 @@ function Modals(props) {
           message={erreur.message} 
           titre={t('Erreur.titre')} 
           fermer={handlerCloseErreur} 
+        />
+
+      <MediaJobsModal
+          show={showMediaJobs}
+          fermer={showMediaJobsFermer}
         />
     </div>
   )

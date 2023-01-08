@@ -71,6 +71,10 @@ function syncCorbeille(socket, params) {
   return transmettreRequete(socket, params, 'syncCorbeille')
 }
 
+function requeteJobsVideo(socket, params) {
+  return transmettreRequete(socket, params, 'requeteJobsVideo')
+}
+
 async function creerCollection(socket, params) {
     const commandeMaitrecles = params['_commandeMaitrecles']
     delete params['_commandeMaitrecles']
@@ -337,11 +341,20 @@ function retirerCallbackMajContenuCollection(socket, params, cb) {
   socket.unsubscribe(opts, cb)
 }
 
-const CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO = ['evenement.fichiers._FUUID_.transcodageProgres']
+const CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO = [
+  // 'evenement.fichiers._FUUID_.transcodageProgres',
+  'evenement.fichiers._USER_ID_.transcodageProgres',
+]
 
 function enregistrerCallbackTranscodageVideo(socket, params, cb) {
   const { fuuid } = params
-  const routingKeys = CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO.map(item=>item.replace('_FUUID_', fuuid))
+  const userId = socket.userId
+
+  const routingKeys = CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO.map(item =>
+    item.
+      replace('_FUUID_', fuuid).
+      replace('_USER_ID_', userId)
+  )
   const opts = { 
     routingKeys,
     exchanges: ['2.prive'],
@@ -352,8 +365,14 @@ function enregistrerCallbackTranscodageVideo(socket, params, cb) {
 }
 
 function retirerCallbackTranscodageVideo(socket, params, cb) {
-    const { fuuid } = params
-    const routingKeys = CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO.map(item=>item.replace('_FUUID_', fuuid))
+  const { fuuid } = params
+  const userId = socket.userId
+
+  const routingKeys = CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO.map(item =>
+    item.
+      replace('_FUUID_', fuuid).
+      replace('_USER_ID_', userId)
+  )
   const opts = { 
     routingKeys,
     exchanges: ['2.prive'],
@@ -472,6 +491,7 @@ module.exports = {
     ajouterFichier, creerTokenStream, getClesChiffrage, supprimerVideo, completerPreviews,
 
     syncCollection, syncRecents, syncCorbeille,
+    requeteJobsVideo,
 
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,

@@ -31,7 +31,7 @@ function Menu(props) {
 
   const { 
     i18n, etatConnexion, manifest, onSelect, etatTransfert, 
-    showTransfertModal,
+    showTransfertModal, showMediaJobs,
   } = props
  
   const { t } = useTranslation()
@@ -49,6 +49,7 @@ function Menu(props) {
   const handlerSelect = eventKey => {
     switch(eventKey) {
       case 'information': setShowModalInfo(true); break
+      case 'mediaJobs': showMediaJobs(); break
       case 'portail': window.location = '/millegrilles'; break
       case 'deconnecter': window.location = '/millegrilles/authentification/fermer'; break
       default:
@@ -80,6 +81,10 @@ function Menu(props) {
 
         <Nav.Link eventKey="corbeille" title="Corbeille">
           <i className="fa fa-trash-o" /> {' '} {t('menu.corbeille')}
+        </Nav.Link>
+
+        <Nav.Link eventKey="mediaJobs" title="Media Jobs">
+          <i className="fa fa-film" /> {' '} {t('menu.mediaJobs')}
         </Nav.Link>
 
         <Nav.Link eventKey="information" title="Afficher l'information systeme">
