@@ -12,6 +12,6 @@ EXPOSE 80 443
 # WORKDIR $APP_FOLDER
 
 COPY . $APP_FOLDER/
-RUN npm install --omit=dev
+RUN export NODE_OPTIONS=--openssl-legacy-provider && npm install --omit=dev
 
 CMD [ "npm", "run", "server" ]
