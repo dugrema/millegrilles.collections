@@ -23,6 +23,7 @@ function mergeAction(state, action) {
 
     for (let job of jobs) {
         job = mapJob(job)
+        // console.debug("Mapper job ", job)
         const { fuuid, cle_conversion } = job
 
         // Map job
@@ -55,13 +56,18 @@ function mergeAction(state, action) {
         console.warn("TODO - trier liste")
     }
 
-    console.debug("Liste jobs post merge : ", [...state.liste])
-
 }
 
 function clearCompletesAction(state, action) {
     state.liste = state.liste.filter(item=>{
-        return item.pct_progres !== 100
+        // Retirer conversion completee et confirmee par convertisseur
+        if(item.etat === 'termine') return false
+
+        // Conserver jobs en erreur
+        if([4, 5].includes(item.etat)) return true
+
+        // Conserver jobs a moins de 100%
+        return item.pct_progres === null || isNaN(item.pct_progres) || item.pct_progres !== 100
     })
 }
 
@@ -139,5 +145,11 @@ async function traiterMergeJobs(workers, jobs, dispatch, getState) {
 function mapJob(job) {
     const jobCopie = {...job}
     if(jobCopie.pctProgres) jobCopie.pct_progres = jobCopie.pctProgres
+    if(!jobCopie.cle_conversion) {
+        let resolution = Math.min(jobCopie.width || Number.MAX_SAFE_INTEGER, jobCopie.height || Number.MAX_SAFE_INTEGER)
+        resolution += 'p'
+        const cle_conversion = [jobCopie.mimetype, jobCopie.videoCodec, resolution, jobCopie.videoQuality].join(';')
+        jobCopie.cle_conversion = cle_conversion
+    }
     return jobCopie
 }
