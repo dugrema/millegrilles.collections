@@ -22,7 +22,12 @@ function mergeAction(state, action) {
     let trier = false
 
     for (let job of jobs) {
-        job = mapJob(job)
+        if(job.height || job.width || job.cle_conversion) {
+            job = mapJob(job)
+        } else {
+            console.trace("job sans resolution : ", job)
+            continue  // Skip
+        }
         // console.debug("Mapper job ", job)
         const { fuuid, cle_conversion } = job
 

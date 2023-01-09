@@ -176,6 +176,14 @@ function supprimerVideo(fuuidVideo) {
   )
 }
 
+function supprimerJobVideo(commande) {
+  return ConnexionClient.emitBlocking(
+    'supprimerJobVideo',
+    commande,
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerJobVideo', attacherCertificat: true}
+  )
+}
+
 function creerTokenStream(commande) {
   // const commande = {fuuids}
   return ConnexionClient.emitBlocking(
@@ -296,7 +304,7 @@ expose({
     regenererPreviews,
 
     syncCollection, syncRecents, syncCorbeille,
-    getMediaJobs,
+    getMediaJobs, supprimerJobVideo,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,

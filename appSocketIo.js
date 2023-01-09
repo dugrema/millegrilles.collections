@@ -37,6 +37,7 @@ function configurerEvenements(socket) {
       { eventName: 'syncCorbeille', callback: (params, cb) => traiter(socket, mqdao.syncCorbeille, {params, cb}) },
       { eventName: 'completerPreviews', callback: (params, cb) => traiter(socket, mqdao.completerPreviews, {params, cb}) },
       { eventName: 'requeteJobsVideo', callback: (params, cb) => traiter(socket, mqdao.requeteJobsVideo, {params, cb}) },
+      { eventName: 'supprimerJobVideo', callback: (params, cb) => traiter(socket, mqdao.supprimerJobVideo, {params, cb}) },
 
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},

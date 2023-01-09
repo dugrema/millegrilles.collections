@@ -87,8 +87,15 @@ export default ModalInfoMediaJobs
 
 function traiterMessageTranscodage(dispatch, eventMessage) {
     // console.debug("Evenement transcodage ", eventMessage)
+
     const message = eventMessage.message
-    dispatch(merge(message))
+
+    if(message) {
+        // Verifier si c'est un message de suppression
+        const entete = message['en-tete']
+        if(entete.action === 'jobSupprimee') message.supprime = true
+        dispatch(merge(message))
+    }
 }
 
 export function AfficherListeJobs(props) {
@@ -111,7 +118,10 @@ export function AfficherListeJobs(props) {
 
 export function AfficherLigneFormatVideo(props) {
     const { showNomFichier, job } = props
-  
+    const { fuuid, cle_conversion } = job
+
+    const workers = useWorkers()
+
     let label = job.nom || job.tuuid || job.fuuid || 'N/D'
     // label = label.substring(0, 50)
 
@@ -128,11 +138,17 @@ export function AfficherLigneFormatVideo(props) {
 
     const version_courante = job.version_courante || {}
     const tailleFichier = version_courante.taille
-    const bitrate_quality = job.quality
-    const [_mimetype, codec, resolution] = job.cle_conversion.split(';')
+    const [_mimetype, codec, resolution] = cle_conversion.split(';')
   
+    const supprimerJobVideoHandler = useCallback(()=>{
+        supprimerJobVideo(workers, fuuid, cle_conversion)
+    }, [workers, fuuid, cle_conversion])
+
     return (
       <Row>
+        <Col xs={3} lg={1}>
+            <Button variant="danger" onClick={supprimerJobVideoHandler}>X</Button>
+        </Col>
         {showNomFichier?
             <Col xs={12} lg={5}>{label}</Col>
             :''
@@ -144,4 +160,10 @@ export function AfficherLigneFormatVideo(props) {
       </Row>
     )
   
+  }
+
+  export async function supprimerJobVideo(workers, fuuid, cleConversion) {
+    const { connexion } = workers
+    const reponse = await connexion.supprimerJobVideo({fuuid, cle_conversion: cleConversion})
+    console.debug("Reponse supprimer job video : ", reponse)
   }

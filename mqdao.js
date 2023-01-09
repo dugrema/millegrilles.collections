@@ -138,6 +138,13 @@ function ajouterFichier(socket, params) {
   )
 }
 
+function supprimerJobVideo(socket, params) {
+  return transmettreCommande(
+      socket, params, 'supprimerJobVideo', 
+      {domaine: DOMAINE_GROSFICHIERS}
+  )
+}
+
 async function getClesChiffrage(socket, params) {
   let certificatMaitreCles = _certificatMaitreCles
   if(!certificatMaitreCles) {
@@ -344,6 +351,8 @@ function retirerCallbackMajContenuCollection(socket, params, cb) {
 const CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO = [
   // 'evenement.fichiers._FUUID_.transcodageProgres',
   'evenement.fichiers._USER_ID_.transcodageProgres',
+  'evenement.GrosFichiers._USER_ID_.jobAjoutee',
+  'evenement.GrosFichiers._USER_ID_.jobSupprimee',
 ]
 
 function enregistrerCallbackTranscodageVideo(socket, params, cb) {
@@ -491,7 +500,7 @@ module.exports = {
     ajouterFichier, creerTokenStream, getClesChiffrage, supprimerVideo, completerPreviews,
 
     syncCollection, syncRecents, syncCorbeille,
-    requeteJobsVideo,
+    requeteJobsVideo, supprimerJobVideo,
 
     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
     indexerContenu, transcoderVideo,
