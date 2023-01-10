@@ -1,4 +1,6 @@
 import {useState, useEffect, useCallback, useMemo} from 'react'
+import axios from 'axios'
+
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
 import Row from 'react-bootstrap/Row'
@@ -69,7 +71,7 @@ function AfficherVideo(props) {
                 setPosterObj(image)
             })
             .catch(err=>console.error("Erreur chargement poster : %O", err))
-        
+
         return () => {
             // console.debug("Revoking blob %O", imageChargee)
             URL.revokeObjectURL(imageChargee)
@@ -84,8 +86,27 @@ function AfficherVideo(props) {
         setErrVideo('')
 
         fichier.videoLoader.load(selecteur, {genererToken: true})
-            .then(src=>setSrcVideo(src))
-            .catch(err=>console.error("AfficherVideo erreur chargement video : %O", err))
+            .then(async src => {
+                try {
+                    // console.debug("HEAD src : ", src)
+                    const sourceHead = src[0].src
+                    // S'assurer que le video est pret dans le back-end
+                    await axios({
+                        method: 'HEAD',
+                        url: sourceHead,
+                        timeout: 600_000,
+                    })
+                    // console.debug("Reponse head ", reponse)
+                    setSrcVideo(src)
+                } catch(err) {
+                    console.error("Erreur HEAD : ", err)
+                    setErrVideo('Erreur chargement video (preparation)')
+                }
+            })
+            .catch(err=>{
+                console.error("AfficherVideo erreur chargement video : %O", err)
+                setErrVideo('Erreur chargement video (general)')
+            })
     }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setErrVideo])
 
     const onProgress = useCallback(event => {
@@ -96,6 +117,7 @@ function AfficherVideo(props) {
     const onPlay = useCallback(param => console.debug("onPlay ", param), [])
     const onError = useCallback(event => {
         const target = event.target
+        // console.debug("Erreur load video ", event)
         if(target && target.nodeName === 'SOURCE') {
             // Iterer les sources (automatique). Declarer erreur juste s'il n'y a pas de source suivante.
             if(!target.nextSibling) {
@@ -177,13 +199,28 @@ function PlayerEtatPassthrough(props) {
     }, [srcVideo, setDelaiSelecteur])
 
     if(!posterObj || !srcVideo || delaiSelecteur !== selecteur) {
-        return (
-            <div>
-                <p>
-                    <i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...
-                </p>
-            </div>
-        )
+
+        let message = null
+        if(srcVideo) {
+            message = <p><i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...</p>
+        } else {
+            message = <p><i className="fa fa-spinner fa-spin"/> ... Preparation du video sur le serveur ...</p>
+        }
+
+        if(posterObj) {
+            return (
+                <div>
+                    <img src={posterObj} height='100%' width='100%' />
+                    {message}
+                </div>
+            )
+        } else {
+            return (
+                <div>
+                    {message}
+                </div>
+            )
+        }
     }
 
     if(errVideo) {
