@@ -7,6 +7,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
+import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 
@@ -30,6 +31,7 @@ function AfficherVideo(props) {
     const [timeStamp, setTimeStamp] = useState(0)
     const [videoChargePret, setVideoChargePret] = useState(false)
     const [errVideo, setErrVideo] = useState('')
+    const [progresChargement, setProgresChargement] = useState(0)
 
     useEffect(()=>{
         if(selecteur || !videoLoader) return  // Deja initialise
@@ -56,6 +58,24 @@ function AfficherVideo(props) {
         const currentTime = event.target.currentTime
         setTimeStamp(currentTime)
     }, [setTimeStamp])
+
+    const majChargement = useCallback(info=>{
+        console.debug("Maj chargement ", info)
+        if(info.status === 200) {
+            // Complete
+            setProgresChargement(100)
+        } else if(info.status === 202) {
+            const headers = info.headers
+            console.debug("headers ", headers)
+
+            const position = Number.parseInt(headers['x-file-position']),
+                  taille = Number.parseInt(headers['x-file-size'])
+
+            const progres =  Math.floor(100.0 * position / taille)
+            console.debug("Progres ", progres)
+            setProgresChargement(progres)
+        }
+    }, [setProgresChargement])
 
     useEffect(()=>{
         if(!fichier || !fichier.imageLoader) return // Metadata n'est pas encore genere
@@ -84,18 +104,26 @@ function AfficherVideo(props) {
         // Reset indicateurs
         setVideoChargePret(false)
         setErrVideo('')
+        setProgresChargement(0)
 
         fichier.videoLoader.load(selecteur, {genererToken: true})
             .then(async src => {
                 try {
                     // console.debug("HEAD src : ", src)
                     const sourceHead = src[0].src
-                    // S'assurer que le video est pret dans le back-end
-                    await axios({
-                        method: 'HEAD',
-                        url: sourceHead,
-                        timeout: 600_000,
-                    })
+                    
+                    while(true) {
+                        // S'assurer que le video est pret dans le back-end
+                        const reponse = await axios({
+                            method: 'HEAD',
+                            url: sourceHead,
+                            timeout: 20_000,
+                        })
+                        majChargement(reponse)
+                        if(reponse.status !== 202) break
+                        await new Promise(resolve=>setTimeout(resolve, 2000))
+                    }
+
                     // console.debug("Reponse head ", reponse)
                     setSrcVideo(src)
                 } catch(err) {
@@ -107,7 +135,7 @@ function AfficherVideo(props) {
                 console.error("AfficherVideo erreur chargement video : %O", err)
                 setErrVideo('Erreur chargement video (general)')
             })
-    }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setErrVideo])
+    }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setProgresChargement, setErrVideo])
 
     const onProgress = useCallback(event => {
         // console.debug("onProgress ", event)
@@ -178,11 +206,55 @@ function AfficherVideo(props) {
 
             {/* <AfficherLiensVideo srcVideo={srcVideo} show={!!genererToken} /> */}
 
+            <p></p>
+
+            <ProgresChargement value={progresChargement} srcVideo={srcVideo} />
+
         </div>
     )
 }
 
 export default AfficherVideo
+
+function ProgresChargement(props) {
+
+    const { value, srcVideo } = props
+
+    const [show, setShow] = useState(true)
+
+    const label = useMemo(()=>{
+        if(isNaN(value)) return ''
+        if(value === 100) {
+            if(srcVideo) {
+                return <p><i className="fa fa-spinner fa-spin"/> ... Preparation du video sur le serveur ...</p>
+            } else {
+                return 'Chargement complete'
+            }
+        }
+        return <p><i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...</p>
+    }, [value, srcVideo])
+
+    useEffect(()=>{
+        if(value === null || value === '') setShow(false)
+        else if(value === 100 && srcVideo) {
+            setTimeout(()=>setShow(false), 1500)
+        } else {
+            setShow(true)
+        }
+    }, [value, setShow])
+
+    if(!show) return ''
+
+    return (
+        <Row>
+            <Col xs={12} md={5}>{label}</Col>
+            <Col xs={10} md={4}>
+                <ProgressBar now={value} />
+            </Col>
+            <Col xs={2} md={2}>{value}%</Col>
+        </Row>
+    )
+}
 
 function PlayerEtatPassthrough(props) {
 
@@ -201,11 +273,11 @@ function PlayerEtatPassthrough(props) {
     if(!posterObj || !srcVideo || delaiSelecteur !== selecteur) {
 
         let message = null
-        if(srcVideo) {
-            message = <p><i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...</p>
-        } else {
-            message = <p><i className="fa fa-spinner fa-spin"/> ... Preparation du video sur le serveur ...</p>
-        }
+        // if(srcVideo) {
+        //     message = <p><i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...</p>
+        // } else {
+        //     message = <p><i className="fa fa-spinner fa-spin"/> ... Preparation du video sur le serveur ...</p>
+        // }
 
         if(posterObj) {
             return (
@@ -235,11 +307,11 @@ function PlayerEtatPassthrough(props) {
     return (
         <div>
             {props.children}
-            {(!errVideo && !videoChargePret)?
+            {/* {(!errVideo && !videoChargePret)?
                 <p>
                     <i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...
                 </p>
-            :''}
+            :''} */}
         </div>
     )
 }
