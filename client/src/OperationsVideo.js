@@ -95,6 +95,12 @@ const PROFILS_VIDEO = {
       bitrateAudio: 128000,
       preset: 'slow',
     },
+    'default': {
+      qualityVideo: 31,
+      codecAudio: 'opus',
+      bitrateAudio: 128000,
+      preset: 'slow',
+    },
   },
   'hevc': {
     '270': {
@@ -127,6 +133,12 @@ const PROFILS_VIDEO = {
       bitrateAudio: 128000,
       preset: 'slow',
     },
+    'default': {
+      qualityVideo: 23,
+      codecAudio: 'eac3',
+      bitrateAudio: 128000,
+      preset: 'slow',
+    },
   },
   'h264': {
     '270': {
@@ -136,6 +148,12 @@ const PROFILS_VIDEO = {
       preset: 'fast',
     },
     '480': {
+      qualityVideo: 26,
+      codecAudio: 'aac',
+      bitrateAudio: 128000,
+      preset: 'medium',
+    },
+    'default': {
       qualityVideo: 26,
       codecAudio: 'aac',
       bitrateAudio: 128000,
@@ -168,50 +186,18 @@ function parseEvenementTranscodage(evenement) {
   return [cle, params]
 }
 
-// Utilise pour traiter messages workers (proxy callback)
-// var _updateTranscodage = null
-
 export function ConversionVideo(props) {
-    // console.debug("ConversionVideo proppies : %O", props)
 
     const { workers, support, downloadAction, etatConnexion, etatAuthentifie, usager } = props
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const versionCourante = fichier.version_courante || {}
-    const fuuid = fichier.fuuid_v_courante
     const mimetype = versionCourante.mimetype || ''
     const mimetypeBase = mimetype.split('/').shift()
     
-    // const [transcodage, setTranscodage] = useState('')
-    // const [evenementTranscodage, addEvenementTranscodage] = useState('')
-    // const evenementTranscodageCb = useMemo(()=>proxy(addEvenementTranscodage), [addEvenementTranscodage])
-
     const erreurCb = (err, message) => {
       console.error("ConversionVideo Erreur %s : %O", message, err)
     }
-
-    // useEffect(()=>{
-    //   // console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
-    //   const {connexion} = workers
-    //   if(etatConnexion && etatAuthentifie) {
-    //     connexion.enregistrerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
-    //       .catch(err=>console.error("Erreur enregistrement evenements transcodage : %O", err))
-    //     return () => {
-    //       connexion.retirerCallbackTranscodageProgres({fuuid}, evenementTranscodageCb)
-    //         .catch(err=>console.error("Erreur retrait evenements transcodage : %O", err))
-    //     }
-    //   }
-    // }, [workers, fuuid, etatConnexion, etatAuthentifie, evenementTranscodageCb])
-
-    // useEffect(()=>{
-    //   if(evenementTranscodage) {
-    //     // console.debug("Traiter evenement transcodage : %O", evenementTranscodage)
-    //     const [cle, params] = parseEvenementTranscodage(evenementTranscodage)
-    //     setTranscodage({...transcodage, [cle]: params})
-
-    //     addEvenementTranscodage('')  // Clear
-    //   }
-    // }, [transcodage, evenementTranscodage, addEvenementTranscodage, setTranscodage])
 
     if(mimetypeBase !== 'video') return ''
 
@@ -242,7 +228,6 @@ function FormConversionVideo(props) {
     const [codecVideo, setCodecVideo] = useState('vp9')
     const [codecAudio, setCodecAudio] = useState('opus')
     const [resolutionVideo, setResolutionVideo] = useState(360)
-    // const [bitrateVideo, setBitrateVideo] = useState(250000)
     const [qualityVideo, setQualityVideo] = useState(37)
     const [bitrateAudio, setBitrateAudio] = useState(128000)
     const [preset, setPreset] = useState('medium')
@@ -252,6 +237,7 @@ function FormConversionVideo(props) {
       if(profilCodec) {
         const profilResolution = profilCodec[resolutionVideo]
         if(profilResolution) return profilResolution
+        return profilResolution.default
       }
       return PROFILS_VIDEO['h264']['270']  // Par defaut, profil h264 en 270p
     }, [codecVideo, resolutionVideo])
@@ -284,9 +270,7 @@ function FormConversionVideo(props) {
 
     const estPret = codecVideo && codecAudio && resolutionVideo && qualityVideo && bitrateAudio
   
-    // const changerCodecAudio = event => { setCodecAudio(event.currentTarget.value) }
     const changerResolutionVideo = event => { setResolutionVideo(Number(event.currentTarget.value)) }
-    // const changerBitrateVideo = event => { setBitrateVideo(Number(event.currentTarget.value)) }
     const changerQualityVideo = event => { setQualityVideo(Number(event.currentTarget.value)) }
     const changerBitrateAudio = event => { setBitrateAudio(Number(event.currentTarget.value)) }
   
@@ -308,7 +292,14 @@ function FormConversionVideo(props) {
           <Col xs={12} lg={6}>
             <Form>
               <SelectGroup formLabel={'Codec Video'} name={'codecVideo'} value={codecVideo} onChange={changerCodecVideo} options={VIDEO_CODEC} />
-              <SelectGroup formLabel={'Resolution Video'} name={'resolutionVideo'} value={resolutionVideo} onChange={changerResolutionVideo} options={VIDEO_RESOLUTIONS} maxValueFilter={maxValueFilterResolution} />
+              <SelectGroup 
+                formLabel={'Resolution Video'} 
+                name={'resolutionVideo'} 
+                value={resolutionVideo} 
+                onChange={changerResolutionVideo} 
+                options={VIDEO_RESOLUTIONS} 
+                maxValueFilter={maxValueFilterResolution} 
+                maxValue={resolutionOriginal} />
               <SelectGroup formLabel={'Qualite Video'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
               <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
               <SelectGroup formLabel={'Bitrate Audio'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
@@ -338,13 +329,17 @@ function FormConversionVideo(props) {
 
 function SelectGroup(props) {
 
-  const { formLabel, name, onChange, value, options, maxValueFilter, disabled } = props
+  const { formLabel, name, onChange, value, options, maxValue, maxValueFilter, disabled } = props
 
   // console.debug("SelectGroup options: %O, maxValue: %O", options, maxValueFilter)
 
   let optionsFiltrees = options
   if(maxValueFilter) {
     optionsFiltrees = options.filter(item=>maxValueFilter(item))
+  }
+
+  if(maxValue) {
+    optionsFiltrees.push({label: 'Originale', value: maxValue})
   }
 
   return (
