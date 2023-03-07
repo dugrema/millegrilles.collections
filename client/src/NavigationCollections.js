@@ -39,6 +39,7 @@ function NavigationCollections(props) {
     // const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
 
     const [modeView, setModeView] = useState('')
+    const [scrollValue, setScrollValue] = useState(0)
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
@@ -94,6 +95,8 @@ function NavigationCollections(props) {
         signalAnnuler.setValeur(true)
     }, [signalAnnuler])
 
+    const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
+
     // Reset signal annuler
     useEffect(()=>{
         if(preparationUploadEnCours===false) signalAnnuler.setValeur(false)
@@ -133,6 +136,8 @@ function NavigationCollections(props) {
                         setAfficherAudio={setAfficherAudio}
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
                         showInfoModalOuvrir={showInfoModalOuvrir}
+                        scrollValue={scrollValue}
+                        onScroll={onScrollHandler}
                     />
                 </Suspense>
             </div>
@@ -229,7 +234,8 @@ function AffichagePrincipal(props) {
         afficherVideo, setAfficherVideo,
         afficherAudio, setAfficherAudio,
         setContextuel, 
-        showInfoModalOuvrir
+        showInfoModalOuvrir,
+        scrollValue, onScroll,
     } = props
 
     const workers = useWorkers()
@@ -237,6 +243,7 @@ function AffichagePrincipal(props) {
     const tailleAffichee = useSelector(state => state.fichiers.maxNombreAffiches)
     const liste = useSelector(state => state.fichiers.liste)
     const sortKeys = useSelector(state => state.fichiers.sortKeys)
+    const selection = useSelector(state => state.fichiers.selection)
     const listeComplete = tailleAffichee?false:true
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
 
@@ -264,23 +271,30 @@ function AffichagePrincipal(props) {
         onContextMenu(event, value, setContextuel)
     }, [setContextuel])
 
-    const onDoubleClick = useCallback( (event, value) => {
-        const dataset = event.currentTarget.dataset
+    const onOpenHandler = useCallback( item => {
+        // const value = event.currentTarget.dataset.value
         window.getSelection().removeAllRanges()
-        
-        const folderId = value.folderId || dataset.folderId
-        const fileId = value.fileId || dataset.fileId
 
-        if(folderId) {
-            naviguerCollection(folderId)
-        } else if(fileId) {
-            // console.debug("dbl click liste : %O, value : %O", liste, value)
-            const fileItem = liste.filter(item=>item.tuuid===value.fileId).pop()
-            const mimetype = fileItem.mimetype || ''
-            if(mimetype.startsWith('video/')) setAfficherVideo(fileId)
-            else if(mimetype.startsWith('audio/')) setAfficherAudio(fileId)
-            else showPreviewAction(fileId)
-        }
+        const value = item.tuuid,
+              mimetype = item.mimetype || ''
+        
+        // const folderId = value.folderId || dataset.folderId
+        // const fileId = value.fileId || dataset.fileId
+
+        // if(folderId) {
+        //     naviguerCollection(folderId)
+        // } else if(fileId) {
+            console.debug("dbl click liste : %O, value : %O", liste, value)
+            // const fileItem = liste.filter(item=>item.tuuid===value).pop()
+            // const mimetype = fileItem.mimetype || ''
+            if(mimetype.startsWith('video/')) setAfficherVideo(value)
+            else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
+            else if(mimetype.startsWith('image/')) showPreviewAction(value)
+            else if(mimetype === 'application/pdf') showPreviewAction(value)
+            else if(mimetype) showInfoModalOuvrir()
+            else naviguerCollection(value)
+            
+        // }
 
     }, [naviguerCollection, showPreviewAction, liste])
 
@@ -323,11 +337,14 @@ function AffichagePrincipal(props) {
             modeView={modeView}
             colonnes={colonnesEffectives}
             rows={listeAffichee} 
-            onDoubleClick={onDoubleClick}
+            selection={selection}
+            onOpen={onOpenHandler}
             onContextMenu={onContextMenuClick}
-            onSelection={onSelectionLignes}
+            onSelect={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
             suivantCb={listeComplete?'':suivantCb}
+            scrollValue={scrollValue}
+            onScroll={onScroll}
         />
     )
 }
