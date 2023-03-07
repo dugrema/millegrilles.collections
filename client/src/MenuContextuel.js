@@ -1,4 +1,4 @@
-import { useCallback} from 'react'
+import { useCallback, useMemo } from 'react'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -29,6 +29,14 @@ export function MenuContextuelFichier(props) {
         }
     }
 
+    const posX = useMemo(()=>{
+        return contextuel.x || 0
+    }, [contextuel])
+
+    const posY = useMemo(()=>{
+        return contextuel.y || 0
+    }, [contextuel])    
+
     const showPreviewAction = useCallback( event => {
         if(previewDisponible) showPreview(fichier.fileId)
         fermerContextuel()
@@ -48,7 +56,7 @@ export function MenuContextuelFichier(props) {
     const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
 
     return (
-        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+        <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={downloadEvent}><i className="fa fa-download"/> Download</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
@@ -82,6 +90,14 @@ export function MenuContextuelFichierRecherche(props) {
         }
     }
 
+    const posX = useMemo(()=>{
+        return contextuel.x || 0
+    }, [contextuel])
+
+    const posY = useMemo(()=>{
+        return contextuel.y || 0
+    }, [contextuel])
+
     const showPreviewAction = useCallback( event => {
         if(previewDisponible) showPreview(fichier.tuuid || fichier.fileId)
         fermerContextuel()
@@ -98,7 +114,7 @@ export function MenuContextuelFichierRecherche(props) {
     const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
 
     return (
-        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+        <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={downloadEvent}><i className="fa fa-download"/> Download</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
@@ -117,6 +133,8 @@ export function MenuContextuelRepertoire(props) {
         showInfoModalOuvrir, showRenommerModalOuvrir,
     } = props
 
+    console.debug("MenuContextuelRepertoire Proppies ", props)
+
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
     const favorisAction = useCallback( () => toggleFavoris(workers, fermerContextuel, cuuid, repertoire), [workers, fermerContextuel, repertoire, cuuid] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
@@ -124,8 +142,16 @@ export function MenuContextuelRepertoire(props) {
     const renommerAction = useCallback( () => renommer(fermerContextuel, showRenommerModalOuvrir), [fermerContextuel, showRenommerModalOuvrir] )
     const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
 
+    const posX = useMemo(()=>{
+        return contextuel.x
+    }, [contextuel])
+
+    const posY = useMemo(()=>{
+        return contextuel.y
+    }, [contextuel])
+
     return (
-        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+        <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
             <hr/>
             <Row><Col><Button variant="link" onClick={favorisAction}><i className="fa fa-star"/> Favoris</Button></Col></Row>
@@ -151,8 +177,16 @@ export function MenuContextuelMultiselect(props) {
 
     const listeContientFichiers = fichiers.filter(item=>item.fileId).reduce((f, item)=>f||item.fileId?true:false, false)
 
+    const posX = useMemo(()=>{
+        return contextuel.x || 0
+    }, [contextuel])
+
+    const posY = useMemo(()=>{
+        return contextuel.y || 0
+    }, [contextuel])
+
     return (
-        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+        <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" disabled={true}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
             <hr/>
             <Row><Col><Button variant="link" onClick={favorisAction} disabled={listeContientFichiers}><i className="fa fa-star"/> Favoris</Button></Col></Row>
@@ -173,8 +207,16 @@ export function MenuContextuelCorbeille(props) {
         [workers, fermerContextuel, selection, onRecuperer] 
     )
 
+    const posX = useMemo(()=>{
+        return contextuel.x || 0
+    }, [contextuel])
+
+    const posY = useMemo(()=>{
+        return contextuel.y || 0
+    }, [contextuel])    
+
     return (
-        <MenuContextuel show={contextuel.show} posX={contextuel.x} posY={contextuel.y} fermer={fermerContextuel}>
+        <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={recupererAction}><i className="fa fa-recycle"/> Recuperer</Button></Col></Row>
         </MenuContextuel>
     )
@@ -273,7 +315,8 @@ function renommer(fermer, showRenommerModalOuvrir) {
 }
 
 export function onContextMenu(event, value, setContextuel) {
-    event.preventDefault()
+    if('preventDefault' in event) event.preventDefault()
+
     const {clientX, clientY} = event
 
     const posx = clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
