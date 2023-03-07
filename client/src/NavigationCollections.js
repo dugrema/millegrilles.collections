@@ -110,8 +110,6 @@ function NavigationCollections(props) {
 
     return (
         <>
-            <h1>Collections</h1>
-
             <div>
                 <BarreInformation 
                     naviguerCollection={naviguerCollection}
@@ -201,7 +199,7 @@ function BarreInformation(props) {
     return (
         <Row className='fichiers-header-buttonbar'>
             <Col xs={12} lg={5}>
-                <SectionBreadcrumb naviguerCollection={naviguerCollection} />
+                <SectionBreadcrumb naviguerCollection={naviguerCollection} fichier={afficherVideo||afficherAudio} />
             </Col>
 
             <Col xs={12} sm={3} md={4} lg={2}>
@@ -668,10 +666,11 @@ function ModalCreerRepertoire(props) {
 
 function SectionBreadcrumb(props) {
 
-    const { naviguerCollection } = props
+    const { naviguerCollection, fichier } = props
 
     const dispatch = useDispatch()
-    const breadcrumb = useSelector((state) => state.fichiers.breadcrumb)
+    const breadcrumb = useSelector((state) => state.fichiers.breadcrumb),
+          liste = useSelector(state=>state.fichiers.liste)
 
     const handlerSliceBreadcrumb = useCallback(event => {
         event.preventDefault()
@@ -700,6 +699,14 @@ function SectionBreadcrumb(props) {
         }
     }, [dispatch, breadcrumb, naviguerCollection])
 
+    const bcFichier = useMemo(()=>{
+        if(!fichier || !liste) return ''
+        const infoFichier = liste.filter(item=>item.tuuid === fichier).pop()
+        return (
+            <span>&nbsp; / {infoFichier.nom}</span>
+        )
+    }, [fichier, liste])
+
     return (
         <Breadcrumb>
             
@@ -707,7 +714,7 @@ function SectionBreadcrumb(props) {
             
             {breadcrumb.map((item, idxItem)=>{
                 // Dernier
-                if(idxItem === breadcrumb.length - 1) {
+                if(!fichier && idxItem === breadcrumb.length - 1) {
                     return <span key={idxItem}>&nbsp; / {item.label}</span>
                 }
                 
@@ -718,6 +725,8 @@ function SectionBreadcrumb(props) {
                     </Breadcrumb.Item>
                 )
             })}
+
+            {bcFichier}
 
         </Breadcrumb>
     )

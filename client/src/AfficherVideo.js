@@ -167,7 +167,7 @@ function AfficherVideo(props) {
         <div>
             <Row>
                 
-                <Col md={12} lg={8}>
+                <Col>
                     <PlayerEtatPassthrough
                         posterObj={posterObj}
                         srcVideo={srcVideo}
@@ -187,8 +187,10 @@ function AfficherVideo(props) {
                                 onEmptied={onEmptied}
                                 />
                     </PlayerEtatPassthrough>
+                    <ProgresChargement value={progresChargement} srcVideo={srcVideo} />
                 </Col>
-
+            </Row>
+            <Row>
                 <Col>
                     <PanneauInformation 
                         fichier={fichier}
@@ -203,12 +205,6 @@ function AfficherVideo(props) {
                 </Col>
 
             </Row>
-
-            {/* <AfficherLiensVideo srcVideo={srcVideo} show={!!genererToken} /> */}
-
-            <p></p>
-
-            <ProgresChargement value={progresChargement} srcVideo={srcVideo} />
 
         </div>
     )
@@ -226,12 +222,12 @@ function ProgresChargement(props) {
         if(isNaN(value)) return ''
         if(value === 100) {
             if(srcVideo) {
-                return <p><i className="fa fa-spinner fa-spin"/> ... Preparation du video sur le serveur ...</p>
+                return <div><i className="fa fa-spinner fa-spin"/>{' '}Preparation sur le serveur</div>
             } else {
                 return 'Chargement complete'
             }
         }
-        return <p><i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...</p>
+        return <div><i className="fa fa-spinner fa-spin"/>Chargement en cours</div>
     }, [value, srcVideo])
 
     useEffect(()=>{
@@ -246,12 +242,12 @@ function ProgresChargement(props) {
     if(!show) return ''
 
     return (
-        <Row>
-            <Col xs={12} md={5}>{label}</Col>
-            <Col xs={10} md={4}>
+        <Row className='progres-chargement'>
+            <Col xs={12} lg={5} className='label'>{label}</Col>
+            <Col xs={10} lg={4}>
                 <ProgressBar now={value} />
             </Col>
-            <Col xs={2} md={2}>{value}%</Col>
+            <Col xs={2} lg={2}>{value}%</Col>
         </Row>
     )
 }
@@ -281,8 +277,8 @@ function PlayerEtatPassthrough(props) {
 
         if(posterObj) {
             return (
-                <div>
-                    <img src={posterObj} height='100%' width='100%' />
+                <div className='video-window'>
+                    <img src={posterObj} width='100%' height='100%' />
                     {message}
                 </div>
             )
@@ -305,7 +301,7 @@ function PlayerEtatPassthrough(props) {
     }
 
     return (
-        <div>
+        <div className='video-window'>
             {props.children}
             {/* {(!errVideo && !videoChargePret)?
                 <p>
@@ -323,24 +319,19 @@ function PanneauInformation(props) {
 
     return (
         <div>
-            <h3>{nomFichier}</h3>
-                    
-                <Button onClick={fermer}>Retour</Button>
+            <Row>
+                <Col>
+                    <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
+                </Col>
 
-                <h3>Operation</h3>
-                <Row>
-                    <Col>
-                        <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
-                    </Col>
-                </Row>
-
-                <h3>Afficher</h3>
-
-                <SelecteurResolution 
-                    listeVideos={videos} 
-                    support={support}
-                    selecteur={selecteur} setSelecteur={setSelecteur} 
-                    videoLoader={fichier.videoLoader} />
+                <Col>
+                    <SelecteurResolution 
+                        listeVideos={videos} 
+                        support={support}
+                        selecteur={selecteur} setSelecteur={setSelecteur} 
+                        videoLoader={fichier.videoLoader} />
+                </Col>
+            </Row>
         </div>
     )
 }
@@ -365,7 +356,7 @@ function SelecteurResolution(props) {
 
     return (
         <>
-            <p>Selecteur</p>
+            <span>Resolution</span>
             <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
                 {listeOptions.map(item=>{
                     if(item === selecteur) {

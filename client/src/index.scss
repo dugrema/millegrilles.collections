@@ -75,3 +75,22 @@ div.upload {
 .dropdown-item {
     background-color: $second-color;
 }
+
+.progres-chargement {
+    position: relative;
+    top: -6rem;
+    left: 1rem;
+    opacity: 0.85;
+}
+
+.progres-chargement .label {
+    background: $second-color;
+}
+
+.video-window {
+    height: calc(100vh - 15rem);
+}
+
+.video-window img {
+    object-fit: contain;
+}
