@@ -1,6 +1,5 @@
 // Gestion evenements socket.io pour /millegrilles
-const debug = require('debug')('appSocketIo')
-const mqdao = require('./mqdao.js')
+import * as mqdao from './mqdao.js'
 
 // const debug = debugLib('appSocketIo')
 
@@ -63,6 +62,8 @@ function configurerEvenements(socket) {
   }
 
 }
+
+export default configurerEvenements
 
 async function traiter(socket, methode, {params, cb}) {
   const reponse = await methode(socket, params)
@@ -143,4 +144,4 @@ async function traiter(socket, methode, {params, cb}) {
 //   socket.unsubscribe(opts, cb)
 // }
 
-module.exports = { configurerEvenements }
+// module.exports = { configurerEvenements }

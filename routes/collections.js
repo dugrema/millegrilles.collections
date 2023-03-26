@@ -1,9 +1,9 @@
-const debug = require('debug')('routes:collections')
-const express = require('express')
-const routeCollectionsFichiers = require('./collectionsFichiers.js')
-const routeCollectionsStreams = require('./collectionsStreams.js')
+import debugLib from 'debug'
+import express from 'express'
+import routeCollectionsFichiers from './collectionsFichiers.js'
+import routeCollectionsStreams from './collectionsStreams.js'
 
-// const debug = debugLib('collections');
+const debug = debugLib('routes:collections')
 
 function app(amqpdao, opts) {
     if(!opts) opts = {}
@@ -15,28 +15,26 @@ function app(amqpdao, opts) {
     if(fichierUploadUrl) {
         new URL(fichierUploadUrl)  // Validation du format
     } 
-    // else {
-    //     // Mettre url par defaut pour upload sur instance protegee (MQ_HOST, port 443)
-    //     const hostMQ = process.env['MQ_HOST']
-    //     const urlConsignation = new URL(`https://${hostMQ}/fichiers_transfert`)
-    //     fichierUploadUrl = ''+urlConsignation
-    // }
 
-    const route = express.Router()
-    route.use((req, res, next)=>{console.debug("Req path %s", req.url); next()})
-    route.get('/collections/info.json', routeInfo)
-    route.get('/collections/initSession', initSession)
-    route.get('/collections/streams/*', routeCollectionsStreams(amqpdao, opts))
-    route.use(routeCollectionsFichiers(amqpdao, fichierUploadUrl, opts))
-    route.use((req, res, next)=>{console.debug("OUPS, default %s", req.url); next()})
-    ajouterStaticRoute(route)
+    const routes = express.Router()
+    routes.use((req, res, next)=>{console.debug("Req path %s", req.url); next()})
+
+    const routesCollections = express.Router()
+    routes.use('/collections', routesCollections)
+    routesCollections.get('/info.json', routeInfo)
+    routesCollections.get('/initSession', initSession)
+    routesCollections.get('/streams/*', routeCollectionsStreams(amqpdao, opts))
+    routesCollections.use('/fichiers', routeCollectionsFichiers(amqpdao))
+
+    ajouterStaticRoute(routes)
 
     debug("Route /collections de Collections est initialisee")
 
-    // Retourner dictionnaire avec route pour server.js
-    return route
+    return routes
 }
-  
+
+export default app
+
 function ajouterStaticRoute(route) {
     // Route utilisee pour transmettre fichiers react de la messagerie en production
     var folderStatic =
@@ -85,4 +83,4 @@ function cacheRes(req, res, next) {
     next()
 }
 
-module.exports = app
+// module.exports = app

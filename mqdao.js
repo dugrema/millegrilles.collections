@@ -1,7 +1,9 @@
-const debug = require('debug')('mqdao')
-const { getRandom } = require('@dugrema/millegrilles.utiljs/src/random')
-const { hacher } = require('@dugrema/millegrilles.nodejs/src/hachage')
-const { signerTokenFichier, verifierTokenFichier } = require('@dugrema/millegrilles.nodejs/src/jwt')
+import debugLib from 'debug'
+// import { getRandom } from '@dugrema/millegrilles.utiljs/src/random'
+// import { hacher } from '@dugrema/millegrilles.nodejs/src/hachage'
+import { signerTokenFichier /*, verifierTokenFichier */ } from '@dugrema/millegrilles.nodejs/src/jwt.js'
+
+const debug = debugLib('mqdao')
 
 const L2Prive = '2.prive'
 
@@ -12,7 +14,7 @@ const DOMAINE_GROSFICHIERS = 'GrosFichiers',
 
 let _certificatMaitreCles = null
 
-function challenge(socket, params) {
+export function challenge(socket, params) {
     // Repondre avec un message signe
     const reponse = {
         reponse: params.challenge,
@@ -23,59 +25,59 @@ function challenge(socket, params) {
     return socket.amqpdao.pki.formatterMessage(reponse, 'challenge', {ajouterCertificat: true})
 }
 
-function getDocuments(socket, params) {
+export function getDocuments(socket, params) {
     return transmettreRequete(socket, params, 'documentsParTuuid')
 }
 
-function getFavoris(socket, params) {
+export function getFavoris(socket, params) {
     return transmettreRequete(socket, params, 'favoris')
 }
 
-function getCorbeille(socket, params) {
+export function getCorbeille(socket, params) {
     return transmettreRequete(socket, params, 'getCorbeille')
 }
 
-function getCollection(socket, params) {
+export function getCollection(socket, params) {
     return transmettreRequete(socket, params, 'contenuCollection')
 }
 
-function getRecents(socket, params) {
+export function getRecents(socket, params) {
     return transmettreRequete(socket, params, 'activiteRecente')
 }
 
-function getClesFichiers(socket, params) {
+export function getClesFichiers(socket, params) {
     return transmettreRequete(socket, params, 'dechiffrage', {domaine: CONST_DOMAINE_MAITREDESCLES})
 }
 
-function getPermissionCles(socket, params) {
+export function getPermissionCles(socket, params) {
     return transmettreRequete(socket, params, 'getClesFichiers')
 }
 
-function rechercheIndex(socket, params) {
+export function rechercheIndex(socket, params) {
     return transmettreRequete(socket, params, 'rechercheIndex')
 }
 
-function completerPreviews(socket, params) {
+export function completerPreviews(socket, params) {
   return transmettreCommande(socket, params, 'completerPreviews')
 }
 
-function syncCollection(socket, params) {
+export function syncCollection(socket, params) {
   return transmettreRequete(socket, params, 'syncCollection')
 }
 
-function syncRecents(socket, params) {
+export function syncRecents(socket, params) {
   return transmettreRequete(socket, params, 'syncRecents')
 }
 
-function syncCorbeille(socket, params) {
+export function syncCorbeille(socket, params) {
   return transmettreRequete(socket, params, 'syncCorbeille')
 }
 
-function requeteJobsVideo(socket, params) {
+export function requeteJobsVideo(socket, params) {
   return transmettreRequete(socket, params, 'requeteJobsVideo')
 }
 
-async function creerCollection(socket, params) {
+export async function creerCollection(socket, params) {
     const commandeMaitrecles = params['_commandeMaitrecles']
     delete params['_commandeMaitrecles']
     const partition = commandeMaitrecles['_partition']
@@ -84,68 +86,68 @@ async function creerCollection(socket, params) {
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }
 
-function changerFavoris(socket, params) {
+export function changerFavoris(socket, params) {
     return transmettreCommande(socket, params, 'changerFavoris')
 }
 
-function retirerDocuments(socket, params) {
+export function retirerDocuments(socket, params) {
     return transmettreCommande(socket, params, 'retirerDocumentsCollection')
 }
 
-function supprimerDocuments(socket, params) {
+export function supprimerDocuments(socket, params) {
     return transmettreCommande(socket, params, 'supprimerDocuments')
 }
 
-function decrireFichier(socket, params) {
+export function decrireFichier(socket, params) {
     return transmettreCommande(socket, params, 'decrireFichier')
 }
 
-function decrireCollection(socket, params) {
+export function decrireCollection(socket, params) {
     return transmettreCommande(socket, params, 'decrireCollection')
 }
 
-function recupererDocuments(socket, params) {
+export function recupererDocuments(socket, params) {
     return transmettreCommande(socket, params, 'recupererDocuments')
 }
 
-function copierVersCollection(socket, params) {
+export function copierVersCollection(socket, params) {
     return transmettreCommande(socket, params, 'ajouterFichiersCollection')
 }
 
-function deplacerFichiersCollection(socket, params) {
+export function deplacerFichiersCollection(socket, params) {
     return transmettreCommande(socket, params, 'deplacerFichiersCollection')
 }
 
-function indexerContenu(socket, params) {
+export function indexerContenu(socket, params) {
     return transmettreCommande(socket, params, 'indexerContenu')
 }
 
-function transcoderVideo(socket, params) {
+export function transcoderVideo(socket, params) {
     return transmettreCommande(
         socket, params, 'transcoderVideo', 
         // {nowait: true}
     )
 }
 
-function supprimerVideo(socket, params) {
+export function supprimerVideo(socket, params) {
   return transmettreCommande(socket, params, 'supprimerVideo')
 }
 
-function ajouterFichier(socket, params) {
+export function ajouterFichier(socket, params) {
   return transmettreCommande(
       socket, params, 'commandeNouveauFichier', 
       {domaine: DOMAINE_GROSFICHIERS}
   )
 }
 
-function supprimerJobVideo(socket, params) {
+export function supprimerJobVideo(socket, params) {
   return transmettreCommande(
       socket, params, 'supprimerJobVideo', 
       {domaine: DOMAINE_GROSFICHIERS}
   )
 }
 
-async function getClesChiffrage(socket, params) {
+export async function getClesChiffrage(socket, params) {
   let certificatMaitreCles = _certificatMaitreCles
   if(!certificatMaitreCles) {
       debug("Requete pour certificat maitre des cles")
@@ -206,7 +208,7 @@ async function transmettreCommande(socket, params, action, opts) {
 }
 
 /* Fonction de verification pour eviter abus de l'API */
-function verifierMessage(message, domaine, action) {
+export function verifierMessage(message, domaine, action) {
     const entete = message['en-tete'] || {},
           domaineRecu = entete.domaine,
           actionRecue = entete.action
@@ -229,7 +231,7 @@ const mapperMajFichiers = {
   }
 }
 
-function enregistrerCallbackMajFichier(socket, params, cb) {
+export function enregistrerCallbackMajFichier(socket, params, cb) {
   const tuuids = params.tuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
@@ -242,7 +244,7 @@ function enregistrerCallbackMajFichier(socket, params, cb) {
   socket.subscribe(opts, cb)
 }
 
-function retirerCallbackMajFichier(socket, params, cb) {
+export function retirerCallbackMajFichier(socket, params, cb) {
   const tuuids = params.tuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
@@ -264,7 +266,7 @@ const mapperMajFichiersCollection = {
     }
 }
   
-function enregistrerCallbackMajFichierCollection(socket, params, cb) {
+export function enregistrerCallbackMajFichierCollection(socket, params, cb) {
     const cuuids = params.cuuids
     const opts = { 
       routingKeys: CONST_ROUTINGKEYS_MAJFICHIER,
@@ -277,7 +279,7 @@ function enregistrerCallbackMajFichierCollection(socket, params, cb) {
     socket.subscribe(opts, cb)
 }
   
-function retirerCallbackMajFichierCollection(socket, params, cb) {
+export function retirerCallbackMajFichierCollection(socket, params, cb) {
     const cuuids = params.cuuids
     const opts = { 
       routingKeys: CONST_ROUTINGKEYS_MAJFICHIER, 
@@ -301,7 +303,7 @@ const mapperMajCollection = {
   }
 }
 
-function enregistrerCallbackMajCollections(socket, params, cb) {
+export function enregistrerCallbackMajCollections(socket, params, cb) {
   const cuuids = params.cuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION,
@@ -314,7 +316,7 @@ function enregistrerCallbackMajCollections(socket, params, cb) {
   socket.subscribe(opts, cb)
 }
 
-function retirerCallbackMajCollections(socket, params, cb) {
+export function retirerCallbackMajCollections(socket, params, cb) {
   const cuuids = params.cuuids
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJCOLLECTION, 
@@ -327,7 +329,7 @@ function retirerCallbackMajCollections(socket, params, cb) {
 
 const CONST_ROUTINGKEYS_MAJ_CONTENU_COLLECTION = ['evenement.grosfichiers._CUUID_.majContenuCollection']
 
-function enregistrerCallbackMajContenuCollection(socket, params, cb) {
+export function enregistrerCallbackMajContenuCollection(socket, params, cb) {
   const cuuid = params.cuuid
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJ_CONTENU_COLLECTION.map(rk=>rk.replace('_CUUID_', cuuid)),
@@ -338,7 +340,7 @@ function enregistrerCallbackMajContenuCollection(socket, params, cb) {
   socket.subscribe(opts, cb)
 }
 
-function retirerCallbackMajContenuCollection(socket, params, cb) {
+export function retirerCallbackMajContenuCollection(socket, params, cb) {
   const cuuid = params.cuuid
   const opts = { 
     routingKeys: CONST_ROUTINGKEYS_MAJ_CONTENU_COLLECTION.map(rk=>rk.replace('_CUUID_', cuuid)),
@@ -355,7 +357,7 @@ const CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO = [
   'evenement.GrosFichiers._USER_ID_.jobSupprimee',
 ]
 
-function enregistrerCallbackTranscodageVideo(socket, params, cb) {
+export function enregistrerCallbackTranscodageVideo(socket, params, cb) {
   const { fuuid } = params
   const userId = socket.userId
 
@@ -373,7 +375,7 @@ function enregistrerCallbackTranscodageVideo(socket, params, cb) {
   socket.subscribe(opts, cb)
 }
 
-function retirerCallbackTranscodageVideo(socket, params, cb) {
+export function retirerCallbackTranscodageVideo(socket, params, cb) {
   const { fuuid } = params
   const userId = socket.userId
 
@@ -390,7 +392,7 @@ function retirerCallbackTranscodageVideo(socket, params, cb) {
   socket.unsubscribe(opts, cb)
 }
 
-async function creerTokenStream(socket, params) {
+export async function creerTokenStream(socket, params) {
   try {
     const fuuids = params.fuuids,
           fuuidVideo = params.fuuidVideo,
@@ -488,20 +490,20 @@ async function creerTokenStream(socket, params) {
 //     if(cb) cb(true)
 // }
 
-module.exports = {
-    challenge, getDocuments, getFavoris, getCorbeille, getCollection, getRecents,
-    getClesFichiers, getPermissionCles, rechercheIndex, creerCollection, changerFavoris, 
-    retirerDocuments, supprimerDocuments, decrireFichier, decrireCollection, 
-    enregistrerCallbackMajFichier, retirerCallbackMajFichier,
-    enregistrerCallbackMajCollections, retirerCallbackMajCollections,
-    enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
-    enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
-    enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
-    ajouterFichier, creerTokenStream, getClesChiffrage, supprimerVideo, completerPreviews,
+// module.exports = {
+//     challenge, getDocuments, getFavoris, getCorbeille, getCollection, getRecents,
+//     getClesFichiers, getPermissionCles, rechercheIndex, creerCollection, changerFavoris, 
+//     retirerDocuments, supprimerDocuments, decrireFichier, decrireCollection, 
+//     enregistrerCallbackMajFichier, retirerCallbackMajFichier,
+//     enregistrerCallbackMajCollections, retirerCallbackMajCollections,
+//     enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
+//     enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
+//     enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
+//     ajouterFichier, creerTokenStream, getClesChiffrage, supprimerVideo, completerPreviews,
 
-    syncCollection, syncRecents, syncCorbeille,
-    requeteJobsVideo, supprimerJobVideo,
+//     syncCollection, syncRecents, syncCorbeille,
+//     requeteJobsVideo, supprimerJobVideo,
 
-    recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
-    indexerContenu, transcoderVideo,
-}
+//     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
+//     indexerContenu, transcoderVideo,
+// }

@@ -1,12 +1,21 @@
-const debug = require('debug')('app')
-const express = require('express')
+import debugLib from 'debug'
+import express from 'express'
+import server6 from '@dugrema/millegrilles.nodejs/src/server6.js'
+import { extraireExtensionsMillegrille } from  '@dugrema/millegrilles.utiljs/src/forgecommon.js'
+import configurerEvenements from './appSocketIo.js'
+import routeCollections from './routes/collections.js'
+import * as mqdao from './mqdao.js'
 
-const server6 = require('@dugrema/millegrilles.nodejs/src/server6')
-const { extraireExtensionsMillegrille } = require('@dugrema/millegrilles.utiljs/src/forgecommon')
+const debug = debugLib('app')
 
-const { configurerEvenements } = require('./appSocketIo.js')
-const routeCollections = require('./routes/collections.js')
-const mqdao = require('./mqdao.js')
+// const express = require('express')
+
+// const server6 = require('@dugrema/millegrilles.nodejs/src/server6')
+// const { extraireExtensionsMillegrille } = require('@dugrema/millegrilles.utiljs/src/forgecommon')
+
+// const { configurerEvenements } = require('./appSocketIo.js')
+// const routeCollections = require('./routes/collections.js')
+// const mqdao = require('./mqdao.js')
 
 async function app(params) {
     debug("Server app params %O", params)
@@ -37,6 +46,8 @@ async function app(params) {
 
     return server
 }
+
+export default app
 
 function verifierAutorisation(socket, securite, certificatForge) {
 
@@ -80,6 +91,6 @@ function verifierAuthentification(req, res, next) {
       return res.sendStatus(403)
     }
     next()
-  }
+}
   
-module.exports = app
+// module.exports = app

@@ -160,10 +160,10 @@ export function AfficherLigneFormatVideo(props) {
       </Row>
     )
   
-  }
+}
 
-  export async function supprimerJobVideo(workers, fuuid, cleConversion) {
+export async function supprimerJobVideo(workers, fuuid, cleConversion) {
     const { connexion } = workers
     const reponse = await connexion.supprimerJobVideo({fuuid, cle_conversion: cleConversion})
     console.debug("Reponse supprimer job video : ", reponse)
-  }
+}
