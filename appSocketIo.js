@@ -1,5 +1,7 @@
 // Gestion evenements socket.io pour /millegrilles
 import * as mqdao from './mqdao.js'
+import { signerTokenFichier } from '@dugrema/millegrilles.nodejs/src/jwt.js'
+import { v4 as uuidv4 } from 'uuid'
 
 // const debug = debugLib('appSocketIo')
 
@@ -37,6 +39,8 @@ function configurerEvenements(socket) {
       { eventName: 'completerPreviews', callback: (params, cb) => traiter(socket, mqdao.completerPreviews, {params, cb}) },
       { eventName: 'requeteJobsVideo', callback: (params, cb) => traiter(socket, mqdao.requeteJobsVideo, {params, cb}) },
       { eventName: 'supprimerJobVideo', callback: (params, cb) => traiter(socket, mqdao.supprimerJobVideo, {params, cb}) },
+      { eventName: 'getBatchUpload', callback: (params, cb) => traiter(socket, getBatchUpload, {params, cb}) },
+      { eventName: 'submitBatchUpload', callback: (params, cb) => traiter(socket, mqdao.submitBatchUpload, {params, cb}) },
 
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},
@@ -68,6 +72,17 @@ export default configurerEvenements
 async function traiter(socket, methode, {params, cb}) {
   const reponse = await methode(socket, params)
   if(cb) cb(reponse)
+}
+
+async function getBatchUpload(socket, opts) {
+  opts = opts || {}
+  const mq = socket.amqpdao
+  const userId = socket.userId
+  const optsExp = {expiration: '7d', ...opts}
+  const uuid_transaction = ''+uuidv4()
+  const { cle: clePriveePem, fingerprint } = mq.pki
+  const token = await signerTokenFichier(fingerprint, clePriveePem, userId, uuid_transaction, optsExp)
+  return { token, batchId: uuid_transaction }
 }
 
 // const CONST_ROUTINGKEYS_MAJFICHIER = ['evenement.grosfichiers.majFichier']

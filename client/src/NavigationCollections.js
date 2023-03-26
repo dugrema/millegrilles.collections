@@ -799,10 +799,17 @@ function BoutonUpload(props) {
         
         handlerPreparationUploadEnCours(0)  // Debut preparation
 
-        traitementFichiers.traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, {signalAnnuler, setProgres: handlerPreparationUploadEnCours})
-            .then(uploads=>{
-                // const correlationIds = uploads.map(item=>item.correlation)
-                // return dispatch(demarrerUploads(workers, correlationIds))
+        const userId = usager.extensions.userId
+
+        traitementFichiers.traiterAcceptedFiles(
+            dispatch, 
+            {userId, usager, cuuid, acceptedFiles}, 
+            {signalAnnuler, setProgres: handlerPreparationUploadEnCours}
+        )
+            .then( () => {
+                //console.debug("BoutonUpload traiterAcceptedFiles resultat ", uploads)
+                //const batchIds = uploads.map(item=>item.batchId)
+                //return dispatch(demarrerUploads(workers, batchIds))
             })
             .catch(err=>console.error("Erreur fichiers : %O", err))
             .finally( () => handlerPreparationUploadEnCours(false) )

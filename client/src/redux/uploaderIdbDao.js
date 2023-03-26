@@ -48,7 +48,7 @@ export async function updateFichierUpload(doc) {
     await store.put(docExistant)
 }
 
-export async function ajouterFichierUploadFile(correlation, position, data) {
+export async function ajouterFichierUploadFile(batchId, correlation, position, data) {
     if(!correlation) throw new Error('ajouterFichierUpload Le document doit avoir un champ correlation')
     if(typeof(position) !== 'number') throw new Error('ajouterFichierUpload Il faut fournir une position')
     if(data.length === 0) return   // Rien a faire
@@ -59,7 +59,7 @@ export async function ajouterFichierUploadFile(correlation, position, data) {
     const store = db.transaction(STORE_UPLOADS_FICHIERS, 'readwrite').store
     const blob = new Blob([data])
     const taille = data.length
-    await store.put({correlation, position, taille, data: blob})
+    await store.put({batchId, correlation, position, taille, data: blob})
 }
 
 export async function supprimerFichier(correlation) {

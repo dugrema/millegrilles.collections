@@ -5,7 +5,7 @@ const DB_NAME = 'collections',
       STORE_UPLOADS = 'uploads',
       STORE_UPLOADS_FICHIERS = 'uploadsFichiers',
       STORE_FICHIERS = 'fichiers',
-      VERSION_COURANTE = 3
+      VERSION_COURANTE = 4
 
 export function ouvrirDB(opts) {
     opts = opts || {}
@@ -31,18 +31,19 @@ function createObjectStores(db, oldVersion) {
     try {
         switch(oldVersion) {
             case 0:
+            case 1:
                 db.createObjectStore(STORE_DOWNLOADS, {keyPath: 'fuuid'})
-            case 1: // Plus recent, rien a faire
+            case 2: // Plus recent, rien a faire
                 db.createObjectStore(STORE_UPLOADS, {keyPath: 'correlation'})
                 fichierStore = db.createObjectStore(STORE_FICHIERS, {keyPath: 'tuuid'})
                 db.createObjectStore(STORE_UPLOADS_FICHIERS, {keyPath: ['correlation', 'position']})
-            case 2:
+            case 3:
                 // Recreer store fichiers pour ajouter index sur favorisIdx (nouveau champ helper)
                 db.deleteObjectStore(STORE_FICHIERS)
                 fichierStore = db.createObjectStore(STORE_FICHIERS, {keyPath: 'tuuid'})
                 fichierStore.createIndex('cuuids', 'cuuids', {unique: false, multiEntry: true})
                 fichierStore.createIndex('userFavoris', ['user_id', 'favorisIdx'], {unique: false, multiEntry: false})
-            case 3: // Plus recent, rien a faire
+            case 4: // Plus recent, rien a faire
                 break
             default:
             console.warn("createObjectStores Default..., version %O", oldVersion)

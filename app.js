@@ -2,6 +2,8 @@ import debugLib from 'debug'
 import express from 'express'
 import server6 from '@dugrema/millegrilles.nodejs/src/server6.js'
 import { extraireExtensionsMillegrille } from  '@dugrema/millegrilles.utiljs/src/forgecommon.js'
+import FichiersMiddleware from '@dugrema/millegrilles.nodejs/src/fichiersMiddleware.js'
+import FichiersTransfertUpstream from '@dugrema/millegrilles.nodejs/src/fichiersTransfertUpstream.js'
 import configurerEvenements from './appSocketIo.js'
 import routeCollections from './routes/collections.js'
 import * as mqdao from './mqdao.js'
@@ -27,8 +29,13 @@ async function app(params) {
         {pathApp: '/collections', verifierAutorisation, verifierAuthentification, exchange: '2.prive'}
     )
 
+    const fichiersMiddleware = new FichiersMiddleware(amqpdaoInst)
+    const fichiersTransfertUpstream = new FichiersTransfertUpstream(amqpdaoInst)
+
     socketIo.use((socket, next)=>{
       socket.mqdao = mqdao
+      socket.fichiersMiddleware = fichiersMiddleware
+      socket.fichiersTransfertUpstream = fichiersTransfertUpstream
       next()
     })
 
@@ -41,8 +48,14 @@ async function app(params) {
         urlHost,
     }
 
-    route.use((req, _res, next)=>{ req.mqdao = mqdao; next(); })
-    route.use(routeCollections(amqpdaoInst, opts))
+    route.use((req, _res, next)=>{ 
+        req.mqdao = mqdao
+        req.fichiersMiddleware = fichiersMiddleware
+        req.fichiersTransfertUpstream = fichiersTransfertUpstream
+        next() 
+    })
+
+    route.use(routeCollections(amqpdaoInst, fichiersMiddleware, opts))
 
     return server
 }

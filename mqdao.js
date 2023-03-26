@@ -1,7 +1,9 @@
 import debugLib from 'debug'
 // import { getRandom } from '@dugrema/millegrilles.utiljs/src/random'
 // import { hacher } from '@dugrema/millegrilles.nodejs/src/hachage'
-import { signerTokenFichier /*, verifierTokenFichier */ } from '@dugrema/millegrilles.nodejs/src/jwt.js'
+import { signerTokenFichier, verifierTokenFichier } from '@dugrema/millegrilles.nodejs/src/jwt.js'
+import readdirp from 'readdirp'
+import fsPromises from 'fs/promises'
 
 const debug = debugLib('mqdao')
 
@@ -169,6 +171,44 @@ export async function getClesChiffrage(socket, params) {
       _certificatMaitreCles = certificatMaitreCles
   }
   return certificatMaitreCles
+}
+
+export async function submitBatchUpload(socket, params) {
+  debug("submitBatchUpload params ", params)
+  const mq = socket.amqpdao
+  const { fichiersMiddleware, fichiersTransfertUpstream } = socket
+
+  const infoToken = await verifierTokenFichier(mq.pki, params.token)
+  debug("submitBatchUpload Token ", infoToken)
+
+  const batchId = infoToken.payload.sub
+
+  // Deplacer repertoire batch vers ready
+  const source = fichiersMiddleware.getPathBatch(batchId)
+  const pathReady = await fichiersTransfertUpstream.takeTransfertBatch(batchId, source)
+
+  // Declencher upload
+  await fichiersTransfertUpstream.ajouterFichierConsignation(batchId)
+
+  // Charger toutes les transactions, soumettre immediatement (ok si echec / fichier disparu)
+  const promiseReaddirp = readdirp(pathReady, {
+    type: 'files',
+    fileFilter: 'transactionContenu.json',
+    depth: 2,
+  })
+
+  for await (const entry of promiseReaddirp) {
+      debug("Entry path : %O", entry);
+      try {
+        const transaction = JSON.parse(await fsPromises.readFile(entry.fullPath))
+        await transmettreCommande(socket, transaction, 'nouvelleVersion', {domaine: 'GrosFichiers'})
+        debug("submitBatchUpload Transmission pre-emptive de la transaction GrosFichiers %s (OK)", entry.path)
+      } catch(err) {
+        debug("submitBatchUpload Erreur transmission pre-emptive de la transaction GrosFichiers pour %s : %O", entry.path, err)
+      }
+  }
+  
+  return {ok: true}
 }
 
 async function transmettreRequete(socket, params, action, opts) {

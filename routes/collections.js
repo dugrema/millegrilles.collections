@@ -5,7 +5,7 @@ import routeCollectionsStreams from './collectionsStreams.js'
 
 const debug = debugLib('routes:collections')
 
-function app(amqpdao, opts) {
+function app(amqpdao, fichiersMiddleware, opts) {
     if(!opts) opts = {}
     const idmg = amqpdao.pki.idmg
 
@@ -24,7 +24,7 @@ function app(amqpdao, opts) {
     routesCollections.get('/info.json', routeInfo)
     routesCollections.get('/initSession', initSession)
     routesCollections.get('/streams/*', routeCollectionsStreams(amqpdao, opts))
-    routesCollections.use('/fichiers', routeCollectionsFichiers(amqpdao))
+    routesCollections.use('/fichiers', routeCollectionsFichiers(amqpdao, fichiersMiddleware, opts))
 
     ajouterStaticRoute(routes)
 

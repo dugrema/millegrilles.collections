@@ -19,9 +19,16 @@ function setup(workers) {
         getFichierChiffre(fuuid, opts) {
             return getFichierChiffre(workers, fuuid, opts)
         },
-        traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, opts) {
+        // traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, opts) {
+        //     opts = opts || {}
+        //     return traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts)
+        // },
+        traiterAcceptedFiles(dispatch, params, opts) {
             opts = opts || {}
-            return traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts)
+            return traiterAcceptedFiles(workers, dispatch, params, opts)
+        },
+        submitBatchUpload(doc) {
+            return submitBatchUpload(workers, doc)
         },
         resLoader,
         clean,
@@ -210,62 +217,62 @@ async function clean(urlBlobPromise) {
     }
 }
 
-async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts) {
-    opts = opts || {}
-    const { setProgres, signalAnnuler } = opts
-    const { clesDao, transfertFichiers } = workers
-    const userId = usager.extensions.userId
-    // console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
+// async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts) {
+//     opts = opts || {}
+//     const { setProgres, signalAnnuler } = opts
+//     const { clesDao, transfertFichiers } = workers
+//     const userId = usager.extensions.userId
+//     // console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
 
-    const certificatsMaitredescles = await clesDao.getCertificatsMaitredescles()
-    // console.debug("Set certificat maitre des cles ", certificatsMaitredescles)
-    if(!certificatsMaitredescles || certificatsMaitredescles.length === 0) {
-        throw new Error("Aucun certificat de chiffrage n'est disponible")
-    }
-    await transfertFichiers.up_setCertificats(certificatsMaitredescles)
+//     const certificatsMaitredescles = await clesDao.getCertificatsMaitredescles()
+//     // console.debug("Set certificat maitre des cles ", certificatsMaitredescles)
+//     if(!certificatsMaitredescles || certificatsMaitredescles.length === 0) {
+//         throw new Error("Aucun certificat de chiffrage n'est disponible")
+//     }
+//     await transfertFichiers.up_setCertificats(certificatsMaitredescles)
 
-    const ajouterPartProxy = Comlink.proxy((correlation, compteurPosition, chunk) => ajouterPart(workers, correlation, compteurPosition, chunk))
-    const updateFichierProxy = Comlink.proxy((doc, opts) => updateFichier(workers, dispatch, doc, opts))
-    const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
-    const resultat = await transfertFichiers.traiterAcceptedFiles(
-        acceptedFiles, userId, cuuid, 
-        ajouterPartProxy, 
-        updateFichierProxy,
-        setProgresProxy,
-        signalAnnuler
-    )
-    return resultat
-}
+//     const ajouterPartProxy = Comlink.proxy((correlation, compteurPosition, chunk) => ajouterPart(workers, correlation, compteurPosition, chunk))
+//     const updateFichierProxy = Comlink.proxy((doc, opts) => updateFichier(workers, dispatch, doc, opts))
+//     const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
+//     const resultat = await transfertFichiers.traiterAcceptedFiles(
+//         acceptedFiles, userId, cuuid, 
+//         ajouterPartProxy, 
+//         updateFichierProxy,
+//         setProgresProxy,
+//         signalAnnuler
+//     )
+//     return resultat
+// }
 
-async function ajouterPart(workers, correlation, compteurPosition, chunk) {
-    const { uploadFichiersDao } = workers
-    // console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
-    await uploadFichiersDao.ajouterFichierUploadFile(correlation, compteurPosition, chunk)
-}
+// async function ajouterPart(workers, correlation, compteurPosition, chunk) {
+//     const { uploadFichiersDao } = workers
+//     // console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
+//     await uploadFichiersDao.ajouterFichierUploadFile(correlation, compteurPosition, chunk)
+// }
 
-async function updateFichier(workers, dispatch, doc, opts) {
-    opts = opts || {}
-    const correlation = doc.correlation
-    const demarrer = opts.demarrer || false,
-          err = opts.err
+// async function updateFichier(workers, dispatch, doc, opts) {
+//     opts = opts || {}
+//     const correlation = doc.correlation
+//     const demarrer = opts.demarrer || false,
+//           err = opts.err
 
-    const { uploadFichiersDao } = workers
+//     const { uploadFichiersDao } = workers
 
-    // console.debug("Update fichier %s demarrer? %s err? %O : %O", correlation, demarrer, err, doc)
+//     // console.debug("Update fichier %s demarrer? %s err? %O : %O", correlation, demarrer, err, doc)
 
-    if(err) {
-        console.error("Erreur upload fichier %s : %O", correlation, err)
-        // Supprimer le fichier dans IDB
-        uploadFichiersDao.supprimerFichier(correlation)
-            .catch(err=>console.error('updateFichier Erreur nettoyage %s suite a une erreur : %O', correlation, err))
-        return
-    }
+//     if(err) {
+//         console.error("Erreur upload fichier %s : %O", correlation, err)
+//         // Supprimer le fichier dans IDB
+//         uploadFichiersDao.supprimerFichier(correlation)
+//             .catch(err=>console.error('updateFichier Erreur nettoyage %s suite a une erreur : %O', correlation, err))
+//         return
+//     }
     
-    await uploadFichiersDao.updateFichierUpload(doc)
+//     await uploadFichiersDao.updateFichierUpload(doc)
 
-    // Declencher l'upload si applicable
-    if(demarrer) dispatch(ajouterUpload(doc))
-}
+//     // Declencher l'upload si applicable
+//     if(demarrer) dispatch(ajouterUpload(doc))
+// }
 
 export async function downloadCache(fuuid, opts) {
     opts = opts || {}
@@ -424,3 +431,80 @@ function promptSaveFichier(blob, opts) {
 //     //     handler: cipherHandler,
 //     // }
 // }
+
+async function traiterAcceptedFiles(workers, dispatch, params, opts) {
+    opts = opts || {}
+    console.debug("Workers : ", workers)
+    const { acceptedFiles, /*token, batchId,*/ cuuid, userId } = params
+    const { setProgres, signalAnnuler } = opts
+    const { transfertFichiers } = workers
+    console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
+
+    // const certificatsMaitredescles = await workers.connexion.getClesChiffrage()
+    const certificatsMaitredescles = await workers.clesDao.getCertificatsMaitredescles()
+    console.debug("Certificats : %O", certificatsMaitredescles)
+
+    await transfertFichiers.up_setCertificats(certificatsMaitredescles)
+    console.debug("Certificat maitre des cles OK")
+
+    for await (let file of acceptedFiles) {
+        // Recuperer un token, faire 1 fichier par batch
+        const infoBatch = await workers.connexion.getBatchUpload()
+        console.debug("InfoBatch ", infoBatch)
+        const { batchId, token } = infoBatch
+        const paramBatch = {...params, acceptedFiles: [file], token, batchId}
+
+        const ajouterPartProxy = Comlink.proxy(
+            (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
+        )
+        const updateFichierProxy = Comlink.proxy((doc, opts) => {
+            const docWithIds = {...doc, userId, batchId, token}
+            return updateFichier(workers, dispatch, docWithIds, opts)
+        })
+        const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
+        await transfertFichiers.traiterAcceptedFilesV2(
+            paramBatch, 
+            ajouterPartProxy, 
+            updateFichierProxy,
+            setProgresProxy,
+            signalAnnuler
+        )
+    }
+}
+
+async function ajouterPart(workers, batchId, correlation, compteurPosition, chunk) {
+    const { uploadFichiersDao } = workers
+    console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
+    await uploadFichiersDao.ajouterFichierUploadFile(batchId, correlation, compteurPosition, chunk)
+}
+
+async function updateFichier(workers, dispatch, doc, opts) {
+    opts = opts || {}
+    const correlation = doc.correlation
+    const demarrer = opts.demarrer || false,
+          err = opts.err
+
+    const { uploadFichiersDao } = workers
+
+    console.debug("Update fichier %s demarrer? %s [err? %O] : %O", correlation, demarrer, err, doc)
+
+    if(err) {
+        console.error("Erreur upload fichier %s : %O", correlation, err)
+        // Supprimer le fichier dans IDB
+        uploadFichiersDao.supprimerFichier(correlation)
+            .catch(err=>console.error('updateFichier Erreur nettoyage %s suite a une erreur : %O', correlation, err))
+        return
+    }
+    
+    await uploadFichiersDao.updateFichierUpload(doc)
+
+    // Declencher l'upload si applicable
+    console.debug("Ajouter upload ", doc)
+    if(demarrer) dispatch(ajouterUpload(doc))
+}
+
+async function submitBatchUpload(workers, doc) {
+    console.debug("Submit batch ", doc)
+    // Utiliser le token, garanti que l'usager n'essaie pas de faire un submit sur la batch d'un tiers
+    await workers.connexion.submitBatchUpload(doc.token)
+}

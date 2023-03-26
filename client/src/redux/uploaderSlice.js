@@ -350,9 +350,9 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 }
 
 async function uploadFichier(workers, dispatch, fichier, cancelToken) {
-    // console.debug("Upload fichier workers : ", workers)
-    const { uploadFichiersDao, transfertFichiers, chiffrage } = workers
-    const correlation = fichier.correlation
+    console.debug("uploadFichier : ", fichier)
+    const { uploadFichiersDao, transfertFichiers, chiffrage, traitementFichiers } = workers
+    const { correlation, token } = fichier
 
     // Charger la liste des parts a uploader
     let parts = await uploadFichiersDao.getPartsFichier(correlation)
@@ -366,7 +366,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         if(dejaTraite) tailleCompletee += item.taille
         return !dejaTraite
     })
-    // console.debug("Parts a uploader : ", parts)
+    console.debug("uploadFichier Parts a uploader : ", parts)
 
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_UPLOADING})
 
@@ -382,7 +382,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         
         // await new Promise(resolve=>setTimeout(resolve, 250))
         const opts = {}
-        const resultatUpload = transfertFichiers.partUploader(correlation, position, partContent, opts)
+        const resultatUpload = transfertFichiers.partUploader(token, correlation, position, partContent, opts)
         // await Promise.race([resultatUpload, cancelToken])
         await resultatUpload
         // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
@@ -406,9 +406,14 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
 
     const transaction = await chiffrage.formatterMessage(
         fichier.transactionGrosfichiers, 'GrosFichiers', {action: 'nouvelleVersion'})
+    
+    transaction['_cle'] = cles
 
-    // console.debug("Transactions signees : %O, %O", cles, transaction)
-    await transfertFichiers.confirmerUpload(correlation, cles, transaction)
+    console.debug("Transactions signees : %O", transaction)
+    await transfertFichiers.confirmerUpload(token, correlation, {transaction})
+
+    // Emettre submit pour la batch
+    await traitementFichiers.submitBatchUpload(fichier)
 
     // Upload complete, dispatch nouvel etat
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_COMPLETE})

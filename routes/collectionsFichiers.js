@@ -103,29 +103,29 @@ import express from 'express'
 import { v4 as uuidv4 } from 'uuid'
 
 import { signerTokenApplication, verifierTokenApplication } from '@dugrema/millegrilles.nodejs/src/jwt.js'
-import FichiersMiddleware from '@dugrema/millegrilles.nodejs/src/fichiersMiddleware.js'
-import FichiersTransfertUpstream from '@dugrema/millegrilles.nodejs/src/fichiersTransfertUpstream.js'
+// import FichiersMiddleware from '@dugrema/millegrilles.nodejs/src/fichiersMiddleware.js'
+// import FichiersTransfertUpstream from '@dugrema/millegrilles.nodejs/src/fichiersTransfertUpstream.js'
 
 const debug = debugLib('routes:collectionsFichiers')
 
 /** Path /collections/fichiers */
-function routesFichiers(mq) {
-    const fichiersMiddleware = new FichiersMiddleware(mq)
-    const fichiersTransfertUpstream = new FichiersTransfertUpstream(mq)
+function routesFichiers(mq, fichiersMiddleware) {
+    // const fichiersMiddleware = new FichiersMiddleware(mq)
+    // const fichiersTransfertUpstream = new FichiersTransfertUpstream(mq)
 
     const router = express.Router()
     
-    router.use((req, res, next)=>{
-      req.fichiersMiddleware = fichiersMiddleware
-      req.fichiersTransfert = fichiersTransfertUpstream
-      next()
-    })
+    // router.use((req, res, next)=>{
+    //   req.fichiersMiddleware = fichiersMiddleware
+    //   req.fichiersTransfert = fichiersTransfertUpstream
+    //   next()
+    // })
 
     // Download (GET)
     router.get('/verifier', verifierAutorisationFichier)
 
-    router.get('/token', getToken)
-    router.post('/submit', express.json(), verifierToken, submitForm)
+    // router.get('/token', getToken)
+    // router.post('/submit', express.json(), verifierToken, submitForm)
     
     // Routes pour upload de fichiers
     router.use('/upload', verifierToken, routerUpload(fichiersMiddleware))

@@ -226,6 +226,21 @@ function getMediaJobs(opts) {
   return ConnexionClient.emitBlocking('requeteJobsVideo', requete, params)
 }
 
+/** Retourne nouveau { token, batchId } */
+function getBatchUpload() {
+  console.debug("getBatchUpload")
+  return ConnexionClient.emitBlocking('getBatchUpload', {})
+}
+
+async function submitBatchUpload(token) {
+  const commande = { token }
+  return ConnexionClient.emitBlocking(
+    'submitBatchUpload',
+    commande,
+    {}
+  )
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -305,6 +320,7 @@ expose({
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,
+    getBatchUpload, submitBatchUpload,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,

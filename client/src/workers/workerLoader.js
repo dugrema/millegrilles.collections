@@ -52,10 +52,10 @@ async function wireWorkers(workers) {
     console.debug("Download path : %O", downloadHref)
     transfertFichiers.down_setUrlDownload(downloadHref)
     
-    urlLocal.pathname = '/collections/upload'
+    urlLocal.pathname = '/collections/fichiers/upload'
     const uploadHref = urlLocal.href
     console.debug("Upload path : %O", uploadHref)
-    transfertFichiers.up_setPathServeur('/collections/upload')
+    transfertFichiers.up_setPathServeur(urlLocal.pathname)
 
     const location = new URL(window.location)
     location.pathname = '/fiche.json'
