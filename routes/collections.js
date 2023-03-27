@@ -23,7 +23,7 @@ function app(amqpdao, fichiersMiddleware, opts) {
     routes.use('/collections', routesCollections)
     routesCollections.get('/info.json', routeInfo)
     routesCollections.get('/initSession', initSession)
-    routesCollections.get('/streams/*', routeCollectionsStreams(amqpdao, opts))
+    routesCollections.use('/streams', routeCollectionsStreams(amqpdao, opts))
     routesCollections.use('/fichiers', routeCollectionsFichiers(amqpdao, fichiersMiddleware, opts))
 
     ajouterStaticRoute(routes)

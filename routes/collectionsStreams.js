@@ -10,7 +10,7 @@ function init(mq, opts) {
     const route = express.Router()
 
     // Autoriser acces stream
-    route.get('/collections/streams/verifier', verifierAutorisationStream)
+    route.get('/verifier', verifierAutorisationStream)
 
     debug("Route /collections/streams initialisee")
     
