@@ -34,9 +34,6 @@ function NavigationCollections(props) {
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
-    // const liste = useSelector(state => state.fichiers.liste )
-    // const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
-    // const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
 
     const [modeView, setModeView] = useState('')
     const [scrollValue, setScrollValue] = useState(0)
@@ -297,7 +294,7 @@ function AffichagePrincipal(props) {
     }, [naviguerCollection, showPreviewAction, liste])
 
     const enteteOnClickCb = useCallback(colonne=>{
-        // console.debug("Entete onclick ", colonne)
+        console.debug("Entete onclick ", colonne)
         // Verifier si on toggle l'ordre
         const key = colonne
         let ordre = 1

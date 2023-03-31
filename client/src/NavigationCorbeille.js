@@ -36,6 +36,7 @@ function NavigationCorbeille(props) {
     const liste = useSelector(state => state.fichiers.liste )
 
     const [modeView, setModeView] = useState('')
+    const [scrollValue, setScrollValue] = useState(0)
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
@@ -80,6 +81,8 @@ function NavigationCorbeille(props) {
         }
     }, [dispatch, workers, erreurCb, setAfficherVideo])
 
+    const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
+
     // Declencher chargement initial des favoris
     useEffect(()=>{
         if(!etatPret || !userId) return  // Rien a faire
@@ -115,13 +118,20 @@ function NavigationCorbeille(props) {
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
+                        // modeView={modeView}
+                        // naviguerCollection={naviguerCollection}
+                        // showPreviewAction={showPreviewAction}
+                        // setContextuel={setContextuel}
+                        // afficherVideo={afficherVideo}
+                        // setAfficherVideo={setAfficherVideo}
+                        // setPreparationUploadEnCours={setPreparationUploadEnCours}
                         modeView={modeView}
                         naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
-                        afficherVideo={afficherVideo}
-                        setAfficherVideo={setAfficherVideo}
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
+                        scrollValue={scrollValue}
+                        onScroll={onScrollHandler}
                     />
                 </Suspense>
             </div>
@@ -150,99 +160,90 @@ export default NavigationCorbeille
 function AffichagePrincipal(props) {
 
     const {
+        // modeView, 
+        // naviguerCollection,
+        // showPreviewAction,
+        // afficherVideo, setAfficherVideo,
+        // setContextuel, 
+        // enteteOnClickCb,
+        // showInfoModalOuvrir,
+        // scrollValue, onScroll,
+
         modeView, 
         naviguerCollection,
         showPreviewAction,
         afficherVideo, setAfficherVideo,
+        afficherAudio, setAfficherAudio,
         setContextuel, 
-        enteteOnClickCb,
-        showInfoModalOuvrir
+        showInfoModalOuvrir,
+        scrollValue, onScroll,
     } = props
 
     const workers = useWorkers()
     const dispatch = useDispatch()
+    const tailleAffichee = useSelector(state => state.fichiers.maxNombreAffiches)
     const liste = useSelector(state => state.fichiers.liste)
-
+    const sortKeys = useSelector(state => state.fichiers.sortKeys)
+    const selection = useSelector(state => state.fichiers.selection)
+    const listeComplete = tailleAffichee?false:true
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
+
+    const listeAffichee = useMemo(()=>{
+        if(!liste) return ''                // Liste vide
+        if(!tailleAffichee) return liste    // Liste complete
+        return liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
+    }, [liste, tailleAffichee])
+
+    const colonnesEffectives = useMemo(()=>{
+        const tri = {
+            colonne: sortKeys.key,
+            ordre: sortKeys.ordre,
+        }
+        //console.debug("tri pour colonnes effectives : ", tri)
+        return {...colonnes, tri}
+    }, [colonnes, sortKeys])
 
     const onSelectionLignes = useCallback(selection=>{
         dispatch(fichiersActions.selectionTuuids(selection))
     }, [dispatch])
-    const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const onContextMenuClick = useCallback((event, value)=>{
         onContextMenu(event, value, setContextuel)
     }, [setContextuel])
 
-    const onDoubleClick = useCallback( (event, value) => {
-        const dataset = event.currentTarget.dataset
-        window.getSelection().removeAllRanges()
-        
-        const folderId = value.folderId || dataset.folderId
-        const fileId = value.fileId || dataset.fileId
+    const enteteOnClickCb = useCallback(colonne=>{
+        // console.debug("Entete onclick ", colonne)
+        // Verifier si on toggle l'ordre
+        const key = colonne
+        let ordre = 1
+        if(key === sortKeys.key) ordre = sortKeys.ordre * -1
+        // console.debug("Trier liste : ", liste)
+        dispatch(fichiersActions.setSortKeys({key, ordre}))
+    }, [dispatch, sortKeys, liste])
 
-        if(folderId) {
-            naviguerCollection(folderId)
-        } else if(fileId) {
-            // console.debug("dbl click liste : %O, value : %O", liste, value)
-            const fileItem = liste.filter(item=>item.tuuid===value.fileId).pop()
-            const mimetype = fileItem.mimetype || ''
-            if(mimetype.startsWith('video/')) setAfficherVideo(fileId)
-            else showPreviewAction(fileId)
-        }
+    const suivantCb = useCallback(params => {
+        // console.debug("SuivantCb ", params)
+        dispatch(fichiersActions.incrementerNombreAffiches())
+    }, [dispatch])    
 
-    }, [naviguerCollection, showPreviewAction, liste])
-
-    if(afficherVideo) {
-        return (
-            <AfficherVideoView
-                liste={liste}
-                tuuid={afficherVideo}
-                fermer={fermerAfficherVideo} 
-                showInfoModalOuvrir={showInfoModalOuvrir} />
-        )
-    }
+    const onOpenHandler = useCallback(item=>{
+        console.debug("Open ", item)
+    }, [])
 
     // Default - liste fichiers
     return (
         <ListeFichiers 
             modeView={modeView}
-            colonnes={colonnes}
-            rows={liste} 
-            onDoubleClick={onDoubleClick}
+            colonnes={colonnesEffectives}
+            rows={listeAffichee} 
+            selection={selection}
+            onOpen={onOpenHandler}
             onContextMenu={onContextMenuClick}
-            onSelection={onSelectionLignes}
+            onSelect={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
+            suivantCb={listeComplete?'':suivantCb}
+            scrollValue={scrollValue}
+            onScroll={onScroll}
         />
-    )
-}
-
-function AfficherVideoView(props) {
-
-    const { tuuid, liste, fermer, showInfoModalOuvrir } = props
-
-    const workers = useWorkers()
-
-    const fichier = useMemo(()=>{
-        if(!tuuid || !liste) return
-        let fichier = liste.filter(item=>item.tuuid===tuuid).pop()
-        if(fichier) fichier = mapDocumentComplet(workers, fichier)
-        return fichier
-    }, [tuuid, liste])
-
-    if(!fichier) return (
-        <>
-            <p>Erreur chargement de video</p>
-            <p>Error loading video</p>
-            <Button onClick={fermer}>Retour/Back</Button>
-        </>
-    )
-
-    return (
-        <AfficherVideo
-            fichier={fichier}
-            tuuidSelectionne={tuuid}
-            fermer={fermer} 
-            showInfoModalOuvrir={showInfoModalOuvrir} />
     )
 }
 
@@ -350,79 +351,6 @@ function Modals(props) {
               />
 
         </>
-    )
-}
-
-function ModalCreerRepertoire(props) {
-
-    const { show, fermer } = props
-
-    const workers = useWorkers()
-    const usager = useUsager()
-    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
-
-    const { connexion, chiffrage } = workers
-    const userId = usager?usager.extensions.userId:''
-
-    const [ nomCollection, setNomCollection ] = useState('')
-
-    const changerNomCollection = useCallback(event=>{
-        const value = event.currentTarget.value
-        setNomCollection(value)
-    }, [setNomCollection])
-
-    const creerCollection = useCallback(event=>{
-        event.preventDefault()
-        event.stopPropagation()
-        
-        new Promise(async resolve => {
-            const metadataDechiffre = {nom: nomCollection}
-            const identificateurs_document = {type: 'collection'}
-            const certificatChiffrage = await connexion.getCertificatsMaitredescles()
-            console.debug("creerCollection certificatChiffrage ", certificatChiffrage)
-            const certificatChiffragePem = certificatChiffrage.certificat
-            const {doc: metadataChiffre, commandeMaitrecles} = await chiffrage.chiffrerDocument(
-                metadataDechiffre, 'GrosFichiers', certificatChiffragePem, {identificateurs_document, userId, DEBUG: true})
-            console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
-
-            const opts = {}
-            if(cuuidCourant) opts.cuuid = cuuidCourant
-            else opts.favoris = true
-
-            resolve(connexion.creerCollection(metadataChiffre, commandeMaitrecles, opts))
-          })
-            .then(()=>{
-                setNomCollection('')  // Reset
-                fermer()
-              })
-            .catch(err=>{
-                console.error("Erreur creation collection : %O", err)
-              })
-    }, [connexion, userId, nomCollection, cuuidCourant, setNomCollection, fermer])
-
-    return (
-        <Modal show={show} onHide={fermer}>
-
-            <Modal.Header closeButton>Creer nouvelle collection</Modal.Header>
-
-            <Modal.Body>
-                <Form onSubmit={creerCollection}>
-                    <Form.Group className="mb-3" controlId="formNomCollection">
-                        <Form.Label>Nom de la collection</Form.Label>
-                        <Form.Control 
-                            type="text" 
-                            placeholder="Saisir le nom ..." 
-                            onChange={changerNomCollection}
-                        />
-                    </Form.Group>
-                </Form>
-            </Modal.Body>
-
-            <Modal.Footer>
-                <Button onClick={creerCollection}>Creer</Button>
-            </Modal.Footer>
-
-        </Modal>
     )
 }
 
