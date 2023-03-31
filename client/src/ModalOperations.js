@@ -21,24 +21,30 @@ export function SupprimerModal(props) {
 
     const { workers, show, fermer, selection, cuuid } = props
     const connexion = workers.connexion
+    const breadcrumb = useSelector(state=>state.fichiers.breadcrumb)
+
+    const breadcrumbPath = useMemo(()=>{
+        if(!breadcrumb) return ''
+        return breadcrumb.map(item=>item.tuuid)
+    }, [breadcrumb])
 
     const supprimer = useCallback( () => {
         // console.debug("SUPRIMER %O", selection)
 
-        connexion.supprimerDocuments(cuuid, selection)
-        .then(reponse=>{
+        connexion.supprimerDocuments(cuuid, selection, breadcrumbPath)
+        .then(reponse => {
             if(reponse.ok === false) {
                 console.error("Erreur suppression documents %O : %s", selection, reponse.message)
             }
         })
-        .catch(err=>{
+        .catch(err => {
             console.error("Erreur suppression documents %O : %O", selection, err)
         })
-        .finally(()=>{
+        .finally(() => {
             fermer()
         })
         
-    }, [connexion, fermer, selection, cuuid])
+    }, [connexion, fermer, selection, cuuid, breadcrumbPath])
 
     if(!selection || selection.length === 0) return ''
 

@@ -85,10 +85,10 @@ function toggleFavoris(etatFavoris) {
 //   )
 // }
 
-function supprimerDocuments(cuuid, tuuids) {
+function supprimerDocuments(cuuid, tuuids, supprimePath) {
   return ConnexionClient.emitBlocking(
     'supprimerDocuments',
-    {cuuid, tuuids},
+    {cuuid, tuuids, cuuids_path: supprimePath},
     {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerDocuments', attacherCertificat: true}
   )
 }

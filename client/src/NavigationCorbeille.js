@@ -435,16 +435,36 @@ function BoutonsFormat(props) {
 
 function preparerColonnes(workers) {
 
-    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
+    const rowLoader = async (item, idx) => {
+        const collectionsDao = workers.collectionsDao
+
+        // Tenter de mapper le path
+        const docMappe = mapDocumentComplet(workers, item, idx)
+        let supprimePath = ''
+        if(item.supprime_cuuids_path) {
+            const tuuids = await collectionsDao.getParTuuids(item.supprime_cuuids_path)
+            const tuuidsMappes = {}
+            tuuids.forEach(item=>{
+                tuuidsMappes[item.tuuid] = item
+            })
+            const tuuidsOrdre = item.supprime_cuuids_path.map(cuuid=>{
+                return tuuidsMappes[cuuid].nom || cuuid
+            })
+            
+            console.debug("!!! tuuids ", tuuids)
+            supprimePath = '/'+tuuidsOrdre.join('/')
+        }
+        docMappe.supprimePath = supprimePath
+        return docMappe
+    }
 
     const params = {
-        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateAjout', 'boutonDetail'],
+        ordreColonnes: ['nom', 'taille', 'supprimePath', 'dateAjout'],
         paramsColonnes: {
             'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
-            'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
+            'supprimePath': {'label': 'Repertoire', className: 'details', xs: 4, lg: 3},
             'dateAjout': {'label': 'Date modification', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
-            'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
         tri: {colonne: 'dateAjout', ordre: -1},
         rowLoader,

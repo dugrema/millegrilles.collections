@@ -257,6 +257,11 @@ export function mapDocumentComplet(workers, doc) {
     return copie
 }
 
+export function mapperPathCuuids(workers, pathCuuids) {
+    if(!pathCuuids) return ''
+    return '/' + pathCuuids.join('/')
+}
+
 function getThumbnailIcon(mimetype) {
     if(!mimetype) return ICONE_FOLDER
 
