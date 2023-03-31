@@ -42,9 +42,7 @@ export function setupWorkers() {
 
 async function wireWorkers(workers) {
     const { connexion, chiffrage, transfertFichiers } = workers
-    // connexion.setX509Worker(chiffrage).catch(err=>console.error("Erreur chargement connexion worker : %O", err))
     transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
-    transfertFichiers.up_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/up worker : %O", err))
 
     const urlLocal = new URL(window.location.href)
     urlLocal.pathname = '/collections/fichiers'
