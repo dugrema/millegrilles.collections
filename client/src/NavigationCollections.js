@@ -895,7 +895,7 @@ function preparerColonnes(workers) {
 
 function FormatterColonneDate(props) {
     const data = props.data || {}
-    const { upload } = data
+    const { archive, upload } = data
     if(upload) {
         if( upload.status === 1 ) {
             return <span>En attente</span>
@@ -907,7 +907,11 @@ function FormatterColonneDate(props) {
             return <span>En cours de traitement</span>
         }
     } else {
-        return <FormatterDate value={props.value} />   
+        if(archive) {
+            return <><i className='fa fa-snowflake-o'/>{' '}<FormatterDate value={props.value} /></>
+        } else {
+            return <FormatterDate value={props.value} />   
+        }
     }
 }
 

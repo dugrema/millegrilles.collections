@@ -149,10 +149,9 @@ export function mapDocumentComplet(workers, doc) {
 
     const { connexion, traitementFichiers } = workers
 
-    const { nom, tuuid, date_creation, fuuid_v_courante, mimetype } = doc
+    const { nom, tuuid, date_creation, fuuid_v_courante, mimetype, archive } = doc
     const version_courante = doc.version_courante?{...doc.version_courante}:null
     const copie = {...doc, version_courante}
-    
 
     if(tuuid) {
         // Mapper vers fileId ou folderId
