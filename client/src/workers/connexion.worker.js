@@ -93,6 +93,14 @@ function supprimerDocuments(cuuid, tuuids, supprimePath) {
   )
 }
 
+function archiverDocuments(tuuids) {
+  return ConnexionClient.emitBlocking(
+    'archiverDocuments',
+    {tuuids},
+    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'archiverDocuments', attacherCertificat: true}
+  )
+}
+
 function decrireFichier(tuuid, params) {
   return ConnexionClient.emitBlocking(
     'decrireFichier',
@@ -317,6 +325,7 @@ expose({
     rechercheIndex, transcoderVideo, getPermission,
     ajouterFichier, creerTokenStream, supprimerVideo,
     regenererPreviews,
+    archiverDocuments,
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,

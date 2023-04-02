@@ -17,7 +17,7 @@ import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegr
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
 import AfficherAudio from './AfficherAudio'
-import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
+import { ArchiverModal, SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect, onContextMenu } from './MenuContextuel'
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
@@ -479,6 +479,7 @@ function Modals(props) {
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
 
+    const [ showArchiverModal, setShowArchiverModal ] = useState(false)
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
@@ -486,6 +487,8 @@ function Modals(props) {
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
 
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
+    const showArchiverModalOuvrir = useCallback(()=>setShowArchiverModal(true), [setShowArchiverModal])
+    const showArchiverModalFermer = useCallback(()=>setShowArchiverModal(false), [setShowArchiverModal])
     const showSupprimerModalOuvrir = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
     const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
     const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
@@ -511,6 +514,7 @@ function Modals(props) {
                 selection={selection}
                 showPreview={showPreviewAction}
                 usager={usager}
+                showArchiverModalOuvrir={showArchiverModalOuvrir}
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 showCopierModalOuvrir={showCopierModalOuvrir}
                 showDeplacerModalOuvrir={showDeplacerModalOuvrir}
@@ -534,6 +538,8 @@ function Modals(props) {
                 show={showCreerRepertoire} 
                 fermer={()=>{setShowCreerRepertoire(false)}} 
               />
+
+            <ArchiverModal show={showArchiverModal} fermer={showArchiverModalFermer} />
 
             <SupprimerModal
                 show={showSupprimerModal}

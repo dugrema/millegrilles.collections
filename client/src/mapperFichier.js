@@ -145,7 +145,7 @@ export function mapper(row, workers) {
 
 export function mapDocumentComplet(workers, doc) {
 
-    // console.debug("mapDocumentComplet : ", doc)
+    console.debug("mapDocumentComplet : ", doc)
 
     const { connexion, traitementFichiers } = workers
 

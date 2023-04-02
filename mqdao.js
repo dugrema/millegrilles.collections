@@ -100,6 +100,10 @@ export function supprimerDocuments(socket, params) {
     return transmettreCommande(socket, params, 'supprimerDocuments')
 }
 
+export function archiverDocuments(socket, params) {
+  return transmettreCommande(socket, params, 'archiverDocuments')
+}
+
 export function decrireFichier(socket, params) {
     return transmettreCommande(socket, params, 'decrireFichier')
 }

@@ -8,8 +8,8 @@ import { MenuContextuel } from '@dugrema/millegrilles.reactjs'
 export function MenuContextuelFichier(props) {
     const { 
         fichier, contextuel, fermerContextuel, showPreview, cuuid, 
-        showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
-        showInfoModalOuvrir, showRenommerModalOuvrir, downloadAction,
+        showArchiverModalOuvrir, showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
+        showInfoModalOuvrir, showRenommerModalOuvrir, downloadAction, 
     } = props
 
     // Determiner si preview est disponible
@@ -49,6 +49,7 @@ export function MenuContextuelFichier(props) {
         fermerContextuel()
     }, [fichier, downloadAction, fermerContextuel])
 
+    const archiverAction = useCallback( () => archiverDocuments(fermerContextuel, showArchiverModalOuvrir), [fermerContextuel, showArchiverModalOuvrir] )
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
@@ -64,6 +65,7 @@ export function MenuContextuelFichier(props) {
             <Row><Col><Button variant="link" onClick={renommerAction}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={deplacerAction} disabled={!cuuid}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={archiverAction}><i className="fa fa-snowflake-o" /> Archiver</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={supprimerAction}><i className="fa fa-trash-o" /> Supprimer</Button></Col></Row>
         </MenuContextuel>
     )
@@ -220,6 +222,11 @@ export function MenuContextuelCorbeille(props) {
             <Row><Col><Button variant="link" onClick={recupererAction}><i className="fa fa-recycle"/> Recuperer</Button></Col></Row>
         </MenuContextuel>
     )
+}
+
+function archiverDocuments(fermer, showArchiverModalOuvrir) {
+    showArchiverModalOuvrir()
+    fermer()
 }
 
 function supprimerDocuments(fermer, showSupprimerModalOuvrir) {

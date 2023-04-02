@@ -63,6 +63,86 @@ export function SupprimerModal(props) {
     )
 }
 
+export function ArchiverModal(props) {
+
+    const { show, fermer } = props
+
+    const workers = useWorkers()
+
+    const liste = useSelector(state => state.fichiers.liste)
+    const cuuid = useSelector(state => state.fichiers.cuuid)
+    const selection = useSelector(state => state.fichiers.selection )
+    const breadcrumb = useSelector(state=>state.fichiers.breadcrumb)
+
+    const [selectionListe, toggleArchive] = useMemo(()=>{
+        if(!liste || !selection) return [null, null]
+        console.debug("ArchiverModal liste %O\nselection %O", liste, selection)
+        const selectionListe = liste.filter(item=>{
+            return selection.includes(item.tuuid)
+        })
+        console.debug("Selection liste ", selectionListe)
+
+        const toggleArchive = selectionListe.reduce((acc, item)=>{
+            return acc && !item.archive
+        }, true)
+
+        return [selectionListe, toggleArchive]
+    }, [liste, selection])
+
+    const connexion = workers.connexion
+
+    const breadcrumbPath = useMemo(()=>{
+        if(!breadcrumb) return ''
+        return breadcrumb.map(item=>item.tuuid)
+    }, [breadcrumb])
+
+    const actionHandler = useCallback( () => {
+        // console.debug("SUPRIMER %O", selection)
+
+        const promise = toggleArchive?connexion.archiverDocuments(selection):connexion.recupererDocuments(selection)
+
+        promise
+            .then(reponse => {
+                if(reponse.ok === false) {
+                    console.error("Erreur archivage/restauration documents %O : %s", selection, reponse.message)
+                }
+            })
+            .catch(err => {
+                console.error("Erreur archivage/restauration documents %O : %O", selection, err)
+            })
+            .finally(() => {
+                fermer()
+            })
+        
+    }, [connexion, fermer, selection, cuuid, breadcrumbPath, toggleArchive])
+
+    const labelButton = useMemo(()=>{
+        if(toggleArchive) return 'Archiver'
+        return 'Reactiver'
+    }, [toggleArchive])
+
+    if(!selection || selection.length === 0) return ''
+
+    return (
+        <Modal show={show} onHide={fermer}>
+            <Modal.Header closeButton={true}>
+                Archiver
+            </Modal.Header>
+
+            {toggleArchive?
+                <p>Archiver les fichiers?</p>
+                :
+                <p>Reactiver les fichiers?</p>
+            }
+
+            <Modal.Footer>
+                <Button onClick={actionHandler}>{labelButton}</Button>
+            </Modal.Footer>
+        </Modal>
+    )
+}
+
+
 export function CopierModal(props) {
 
     const { show, fermer, selection, erreurCb } = props
