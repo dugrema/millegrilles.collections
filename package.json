@@ -1,6 +1,6 @@
 {
   "name": "millegrilles.collections",
-  "version": "2023.3.2",
+  "version": "2023.3.3",
   "description": "Collections pour MilleGrilles",
   "main": "index.js",
   "type": "module",
