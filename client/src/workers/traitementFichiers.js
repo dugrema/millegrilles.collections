@@ -447,12 +447,12 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     await transfertFichiers.up_setCertificats(certificatsMaitredescles)
     console.debug("Certificat maitre des cles OK")
 
-    for await (let file of acceptedFiles) {
+    //for await (let file of acceptedFiles) {
         // Recuperer un token, faire 1 fichier par batch
         const infoBatch = await workers.connexion.getBatchUpload()
         console.debug("InfoBatch ", infoBatch)
         const { batchId, token } = infoBatch
-        const paramBatch = {...params, acceptedFiles: [file], token, batchId}
+        const paramBatch = {...params, acceptedFiles /*: [file]*/, token, batchId}
 
         const ajouterPartProxy = Comlink.proxy(
             (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
@@ -469,7 +469,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
             setProgresProxy,
             signalAnnuler
         )
-    }
+    //}
 }
 
 async function ajouterPart(workers, batchId, correlation, compteurPosition, chunk) {
