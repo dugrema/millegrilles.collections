@@ -169,10 +169,11 @@ export function MenuContextuelMultiselect(props) {
 
     const { 
         workers, fichiers, selection, contextuel, fermerContextuel, cuuid,
-        showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
+        showSupprimerModalOuvrir, showArchiverModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
     } = props
 
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
+    const archiverAction = useCallback( () => supprimerDocuments(fermerContextuel, showArchiverModalOuvrir), [fermerContextuel, showArchiverModalOuvrir] )
     const favorisAction = useCallback( () => toggleFavorisMultiples(workers, fermerContextuel, cuuid, fichiers, selection), [workers, fermerContextuel, fichiers, selection, cuuid] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
@@ -195,6 +196,7 @@ export function MenuContextuelMultiselect(props) {
             <Row><Col><Button variant="link" disabled={true}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={deplacerAction} disabled={!cuuid}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={archiverAction}><i className="fa fa-snowflake-o" /> Archiver</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={supprimerAction}><i className="fa fa-trash-o" /> Supprimer</Button></Col></Row>
         </MenuContextuel>
     )
