@@ -25,6 +25,8 @@ import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload } from './redux/downloaderSlice'
 
+const CONST_EXPIRATION_VISITE = 3 * 86_400_000
+
 function NavigationCollections(props) {
 
     const { erreurCb } = props
@@ -899,7 +901,23 @@ function preparerColonnes(workers) {
 
 function FormatterColonneDate(props) {
     const data = props.data || {}
-    const { archive, upload } = data
+    const { archive, upload, visites } = data
+
+    let symbolesEtat = []
+    if(archive) symbolesEtat.push(<i className='fa fa-snowflake-o'/>)
+    if(visites) {
+        // Tenter de detecter au moins 1 serveur avec le fichier visite recemment
+        const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
+        let visiteRecentes = Object.values(visites).filter(item=>{
+            return item >= expire
+        })
+        if(visiteRecentes.length === 0) {
+            symbolesEtat.push(<i className="fa fa-question-circle warning" />)
+        }
+    } else {
+        symbolesEtat.push(<i className="fa fa-question-circle-o" />)
+    }
+
     if(upload) {
         if( upload.status === 1 ) {
             return <span>En attente</span>
@@ -911,11 +929,7 @@ function FormatterColonneDate(props) {
             return <span>En cours de traitement</span>
         }
     } else {
-        if(archive) {
-            return <><i className='fa fa-snowflake-o'/>{' '}<FormatterDate value={props.value} /></>
-        } else {
-            return <FormatterDate value={props.value} />   
-        }
+        return <><FormatterDate value={props.value} />{' '}{symbolesEtat}</>
     }
 }
 

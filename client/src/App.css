@@ -25,3 +25,7 @@
 .navbar .nav-link {
     white-space: nowrap;
 }
+
+.warning {
+    color: yellow;
+}
