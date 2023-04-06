@@ -405,21 +405,29 @@ function InfoFichier(props) {
 
     const fichier = props.value || {}
     const nom = valueItem.nom
-    const { tuuid } = fichier
+    const { tuuid, fuuid_v_courante: fuuid, visites } = fichier
     const versionCourante = fichier.version_courante || {}
     const { mimetype, taille } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
     const dateFichier = valueItem.dateFichier
 
+    const derniereVisite = useMemo(()=>{
+        if(!visites) return ''
+        return Object.values(visites).reduce((acc, item)=>{
+            if(!acc || acc < item) return item
+            return acc
+        })
+    }, [visites])
+
     return (
         <div>
             <Row>
-                <Col xs={12} md={4}>
+                <Col xs={12} lg={4}>
                     <Thumbnail loader={imageLoader} placeholder={thumbnailIcon}>
                         <span></span>
                     </Thumbnail>
                 </Col>
-                <Col xs={12} md={8} className="text-hardwrap info-labels">
+                <Col xs={12} lg={8} className="text-hardwrap info-labels">
                     <Row>
                         <Col xs={12} md={3}>Nom</Col>
                         <Col xs={12} md={9}>{nom}</Col>
@@ -443,6 +451,14 @@ function InfoFichier(props) {
                     <Row>
                         <Col xs={12} md={3}>id systeme</Col>
                         <Col xs={12} md={9}>{tuuid}</Col>
+                    </Row>
+                    <Row>
+                        <Col xs={12} md={3}>fuuid</Col>
+                        <Col xs={12} md={9}>{fuuid}</Col>
+                    </Row>
+                    <Row>
+                        <Col xs={12} md={3}>Plus recente verification</Col>
+                        <Col xs={12} md={9}><FormatterDate value={derniereVisite} /></Col>
                     </Row>
                     <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
                 </Col>
