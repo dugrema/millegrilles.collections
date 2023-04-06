@@ -26,7 +26,7 @@ import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload } from './redux/downloaderSlice'
 
-const CONST_EXPIRATION_VISITE = 150_000  // 3 * 86_400_000
+const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
 function NavigationCollections(props) {
 
