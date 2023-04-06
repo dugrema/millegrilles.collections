@@ -239,13 +239,16 @@ function AffichagePrincipal(props) {
     const liste = useSelector(state => state.fichiers.liste)
     const sortKeys = useSelector(state => state.fichiers.sortKeys)
     const selection = useSelector(state => state.fichiers.selection)
-    const listeComplete = tailleAffichee?false:true
+    // const listeComplete = tailleAffichee?false:true
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
 
-    const listeAffichee = useMemo(()=>{
+    const [listeAffichee, listeComplete] = useMemo(()=>{
         if(!liste) return ''                // Liste vide
-        if(!tailleAffichee) return liste    // Liste complete
-        return liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
+        if(!tailleAffichee) return [liste, true]    // Liste complete
+        const listeFiltree = liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
+        const listeComplete = listeFiltree === liste.length
+        console.debug("Liste, %O, Liste filtree %O, liste est complete? %s", liste, listeFiltree, listeComplete)
+        return [listeFiltree, listeComplete]
     }, [liste, tailleAffichee])
 
     const colonnesEffectives = useMemo(()=>{
@@ -304,7 +307,7 @@ function AffichagePrincipal(props) {
     }, [dispatch, sortKeys, liste])
 
     const suivantCb = useCallback(params => {
-        // console.debug("SuivantCb ", params)
+        console.debug("SuivantCb ", params)
         dispatch(fichiersActions.incrementerNombreAffiches())
     }, [dispatch])
 
@@ -332,12 +335,13 @@ function AffichagePrincipal(props) {
             modeView={modeView}
             colonnes={colonnesEffectives}
             rows={listeAffichee} 
+            isListeComplete={listeComplete}
             selection={selection}
             onOpen={onOpenHandler}
             onContextMenu={onContextMenuClick}
             onSelect={onSelectionLignes}
             onClickEntete={enteteOnClickCb}
-            suivantCb={listeComplete?'':suivantCb}
+            suivantCb={suivantCb}
             scrollValue={scrollValue}
             onScroll={onScroll}
         />
