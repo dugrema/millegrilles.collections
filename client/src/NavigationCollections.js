@@ -13,6 +13,7 @@ import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
+import { formatterDateString } from '@dugrema/millegrilles.reactjs/src/formatterUtils'
 
 import PreviewFichiers from './FilePlayer'
 import AfficherVideo from './AfficherVideo'
@@ -25,7 +26,7 @@ import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload } from './redux/downloaderSlice'
 
-const CONST_EXPIRATION_VISITE = 3 * 86_400_000
+const CONST_EXPIRATION_VISITE = 150_000  // 3 * 86_400_000
 
 function NavigationCollections(props) {
 
@@ -901,21 +902,28 @@ function preparerColonnes(workers) {
 
 function FormatterColonneDate(props) {
     const data = props.data || {}
-    const { archive, upload, visites } = data
+    const { archive, upload, visites, folderId } = data
 
     let symbolesEtat = []
-    if(archive) symbolesEtat.push(<i className='fa fa-snowflake-o'/>)
-    if(visites) {
-        // Tenter de detecter au moins 1 serveur avec le fichier visite recemment
-        const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
-        let visiteRecentes = Object.values(visites).filter(item=>{
-            return item >= expire
-        })
-        if(visiteRecentes.length === 0) {
-            symbolesEtat.push(<i className="fa fa-question-circle warning" />)
+    if(archive) symbolesEtat.push(<i className='fa fa-snowflake-o' title='Archive'/>)
+    if(!folderId) {
+        if(visites) {
+            // Tenter de detecter au moins 1 serveur avec le fichier visite recemment
+            const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
+            let visiteRecente = Object.values(visites).reduce((acc, item)=>{
+                if(item > acc) return item
+                return acc
+            }, 0)
+            if(visiteRecente === 0) {
+                symbolesEtat.push(<i className="fa fa-question-circle error" title='Fichier absent' />)
+            } else if(visiteRecente < expire) {
+                const dateVisite = new Date(visiteRecente*1000)
+                const dateFormattee = formatterDateString({date: dateVisite})
+                symbolesEtat.push(<i className="fa fa-question-circle warning" title={'Derniere visite : ' + dateFormattee} />)
+            }
+        } else {
+            symbolesEtat.push(<i className="fa fa-question-circle-o" />)
         }
-    } else {
-        symbolesEtat.push(<i className="fa fa-question-circle-o" />)
     }
 
     if(upload) {
