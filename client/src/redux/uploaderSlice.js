@@ -380,8 +380,12 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
               partContent = part.data
         await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
         
+        console.debug("part upload ", part)
+
         // await new Promise(resolve=>setTimeout(resolve, 250))
-        const opts = {}
+        const opts = {
+            hachagePart: part.hachagePart,
+        }
         const resultatUpload = transfertFichiers.partUploader(token, correlation, position, partContent, opts)
         // await Promise.race([resultatUpload, cancelToken])
         await resultatUpload

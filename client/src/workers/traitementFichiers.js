@@ -1,15 +1,8 @@
 import axios from 'axios'
 import multibase from 'multibase'
-import { v4 as uuidv4 } from 'uuid'
-import { getAcceptedFileReader, streamAsyncIterable } from '@dugrema/millegrilles.reactjs/src/stream'
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { ajouterUpload } from '../redux/uploaderSlice'
-import { pki } from '@dugrema/node-forge'
 import * as Comlink from 'comlink'
-
-const UPLOAD_BATCH_SIZE = 5 * 1024 * 1024,
-      ETAT_PREPARATION = 1,
-      ETAT_PRET = 2
 
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       CONST_TIMEOUT_DOWNLOAD = 120_000
@@ -217,63 +210,6 @@ async function clean(urlBlobPromise) {
     }
 }
 
-// async function traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts) {
-//     opts = opts || {}
-//     const { setProgres, signalAnnuler } = opts
-//     const { clesDao, transfertFichiers } = workers
-//     const userId = usager.extensions.userId
-//     // console.debug("traiterAcceptedFiles Debut pour userId %s, cuuid %s, fichiers %O", userId, cuuid, acceptedFiles)
-
-//     const certificatsMaitredescles = await clesDao.getCertificatsMaitredescles()
-//     // console.debug("Set certificat maitre des cles ", certificatsMaitredescles)
-//     if(!certificatsMaitredescles || certificatsMaitredescles.length === 0) {
-//         throw new Error("Aucun certificat de chiffrage n'est disponible")
-//     }
-//     await transfertFichiers.up_setCertificats(certificatsMaitredescles)
-
-//     const ajouterPartProxy = Comlink.proxy((correlation, compteurPosition, chunk) => ajouterPart(workers, correlation, compteurPosition, chunk))
-//     const updateFichierProxy = Comlink.proxy((doc, opts) => updateFichier(workers, dispatch, doc, opts))
-//     const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
-//     const resultat = await transfertFichiers.traiterAcceptedFiles(
-//         acceptedFiles, userId, cuuid, 
-//         ajouterPartProxy, 
-//         updateFichierProxy,
-//         setProgresProxy,
-//         signalAnnuler
-//     )
-//     return resultat
-// }
-
-// async function ajouterPart(workers, correlation, compteurPosition, chunk) {
-//     const { uploadFichiersDao } = workers
-//     // console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
-//     await uploadFichiersDao.ajouterFichierUploadFile(correlation, compteurPosition, chunk)
-// }
-
-// async function updateFichier(workers, dispatch, doc, opts) {
-//     opts = opts || {}
-//     const correlation = doc.correlation
-//     const demarrer = opts.demarrer || false,
-//           err = opts.err
-
-//     const { uploadFichiersDao } = workers
-
-//     // console.debug("Update fichier %s demarrer? %s err? %O : %O", correlation, demarrer, err, doc)
-
-//     if(err) {
-//         console.error("Erreur upload fichier %s : %O", correlation, err)
-//         // Supprimer le fichier dans IDB
-//         uploadFichiersDao.supprimerFichier(correlation)
-//             .catch(err=>console.error('updateFichier Erreur nettoyage %s suite a une erreur : %O', correlation, err))
-//         return
-//     }
-    
-//     await uploadFichiersDao.updateFichierUpload(doc)
-
-//     // Declencher l'upload si applicable
-//     if(demarrer) dispatch(ajouterUpload(doc))
-// }
-
 export async function downloadCache(fuuid, opts) {
     opts = opts || {}
     if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
@@ -310,128 +246,6 @@ function promptSaveFichier(blob, opts) {
     }
 }
 
-
-// async function traiterAcceptedFiles(workers, dispatch, usager, acceptedFiles, setProgres) {
-//     const { uploadFichiersDao, clesDao } = workers
-//     const now = new Date().getTime()
-
-//     console.debug("Accepted files ", acceptedFiles)
-//     let tailleTotale = 0
-//     for (const file of acceptedFiles) {
-//         tailleTotale += file.size
-//     }
-//     console.debug("Preparation de %d bytes", tailleTotale)
-
-//     const userId = usager.extensions.userId,
-//           certificatCa = usager.ca
-
-//     const { cipher: transform } = await creerCipher(workers, certificatCa)
-
-//     let taillePreparee = 0
-//     for await (const file of acceptedFiles) {
-//         const correlation = '' + uuidv4()
-//         const stream = file.stream()
-//         console.debug("File %s stream : %O", file.name, stream)
-
-//         const reader = getAcceptedFileReader(file)
-//         const iterReader = streamAsyncIterable(reader, {batchSize: UPLOAD_BATCH_SIZE, transform})
-//         let compteurChunks = 0,
-//             compteurPosition = 0
-
-//         const docIdb = {
-//             // PK
-//             correlation, userId, 
-
-//             // Metadata recue
-//             nom: file.name || correlation,
-//             taille: file.size,
-//             mimetype: file.type || 'application/octet-stream',
-
-//             // Etat initial
-//             etat: ETAT_PREPARATION, 
-//             positionsCompletees: [],
-//             tailleCompletee: 0,
-//             dateCreation: now,
-//             retryCount: -1,  // Incremente sur chaque debut d'upload
-//             transactionGrosfichiers: null,
-//             transactionMaitredescles: null,
-//         }
-
-//         await uploadFichiersDao.updateFichierUpload(docIdb)
-        
-//         const frequenceUpdate = 500
-//         let dernierUpdate = 0
-
-//         try {
-//             for await (const chunk of iterReader) {
-//                 console.debug("Traitement chunk %d transforme taille %d", compteurChunks, chunk.length)
-
-//                 // Conserver dans idb
-//                 await uploadFichiersDao.ajouterFichierUploadFile(correlation, compteurPosition, chunk)
-//                 compteurPosition += chunk.length
-
-//                 taillePreparee += chunk.length
-//                 const now = new Date().getTime()
-//                 if(dernierUpdate + frequenceUpdate < now) {
-//                     dernierUpdate = now
-//                     setProgres(Math.floor(100*taillePreparee/tailleTotale))
-//                 }
-
-//                 compteurChunks ++
-//             }
-
-//             // const hachage_bytes = resultatChiffrage.hachage
-//             // const identificateurs_document = { fuuid: hachage_bytes }
-//             // const commandeMaitreDesCles = await preparerCommandeMaitrecles(
-//             //     [_certificat[0]], transformHandler.secretKey, _domaine, hachage_bytes, identificateurs_document, {...paramsChiffrage, DEBUG: false})
-
-//             docIdb.etat = ETAT_PRET
-//             docIdb.taille = compteurPosition
-            
-//             // Update idb
-//             await uploadFichiersDao.updateFichierUpload(docIdb)
-
-//             // Dispatch pour demarrer upload
-//             dispatch(ajouterUpload(docIdb))
-//         } catch(err) {
-//             uploadFichiersDao.supprimerFichier(correlation)
-//                 .catch(err=>console.error('traiterAcceptedFiles Erreur nettoyage %s suite a une erreur : %O', correlation, err))
-//             throw err
-//         }
-
-//         // Fermer affichage preparation des fichiers
-//         setProgres(false)
-//     }
-// }
-
-// async function creerCipher(workers, certificatCa) {
-//     const { chiffrage, clesDao } = workers
-
-//     const certCa = pki.certificateFromPem(certificatCa)
-//     console.debug("CertCa : ", certCa)
-//     const publicKeyCa = certCa.publicKey.publicKeyBytes
-//     const fingerprintCa = await chiffrage.hacherCertificat(certificatCa)
-//     console.debug("Fingerprint keyCA %O, certificat CA : %s", publicKeyCa, fingerprintCa)
-
-//     const certificatsInfo = await clesDao.getCertificatsMaitredescles()
-//     const certificats = certificatsInfo.certificat
-//     console.debug("CA: %O, Certificats : %O", certificatCa, certificats)
-
-//     const cipherHandler = await chiffrage.chiffrage.preparerCipher({clePubliqueEd25519: publicKeyCa})
-//     console.debug("creerCipher handler : %O", cipherHandler)
-
-//     throw new Error("fix me")
-
-//     const cipher = cipherHandler.cipher
-
-//     // return {
-//     //     cipher(chunk) {
-//     //         return cipher.update(chunk)
-//     //     },
-//     //     handler: cipherHandler,
-//     // }
-// }
-
 async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
     console.debug("Workers : ", workers)
@@ -447,29 +261,26 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     await transfertFichiers.up_setCertificats(certificatsMaitredescles)
     console.debug("Certificat maitre des cles OK")
 
-    //for await (let file of acceptedFiles) {
-        // Recuperer un token, faire 1 fichier par batch
-        const infoBatch = await workers.connexion.getBatchUpload()
-        console.debug("InfoBatch ", infoBatch)
-        const { batchId, token } = infoBatch
-        const paramBatch = {...params, acceptedFiles /*: [file]*/, token, batchId}
+    const infoBatch = await workers.connexion.getBatchUpload()
+    console.debug("InfoBatch ", infoBatch)
+    const { batchId, token } = infoBatch
+    const paramBatch = {...params, acceptedFiles /*: [file]*/, token, batchId}
 
-        const ajouterPartProxy = Comlink.proxy(
-            (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
-        )
-        const updateFichierProxy = Comlink.proxy((doc, opts) => {
-            const docWithIds = {...doc, userId, batchId, token}
-            return updateFichier(workers, dispatch, docWithIds, opts)
-        })
-        const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
-        await transfertFichiers.traiterAcceptedFilesV2(
-            paramBatch, 
-            ajouterPartProxy, 
-            updateFichierProxy,
-            setProgresProxy,
-            signalAnnuler
-        )
-    //}
+    const ajouterPartProxy = Comlink.proxy(
+        (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
+    )
+    const updateFichierProxy = Comlink.proxy((doc, opts) => {
+        const docWithIds = {...doc, userId, batchId, token}
+        return updateFichier(workers, dispatch, docWithIds, opts)
+    })
+    const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
+    await transfertFichiers.traiterAcceptedFilesV2(
+        paramBatch, 
+        ajouterPartProxy, 
+        updateFichierProxy,
+        setProgresProxy,
+        signalAnnuler
+    )
 }
 
 async function ajouterPart(workers, batchId, correlation, compteurPosition, chunk) {

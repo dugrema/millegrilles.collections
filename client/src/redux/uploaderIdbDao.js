@@ -1,3 +1,4 @@
+import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
 import { ouvrirDB } from './idbCollections'
 
 const STORE_UPLOADS = 'uploads',
@@ -54,12 +55,16 @@ export async function ajouterFichierUploadFile(batchId, correlation, position, d
     if(data.length === 0) return   // Rien a faire
 
     // console.debug("ajouterFichierUploadFile %s position %d len %d", correlation, position, data.length)
+    const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
+    await hachagePartChiffre.update(data)
+    const hachagePart = await hachagePartChiffre.finalize()
+    console.debug("Hachage part : ", hachagePart)
 
     const db = await ouvrirDB()
     const store = db.transaction(STORE_UPLOADS_FICHIERS, 'readwrite').store
     const blob = new Blob([data])
     const taille = data.length
-    await store.put({batchId, correlation, position, taille, data: blob})
+    await store.put({batchId, correlation, position, taille, hachagePart, data: blob})
 }
 
 export async function supprimerFichier(correlation) {
