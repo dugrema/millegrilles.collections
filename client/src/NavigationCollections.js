@@ -806,7 +806,7 @@ function BoutonsAction(props) {
 
 function BoutonUpload(props) {
 
-    const { setPreparationUploadEnCours, signalAnnuler, resetAnnuler } = props
+    const { setPreparationUploadEnCours, signalAnnuler, resetAnnuler, setError } = props
 
     const refUpload = useRef()
     const workers = useWorkers()
@@ -825,14 +825,25 @@ function BoutonUpload(props) {
 
     const upload = useCallback( acceptedFiles => {
         console.debug("Files : %O pour usager: %O, signalAnnuler: %O", acceptedFiles, usager, signalAnnuler)
-        
+
+        for(const file of acceptedFiles) {
+            if(!file.type && file.size === 0) {
+                if(setError) {
+                    setError("Repertoires non supportes pour upload")
+                } else {
+                    console.error("Repertoires non supportes pour upload")
+                }
+                return
+            }
+        }
+
         handlerPreparationUploadEnCours(0)  // Debut preparation
 
         const userId = usager.extensions.userId
 
         traitementFichiers.traiterAcceptedFiles(
             dispatch, 
-            {userId, usager, cuuid, acceptedFiles}, 
+            {userId, usager, cuuid, acceptedFiles},
             {signalAnnuler, setProgres: handlerPreparationUploadEnCours}
         )
             .then( () => {
