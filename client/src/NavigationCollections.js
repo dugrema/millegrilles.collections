@@ -507,7 +507,25 @@ function Modals(props) {
     const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
     const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
 
+    const dispatch = useDispatch()
     const workers = useWorkers()
+
+    const downloadAction = useCallback((params) => {
+        let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
+        if(fichier) {
+            const videos = fichier.version_courante.video
+            const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
+            console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
+            // Set le fuuid de video a downloader, params dechiffrage
+            fichier = {
+                ...fichier, 
+                infoDechiffrage: infoVideo,
+                fuuidDownload: params.fuuid
+            }
+            dispatch(ajouterDownload(workers, fichier))
+                .catch(err=>erreurCb(err, 'Erreur ajout download'))
+        }
+    }, [workers, dispatch, liste])
 
     return (
         <>
@@ -583,6 +601,7 @@ function Modals(props) {
                 etatAuthentifie={etatPret}
                 usager={usager}
                 erreurCb={erreurCb}
+                downloadAction={downloadAction}
               />
 
             <RenommerModal

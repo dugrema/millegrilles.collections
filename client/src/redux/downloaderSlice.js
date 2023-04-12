@@ -52,7 +52,7 @@ function setDownloadsAction(state, action) {
 function pushDownloadAction(state, action) {
     const docDownload = action.payload
 
-    console.debug("pushDownloadAction payload : ", docDownload)
+    // console.debug("pushDownloadAction payload : ", docDownload)
     state.liste.push(docDownload)
 
     const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
@@ -157,25 +157,27 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     const { downloadFichiersDao, clesDao } = workers
     
     // console.debug("traiterCompleterDownload ", fuuid)
-    console.debug("traiterAjouterDownload payload : ", docDownload)
+    // console.debug("traiterAjouterDownload payload : ", docDownload)
     
     const userId = getState()[SLICE_NAME].userId
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
 
-    const fuuid = docDownload.fuuid || docDownload.fuuid_v_courante
+    const fuuid = docDownload.fuuidDownload || docDownload.fuuid || docDownload.fuuid_v_courante
+    const fuuidCle = docDownload.fuuid_v_courante || fuuid
     const version_courante = docDownload.version_courante || {}
     const taille = version_courante.taille
     const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
-    console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
+    // console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
     if(!infoDownload) {
         // Ajouter l'upload, un middleware va charger le reste de l'information
         // console.debug("Ajout upload %O", correlation)
 
-        await clesDao.getCles([fuuid])  // Fetch pour cache (ne pas stocker dans redux)
+        await clesDao.getCles([fuuidCle])  // Fetch pour cache (ne pas stocker dans redux)
 
         const nouveauDownload = {
             ...docDownload,
             fuuid,
+            fuuidCle,
             taille,
             userId,
             etat: ETAT_PRET,
@@ -235,7 +237,7 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
 
         try {
             // Prompt sauvegarder
-            console.debug("TraitementFichiers ", traitementFichiers)
+            // console.debug("TraitementFichiers ", traitementFichiers)
             const fuuid = download.fuuid,
                 filename = download.nom
             await traitementFichiers.downloadCache(fuuid, {filename})
@@ -322,7 +324,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
     // Commencer boucle d'upload
     while(nextDownload) {
-        console.debug("Next download : %O", nextDownload)
+        // console.debug("Next download : %O", nextDownload)
         const fuuid = nextDownload.fuuid
         try {
             await downloadFichier(workers, dispatch, nextDownload, cancelToken)
@@ -346,13 +348,16 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 }
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
-    // console.debug("Upload fichier workers : ", workers)
+    // console.debug("Download fichier params : ", fichier)
     const { transfertFichiers, clesDao } = workers
-    const fuuid = fichier.fuuid
+    const fuuid = fichier.fuuid,
+          fuuidCle = fichier.fuuidCle || fichier.fuuid,
+          infoDechiffrage = fichier.infoDechiffrage || {}
 
     // await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS})
-    const cles = await clesDao.getCles([fuuid])  // Fetch pour cache (ne pas stocker dans redux)
+    const cles = await clesDao.getCles([fuuidCle])  // Fetch pour cache (ne pas stocker dans redux)
     const valueCles = Object.values(cles).pop()
+    Object.assign(valueCles, infoDechiffrage) // Injecter header custom
     delete valueCles.date
     // valueCles.cleSecrete = base64.encode(valueCles.cleSecrete)
 
@@ -370,13 +375,14 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
 
     const url = ''+fuuid
     const paramsDownload = {
+        ...valueCles,
         url,
         fuuid, hachage_bytes: fuuid, filename: fichier.nom, mimetype: fichier.mimetype,
-        password: valueCles.cleSecrete, ...valueCles,
+        password: valueCles.cleSecrete,
     }
-    console.debug("Params download : ", paramsDownload)
+    // console.debug("Params download : ", paramsDownload)
     const resultat = await transfertFichiers.downloadCacheFichier(paramsDownload, progressCb)
-    console.debug("Resultat download fichier : ", resultat)
+    // console.debug("Resultat download fichier : ", resultat)
 
     if(cancelToken && cancelToken.cancelled) {
         console.warn("Upload cancelled")

@@ -546,6 +546,7 @@ function AfficherLigneFormatVideo(props) {
     nomFichier = nomFichier.join('.') + '_' + resolution + '.' + extension
   
     const infoDownload = { 
+      tuuid: fichier.tuuid,
       fuuid: video.fuuid_video,
       mimetype: video.mimetype, 
       codec: video.codec,
