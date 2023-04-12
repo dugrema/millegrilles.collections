@@ -248,7 +248,6 @@ function promptSaveFichier(blob, opts) {
 
 async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
-    console.debug("Workers : ", workers)
     const { acceptedFiles, /*token, batchId,*/ cuuid, userId } = params
     const { setProgres, signalAnnuler } = opts
     const { transfertFichiers } = workers
@@ -256,31 +255,34 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
 
     // const certificatsMaitredescles = await workers.connexion.getClesChiffrage()
     const certificatsMaitredescles = await workers.clesDao.getCertificatsMaitredescles()
-    console.debug("Certificats : %O", certificatsMaitredescles)
+    // console.debug("Certificats : %O", certificatsMaitredescles)
 
     await transfertFichiers.up_setCertificats(certificatsMaitredescles)
-    console.debug("Certificat maitre des cles OK")
+    // console.debug("Certificat maitre des cles OK")
 
-    const infoBatch = await workers.connexion.getBatchUpload()
-    console.debug("InfoBatch ", infoBatch)
-    const { batchId, token } = infoBatch
-    const paramBatch = {...params, acceptedFiles /*: [file]*/, token, batchId}
+    for await (let file of acceptedFiles) {
+        // Recuperer un token, faire 1 fichier par batch
+        const infoBatch = await workers.connexion.getBatchUpload()
+        console.debug("InfoBatch ", infoBatch)
+        const { batchId, token } = infoBatch
+        const paramBatch = {...params, acceptedFiles: [file], token, batchId}
 
-    const ajouterPartProxy = Comlink.proxy(
-        (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
-    )
-    const updateFichierProxy = Comlink.proxy((doc, opts) => {
-        const docWithIds = {...doc, userId, batchId, token}
-        return updateFichier(workers, dispatch, docWithIds, opts)
-    })
-    const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
-    await transfertFichiers.traiterAcceptedFilesV2(
-        paramBatch, 
-        ajouterPartProxy, 
-        updateFichierProxy,
-        setProgresProxy,
-        signalAnnuler
-    )
+        const ajouterPartProxy = Comlink.proxy(
+            (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
+        )
+        const updateFichierProxy = Comlink.proxy((doc, opts) => {
+            const docWithIds = {...doc, userId, batchId, token}
+            return updateFichier(workers, dispatch, docWithIds, opts)
+        })
+        const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
+        await transfertFichiers.traiterAcceptedFilesV2(
+            paramBatch, 
+            ajouterPartProxy, 
+            updateFichierProxy,
+            setProgresProxy,
+            signalAnnuler
+        )
+    }
 }
 
 async function ajouterPart(workers, batchId, correlation, compteurPosition, chunk) {

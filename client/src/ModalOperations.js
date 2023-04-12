@@ -76,11 +76,11 @@ export function ArchiverModal(props) {
 
     const [selectionListe, toggleArchive] = useMemo(()=>{
         if(!liste || !selection) return [null, null]
-        console.debug("ArchiverModal liste %O\nselection %O", liste, selection)
+        // console.debug("ArchiverModal liste %O\nselection %O", liste, selection)
         const selectionListe = liste.filter(item=>{
             return selection.includes(item.tuuid)
         })
-        console.debug("Selection liste ", selectionListe)
+        // console.debug("Selection liste ", selectionListe)
 
         const toggleArchive = selectionListe.reduce((acc, item)=>{
             return acc && !item.archive

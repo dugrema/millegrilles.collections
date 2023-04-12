@@ -250,7 +250,7 @@ function AffichagePrincipal(props) {
         if(!tailleAffichee) return [liste, true]    // Liste complete
         const listeFiltree = liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
         const listeComplete = listeFiltree === liste.length
-        console.debug("Liste, %O, Liste filtree %O, liste est complete? %s", liste, listeFiltree, listeComplete)
+        // console.debug("Liste, %O, Liste filtree %O, liste est complete? %s", liste, listeFiltree, listeComplete)
         return [listeFiltree, listeComplete]
     }, [liste, tailleAffichee])
 
@@ -285,7 +285,7 @@ function AffichagePrincipal(props) {
         // if(folderId) {
         //     naviguerCollection(folderId)
         // } else if(fileId) {
-            console.debug("dbl click liste : %O, value : %O", liste, value)
+            // console.debug("dbl click liste : %O, value : %O", liste, value)
             // const fileItem = liste.filter(item=>item.tuuid===value).pop()
             // const mimetype = fileItem.mimetype || ''
             if(mimetype.startsWith('video/')) setAfficherVideo(value)
@@ -300,7 +300,7 @@ function AffichagePrincipal(props) {
     }, [naviguerCollection, showPreviewAction, liste])
 
     const enteteOnClickCb = useCallback(colonne=>{
-        console.debug("Entete onclick ", colonne)
+        // console.debug("Entete onclick ", colonne)
         // Verifier si on toggle l'ordre
         const key = colonne
         let ordre = 1
@@ -310,7 +310,7 @@ function AffichagePrincipal(props) {
     }, [dispatch, sortKeys, liste])
 
     const suivantCb = useCallback(params => {
-        console.debug("SuivantCb ", params)
+        // console.debug("SuivantCb ", params)
         dispatch(fichiersActions.incrementerNombreAffiches())
     }, [dispatch])
 
