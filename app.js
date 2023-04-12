@@ -29,7 +29,9 @@ async function app(params) {
         {pathApp: '/collections', verifierAutorisation, verifierAuthentification, exchange: '2.prive'}
     )
 
-    const fichiersMiddleware = new FichiersMiddleware(amqpdaoInst)
+    const pathStaging = process.env.PATH_STAGING || '/var/opt/millegrilles/consignation/staging/collections'
+
+    const fichiersMiddleware = new FichiersMiddleware(amqpdaoInst, {PATH_STAGING: pathStaging})
     const fichiersTransfertUpstream = new FichiersTransfertUpstream(amqpdaoInst)
 
     socketIo.use((socket, next)=>{
