@@ -237,7 +237,7 @@ function FormConversionVideo(props) {
       if(profilCodec) {
         const profilResolution = profilCodec[resolutionVideo]
         if(profilResolution) return profilResolution
-        return profilResolution.default
+        return profilCodec.default
       }
       return PROFILS_VIDEO['h264']['270']  // Par defaut, profil h264 en 270p
     }, [codecVideo, resolutionVideo])
