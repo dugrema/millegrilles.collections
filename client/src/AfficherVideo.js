@@ -266,6 +266,15 @@ function PlayerEtatPassthrough(props) {
         }
     }, [srcVideo, setDelaiSelecteur])
 
+    // Cas special pour video original sans poster (traitement media incomplet)
+    if(srcVideo && !posterObj && selecteur === 'original') {
+        return (
+            <div className='video-window'>
+                {props.children}
+            </div>
+        )
+    }
+
     if(!posterObj || !srcVideo || delaiSelecteur !== selecteur) {
 
         let message = null
