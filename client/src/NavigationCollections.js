@@ -806,7 +806,7 @@ function BoutonsAction(props) {
 
 function BoutonUpload(props) {
 
-    const { setPreparationUploadEnCours, signalAnnuler, resetAnnuler, setError } = props
+    const { setPreparationUploadEnCours, signalAnnuler, resetAnnuler, setError, id: propsId } = props
 
     const refUpload = useRef()
     const workers = useWorkers()
@@ -856,54 +856,67 @@ function BoutonUpload(props) {
 
     }, [handlerPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid])
 
-    const fileChange = event => {
+    const fileChange = useCallback(event => {
         event.preventDefault()
         setClassName('')
 
         const acceptedFiles = event.currentTarget.files
         upload(acceptedFiles)
-    }
+    }, [setClassName, upload])
 
-    const onButtonDrop = event => {
+    const onButtonDrop = useCallback(event => {
         event.preventDefault()
         setClassName('')
 
         const acceptedFiles = event.dataTransfer.files
-        upload(acceptedFiles)
-    }
+        if(acceptedFiles && acceptedFiles.length > 0) {
+            console.debug("Drop - OK ", event)
+            upload(acceptedFiles)
+        } else {
+            console.warn("Drop - aucuns fichiers recus ", event)
+        }
+    }, [setClassName, upload])
 
-    const handlerOnDragover = event => {
+    const handlerOnDragover = useCallback(event => {
         event.preventDefault()
+        //setClassName('dropping')
+        //event.dataTransfer.dropEffect = "move"
         setClassName('dropping')
-        event.dataTransfer.dropEffect = "move"
-    }
+        event.dataTransfer.dropEffect = 'copyMove'
+    }, [])
 
-    const handlerOnDragLeave = event => { event.preventDefault(); setClassName(''); }
+    const handlerOnDragEnter = useCallback(event => {
+        event.preventDefault()
+        // setClassName('dropping')
+        // event.dropEffect = 'copyMove'
+    }, [setClassName])
 
-    const handlerOnClick = event => {
+    const handlerOnDragLeave = useCallback(event => { event.preventDefault(); setClassName(''); }, [setClassName])
+
+    const handlerOnClick = useCallback(event => {
         refUpload.current.click()
-    }
+    }, [])
 
     return (
-        <div 
-            className={'upload ' + className}
-            onDrop={onButtonDrop}
-            onDragOver={handlerOnDragover} 
-            onDragLeave={handlerOnDragLeave}
-          >
+        <div className={'upload ' + className}>
             <Button 
+                id={propsId || 'bouton_upload'}
                 variant="secondary" 
                 className="individuel"
                 onClick={handlerOnClick}
                 disabled={!cuuid}
-              >
+                onDrop={onButtonDrop}
+                onDragOver={handlerOnDragover} 
+                onDragLeave={handlerOnDragLeave}
+                onDragEnter={handlerOnDragEnter}
+            >
                 {props.children}
             </Button>
             <input
                 id='file_upload'
                 type='file' 
                 ref={refUpload}
-                multiple
+                multiple='multiple'
                 onChange={fileChange}
               />
         </div>
