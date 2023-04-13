@@ -58,7 +58,7 @@ export async function ajouterFichierUploadFile(batchId, correlation, position, d
     const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
     await hachagePartChiffre.update(data)
     const hachagePart = await hachagePartChiffre.finalize()
-    console.debug("Hachage part : ", hachagePart)
+    // console.debug("Hachage part : ", hachagePart)
 
     const db = await ouvrirDB()
     const store = db.transaction(STORE_UPLOADS_FICHIERS, 'readwrite').store

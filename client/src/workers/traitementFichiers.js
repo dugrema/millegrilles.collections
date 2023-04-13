@@ -251,7 +251,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     const { acceptedFiles, /*token, batchId,*/ cuuid, userId } = params
     const { setProgres, signalAnnuler } = opts
     const { transfertFichiers } = workers
-    console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
+    // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
 
     // const certificatsMaitredescles = await workers.connexion.getClesChiffrage()
     const certificatsMaitredescles = await workers.clesDao.getCertificatsMaitredescles()
@@ -263,7 +263,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     for await (let file of acceptedFiles) {
         // Recuperer un token, faire 1 fichier par batch
         const infoBatch = await workers.connexion.getBatchUpload()
-        console.debug("InfoBatch ", infoBatch)
+        // console.debug("InfoBatch ", infoBatch)
         const { batchId, token } = infoBatch
         const paramBatch = {...params, acceptedFiles: [file], token, batchId}
 
@@ -287,7 +287,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
 
 async function ajouterPart(workers, batchId, correlation, compteurPosition, chunk) {
     const { uploadFichiersDao } = workers
-    console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
+    // console.debug("ajouterPart %s position %d : %O", correlation, compteurPosition, chunk)
     await uploadFichiersDao.ajouterFichierUploadFile(batchId, correlation, compteurPosition, chunk)
 }
 
@@ -299,7 +299,7 @@ async function updateFichier(workers, dispatch, doc, opts) {
 
     const { uploadFichiersDao } = workers
 
-    console.debug("Update fichier %s demarrer? %s [err? %O] : %O", correlation, demarrer, err, doc)
+    // console.debug("Update fichier %s demarrer? %s [err? %O] : %O", correlation, demarrer, err, doc)
 
     if(err) {
         console.error("Erreur upload fichier %s : %O", correlation, err)
@@ -312,12 +312,12 @@ async function updateFichier(workers, dispatch, doc, opts) {
     await uploadFichiersDao.updateFichierUpload(doc)
 
     // Declencher l'upload si applicable
-    console.debug("Ajouter upload ", doc)
+    // console.debug("Ajouter upload ", doc)
     if(demarrer) dispatch(ajouterUpload(doc))
 }
 
 async function submitBatchUpload(workers, doc) {
-    console.debug("Submit batch ", doc)
+    // console.debug("Submit batch ", doc)
     // Utiliser le token, garanti que l'usager n'essaie pas de faire un submit sur la batch d'un tiers
     await workers.connexion.submitBatchUpload(doc.token)
 }

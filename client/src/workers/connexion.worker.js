@@ -236,7 +236,7 @@ function getMediaJobs(opts) {
 
 /** Retourne nouveau { token, batchId } */
 function getBatchUpload() {
-  console.debug("getBatchUpload")
+  // console.debug("getBatchUpload")
   return ConnexionClient.emitBlocking('getBatchUpload', {})
 }
 

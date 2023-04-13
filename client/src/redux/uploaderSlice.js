@@ -350,7 +350,7 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 }
 
 async function uploadFichier(workers, dispatch, fichier, cancelToken) {
-    console.debug("uploadFichier : ", fichier)
+    // console.debug("uploadFichier : ", fichier)
     const { uploadFichiersDao, transfertFichiers, chiffrage, traitementFichiers } = workers
     const { correlation, token } = fichier
 
@@ -366,7 +366,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         if(dejaTraite) tailleCompletee += item.taille
         return !dejaTraite
     })
-    console.debug("uploadFichier Parts a uploader : ", parts)
+    // console.debug("uploadFichier Parts a uploader : ", parts)
 
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_UPLOADING})
 
@@ -380,7 +380,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
               partContent = part.data
         await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
         
-        console.debug("part upload ", part)
+        // console.debug("part upload ", part)
 
         // await new Promise(resolve=>setTimeout(resolve, 250))
         const opts = {
@@ -413,7 +413,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     
     transaction['_cle'] = cles
 
-    console.debug("Transactions signees : %O", transaction)
+    // console.debug("Transactions signees : %O", transaction)
     await transfertFichiers.confirmerUpload(token, correlation, {transaction})
 
     // Emettre submit pour la batch
