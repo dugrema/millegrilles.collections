@@ -515,7 +515,7 @@ function Modals(props) {
         if(fichier) {
             const videos = fichier.version_courante.video
             const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
-            console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
+            // console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
             // Set le fuuid de video a downloader, params dechiffrage
             fichier = {
                 ...fichier, 
@@ -818,13 +818,13 @@ function BoutonUpload(props) {
 
     const { traitementFichiers } = workers
 
-    const handlerPreparationUploadEnCours = useCallback(event=>{
-        // console.debug('handlerPreparationUploadEnCours ', event)
-        setPreparationUploadEnCours(event)
+    const handlerPreparationUploadEnCours = useCallback((e, infoSup)=>{
+        // console.debug('handlerPreparationUploadEnCours %O, infoSup %O', e, infoSup)
+        setPreparationUploadEnCours(e)
     }, [setPreparationUploadEnCours])
 
     const upload = useCallback( acceptedFiles => {
-        console.debug("Files : %O pour usager: %O, signalAnnuler: %O", acceptedFiles, usager, signalAnnuler)
+        // console.debug("Files : %O pour usager: %O, signalAnnuler: %O", acceptedFiles, usager, signalAnnuler)
 
         for(const file of acceptedFiles) {
             if(!file.type && file.size === 0) {
@@ -870,7 +870,7 @@ function BoutonUpload(props) {
 
         const acceptedFiles = event.dataTransfer.files
         if(acceptedFiles && acceptedFiles.length > 0) {
-            console.debug("Drop - OK ", event)
+            // console.debug("Drop - OK ", event)
             upload(acceptedFiles)
         } else {
             console.warn("Drop - aucuns fichiers recus ", event)
@@ -1091,9 +1091,9 @@ function InformationListe(_props) {
     } else {
         const tailleListe = (liste && liste.length) || 0
         if(tailleListe === 0) {
-            if(chargementTermine) {
-                return <p>Aucuns fichiers.</p>
-            } else {
+            if(!chargementTermine) {
+            //     return <p>Aucuns fichiers.</p>
+            // } else {
                 return <p>Chargement en cours...</p>
             }
         }
