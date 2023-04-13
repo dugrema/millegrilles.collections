@@ -948,7 +948,7 @@ function FormatterColonneDate(props) {
     const { archive, upload, visites, folderId } = data
 
     let symbolesEtat = []
-    if(archive) symbolesEtat.push(<i className='fa fa-snowflake-o' title='Archive'/>)
+    if(archive) symbolesEtat.push(<i key='archive' className='fa fa-snowflake-o' title='Archive'/>)
     if(!folderId) {
         if(visites) {
             // Tenter de detecter au moins 1 serveur avec le fichier visite recemment
@@ -958,14 +958,14 @@ function FormatterColonneDate(props) {
                 return acc
             }, 0)
             if(visiteRecente === 0) {
-                symbolesEtat.push(<i className="fa fa-question-circle error" title='Fichier absent' />)
+                symbolesEtat.push(<i key='absent' className="fa fa-question-circle error" title='Fichier absent' />)
             } else if(visiteRecente < expire) {
                 const dateVisite = new Date(visiteRecente*1000)
                 const dateFormattee = formatterDateString({date: dateVisite})
-                symbolesEtat.push(<i className="fa fa-question-circle warning" title={'Derniere visite : ' + dateFormattee} />)
+                symbolesEtat.push(<i key='date' className="fa fa-question-circle warning" title={'Derniere visite : ' + dateFormattee} />)
             }
         } else {
-            symbolesEtat.push(<i className="fa fa-question-circle-o" />)
+            symbolesEtat.push(<i key='question' className="fa fa-question-circle-o" />)
         }
     }
 
