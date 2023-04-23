@@ -61,12 +61,13 @@ async function creerCollection(metadataChiffre, commandeMaitrecles, opts) {
   if(opts.cuuid) params.cuuid = opts.cuuid
   if(opts.favoris) params.favoris = true
 
-  params['_commandeMaitrecles'] = commandeMaitrecles
+  // params['_commandeMaitrecles'] = commandeMaitrecles
+  const attachements = {cle: commandeMaitrecles}
 
   return ConnexionClient.emitBlocking(
     'creerCollection', 
     params, 
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'nouvelleCollection', ajouterCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'nouvelleCollection', ajouterCertificat: true, attachements}
   )
 }
 
@@ -239,7 +240,7 @@ function getMediaJobs(opts) {
 /** Retourne nouveau { token, batchId } */
 function getBatchUpload() {
   // console.debug("getBatchUpload")
-  return ConnexionClient.emitBlocking('getBatchUpload', {})
+  return ConnexionClient.emitBlocking('getBatchUpload', {}, {noformat: true})
 }
 
 async function submitBatchUpload(token) {
@@ -247,7 +248,7 @@ async function submitBatchUpload(token) {
   return ConnexionClient.emitBlocking(
     'submitBatchUpload',
     commande,
-    {}
+    {noformat: true}
   )
 }
 

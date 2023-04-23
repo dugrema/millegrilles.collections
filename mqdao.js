@@ -79,12 +79,12 @@ export function requeteJobsVideo(socket, params) {
   return transmettreRequete(socket, params, 'requeteJobsVideo')
 }
 
-export async function creerCollection(socket, params) {
-    const commandeMaitrecles = params['_commandeMaitrecles']
-    delete params['_commandeMaitrecles']
-    const partition = commandeMaitrecles['_partition']
-    delete commandeMaitrecles['_partition']
-    await transmettreCommande(socket, commandeMaitrecles, 'sauvegarderCle', {partition, domaine: CONST_DOMAINE_MAITREDESCLES})
+export async function creerCollection(socket, params, cle) {
+    // const commandeMaitrecles = params['_commandeMaitrecles']
+    // delete params['_commandeMaitrecles']
+    // const partition = commandeMaitrecles['_partition']
+    // delete commandeMaitrecles['_partition']
+    // await transmettreCommande(socket, commandeMaitrecles, 'sauvegarderCle', {partition, domaine: CONST_DOMAINE_MAITREDESCLES})
     return transmettreCommande(socket, params, 'nouvelleCollection')
 }
 

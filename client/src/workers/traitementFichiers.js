@@ -284,6 +284,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
 
         const updateFichierProxy = Comlink.proxy((doc, opts) => {
             const docWithIds = {...doc, userId, batchId, token}
+            console.debug("updateFichierProxy docWithIds ", docWithIds)
             return updateFichier(workers, dispatch, docWithIds, opts)
         })
 
@@ -331,7 +332,7 @@ async function updateFichier(workers, dispatch, doc, opts) {
     await uploadFichiersDao.updateFichierUpload(doc)
 
     // Declencher l'upload si applicable
-    // console.debug("Ajouter upload ", doc)
+    console.debug("Ajouter upload ", doc)
     if(demarrer) dispatch(ajouterUpload(doc))
 }
 

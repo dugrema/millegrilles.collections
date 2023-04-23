@@ -1,4 +1,5 @@
 import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit'
+import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 
 const ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -405,15 +406,19 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     const transactionMaitredescles = {...fichier.transactionMaitredescles}
     const partitionMaitreDesCles = transactionMaitredescles['_partition']
     delete transactionMaitredescles['_partition']
-    const cles = await chiffrage.formatterMessage(
-        transactionMaitredescles, 'MaitreDesCles', {partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false})
+
+    const cle = await chiffrage.formatterMessage(
+        transactionMaitredescles, 'MaitreDesCles', 
+        {kind: MESSAGE_KINDS.KIND_COMMANDE, partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false}
+    )
+    cle.attachements = {partition: partitionMaitreDesCles}
 
     const transaction = await chiffrage.formatterMessage(
-        fichier.transactionGrosfichiers, 'GrosFichiers', {action: 'nouvelleVersion'})
+        fichier.transactionGrosfichiers, 'GrosFichiers', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'nouvelleVersion'})
     
-    transaction['_cle'] = cles
+    transaction.attachements = {cle}
 
-    // console.debug("Transactions signees : %O", transaction)
+    console.debug("Transactions signees : %O", transaction)
     await transfertFichiers.confirmerUpload(token, correlation, {transaction})
 
     // Emettre submit pour la batch
