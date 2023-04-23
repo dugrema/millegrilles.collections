@@ -1,26 +1,28 @@
 import { expose } from 'comlink'
 import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
+import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
+
 
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
       /* , CONST_DOMAINE_FICHIERS = 'fichiers' */
 
 function getFavoris() {
-  return ConnexionClient.emitBlocking('getFavoris', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
+  return ConnexionClient.emitBlocking('getFavoris', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
 }
 
 function getCorbeille() {
-  return ConnexionClient.emitBlocking('getCorbeille', {}, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getCorbeille', ajouterCertificat: true})
+  return ConnexionClient.emitBlocking('getCorbeille', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getCorbeille', ajouterCertificat: true})
 }
 
 function getRecents(params) {
-  return ConnexionClient.emitBlocking('getRecents', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
+  return ConnexionClient.emitBlocking('getRecents', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
 
 function getContenuCollection(tuuidsDocuments, opts) {
   opts = opts || {}
   const params = {...opts, tuuid_collection: tuuidsDocuments}
-  return ConnexionClient.emitBlocking('getCollection', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
+  return ConnexionClient.emitBlocking('getCollection', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
 }
 
 async function getClesFichiers(fuuids, usager, opts) {
@@ -32,20 +34,20 @@ async function getClesFichiers(fuuids, usager, opts) {
   if(!delegationGlobale) {
     // On doit demander une permission en premier
     const params = { fuuids }
-    return ConnexionClient.emitBlocking('getPermissionCles', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
+    return ConnexionClient.emitBlocking('getPermissionCles', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
   } else {
     const params = {
       liste_hachage_bytes: fuuids,
       domaine: CONST_DOMAINE_GROSFICHIERS,
     }
-    return ConnexionClient.emitBlocking('getClesFichiers', params, {domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
+    return ConnexionClient.emitBlocking('getClesFichiers', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
   }
 }
 
 async function getPermission(fuuids) {
   // On doit demander une permission en premier
   const params = { fuuids }
-  const permission = await ConnexionClient.emitBlocking('getPermissionCle', params, {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
+  const permission = await ConnexionClient.emitBlocking('getPermissionCle', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
   // console.debug("Permission recue : %O", permission)
 
   return permission
@@ -64,7 +66,7 @@ async function creerCollection(metadataChiffre, commandeMaitrecles, opts) {
   return ConnexionClient.emitBlocking(
     'creerCollection', 
     params, 
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'nouvelleCollection', ajouterCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'nouvelleCollection', ajouterCertificat: true}
   )
 }
 
@@ -73,7 +75,7 @@ function toggleFavoris(etatFavoris) {
   return ConnexionClient.emitBlocking(
     'changerFavoris',
     {favoris: etatFavoris},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'changerFavoris', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'changerFavoris', attacherCertificat: true}
   )
 }
 
@@ -89,7 +91,7 @@ function supprimerDocuments(cuuid, tuuids, supprimePath) {
   return ConnexionClient.emitBlocking(
     'supprimerDocuments',
     {cuuid, tuuids, cuuids_path: supprimePath},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerDocuments', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerDocuments', attacherCertificat: true}
   )
 }
 
@@ -97,7 +99,7 @@ function archiverDocuments(tuuids) {
   return ConnexionClient.emitBlocking(
     'archiverDocuments',
     {tuuids},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'archiverDocuments', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'archiverDocuments', attacherCertificat: true}
   )
 }
 
@@ -105,7 +107,7 @@ function decrireFichier(tuuid, params) {
   return ConnexionClient.emitBlocking(
     'decrireFichier',
     {...params, tuuid},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireFichier', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireFichier', attacherCertificat: true}
   )
 }
 
@@ -113,7 +115,7 @@ function decrireCollection(tuuid, params) {
   return ConnexionClient.emitBlocking(
     'decrireCollection',
     {...params, tuuid},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireCollection', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireCollection', attacherCertificat: true}
   )
 }
 
@@ -121,7 +123,7 @@ function getDocuments(tuuids) {
   return ConnexionClient.emitBlocking(
     'getDocuments',
     {tuuids_documents: tuuids},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', attacherCertificat: true}
   )
 }
 
@@ -129,7 +131,7 @@ function recupererDocuments(tuuids) {
   return ConnexionClient.emitBlocking(
     'recupererDocuments',
     {tuuids},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'recupererDocuments', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'recupererDocuments', attacherCertificat: true}
   )
 }
 
@@ -137,7 +139,7 @@ function copierVersCollection(cuuid, tuuids) {
   return ConnexionClient.emitBlocking(
     'copierVersCollection',
     {cuuid, inclure_tuuids: tuuids},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterFichiersCollection', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterFichiersCollection', attacherCertificat: true}
   )
 }
 
@@ -145,7 +147,7 @@ function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
   return ConnexionClient.emitBlocking(
     'deplacerFichiersCollection',
     {cuuid_origine, cuuid_destination, inclure_tuuids: tuuids},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'deplacerFichiersCollection', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'deplacerFichiersCollection', attacherCertificat: true}
   )
 }
 
@@ -155,7 +157,7 @@ function rechercheIndex(mots_cles, from_idx, size) {
   return ConnexionClient.emitBlocking(
     'rechercheIndex',
     {mots_cles, from_idx, size},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'rechercheIndex', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'rechercheIndex', attacherCertificat: true}
   )
 }
 
@@ -163,7 +165,7 @@ function transcoderVideo(commande) {
   return ConnexionClient.emitBlocking(
     'transcoderVideo',
     commande,
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'transcoderVideo', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'transcoderVideo', attacherCertificat: true}
   )
 }
 
@@ -171,7 +173,7 @@ function ajouterFichier(commande) {
   return ConnexionClient.emitBlocking(
     'ajouterFichier',
     commande,
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'commandeNouveauFichier', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'commandeNouveauFichier', attacherCertificat: true}
   )
 }
 
@@ -180,7 +182,7 @@ function supprimerVideo(fuuidVideo) {
   return ConnexionClient.emitBlocking(
     'supprimerVideo',
     commande,
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerVideo', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerVideo', attacherCertificat: true}
   )
 }
 
@@ -188,7 +190,7 @@ function supprimerJobVideo(commande) {
   return ConnexionClient.emitBlocking(
     'supprimerJobVideo',
     commande,
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerJobVideo', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerJobVideo', attacherCertificat: true}
   )
 }
 
@@ -197,7 +199,7 @@ function creerTokenStream(commande) {
   return ConnexionClient.emitBlocking(
     'creerTokenStream', 
     commande, 
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'verifierAccesFuuids', ajouterCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'verifierAccesFuuids', ajouterCertificat: true}
   )
 }
 
@@ -206,7 +208,7 @@ function syncCollection(cuuid, opts) {
   const {skip, limit} = opts
   const requete = {skip, limit}
   if(cuuid) requete.cuuid = cuuid
-  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCollection', ajouterCertificat: true}
+  const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCollection', ajouterCertificat: true}
   // console.debug("syncCollection %O, %O", requete, params)
   return ConnexionClient.emitBlocking('syncCollection', requete, params)
 }
@@ -215,7 +217,7 @@ function syncRecents(debut, fin, opts) {
   opts = opts || {}
   const {skip, limit} = opts
   const requete = {debut, fin, skip, limit}
-  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncRecents', ajouterCertificat: true}
+  const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncRecents', ajouterCertificat: true}
   return ConnexionClient.emitBlocking('syncRecents', requete, params)
 }
 
@@ -223,14 +225,14 @@ function syncCorbeille(debut, fin, opts) {
   opts = opts || {}
   const {skip, limit} = opts
   const requete = {debut, fin, skip, limit}
-  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCorbeille', ajouterCertificat: true}
+  const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCorbeille', ajouterCertificat: true}
   return ConnexionClient.emitBlocking('syncCorbeille', requete, params)
 }
 
 function getMediaJobs(opts) {
   opts = opts || {}
   const requete = {...opts}
-  const params = {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'requeteJobsVideo', ajouterCertificat: true}
+  const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'requeteJobsVideo', ajouterCertificat: true}
   return ConnexionClient.emitBlocking('requeteJobsVideo', requete, params)
 }
 
@@ -255,7 +257,7 @@ function indexerContenu(reset) {
   return ConnexionClient.emitBlocking(
     'indexerContenu',
     {reset},
-    {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'indexerContenu', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'indexerContenu', attacherCertificat: true}
   )
 }
 
@@ -264,7 +266,7 @@ async function regenererPreviews(fuuids) {
   return ConnexionClient.emitBlocking(
     'completerPreviews',
     commande,
-    {domaine: 'GrosFichiers', action: 'completerPreviews', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: 'GrosFichiers', action: 'completerPreviews', attacherCertificat: true}
   )
 }
 

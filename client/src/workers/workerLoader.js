@@ -62,8 +62,9 @@ async function wireWorkers(workers) {
     const axiosImport = await import('axios')
     const axios = axiosImport.default
     const reponse = await axios.get(location.href)
-    // console.debug("Reponse fiche ", reponse)
-    const fiche = reponse.data || {}
+    console.debug("Reponse fiche ", reponse)
+    const data = reponse.data || {}
+    const fiche = JSON.parse(data.contenu)
     const ca = fiche.ca
     if(ca) {
         // console.debug("initialiserCertificateStore (connexion, chiffrage)")
@@ -71,6 +72,8 @@ async function wireWorkers(workers) {
             connexion.initialiserCertificateStore(ca, {isPEM: true, DEBUG: false}),
             chiffrage.initialiserCertificateStore(ca, {isPEM: true, DEBUG: false})
         ])
+    } else {
+        throw new Error("Erreur initialisation - fiche/CA non disponible")
     }
 }
 
