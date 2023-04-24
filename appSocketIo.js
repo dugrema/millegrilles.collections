@@ -71,8 +71,13 @@ function configurerEvenements(socket) {
 export default configurerEvenements
 
 async function traiter(socket, methode, {params, cb}) {
-  const reponse = await methode(socket, params)
-  if(cb) cb(reponse)
+  try {
+    const reponse = await methode(socket, params)
+    if(cb) cb(reponse)
+  } catch(err) {
+    console.error(new Date() + " ERROR appSocketIo traiter() ", err)
+    if(cb) cb({ok: true, err})
+  }
 }
 
 async function getBatchUpload(socket, opts) {

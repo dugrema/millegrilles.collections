@@ -436,12 +436,16 @@ export function retirerCallbackTranscodageVideo(socket, params, cb) {
   socket.unsubscribe(opts, cb)
 }
 
-export async function creerTokenStream(socket, params) {
+export async function creerTokenStream(socket, enveloppeParams) {
   try {
-    const fuuids = params.fuuids,
-          fuuidVideo = params.fuuidVideo,
-          mimetype = params.mimetype,
-          dechiffrageVideo = params.dechiffrageVideo || {}
+    debug("creerTokenStream : ", enveloppeParams)
+
+    const contenu = JSON.parse(enveloppeParams.contenu)
+
+    const fuuids = contenu.fuuids,
+          fuuidVideo = contenu.fuuidVideo,
+          mimetype = contenu.mimetype,
+          dechiffrageVideo = contenu.dechiffrageVideo || {}
 
     debug("Fuuid a charger : %O", fuuids)
 
@@ -457,7 +461,7 @@ export async function creerTokenStream(socket, params) {
     // const requete = { user_id: userId, fuuids }
     // const mq = socket.amqpdao
     // const resultat = await mq.transmettreRequete('GrosFichiers', params, {action: 'verifierAccesFuuids'})
-    const resultat = await transmettreRequete(socket, params, 'verifierAccesFuuids')
+    const resultat = await transmettreRequete(socket, enveloppeParams, 'verifierAccesFuuids')
     debug("creerTokenStream Resultat verification acces : %O", resultat)
     if(resultat.acces_tous === true) {
         debug("creerTokenStream Acces stream OK")
