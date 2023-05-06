@@ -195,7 +195,9 @@ export function mapDocumentComplet(workers, doc) {
                 images, 
                 {anime, supporteWebp: true, fuuid: fuuid_v_courante, mimetype}
             )
-            copie.imageLoader = imageLoader
+            // copie.imageLoader = imageLoader
+
+            copie.thumbnailLoader = mediaLoader.thumbnailLoader(images, {cle_id: fuuid_v_courante})
         }
 
         if(mimetype.toLowerCase().startsWith('video/')) {
