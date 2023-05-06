@@ -151,7 +151,8 @@ export function mapDocumentComplet(workers, doc) {
     const { connexion, traitementFichiers } = workers
 
     // Instance mediaLoader pour contenu (fichier, images, videos)
-    const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete)
+    const creerTokenStreamInst = commande => connexion.creerTokenStream(commande)
+    const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)
 
     const { nom, tuuid, date_creation, fuuid_v_courante, mimetype, archive } = doc
     const version_courante = doc.version_courante?{...doc.version_courante}:null
@@ -236,20 +237,21 @@ export function mapDocumentComplet(workers, doc) {
 
             // console.debug("videoLoader : ", copie.videoLoader.getSelecteurs())
         } else if(mimetype.toLowerCase().startsWith('audio/')) {
-            const creerToken = async fuuidAudio => {
-                if(Array.isArray(fuuidAudio)) fuuidAudio = fuuidAudio[0]
-                // console.debug("mapDocumentComplet.creerToken fuuidAudio : %O, info version courante : ", fuuidAudio, version_courante)
-                const fuuids = [fuuid_v_courante]
-                const commande = {
-                    fuuids,
-                    fuuidMedia: fuuidAudio,
-                    mimetype,
-                }
-                const reponse = await connexion.creerTokenStream(commande)
-                // console.debug("!!! creerToken reponse : ", reponse)
-                return reponse.jwts
-            }
-            copie.audioLoader = audioResourceLoader(fuuid_v_courante, {creerToken, version_courante})
+            // const creerToken = async fuuidAudio => {
+            //     if(Array.isArray(fuuidAudio)) fuuidAudio = fuuidAudio[0]
+            //     // console.debug("mapDocumentComplet.creerToken fuuidAudio : %O, info version courante : ", fuuidAudio, version_courante)
+            //     const fuuids = [fuuid_v_courante]
+            //     const commande = {
+            //         fuuids,
+            //         fuuidMedia: fuuidAudio,
+            //         mimetype,
+            //     }
+            //     const reponse = await connexion.creerTokenStream(commande)
+            //     // console.debug("!!! creerToken reponse : ", reponse)
+            //     return reponse.jwts
+            // }
+            // copie.audioLoader = audioResourceLoader(fuuid_v_courante, {creerToken, version_courante})
+            copie.audioLoader = mediaLoader.audioLoader(fuuid_v_courante, mimetype)
         }
     }
 

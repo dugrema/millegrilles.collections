@@ -49,9 +49,20 @@ export default setup
 //     return blob
 // }
 
-function getUrlFuuid(fuuid) {
+function getUrlFuuid(fuuid, opts) {
+    opts = opts || {}
+    const jwt = opts.jwt
+
     const url = new URL(window.location.href)
-    url.pathname = `/collections/fichiers/${fuuid}`
+    if(jwt) {
+        // Mode streaming
+        url.pathname = `/collections/streams/${fuuid}`
+        url.searchParams.append('jwt', jwt)
+    } else {
+        // Fichiers (defaut)
+        url.pathname = `/collections/fichiers/${fuuid}`
+    }
+
     return url.href
 }
 
