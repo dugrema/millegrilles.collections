@@ -180,23 +180,16 @@ export function mapDocumentComplet(workers, doc) {
     }
 
     // Loader du fichier source (principal), supporte thumbnail pour chargement
-    // copie.loader = loadFichierChiffre(traitementFichiers.getFichierChiffre, fuuid_v_courante, mimetype)    
     copie.loader = mediaLoader.fichierLoader(fuuid_v_courante, {mimetype})
 
     if(version_courante) {
-        const { anime, taille, images, video, duration, mimetype } = version_courante
+        const { anime, taille, images, video, duration, mimetype, header } = version_courante
         
         if(taille) copie.taille = taille
         if(duration) copie.duration = duration
 
         if(images) {
-            const imageLoader = imageResourceLoader(
-                traitementFichiers.getFichierChiffre, 
-                images, 
-                {anime, supporteWebp: true, fuuid: fuuid_v_courante, mimetype}
-            )
-            // copie.imageLoader = imageLoader
-
+            copie.imageLoader = mediaLoader.imageLoader(images, {cle_id: fuuid_v_courante, fuuid: fuuid_v_courante, mimetype, anime, header})
             copie.thumbnailLoader = mediaLoader.thumbnailLoader(images, {cle_id: fuuid_v_courante})
         }
 
