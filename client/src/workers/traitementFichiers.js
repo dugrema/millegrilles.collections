@@ -26,6 +26,12 @@ function setup(workers) {
         resLoader,
         clean,
         downloadCache,
+
+        // Remplacement pour getFichierChiffre
+        getUrlFuuid,
+        getCleSecrete(cle_id) {
+            return getCleSecrete(workers, cle_id)
+        },
     }
 }
 
@@ -42,6 +48,12 @@ export default setup
 //     const blob = await getFichierChiffre(fuuid, opts)
 //     return blob
 // }
+
+function getUrlFuuid(fuuid) {
+    const url = new URL(window.location.href)
+    url.pathname = `/collections/fichiers/${fuuid}`
+    return url.href
+}
 
 async function getFichierChiffre(workers, fuuid, opts) {
     opts = opts || {}
@@ -120,6 +132,34 @@ async function getFichierChiffre(workers, fuuid, opts) {
     }
 
     console.error("Erreur chargement image %s (erreur recuperation cle ou download)", fuuid)
+}
+
+async function getCleSecrete(workers, cle_id) {
+    if(!cle_id) throw new Error('dechiffrer Fournir cle_id ou cle_secrete+header')
+
+    const { connexion, usagerDao, chiffrage } = workers
+
+    try {
+        const cleFichier = await usagerDao.getCleDechiffree(cle_id)
+        // La cle existe localement
+        if(cleFichier) return cleFichier
+    } catch(err) {
+        console.error("Erreur acces usagerDao ", err)
+    }
+
+    const reponse = await connexion.getClesFichiers([cle_id])
+
+    const cleFichier = reponse.cles[cle_id]
+
+    const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
+    cleFichier.cleSecrete = cleSecrete
+    cleFichier.cle_secrete = cleSecrete  // Nouvelle approche
+
+    // Sauvegarder la cle pour reutilisation
+    usagerDao.saveCleDechiffree(cle_id, cleSecrete, cleFichier)
+        .catch(err=>console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err))
+
+    return cleFichier
 }
 
 /* Donne acces aux ressources, selection via typeRessource. Chargement async. 

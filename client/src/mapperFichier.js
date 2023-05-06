@@ -2,6 +2,7 @@ import {
     loadFichierChiffre, fileResourceLoader, imageResourceLoader, videoResourceLoader, audioResourceLoader
 } from '@dugrema/millegrilles.reactjs/src/imageLoading'
 import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
+import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
 
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>
 const ICONE_FICHIER = <i className="fa fa-file fa-lg"/>
@@ -26,128 +27,131 @@ supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.wa
 
 export { Icones }
 
-export function mapper(row, workers) {
-    const version_courante = row.version_courante || {}
-    const { tuuid, nom, supprime, date_creation, fuuid_v_courante, favoris } = row
-    const { anime, date_fichier, taille, images, video, duration, videoCodec } = version_courante || row
-    const mimetype = version_courante.mimetype || row.mimetype
+// function mapper(row, workers) {
+//     const version_courante = row.version_courante || {}
+//     const { tuuid, nom, supprime, date_creation, fuuid_v_courante, favoris } = row
+//     const { anime, date_fichier, taille, images, video, duration, videoCodec } = version_courante || row
+//     const mimetype = version_courante.mimetype || row.mimetype
 
-    // console.debug("!!! MAPPER %O", row)
+//     // console.debug("!!! MAPPER %O", row)
 
-    const creerToken = async fuuids => {
-        if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
-        const reponse = await workers.connexion.creerTokenStream(fuuids)
-        // console.debug("!!! creerToken reponse : ", reponse)
-        return reponse.jwts
-    }
+//     const creerToken = async fuuids => {
+//         if(typeof(fuuids) === 'string') fuuids = [fuuids]  // Transformer en array
+//         const reponse = await workers.connexion.creerTokenStream(fuuids)
+//         // console.debug("!!! creerToken reponse : ", reponse)
+//         return reponse.jwts
+//     }
 
-    let date_version = '', 
-        mimetype_fichier = '',
-        taille_fichier = ''
+//     let date_version = '', 
+//         mimetype_fichier = '',
+//         taille_fichier = ''
 
-    let thumbnailIcon = '',
-        ids = {},
-        miniThumbnailLoader = null,
-        smallThumbnailLoader = null,
-        loader = null,
-        imageLoader = null,
-        videoLoader = null
-    if(!mimetype) {
-        ids.folderId = tuuid  // Collection, tuuid est le folderId
-        thumbnailIcon = Icones.ICONE_FOLDER
-    } else {
-        // const { anime, mimetype, date_fichier, taille, images, video } = version_courante || row
-        mimetype_fichier = mimetype
-        date_version = date_fichier
-        taille_fichier = taille
-        ids.fileId = tuuid    // Fichier, tuuid est le fileId
-        const mimetypeBase = mimetype.split('/').shift()
+//     let thumbnailIcon = '',
+//         ids = {},
+//         miniThumbnailLoader = null,
+//         smallThumbnailLoader = null,
+//         loader = null,
+//         imageLoader = null,
+//         videoLoader = null
+//     if(!mimetype) {
+//         ids.folderId = tuuid  // Collection, tuuid est le folderId
+//         thumbnailIcon = Icones.ICONE_FOLDER
+//     } else {
+//         // const { anime, mimetype, date_fichier, taille, images, video } = version_courante || row
+//         mimetype_fichier = mimetype
+//         date_version = date_fichier
+//         taille_fichier = taille
+//         ids.fileId = tuuid    // Fichier, tuuid est le fileId
+//         const mimetypeBase = mimetype.split('/').shift()
 
-        if(workers && workers.traitementFichiers) {
-            const getFichierChiffre = workers.traitementFichiers.getFichierChiffre
+//         if(workers && workers.traitementFichiers) {
+//             const getFichierChiffre = workers.traitementFichiers.getFichierChiffre
 
-            // Thumbnails pour navigation
-            if(images) {
-                const thumbnail = images.thumb || images.thumbnail,
-                    small = images.small || images.poster
-                if(thumbnail && thumbnail.data_chiffre) {
-                    miniThumbnailLoader = loadFichierChiffre(getFichierChiffre, thumbnail.hachage, thumbnail.mimetype, {dataChiffre: thumbnail.data_chiffre})
-                }
-                if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, small.mimetype, {thumbnail})
+//             // Thumbnails pour navigation
+//             if(images) {
+//                 const thumbnail = images.thumb || images.thumbnail,
+//                     small = images.small || images.poster
+//                 if(thumbnail && thumbnail.data_chiffre) {
+//                     miniThumbnailLoader = loadFichierChiffre(getFichierChiffre, thumbnail.hachage, thumbnail.mimetype, {dataChiffre: thumbnail.data_chiffre})
+//                 }
+//                 if(small) smallThumbnailLoader = fileResourceLoader(getFichierChiffre, small.hachage, small.mimetype, {thumbnail})
 
-                imageLoader = imageResourceLoader(getFichierChiffre, images, {anime, supporteWebp, fuuid: fuuid_v_courante, mimetype})
-            }
+//                 imageLoader = imageResourceLoader(getFichierChiffre, images, {anime, supporteWebp, fuuid: fuuid_v_courante, mimetype})
+//             }
 
-            if(mimetypeBase === 'video') {
-                if(video && Object.keys(video).length > 0) {
-                    videoLoader = videoResourceLoader(video, {creerToken, fuuid: fuuid_v_courante, version_courante})
-                } else {
-                    // console.debug("Video - original seulement")
-                    videoLoader = videoResourceLoader({}, {creerToken, fuuid: fuuid_v_courante, version_courante})
-                }
-            }
+//             if(mimetypeBase === 'video') {
+//                 if(video && Object.keys(video).length > 0) {
+//                     videoLoader = videoResourceLoader(video, {creerToken, fuuid: fuuid_v_courante, version_courante})
+//                 } else {
+//                     // console.debug("Video - original seulement")
+//                     videoLoader = videoResourceLoader({}, {creerToken, fuuid: fuuid_v_courante, version_courante})
+//                 }
+//             }
         
-            // Loader du fichier source (principal), supporte thumbnail pour chargement
-            loader = loadFichierChiffre(getFichierChiffre, fuuid_v_courante, mimetype)
-        }
+//             // Loader du fichier source (principal), supporte thumbnail pour chargement
+//             loader = loadFichierChiffre(getFichierChiffre, fuuid_v_courante, mimetype)
+//         }
 
-        if(mimetype === 'application/pdf') {
-            thumbnailIcon = ICONE_FICHIER_PDF
-        } else if(mimetypeBase === 'image') {
-            thumbnailIcon = ICONE_FICHIER_IMAGE
-        } else if(mimetypeBase === 'video') {
-            thumbnailIcon = ICONE_FICHIER_VIDEO
-        } else if(mimetypeBase === 'audio') {
-            thumbnailIcon = ICONE_FICHIER_AUDIO
-        } else if(mimetypeBase === 'application/text') {
-            thumbnailIcon = ICONE_FICHIER_TEXT
-        } else if(mimetypeBase === 'application/zip') {
-            thumbnailIcon = ICONE_FICHIER_ZIP
-        } else { 
-            thumbnailIcon = ICONE_FICHIER
-        }
-    }
+//         if(mimetype === 'application/pdf') {
+//             thumbnailIcon = ICONE_FICHIER_PDF
+//         } else if(mimetypeBase === 'image') {
+//             thumbnailIcon = ICONE_FICHIER_IMAGE
+//         } else if(mimetypeBase === 'video') {
+//             thumbnailIcon = ICONE_FICHIER_VIDEO
+//         } else if(mimetypeBase === 'audio') {
+//             thumbnailIcon = ICONE_FICHIER_AUDIO
+//         } else if(mimetypeBase === 'application/text') {
+//             thumbnailIcon = ICONE_FICHIER_TEXT
+//         } else if(mimetypeBase === 'application/zip') {
+//             thumbnailIcon = ICONE_FICHIER_ZIP
+//         } else { 
+//             thumbnailIcon = ICONE_FICHIER
+//         }
+//     }
 
-    let upload = null
-    if(row.status) {
-        upload = { status: row.status, position: row.position }
-    }
+//     let upload = null
+//     if(row.status) {
+//         upload = { status: row.status, position: row.position }
+//     }
 
-    return {
-        // fileId: tuuid,
-        // folderId: tuuid,
-        ...ids,
-        nom,
-        supprime, 
-        taille: taille_fichier,
-        dateAjout: date_version || date_creation,
-        mimetype: ids.folderId?'Repertoire':mimetype_fichier,
-        duration, videoCodec,
-        fuuid: fuuid_v_courante,
-        version_courante,
-        favoris,
+//     return {
+//         // fileId: tuuid,
+//         // folderId: tuuid,
+//         ...ids,
+//         nom,
+//         supprime, 
+//         taille: taille_fichier,
+//         dateAjout: date_version || date_creation,
+//         mimetype: ids.folderId?'Repertoire':mimetype_fichier,
+//         duration, videoCodec,
+//         fuuid: fuuid_v_courante,
+//         version_courante,
+//         favoris,
 
-        // Upload
-        upload,
+//         // Upload
+//         upload,
 
-        // Loaders
-        thumbnail: {
-            miniLoader: miniThumbnailLoader,
-            smallLoader: smallThumbnailLoader,
-            thumbnailIcon,
-            thumbnailCaption: nom,
-        },
-        loader,
-        imageLoader,
-        videoLoader,
-    }
-}
+//         // Loaders
+//         thumbnail: {
+//             miniLoader: miniThumbnailLoader,
+//             smallLoader: smallThumbnailLoader,
+//             thumbnailIcon,
+//             thumbnailCaption: nom,
+//         },
+//         loader,
+//         imageLoader,
+//         videoLoader,
+//     }
+// }
 
 export function mapDocumentComplet(workers, doc) {
 
     // console.debug("mapDocumentComplet : ", doc)
 
     const { connexion, traitementFichiers } = workers
+
+    // Instance mediaLoader pour contenu (fichier, images, videos)
+    const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete)
 
     const { nom, tuuid, date_creation, fuuid_v_courante, mimetype, archive } = doc
     const version_courante = doc.version_courante?{...doc.version_courante}:null
@@ -176,7 +180,8 @@ export function mapDocumentComplet(workers, doc) {
     }
 
     // Loader du fichier source (principal), supporte thumbnail pour chargement
-    copie.loader = loadFichierChiffre(traitementFichiers.getFichierChiffre, fuuid_v_courante, mimetype)    
+    // copie.loader = loadFichierChiffre(traitementFichiers.getFichierChiffre, fuuid_v_courante, mimetype)    
+    copie.loader = mediaLoader.fichierLoader(fuuid_v_courante, {mimetype})
 
     if(version_courante) {
         const { anime, taille, images, video, duration, mimetype } = version_courante
