@@ -397,21 +397,14 @@ function SelecteurResolution(props) {
     useEffect(()=>{
         if(selecteur || !selecteurs) return  // Deja initialise
         // Identifier un selecteur initial
-        // const selecteurs = videoLoader.getSelecteurs()
-
         const selecteursKeys = Object.keys(selecteurs)
 
         if(!selecteursKeys) {
+            // Aucunes options (probablement nouveau video) - utiliser original
             return setSelecteur('original')
-        } else if(selecteursKeys.includes('faible')) {
-            return setSelecteur('faible')
-        } else if(selecteursKeys.includes('medium')) {
-            return setSelecteur('medium')
-        } else if(selecteursKeys.includes('haute')) {
-            return setSelecteur('haute')
-        } else if(selecteursKeys.includes('original')) {
-            // Selectionner l'original, c'est le seul format disponible
-            return setSelecteur('original')
+        } else if(selecteursKeys.includes('fallback')) {
+            // Selectionner le format fallback (la plus faible resolution)
+            return setSelecteur('fallback')
         } else {
             console.error("Aucuns format video n'est disponible dans le selecteur")
         }
