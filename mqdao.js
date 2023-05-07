@@ -443,7 +443,7 @@ export async function creerTokenStream(socket, enveloppeParams) {
     const contenu = JSON.parse(enveloppeParams.contenu)
 
     const fuuids = contenu.fuuids,
-          fuuidVideo = contenu.fuuidVideo,
+          fuuidStream = contenu.fuuidStream,
           mimetype = contenu.mimetype,
           dechiffrageVideo = contenu.dechiffrageVideo || {}
 
@@ -465,15 +465,7 @@ export async function creerTokenStream(socket, enveloppeParams) {
     debug("creerTokenStream Resultat verification acces : %O", resultat)
     if(resultat.acces_tous === true) {
         debug("creerTokenStream Acces stream OK")
-        // const randomBytes = getRandom(32)
-        // const token = (await hacher(randomBytes, {hashingCode: 'blake2s-256', encoding: 'base58btc'})).slice(1)
-        // for await (let fuuid of fuuids) {
-        //   const cleStream = `streamtoken:${fuuid}:${token}`
-        //   // Conserver token dans Redis
-        //   const redisClient = socket.redisClient
-        //   await redisClient.set(cleStream, 'ok', {NX: true, EX: CONST_TIMEOUT_STREAMTOKEN})
-        // }
-  
+ 
         const pki = socket.amqpdao.pki
         const { cle: clePriveePem, fingerprint } = pki
         const userId = socket.userId
@@ -484,10 +476,10 @@ export async function creerTokenStream(socket, enveloppeParams) {
           debug("JWT cree pour userId %s sur fuuid %s : %O", userId, fuuid, jwt)
           jwts[fuuid] = jwt
 
-          if(fuuidVideo) {
-            const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuidVideo, {ref: fuuid, mimetype, ...dechiffrageVideo})
-            debug("JWT cree pour userId %s sur video %s (fuuid %s) : %O", userId, fuuidVideo, fuuid, jwt)
-            jwts[fuuidVideo] = jwt
+          if(fuuidStream) {
+            const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuidStream, {ref: fuuid, mimetype, ...dechiffrageVideo})
+            debug("JWT cree pour userId %s sur video %s (fuuid %s) : %O", userId, fuuidStream, fuuid, jwt)
+            jwts[fuuidStream] = jwt
           }
         }
 

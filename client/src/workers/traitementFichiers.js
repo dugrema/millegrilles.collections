@@ -9,9 +9,9 @@ const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
 
 function setup(workers) {
     return {
-        getFichierChiffre(fuuid, opts) {
-            return getFichierChiffre(workers, fuuid, opts)
-        },
+        // getFichierChiffre(fuuid, opts) {
+        //     return getFichierChiffre(workers, fuuid, opts)
+        // },
         // traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, opts) {
         //     opts = opts || {}
         //     return traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts)
@@ -66,84 +66,84 @@ function getUrlFuuid(fuuid, opts) {
     return url.href
 }
 
-async function getFichierChiffre(workers, fuuid, opts) {
-    opts = opts || {}
-    const { dataChiffre, mimetype, controller, progress, ref_hachage_bytes } = opts
-    const { connexion, chiffrage, usagerDao } = workers
+// async function getFichierChiffre(workers, fuuid, opts) {
+//     opts = opts || {}
+//     const { dataChiffre, mimetype, controller, progress, ref_hachage_bytes } = opts
+//     const { connexion, chiffrage, usagerDao } = workers
 
-    // Recuperer la cle de fichier
-    const cleFichierFct = async () => {
-        const hachage_bytes = ref_hachage_bytes || fuuid
+//     // Recuperer la cle de fichier
+//     const cleFichierFct = async () => {
+//         const hachage_bytes = ref_hachage_bytes || fuuid
 
-        let cleFichier = null
-        try {
-            cleFichier = await usagerDao.getCleDechiffree(hachage_bytes)
-            if(cleFichier) return cleFichier
-        } catch(err) {
-            console.error("Erreur acces usagerDao ", err)
-        }
+//         let cleFichier = null
+//         try {
+//             cleFichier = await usagerDao.getCleDechiffree(hachage_bytes)
+//             if(cleFichier) return cleFichier
+//         } catch(err) {
+//             console.error("Erreur acces usagerDao ", err)
+//         }
 
-        const reponse = await connexion.getClesFichiers([hachage_bytes])
+//         const reponse = await connexion.getClesFichiers([hachage_bytes])
 
-        cleFichier = reponse.cles[hachage_bytes]
-        const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
-        cleFichier.cleSecrete = cleSecrete
+//         cleFichier = reponse.cles[hachage_bytes]
+//         const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
+//         cleFichier.cleSecrete = cleSecrete
 
-        // Sauvegarder la cle pour reutilisation
-        usagerDao.saveCleDechiffree(hachage_bytes, cleSecrete, cleFichier)
-            .catch(err=>{
-                console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
-            })
+//         // Sauvegarder la cle pour reutilisation
+//         usagerDao.saveCleDechiffree(hachage_bytes, cleSecrete, cleFichier)
+//             .catch(err=>{
+//                 console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
+//             })
 
-        return cleFichier
-    }
+//         return cleFichier
+//     }
 
-    let fichierFct = async () => {
-        if( dataChiffre ) {
-            // Convertir de multibase en array
-            // console.debug("Data chiffre a dechiffrer : %O", dataChiffre)
-            return multibase.decode(dataChiffre)
-        } else {
-            // const controller = new AbortController();
-            const signal = controller?controller.signal:null
+//     let fichierFct = async () => {
+//         if( dataChiffre ) {
+//             // Convertir de multibase en array
+//             // console.debug("Data chiffre a dechiffrer : %O", dataChiffre)
+//             return multibase.decode(dataChiffre)
+//         } else {
+//             // const controller = new AbortController();
+//             const signal = controller?controller.signal:null
 
-            // Recuperer le fichier
-            const reponse = await axios({
-                method: 'GET',
-                url: `/collections/fichiers/${fuuid}`,
-                responseType: 'arraybuffer',
-                timeout: CONST_TIMEOUT_DOWNLOAD,
-                progress,
-                // signal,
-            })
-            const abIn = Buffer.from(reponse.data)
-            return abIn
-        }
-    }
+//             // Recuperer le fichier
+//             const reponse = await axios({
+//                 method: 'GET',
+//                 url: `/collections/fichiers/${fuuid}`,
+//                 responseType: 'arraybuffer',
+//                 timeout: CONST_TIMEOUT_DOWNLOAD,
+//                 progress,
+//                 // signal,
+//             })
+//             const abIn = Buffer.from(reponse.data)
+//             return abIn
+//         }
+//     }
 
-    var [cleFichier, abFichier] = await Promise.all([cleFichierFct(), fichierFct()])
-    if(cleFichier && abFichier) {
-        // console.debug("Dechiffrer : cle %O, contenu : %O", cleFichier, abFichier)
-        try {
-            const champsOverrides = ['header', 'format']
-            const overrides = {}
-            for (const champ of champsOverrides) {
-                if(opts[champ]) overrides[champ] = opts[champ]
-            }
-            const cleEffective = {...cleFichier, ...overrides}  // Permet override par header, format, etc pour images/video
-            // console.debug("Dechiffre avec cle effective %O (cle %O)", cleEffective, cleFichier)
-            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, abFichier, cleEffective)
-            // console.debug("Contenu dechiffre : %O", ab)
-            const blob = new Blob([ab], {type: mimetype})
-            return blob
-        } catch(err) {
-            console.error("Erreur dechiffrage traitementFichiers : %O", err)
-            throw err
-        }
-    }
+//     var [cleFichier, abFichier] = await Promise.all([cleFichierFct(), fichierFct()])
+//     if(cleFichier && abFichier) {
+//         // console.debug("Dechiffrer : cle %O, contenu : %O", cleFichier, abFichier)
+//         try {
+//             const champsOverrides = ['header', 'format']
+//             const overrides = {}
+//             for (const champ of champsOverrides) {
+//                 if(opts[champ]) overrides[champ] = opts[champ]
+//             }
+//             const cleEffective = {...cleFichier, ...overrides}  // Permet override par header, format, etc pour images/video
+//             // console.debug("Dechiffre avec cle effective %O (cle %O)", cleEffective, cleFichier)
+//             const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, abFichier, cleEffective)
+//             // console.debug("Contenu dechiffre : %O", ab)
+//             const blob = new Blob([ab], {type: mimetype})
+//             return blob
+//         } catch(err) {
+//             console.error("Erreur dechiffrage traitementFichiers : %O", err)
+//             throw err
+//         }
+//     }
 
-    console.error("Erreur chargement image %s (erreur recuperation cle ou download)", fuuid)
-}
+//     console.error("Erreur chargement image %s (erreur recuperation cle ou download)", fuuid)
+// }
 
 async function getCleSecrete(workers, cle_id) {
     if(!cle_id) throw new Error('dechiffrer Fournir cle_id ou cle_secrete+header')
@@ -237,15 +237,17 @@ export function resLoader(fichier, typeRessource, opts) {
             throw new Error(`Aucun fuuid trouve pour file_id: ${fileId}`)
         }
         // console.debug("Charger video selection %O, mimetype: %O, fuuid video: %s", selection, mimetype, fuuid)
-        const controller = new AbortController()
-        const urlBlob = getFichierChiffre(fuuid, {mimetype, controller})
-            .then(blob=>URL.createObjectURL(blob))
-            // .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
 
-        return { srcPromise: urlBlob, clean: ()=>{
-            try { controller.abort() } catch(err) {console.debug("Erreur annulation getFichierChiffre : %O", err)}
-            clean(urlBlob) 
-        }}
+        throw new Error('obsolete')
+        // const controller = new AbortController()
+        // const urlBlob = getFichierChiffre(fuuid, {mimetype, controller})
+        //     .then(blob=>URL.createObjectURL(blob))
+        //     // .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
+
+        // return { srcPromise: urlBlob, clean: ()=>{
+        //     try { controller.abort() } catch(err) {console.debug("Erreur annulation getFichierChiffre : %O", err)}
+        //     clean(urlBlob) 
+        // }}
     }
 
     return false

@@ -1,6 +1,3 @@
-import {
-    loadFichierChiffre, fileResourceLoader, imageResourceLoader, videoResourceLoader, audioResourceLoader
-} from '@dugrema/millegrilles.reactjs/src/imageLoading'
 import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
 
@@ -195,45 +192,49 @@ export function mapDocumentComplet(workers, doc) {
         }
 
         if(mimetype.toLowerCase().startsWith('video/')) {
-            const creerToken = async fuuidVideo => {
-                if(Array.isArray(fuuidVideo)) fuuidVideo = fuuidVideo[0]
-                // console.debug("mapDocumentComplet.creerToken fuuidVideo : %O, info version courante : ", fuuidVideo, version_courante)
-                let dechiffrageVideo = null,
-                    mimetypeVideo = mimetype
-                if(fuuidVideo === fuuid_v_courante) {
-                    // Rien a faire
-                } else {
-                    const videoInfo = Object.values(video).filter(item=>item.fuuid_video === fuuidVideo).pop()
+            // const creerToken = async fuuidVideo => {
+            //     if(Array.isArray(fuuidVideo)) fuuidVideo = fuuidVideo[0]
+            //     // console.debug("mapDocumentComplet.creerToken fuuidVideo : %O, info version courante : ", fuuidVideo, version_courante)
+            //     let dechiffrageVideo = null,
+            //         mimetypeVideo = mimetype
+            //     if(fuuidVideo === fuuid_v_courante) {
+            //         // Rien a faire
+            //     } else {
+            //         const videoInfo = Object.values(video).filter(item=>item.fuuid_video === fuuidVideo).pop()
 
-                    // Changer mimetype pour celui du video selectionne
-                    mimetypeVideo = videoInfo.mimetype
+            //         // Changer mimetype pour celui du video selectionne
+            //         mimetypeVideo = videoInfo.mimetype
 
-                    // Inserer valeurs de dechiffrage dans la reponse
-                    const champsDechiffrage = ['format', 'header', 'iv', 'tag']
-                    dechiffrageVideo = {}
-                    for (const champ of champsDechiffrage) {
-                        if(videoInfo[champ]) dechiffrageVideo[champ] = videoInfo[champ]
-                    }
-                }
-                const fuuids = [fuuid_v_courante]
+            //         // Inserer valeurs de dechiffrage dans la reponse
+            //         const champsDechiffrage = ['format', 'header', 'iv', 'tag']
+            //         dechiffrageVideo = {}
+            //         for (const champ of champsDechiffrage) {
+            //             if(videoInfo[champ]) dechiffrageVideo[champ] = videoInfo[champ]
+            //         }
+            //     }
+            //     const fuuids = [fuuid_v_courante]
 
-                const commande = {
-                    fuuids,
-                    fuuidVideo,
-                    mimetype: mimetypeVideo,
-                }
-                if(dechiffrageVideo) commande.dechiffrageVideo = dechiffrageVideo
+            //     const commande = {
+            //         fuuids,
+            //         fuuidVideo,
+            //         mimetype: mimetypeVideo,
+            //     }
+            //     if(dechiffrageVideo) commande.dechiffrageVideo = dechiffrageVideo
 
-                const reponse = await connexion.creerTokenStream(commande)
-                // console.debug("!!! creerToken reponse : ", reponse)
-                return reponse.jwts
-            }
-            if(video) {
-                copie.videoLoader = videoResourceLoader(video, {creerToken, fuuid: fuuid_v_courante, version_courante})
-            } else {
-                // Utilisation du video original seulement
-                copie.videoLoader = videoResourceLoader({}, {creerToken, fuuid: fuuid_v_courante, version_courante})
-            }
+            //     const reponse = await connexion.creerTokenStream(commande)
+            //     // console.debug("!!! creerToken reponse : ", reponse)
+            //     return reponse.jwts
+            // }
+
+            copie.videoLoader = mediaLoader.videoLoader(video || {}, {fuuid: fuuid_v_courante, mimetype})
+
+            // if(video) {
+            //     //copie.videoLoader = videoResourceLoader(video, {creerToken, fuuid: fuuid_v_courante, version_courante})
+            //     copie.videoLoader = mediaLoader.videoLoader(video, {fuuid: fuuid_v_courante, mimetype})
+            // } else {
+            //     // Utilisation du video original seulement
+            //     copie.videoLoader = videoResourceLoader({}, {fuuid: fuuid_v_courante, mimetype})
+            // }
 
             // console.debug("videoLoader : ", copie.videoLoader.getSelecteurs())
         } else if(mimetype.toLowerCase().startsWith('audio/')) {
