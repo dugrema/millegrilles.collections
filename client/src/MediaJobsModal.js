@@ -92,8 +92,10 @@ function traiterMessageTranscodage(dispatch, eventMessage) {
 
     if(message) {
         // Verifier si c'est un message de suppression
-        const entete = message['en-tete']
-        if(entete.action === 'jobSupprimee') message.supprime = true
+        const original = message['__original'] || {}
+        const routage = original.routage || {}
+        // const entete = message['en-tete']
+        if(routage.action === 'jobSupprimee') message.supprime = true
         dispatch(merge(message))
     }
 }

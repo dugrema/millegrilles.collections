@@ -724,9 +724,10 @@ export function creerThunks(actions, nomSlice) {
     
     async function traiterAjouterFichierVolatil(workers, fichier, dispatch, getState) {
         // console.debug("traiterAjouterFichierVolatil ", fichier)
-        const entete = fichier['en-tete'] || {},
-              tuuid = fichier.tuuid || entete['uuid_transaction']
-      
+        // const entete = fichier['en-tete'] || {},
+        //       tuuid = fichier.tuuid || entete['uuid_transaction']
+        const tuuid = fichier.id
+        
         const fichierCopie = {tuuid, ...fichier}
     
         let cuuids = fichier.cuuids
