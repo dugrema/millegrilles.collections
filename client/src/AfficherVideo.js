@@ -28,10 +28,12 @@ function AfficherVideo(props) {
     const [srcVideo, setSrcVideo] = useState('')
     const [posterObj, setPosterObj] = useState('')
     // const [genererToken, setGenererToken] = useState(false)
-    const [timeStamp, setTimeStamp] = useState(0)
+    const [timeStamp, setTimeStamp] = useState(-1)
+    const [jumpToTimeStamp, setJumpToTimeStamp] = useState(null)
     const [videoChargePret, setVideoChargePret] = useState(false)
     const [errVideo, setErrVideo] = useState('')
     const [progresChargement, setProgresChargement] = useState(0)
+    const [abLoop, setAbLoop] = useState(null)
 
     const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
 
@@ -58,8 +60,16 @@ function AfficherVideo(props) {
     const videoTimeUpdateHandler = useCallback(event=>{
         // console.debug("Video time update event : %O", event)
         const currentTime = event.target.currentTime
+        if(abLoop) {
+            if(abLoop.b <= currentTime) {
+                console.debug("Loop to ", abLoop.a)
+                setTimeStamp(abLoop.a)
+                setJumpToTimeStamp(abLoop.a)
+                setTimeout(()=>setJumpToTimeStamp(-1), 100)
+            }
+        }
         setTimeStamp(currentTime)
-    }, [setTimeStamp])
+    }, [abLoop, setTimeStamp, setJumpToTimeStamp])
 
     const majChargement = useCallback(info=>{
         console.debug("Maj chargement ", info)
@@ -74,10 +84,27 @@ function AfficherVideo(props) {
                   taille = Number.parseInt(headers['x-file-size'])
 
             const progres =  Math.floor(100.0 * position / taille)
-            console.debug("Progres ", progres)
+            // console.debug("Progres ", progres)
             setProgresChargement(progres)
         }
     }, [setProgresChargement])
+
+    const abLoopToggleHandler = useCallback(()=>{
+        let ts = timeStamp
+        if(ts === -1 || !ts) ts = 0
+        if(!abLoop) {
+            // console.debug("AB Loop - set valeur A ", ts)
+            setAbLoop({a: ts})
+        } else {
+            if(!(abLoop.b >= 0)) {
+                // console.debug("AB Loop - set valeur B ", ts)
+                setAbLoop({...abLoop, b: ts})
+            } else {
+                // console.debug("AB Loop - reset")
+                setAbLoop(null)
+            }
+        }
+    }, [abLoop, setAbLoop, timeStamp])
 
     useEffect(()=>{
         if(!fichier || !fichier.imageLoader) return // Metadata n'est pas encore genere
@@ -89,7 +116,7 @@ function AfficherVideo(props) {
         loaderImage.load({setFirst: setPosterObj})
             .then(image=>{
                 imageChargee = image
-                console.debug("Image poster chargee : %O", image)
+                // console.debug("Image poster chargee : %O", image)
                 setPosterObj(image)
             })
             .catch(err=>console.error("Erreur chargement poster : %O", err))
@@ -107,37 +134,6 @@ function AfficherVideo(props) {
         setVideoChargePret(false)
         setErrVideo('')
         setProgresChargement(0)
-
-        // fichier.videoLoader.load(selecteur, {genererToken: true})
-        // fichier.videoLoader.load({selecteur})
-        //     .then(async src => {
-        //         try {
-        //             // console.debug("HEAD src : ", src)
-        //             const sourceHead = src[0].src
-                    
-        //             while(true) {
-        //                 // S'assurer que le video est pret dans le back-end
-        //                 const reponse = await axios({
-        //                     method: 'HEAD',
-        //                     url: sourceHead,
-        //                     timeout: 20_000,
-        //                 })
-        //                 majChargement(reponse)
-        //                 if(reponse.status !== 202) break
-        //                 await new Promise(resolve=>setTimeout(resolve, 2000))
-        //             }
-
-        //             // console.debug("Reponse head ", reponse)
-        //             setSrcVideo(src)
-        //         } catch(err) {
-        //             console.error("Erreur HEAD : ", err)
-        //             setErrVideo('Erreur chargement video (preparation)')
-        //         }
-        //     })
-        //     .catch(err=>{
-        //         console.error("AfficherVideo erreur chargement video : %O", err)
-        //         setErrVideo('Erreur chargement video (general)')
-        //     })
 
         fichier.videoLoader.load({selecteur})
             .then(async src => {
@@ -193,10 +189,9 @@ function AfficherVideo(props) {
                                 poster={posterObj} 
                                 height='100%' 
                                 width='100%' 
-                                // selecteurs={selecteurs}
-                                // selecteur={selecteur} 
                                 onTimeUpdate={videoTimeUpdateHandler} 
                                 timeStamp={timeStamp} 
+                                jumpToTimeStamp={jumpToTimeStamp}
                                 onProgress={onProgress}
                                 onPlay={onPlay}
                                 onError={onError}
@@ -221,6 +216,8 @@ function AfficherVideo(props) {
                         selecteurs={selecteurs}
                         selecteur={selecteur}
                         setSelecteur={setSelecteur}
+                        toggleAbLoop={abLoopToggleHandler}
+                        abLoop={abLoop}
                         />
                 </Col>
 
@@ -319,11 +316,6 @@ function PlayerEtatPassthrough(props) {
     if(!posterObj || !srcVideo || delaiSelecteur !== selecteur) {
 
         let message = null
-        // if(srcVideo) {
-        //     message = <p><i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...</p>
-        // } else {
-        //     message = <p><i className="fa fa-spinner fa-spin"/> ... Preparation du video sur le serveur ...</p>
-        // }
 
         if(posterObj) {
             return (
@@ -353,11 +345,6 @@ function PlayerEtatPassthrough(props) {
     return (
         <div className='video-window'>
             {props.children}
-            {/* {(!errVideo && !videoChargePret)?
-                <p>
-                    <i className="fa fa-spinner fa-spin"/> ... Chargement en cours ...
-                </p>
-            :''} */}
         </div>
     )
 }
@@ -365,13 +352,26 @@ function PlayerEtatPassthrough(props) {
 
 function PanneauInformation(props) {
 
-    const { fichier, nomFichier, fermer, showInfoModalOuvrir, videos, support, selecteurs, selecteur, setSelecteur } = props
+    const { fichier, nomFichier, fermer, showInfoModalOuvrir, videos, support, selecteurs, selecteur, setSelecteur, abLoop, toggleAbLoop } = props
+
+    const variantBoutonLoop = useMemo(()=>{
+        if(abLoop) {
+            if(abLoop.b >= 0) return 'success'
+            else if(abLoop.a >= 0) return 'primary'
+        }
+        return 'secondary'
+    }, [abLoop])
 
     return (
         <div>
+            <p></p>
             <Row>
-                <Col>
+                <Col sm={6} md={2}>
                     <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
+                </Col>
+
+                <Col sm={6} md={2}>
+                    <Col><Button variant={variantBoutonLoop} onClick={toggleAbLoop}>AB Loop</Button></Col>
                 </Col>
 
                 <Col>
@@ -426,7 +426,6 @@ function SelecteurResolution(props) {
 
     return (
         <>
-            <span>Resolution</span>
             <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
                 {listeOptions.map(item=>{
                     if(item === selecteur) {
