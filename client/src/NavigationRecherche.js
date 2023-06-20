@@ -227,7 +227,7 @@ export function BarreInformation(props) {
                         value={parametresRecherche}
                         onChange={onSearchChange}
                     />
-                    <Button variant="secondary" onClick={onSearch}>Chercher</Button>
+                    <Button variant="primary" onClick={onSearch}>Chercher</Button>
                 </InputGroup>
             </Form>
 
@@ -523,15 +523,15 @@ function preparerColonnes(workers) {
     const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
 
     const params = {
-        ordreColonnes: ['score', 'nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
+        ordreColonnes: ['nom', 'score', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
         paramsColonnes: {
-            'score': {'label': 'Score', formatteur: FormatteurNombre, xs: 12, lg: 1},
-            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
+            'nom': {'label': 'Nom', showThumbnail: true, xs: 12, lg: 6},
+            'score': {'label': 'Score', formatteur: FormatteurNombre, xs: 2, lg: 1},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
-            'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
-            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 2},
+            'mimetype': {'label': 'Type', className: 'details', xs: 7, lg: 2},
+            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 12, lg: 2},
         },
-        tri: {colonne: 'nom', ordre: 1},
+        tri: {colonne: 'score', ordre: -1},
         rowLoader,
     }
     return params
