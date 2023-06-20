@@ -259,6 +259,9 @@ function mergeTuuidDataAction(state, action) {
             if( source === SOURCE_CORBEILLE ) {
                 // Verifier si le document est toujours supprime
                 retirer = dataCourant.supprime !== true
+            } else if( source === SOURCE_RECHERCHE ) {
+                // Verifier si le document est toujours supprime
+                retirer = dataCourant.supprime === true
             } else {
                 if(dataCourant.supprime === true) {
                     // Le document est supprime
@@ -590,19 +593,14 @@ export function creerThunks(actions, nomSlice) {
         return resultat
     }
 
-    async function syncRecherche(dispatch, workers, listeResultats) {
-        const { collectionsDao } = workers
-        const listeTuuidsDirty = await collectionsDao.syncDocuments(listeResultats)
-    
-        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+    async function syncRecherche(dispatch, workers, listeTuuidsDirty) {
+        console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-            dispatch(chargerTuuids(workers, listeTuuidsDirty))
-                .catch(err=>console.error("syncRecherche Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
-        } else {
-            dispatch(setDechiffrageComplete())
+            await dispatch(chargerTuuids(workers, listeTuuidsDirty))
         }
+        dispatch(setDechiffrageComplete())
     
-        return listeTuuidsDirty
+        // return listeTuuidsDirty
     }
     
     // Async plus recent
@@ -776,22 +774,29 @@ export function creerThunks(actions, nomSlice) {
         }
 
         const listeHits = resultatRecherche.resultat.docs
-        const scores = listeHits.reduce((acc, item)=>{
-            acc[item.tuuid] = item.score
+        const itemsDict = listeHits.reduce((acc, item)=>{
+            acc[item.tuuid] = item
+            item.fuuid = item.id
+            delete item.id
             return acc
         }, {})
 
         // // Charger le contenu de la collection deja connu
-        // const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
-        const contenuIdb = await collectionsDao.getParTuuids(listeHits.map(item=>item.tuuid))
+        let contenuIdb = await collectionsDao.getParTuuids(listeHits.map(item=>item.tuuid))
+        contenuIdb = contenuIdb.filter(item=>item)
 
         // Injecter le score
         contenuIdb.forEach(item=>{
-            item.score = scores[item.tuuid]
+            item.score = itemsDict[item.tuuid].score
+            delete itemsDict[item.tuuid]
         })
-    
+
+        // Ajouter tous les resultats manquants
+        for(const item of Object.values(itemsDict)) {
+            contenuIdb.push(item)
+        }
+
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
             // console.debug("Push documents provenance idb : %O", contenuIdb)
             dispatch(push({liste: contenuIdb, clear: true}))
@@ -801,18 +806,7 @@ export function creerThunks(actions, nomSlice) {
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
         }
     
-        // let compteur = 0
-        // for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
-        //     let resultatSync = await syncCorbeille(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
-        //     // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
-        //     if( ! resultatSync || ! resultatSync.liste ) break
-        //     compteur += resultatSync.liste.length
-        //     if( resultatSync.complete ) break
-        // }
-        // if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCorbeille")
-    
-        // On marque la fin du chargement/sync
-        dispatch(push({liste: []}))
+        await syncRecherche(dispatch, workers, listeHits.map(item=>item.tuuid))
     }
     
     // Ajouter un nouveau fichier (e.g. debut upload)
