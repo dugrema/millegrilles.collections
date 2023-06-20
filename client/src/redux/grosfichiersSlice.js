@@ -764,16 +764,13 @@ export function creerThunks(actions, nomSlice) {
             return
         }
         
-        // let intervalle = opts.intervalle
-        // if(!opts.intervalle) {
-        //     intervalle = stateInitial.intervalle
-        // }
-        // dispatch(setIntervalle(intervalle))
-        // dispatch(setSortKeys({key: 'date_suppression', order: -1}))
+        dispatch(setSortKeys({key: 'score', order: -1}))
     
+        const { connexion, collectionsDao } = workers
+        const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, 200 )
+        console.debug("Resultat recherche : ", resultatRecherche)
+
         // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
-        
-        // const { collectionsDao } = workers
     
         // // Charger le contenu de la collection deja connu
         // // const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)

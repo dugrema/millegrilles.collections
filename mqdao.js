@@ -56,7 +56,7 @@ export function getPermissionCles(socket, params) {
 }
 
 export function rechercheIndex(socket, params) {
-    return transmettreRequete(socket, params, 'rechercheIndex')
+    return transmettreRequete(socket, params, 'fichiers', {domaine: 'solrrelai'})
 }
 
 export function completerPreviews(socket, params) {

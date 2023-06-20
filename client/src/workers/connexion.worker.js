@@ -154,11 +154,11 @@ function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
 
 function rechercheIndex(mots_cles, from_idx, size) {
   from_idx = from_idx?from_idx:0
-  size = size?size:50
+  size = size?size:200
   return ConnexionClient.emitBlocking(
     'rechercheIndex',
-    {mots_cles, from_idx, size},
-    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'rechercheIndex', attacherCertificat: true}
+    {query: mots_cles, start: from_idx, limit: size},
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'solrrelai', action: 'fichiers', attacherCertificat: true}
   )
 }
 
