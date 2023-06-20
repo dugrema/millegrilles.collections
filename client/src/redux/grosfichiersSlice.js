@@ -4,6 +4,7 @@ import { createSlice, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit
 const SOURCE_COLLECTION = 'collection',
       SOURCE_PLUS_RECENT = 'plusrecent',
       SOURCE_CORBEILLE = 'corbeille',
+      SOURCE_RECHERCHE = 'recherche',
       // SOURCE_INDEX = 'index'
       CONST_SYNC_BATCH_SIZE = 250,
       SAFEGUARD_BATCH_MAX = 1000,
@@ -26,6 +27,7 @@ const initialState = {
     maxNombreAffiches: TAILLE_AFFICHEE_INIT,
     dechiffrageInitialComplete: false,
     bytesTotalDossier: 0,       // Nombre de bytes dans le dossier
+    parametresRecherche: '',    // String de recherche
 }
 
 // Actions
@@ -331,6 +333,10 @@ function setDechiffrageCompleteAction(state, action) {
     }
 }
 
+function setParametresRechercheAction(state, action) {
+    state.parametresRecherche = action.payload
+}
+
 // Slice collection
 
 export function creerSlice(name) {
@@ -357,6 +363,7 @@ export function creerSlice(name) {
             setFichiersChiffres: setFichiersChiffresAction,
             incrementerNombreAffiches: incrementerNombreAffichesAction,
             setDechiffrageComplete: setDechiffrageCompleteAction,
+            setParametresRecherche: setParametresRechercheAction,
         }
     })
 
@@ -557,7 +564,7 @@ export function creerThunks(actions, nomSlice) {
         // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             dispatch(chargerTuuids(workers, listeTuuidsDirty))
-                .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+                .catch(err=>console.error("syncPlusrecent Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
         } else {
             dispatch(setDechiffrageComplete())
         }
@@ -575,12 +582,27 @@ export function creerThunks(actions, nomSlice) {
         // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             dispatch(chargerTuuids(workers, listeTuuidsDirty))
-                .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+                .catch(err=>console.error("syncCorbeille Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
         } else {
             dispatch(setDechiffrageComplete())
         }
     
         return resultat
+    }
+
+    async function syncRecherche(dispatch, workers, listeResultats) {
+        const { collectionsDao } = workers
+        const listeTuuidsDirty = await collectionsDao.syncDocuments(listeResultats)
+    
+        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+        if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
+            dispatch(chargerTuuids(workers, listeTuuidsDirty))
+                .catch(err=>console.error("syncRecherche Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+        } else {
+            dispatch(setDechiffrageComplete())
+        }
+    
+        return listeTuuidsDirty
     }
     
     // Async plus recent
@@ -716,6 +738,70 @@ export function creerThunks(actions, nomSlice) {
         // On marque la fin du chargement/sync
         dispatch(push({liste: []}))
     }
+
+    // Async recherche
+
+    function afficherRecherche(workers, opts) {
+        opts = opts || {}
+        return (dispatch, getState) => traiterChargerRecherche(workers, opts, dispatch, getState)
+    }    
+
+    async function traiterChargerRecherche(workers, opts, dispatch, getState) {
+        opts = opts || {}
+    
+        const stateInitial = getState()[nomSlice]
+        const { userId, parametresRecherche } = stateInitial
+
+        console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
+    
+        // Changer source, nettoyer la liste
+        dispatch(setSource(SOURCE_RECHERCHE))
+        dispatch(clear())
+
+        if(!parametresRecherche) {
+            console.debug("Aucun terme - clear ecran")
+            dispatch(push({liste: []}))
+            return
+        }
+        
+        // let intervalle = opts.intervalle
+        // if(!opts.intervalle) {
+        //     intervalle = stateInitial.intervalle
+        // }
+        // dispatch(setIntervalle(intervalle))
+        // dispatch(setSortKeys({key: 'date_suppression', order: -1}))
+    
+        // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
+        
+        // const { collectionsDao } = workers
+    
+        // // Charger le contenu de la collection deja connu
+        // // const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
+    
+        // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+        // // console.debug("Contenu idb : %O", contenuIdb)
+        // if(contenuIdb) {
+        //     // console.debug("Push documents provenance idb : %O", contenuIdb)
+        //     dispatch(push({liste: contenuIdb, clear: true}))
+    
+        //     const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+        //     dispatch(chargerTuuids(workers, tuuids))
+        //         .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+        // }
+    
+        // let compteur = 0
+        // for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
+        //     let resultatSync = await syncCorbeille(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
+        //     // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+        //     if( ! resultatSync || ! resultatSync.liste ) break
+        //     compteur += resultatSync.liste.length
+        //     if( resultatSync.complete ) break
+        // }
+        // if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCorbeille")
+    
+        // On marque la fin du chargement/sync
+        dispatch(push({liste: []}))
+    }
     
     // Ajouter un nouveau fichier (e.g. debut upload)
     function ajouterFichierVolatil(workers, fichier) {
@@ -813,7 +899,7 @@ export function creerThunks(actions, nomSlice) {
     
     // Async actions
     const thunks = { 
-        changerCollection, afficherPlusrecents, afficherCorbeille,
+        changerCollection, afficherPlusrecents, afficherCorbeille, afficherRecherche,
         chargerTuuids,
         ajouterFichierVolatil, rafraichirCollection, supprimerFichier, restaurerFichier,
     }

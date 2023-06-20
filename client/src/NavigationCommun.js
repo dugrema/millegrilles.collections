@@ -81,7 +81,7 @@ export function BarreInformation(props) {
     )
 }
 
-function BoutonsFormat(props) {
+export function BoutonsFormat(props) {
 
     const { modeView, setModeView } = props
 
@@ -102,7 +102,7 @@ function BoutonsFormat(props) {
     )
 }
 
-function BoutonsAction(props) {
+export function BoutonsAction(props) {
 
     const { setShowCreerRepertoire, setPreparationUploadEnCours, signalAnnuler } = props
 
@@ -355,6 +355,7 @@ export function FormatterColonneDate(props) {
 export function AffichagePrincipal(props) {
 
     const {
+        hide,
         preparerColonnes,
         modeView, 
         naviguerCollection,
@@ -443,6 +444,8 @@ export function AffichagePrincipal(props) {
         // console.debug("SuivantCb ", params)
         dispatch(fichiersActions.incrementerNombreAffiches())
     }, [dispatch])
+
+    if(hide) return ''  // Cacher la page
 
     if(afficherVideo) {
         return (

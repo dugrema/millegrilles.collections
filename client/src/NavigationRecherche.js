@@ -9,6 +9,7 @@ import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
+import InputGroup from 'react-bootstrap/InputGroup'
 
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
@@ -21,7 +22,7 @@ import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload } from './redux/downloaderSlice'
 
-import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
+import { FormatterColonneDate, AffichagePrincipal, BoutonsFormat } from './NavigationCommun'
 
 function NavigationRecherche(props) {
 
@@ -32,6 +33,7 @@ function NavigationRecherche(props) {
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
+    const liste = useSelector(state => state.fichiers.liste)
 
     const [modeView, setModeView] = useState('')
     const [scrollValue, setScrollValue] = useState(0)
@@ -55,21 +57,24 @@ function NavigationRecherche(props) {
         setShowPreview(true)
     }, [setShowPreview, selection, setTuuidSelectionne])
     
-    const naviguerCollection = useCallback( cuuid => {
+    const rechercheChangeHandler = useCallback( e => {
+        const value = e.currentTarget.value
+        dispatch(fichiersActions.setParametresRecherche(value))
+    }, [dispatch])
+
+    const rechercherCb = useCallback( e => {
+        if(e) {
+            e.preventDefault()
+            e.stopPropagation()
+        }
+
+        console.debug("Rechercher")
+
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
-        if(!cuuid) cuuid = ''
         try {
-            if(cuuid) {
-                dispatch(fichiersActions.breadcrumbPush({tuuid: cuuid}))
-            } else {
-                dispatch(fichiersActions.breadcrumbSlice())
-            }
-        } catch(err) {
-            console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
-        }
-        try {
-            dispatch(fichiersThunks.changerCollection(workers, cuuid))
+            // Set tri par date modification desc
+            dispatch(fichiersThunks.afficherRecherche(workers))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
@@ -101,15 +106,16 @@ function NavigationRecherche(props) {
 
     // Declencher chargement initial des favoris
     useEffect(()=>{
-        if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
-        naviguerCollection('')
-    }, [naviguerCollection, etatPret, cuuidCourant, userId])
+        if(!etatPret || !userId) return  // Rien a faire
+        rechercherCb()
+    }, [rechercherCb, etatPret, cuuidCourant, userId])
 
     return (
         <>
             <div>
                 <BarreInformation 
-                    naviguerCollection={naviguerCollection}
+                    onSearch={rechercherCb}
+                    onSearchChange={rechercheChangeHandler}
                     modeView={modeView}
                     setModeView={setModeView} 
                     setShowCreerRepertoire={setShowCreerRepertoire} 
@@ -121,9 +127,9 @@ function NavigationRecherche(props) {
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
+                        hide={(!liste || liste.length === 0)}
                         preparerColonnes={preparerColonnesCb}
                         modeView={modeView}
-                        naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
                         afficherVideo={afficherVideo}
@@ -160,6 +166,75 @@ function NavigationRecherche(props) {
 }
 
 export default NavigationRecherche
+
+export function BarreInformation(props) {
+
+    const { 
+        afficherVideo, afficherAudio, modeView, setModeView, 
+        onSearch, onSearchChange,
+    } = props
+
+    const liste = useSelector(state => state.fichiers.liste )
+    const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
+    const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
+    const parametresRecherche = useSelector(state => state.fichiers.parametresRecherche )
+
+    const afficherMedia = afficherVideo || afficherAudio
+
+    let nombreFichiers = ''
+    if(liste) {
+        if(liste.length > 1) {
+            nombreFichiers = (
+                <div>
+                    <div>
+                        {dechiffrageInitialComplete?
+                            '':
+                            <i className="fa fa-spinner fa-spin" />
+                        }
+                        {' '}{liste.length} fichiers trouves
+                    </div>
+                    <div><FormatteurTaille value={bytesTotalDossier} /></div>
+                </div>
+            )
+        }
+    }
+
+    return (
+        <div>
+            <Row className='fichiers-header-buttonbar'>
+                <Col xs={12} lg={4}>
+                    <h3>Resultats de recherche</h3>
+                </Col>
+
+                <Col xs={12} sm={3} md={4} lg={3}>
+                    {afficherMedia?'':nombreFichiers}
+                </Col>
+
+                <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
+                    {afficherMedia?'':
+                        <div>
+                            <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                        </div>
+                    }
+                </Col>
+            </Row>            
+
+            <Form onSubmit={onSearch}>
+                <InputGroup>
+                    <Form.Control
+                        placeholder="Saisir les parametres de la recherche ..."
+                        aria-label="Saisir les parametres de la recherche avec bouton de recherche"
+                        value={parametresRecherche}
+                        onChange={onSearchChange}
+                    />
+                    <Button variant="secondary" onClick={onSearch}>Chercher</Button>
+                </InputGroup>
+            </Form>
+
+            <br />
+        </div>
+    )
+}
 
 function HandlerEvenements(_props) {
 
@@ -448,14 +523,13 @@ function preparerColonnes(workers) {
     const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
 
     const params = {
-        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
+        ordreColonnes: ['score', 'nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
         paramsColonnes: {
+            'score': {'label': 'Score', xs: 12, lg: 1},
             'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
             'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
-            // 'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
-            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 3},
-            // 'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
+            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 2},
         },
         tri: {colonne: 'nom', ordre: 1},
         rowLoader,
@@ -559,9 +633,9 @@ function InformationListe(_props) {
                 <div>
                     <br/>
                     <Alert>
-                        <Alert.Heading>Aucune collection</Alert.Heading>
+                        <Alert.Heading>Aucuns resultats</Alert.Heading>
                         <p>
-                            Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
+                            Aucuns fichiers ne correspondent aux termes de la recherche.
                         </p>
                     </Alert>
                 </div>

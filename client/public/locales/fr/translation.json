@@ -5,6 +5,7 @@
     },
     "menu": {
         "collections": "Collections",
+        "recherche": "Recherche",
         "recents": "Recents",
         "corbeille": "Corbeille",
         "mediaJobs": "Conversion",
