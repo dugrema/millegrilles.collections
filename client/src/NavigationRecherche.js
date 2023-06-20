@@ -11,7 +11,7 @@ import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 import InputGroup from 'react-bootstrap/InputGroup'
 
-import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
+import { FormatteurTaille, FormatteurNombre } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
 import { ArchiverModal, SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
@@ -525,7 +525,7 @@ function preparerColonnes(workers) {
     const params = {
         ordreColonnes: ['score', 'nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
         paramsColonnes: {
-            'score': {'label': 'Score', xs: 12, lg: 1},
+            'score': {'label': 'Score', formatteur: FormatteurNombre, xs: 12, lg: 1},
             'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
             'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},

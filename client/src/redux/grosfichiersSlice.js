@@ -705,7 +705,7 @@ export function creerThunks(actions, nomSlice) {
             intervalle = stateInitial.intervalle
         }
         dispatch(setIntervalle(intervalle))
-        dispatch(setSortKeys({key: 'date_suppression', order: -1}))
+        dispatch(setSortKeys({key: 'date_suppression', ordre: -1}))
     
         // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
         
@@ -764,27 +764,42 @@ export function creerThunks(actions, nomSlice) {
             return
         }
         
-        dispatch(setSortKeys({key: 'score', order: -1}))
+        dispatch(setSortKeys({key: 'score', ordre: -1}))
     
         const { connexion, collectionsDao } = workers
         const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, 200 )
         console.debug("Resultat recherche : ", resultatRecherche)
 
-        // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
-    
+        if(resultatRecherche.ok !== true) {
+            console.warn("Erreur recherche : ", resultatRecherche)
+            return
+        }
+
+        const listeHits = resultatRecherche.resultat.docs
+        const scores = listeHits.reduce((acc, item)=>{
+            acc[item.tuuid] = item.score
+            return acc
+        }, {})
+
         // // Charger le contenu de la collection deja connu
-        // // const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
+        // const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
+        const contenuIdb = await collectionsDao.getParTuuids(listeHits.map(item=>item.tuuid))
+
+        // Injecter le score
+        contenuIdb.forEach(item=>{
+            item.score = scores[item.tuuid]
+        })
     
-        // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        // // console.debug("Contenu idb : %O", contenuIdb)
-        // if(contenuIdb) {
-        //     // console.debug("Push documents provenance idb : %O", contenuIdb)
-        //     dispatch(push({liste: contenuIdb, clear: true}))
+        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+        // console.debug("Contenu idb : %O", contenuIdb)
+        if(contenuIdb) {
+            // console.debug("Push documents provenance idb : %O", contenuIdb)
+            dispatch(push({liste: contenuIdb, clear: true}))
     
-        //     const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-        //     dispatch(chargerTuuids(workers, tuuids))
-        //         .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-        // }
+            const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+            dispatch(chargerTuuids(workers, tuuids))
+                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+        }
     
         // let compteur = 0
         // for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
