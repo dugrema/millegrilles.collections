@@ -23,7 +23,7 @@ import { ajouterDownload } from './redux/downloaderSlice'
 
 import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
 
-function NavigationCollections(props) {
+function NavigationRecherche(props) {
 
     const { erreurCb } = props
     const dispatch = useDispatch()
@@ -159,7 +159,7 @@ function NavigationCollections(props) {
 
 }
 
-export default NavigationCollections
+export default NavigationRecherche
 
 function HandlerEvenements(_props) {
 

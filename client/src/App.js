@@ -35,6 +35,7 @@ import Menu from './Menu'
 const NavigationCollections = lazy( () => import('./NavigationCollections') )
 const NavigationRecents = lazy( () => import('./NavigationRecents') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
+const NavigationRecherche = lazy( () => import('./NavigationRecherche') )
 const MediaJobsModal = lazy( () => import('./MediaJobsModal') )
 
 const CONST_UPLOAD_COMPLET_EXPIRE = 2 * 60 * 60 * 1000,  // Auto-cleanup apres 2 heures (millisecs) de l'upload,
