@@ -34,6 +34,7 @@ function NavigationRecherche(props) {
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
     const liste = useSelector(state => state.fichiers.liste)
+    const nombreFichiersTotal = useSelector(state => state.fichiers.nombreFichiersTotal )
 
     const [modeView, setModeView] = useState('')
     const [scrollValue, setScrollValue] = useState(0)
@@ -142,6 +143,10 @@ function NavigationRecherche(props) {
                         onScroll={onScrollHandler}
                     />
                 </Suspense>
+
+                <Alert variant='secondary' show={liste && liste.length < nombreFichiersTotal}>
+                    Note : la liste de {nombreFichiersTotal} resultats est tronquee a {liste?liste.length:0} elements.
+                </Alert>
             </div>
 
             <HandlerEvenements />
@@ -178,6 +183,7 @@ export function BarreInformation(props) {
     const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
     const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
     const parametresRecherche = useSelector(state => state.fichiers.parametresRecherche )
+    const nombreFichiersTotal = useSelector(state => state.fichiers.nombreFichiersTotal )
 
     const afficherMedia = afficherVideo || afficherAudio
 
@@ -191,7 +197,7 @@ export function BarreInformation(props) {
                             '':
                             <i className="fa fa-spinner fa-spin" />
                         }
-                        {' '}{liste.length} fichiers trouves
+                        {' '}{nombreFichiersTotal} fichiers trouves
                     </div>
                     <div><FormatteurTaille value={bytesTotalDossier} /></div>
                 </div>
@@ -525,11 +531,11 @@ function preparerColonnes(workers) {
     const params = {
         ordreColonnes: ['nom', 'score', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
         paramsColonnes: {
-            'nom': {'label': 'Nom', showThumbnail: true, xs: 12, lg: 6},
-            'score': {'label': 'Score', formatteur: FormatteurNombre, xs: 2, lg: 1},
-            'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
-            'mimetype': {'label': 'Type', className: 'details', xs: 7, lg: 2},
-            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 12, lg: 2},
+            'nom': {'label': 'Nom', showThumbnail: true, xs: 12, md:12, lg: 6},
+            'score': {'label': 'Score', formatteur: FormatteurNombre, xs: 3, md: 2, lg: 1},
+            'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, md: 2, lg: 1},
+            'mimetype': {'label': 'Type', className: 'details', xs: 6, md: 5, lg: 2},
+            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 12, md: 3, lg: 2},
         },
         tri: {colonne: 'score', ordre: -1},
         rowLoader,

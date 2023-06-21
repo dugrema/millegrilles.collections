@@ -8,8 +8,9 @@ const SOURCE_COLLECTION = 'collection',
       // SOURCE_INDEX = 'index'
       CONST_SYNC_BATCH_SIZE = 250,
       SAFEGUARD_BATCH_MAX = 1000,
-      TAILLE_AFFICHEE_INIT = 100,
-      INCREMENT_TAILLE_AFFICHEE = 100
+      TAILLE_AFFICHEE_INIT = 50,
+      INCREMENT_TAILLE_AFFICHEE = 25,
+      CONST_RECHERCHE_LIMITE = 500
 
 const initialState = {
     idbInitialise: false,       // Flag IDB initialise
@@ -28,6 +29,7 @@ const initialState = {
     dechiffrageInitialComplete: false,
     bytesTotalDossier: 0,       // Nombre de bytes dans le dossier
     parametresRecherche: '',    // String de recherche
+    nombreFichiersTotal: 0,     // Utilise pour listes partielles (e.g. recherche)
 }
 
 // Actions
@@ -84,7 +86,7 @@ function pushAction(state, action) {
     const mergeVersion = state.mergeVersion
     state.mergeVersion++
 
-    let {liste: payload, clear} = action.payload
+    let {liste: payload, clear, nombreFichiersTotal} = action.payload
     if(clear === true) state.liste = []  // Reset liste
 
     let liste = state.liste || []
@@ -96,6 +98,12 @@ function pushAction(state, action) {
         const ajout = {...payload, '_mergeVersion': mergeVersion}
         // console.debug("pushAction ajouter ", ajout)
         liste.push(ajout)
+    }
+
+    if(nombreFichiersTotal) {
+        state.nombreFichiersTotal = nombreFichiersTotal
+    } else {
+        state.nombreFichiersTotal = payload.length
     }
 
     // Trier
@@ -594,13 +602,11 @@ export function creerThunks(actions, nomSlice) {
     }
 
     async function syncRecherche(dispatch, workers, listeTuuidsDirty) {
-        console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             await dispatch(chargerTuuids(workers, listeTuuidsDirty))
         }
         dispatch(setDechiffrageComplete())
-    
-        // return listeTuuidsDirty
     }
     
     // Async plus recent
@@ -765,7 +771,7 @@ export function creerThunks(actions, nomSlice) {
         dispatch(setSortKeys({key: 'score', ordre: -1}))
     
         const { connexion, collectionsDao } = workers
-        const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, 200 )
+        const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, CONST_RECHERCHE_LIMITE )
         console.debug("Resultat recherche : ", resultatRecherche)
 
         if(resultatRecherche.ok !== true) {
@@ -792,21 +798,24 @@ export function creerThunks(actions, nomSlice) {
         })
 
         // Ajouter tous les resultats manquants
+        const tuuidsManquants = []
         for(const item of Object.values(itemsDict)) {
             contenuIdb.push(item)
+            tuuidsManquants.push(item.tuuid)
         }
 
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
         if(contenuIdb) {
             // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push({liste: contenuIdb, clear: true}))
+            dispatch(push({liste: contenuIdb, nombreFichiersTotal: resultatRecherche.resultat.numFound, clear: true}))
     
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
             dispatch(chargerTuuids(workers, tuuids))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
         }
     
-        await syncRecherche(dispatch, workers, listeHits.map(item=>item.tuuid))
+        // await syncRecherche(dispatch, workers, listeHits.map(item=>item.tuuid))
+        await syncRecherche(dispatch, workers, tuuidsManquants)
     }
     
     // Ajouter un nouveau fichier (e.g. debut upload)
