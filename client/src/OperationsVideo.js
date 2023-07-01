@@ -211,7 +211,7 @@ function FormConversionVideo(props) {
     const { workers, fichier, setTranscodage, usager, erreurCb } = props
 
     const [codecVideo, setCodecVideo] = useState('vp9')
-    const [codecAudio, setCodecAudio] = useState('opus')
+    const [codecAudio, setCodecAudio] = useState('libopus')
     const [resolutionVideo, setResolutionVideo] = useState(360)
     const [qualityVideo, setQualityVideo] = useState(37)
     const [bitrateAudio, setBitrateAudio] = useState(128000)
