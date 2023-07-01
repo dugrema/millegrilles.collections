@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
-import { proxy } from 'comlink'
-import { useDispatch, useSelector } from 'react-redux'
 
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
@@ -8,7 +6,6 @@ import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import Col from 'react-bootstrap/Col'
 import Row from 'react-bootstrap/Row'
-import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { AfficherListeJobs } from './MediaJobsModal'
 
@@ -19,7 +16,7 @@ const VIDEO_CODEC = [
 ]
 
 const AUDIO_CODEC = [
-  {label: 'Opus', value: "opus"},
+  {label: 'Opus', value: "libopus"},
   {label: 'EAC3', value: "eac3"},
   {label: 'AAC', value: "aac"},
 ]
@@ -31,19 +28,6 @@ const VIDEO_RESOLUTIONS = [
   {label: "720p", value: 720},
   {label: "1080p", value: 1080},
 ]
-
-// const BITRATES_VIDEO = [
-//   {label: "250 kbps", value: 250000},
-//   {label: "500 kbps", value: 500000},
-//   {label: "750 kbps", value: 750000},
-//   {label: "1 mbps", value: 1000000},
-//   {label: "1.5 mbps", value: 1500000},
-//   {label: "2.0 mbps", value: 2000000},
-//   {label: "3.0 mbps", value: 3000000},
-//   {label: "4.0 mbps", value: 4000000},
-//   {label: "6.0 mbps", value: 6000000},
-//   {label: "8.0 mbps", value: 8000000},
-// ]
 
 const QUALITY_VIDEO = [
   {label: "Tres Faible (37)", value: 37},
@@ -67,37 +51,37 @@ const PROFILS_VIDEO = {
   'vp9': {
     '270': {
       qualityVideo: 37,
-      codecAudio: 'opus',
+      codecAudio: 'libopus',
       bitrateAudio: 64000,
       preset: 'fast',
     },
     '360': {
       qualityVideo: 37,
-      codecAudio: 'opus',
+      codecAudio: 'libopus',
       bitrateAudio: 64000,
       preset: 'medium',
     },
     '480': {
       qualityVideo: 34,
-      codecAudio: 'opus',
+      codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'medium',
     },
     '720': {
       qualityVideo: 32,
-      codecAudio: 'opus',
+      codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'medium',
     },
     '1080': {
       qualityVideo: 31,
-      codecAudio: 'opus',
+      codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'slow',
     },
     'default': {
       qualityVideo: 31,
-      codecAudio: 'opus',
+      codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'slow',
     },
@@ -146,6 +130,7 @@ const PROFILS_VIDEO = {
       codecAudio: 'aac',
       bitrateAudio: 64000,
       preset: 'fast',
+      fallback: true,
     },
     '480': {
       qualityVideo: 26,
@@ -162,33 +147,33 @@ const PROFILS_VIDEO = {
   }
 }
 
-function parseEvenementTranscodage(evenement) {
-  const message = evenement.message || {}
-  const codec = evenement.codec || {}
-  const resolution = message.height
-  const mimetype = message.mimetype
-  const bitrate_quality = message.quality || message.videoBitrate
+// function parseEvenementTranscodage(evenement) {
+//   const message = evenement.message || {}
+//   const codec = evenement.codec || {}
+//   const resolution = message.height
+//   const mimetype = message.mimetype
+//   const bitrate_quality = message.quality || message.videoBitrate
 
-  const cle = [mimetype, codec, resolution, bitrate_quality].join(';')
-  const params = {
-    passe: message.passe, 
-    pctProgres: message.pctProgres,
-    fuuid: message.fuuid,
-    resolution,
-    mimetype,
-    codec,
-    bitrate: message.videoBitrate,
-    quality: message.quality,
-  }
-  delete params['en-tete']
-  delete params.signature
+//   const cle = [mimetype, codec, resolution, bitrate_quality].join(';')
+//   const params = {
+//     passe: message.passe, 
+//     pctProgres: message.pctProgres,
+//     fuuid: message.fuuid,
+//     resolution,
+//     mimetype,
+//     codec,
+//     bitrate: message.videoBitrate,
+//     quality: message.quality,
+//   }
+//   delete params['en-tete']
+//   delete params.signature
 
-  return [cle, params]
-}
+//   return [cle, params]
+// }
 
 export function ConversionVideo(props) {
 
-    const { workers, support, downloadAction, etatConnexion, etatAuthentifie, usager } = props
+    const { workers, support, downloadAction, usager } = props
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const versionCourante = fichier.version_courante || {}
