@@ -134,6 +134,7 @@ function NavigationCollections(props) {
                         showInfoModalOuvrir={showInfoModalOuvrir}
                         scrollValue={scrollValue}
                         onScroll={onScrollHandler}
+                        erreurCb={erreurCb}
                     />
                 </Suspense>
             </div>

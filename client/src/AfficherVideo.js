@@ -37,6 +37,14 @@ function AfficherVideo(props) {
 
     const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
 
+    const setErrVideoCb = useCallback(err=>{
+        setErrVideo(err)
+        if(err) {
+            setProgresChargement(100)
+            //setVideoChargePret(false)
+        }
+    }, [setErrVideo, setVideoChargePret, setProgresChargement])
+
     // useEffect(()=>{
     //     if(selecteur || !selecteurs) return  // Deja initialise
     //     // Identifier un selecteur initial
@@ -132,19 +140,21 @@ function AfficherVideo(props) {
 
         // Reset indicateurs
         setVideoChargePret(false)
-        setErrVideo('')
+        setErrVideoCb('')
         setProgresChargement(0)
 
         fichier.videoLoader.load({selecteur})
             .then(async src => {
                 console.debug("videoLoader.load resultat : ", src)
-                return attendreChargement(src, majChargement, setSrcVideo, setErrVideo)
+                return attendreChargement(src, majChargement, setSrcVideo, setErrVideoCb)
             })
             .catch(err=>{
                 console.error("AfficherVideo erreur chargement video : %O", err)
-                setErrVideo('Erreur chargement video (general)')
+                setErrVideoCb('Erreur chargement video (general)')
+                setVideoChargePret(true)
+                setProgresChargement('')
             })
-    }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setProgresChargement, setErrVideo])
+    }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setProgresChargement, setErrVideoCb])
 
     const onProgress = useCallback(event => {
         // console.debug("onProgress ", event)
@@ -158,11 +168,11 @@ function AfficherVideo(props) {
         if(target && target.nodeName === 'SOURCE') {
             // Iterer les sources (automatique). Declarer erreur juste s'il n'y a pas de source suivante.
             if(!target.nextSibling) {
-                setErrVideo('Erreur chargement video')
+                setErrVideoCb('Erreur chargement video')
                 setVideoChargePret(false)
             }
         }
-    }, [setVideoChargePret, setErrVideo])
+    }, [setVideoChargePret, setErrVideoCb])
     const onWaiting = useCallback(param => console.debug("onWaiting ", param), [])
     const onCanPlay = useCallback(param => {
         // console.debug("onCanPlay ", param)
@@ -234,13 +244,28 @@ async function attendreChargement(source, majChargement, setSrcVideo, setErrVide
         const url = source.src
         while(true) {
             // S'assurer que le video est pret dans le back-end
-            const reponse = await axios({
-                method: 'HEAD',
-                url,
-                timeout: 20_000,
-            })
-            majChargement(reponse)
-            if(reponse.status !== 202) break
+            try {
+                const reponse = await axios({
+                    method: 'HEAD',
+                    url,
+                    timeout: 20_000,
+                })
+                majChargement(reponse)
+                if(reponse.status !== 202) break
+            } catch(err) {
+                const reponse = err.response
+                if(reponse) {
+                    if(reponse.status === 404) {
+                        setErrVideo('Erreur chargement video : video non disponible (code: 404)')
+                    } else {
+                        setErrVideo(`Erreur chargement video (code: ${reponse.status})`)
+                    }
+                    majChargement(reponse)
+                } else {
+                    setErrVideo(`Erreur generique chargement video : ${''+err}`)
+                }
+                break
+            }
             await new Promise(resolve=>setTimeout(resolve, 2000))
         }
         setSrcVideo(source)

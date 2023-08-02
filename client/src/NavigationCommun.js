@@ -365,15 +365,14 @@ export function AffichagePrincipal(props) {
         setContextuel, 
         showInfoModalOuvrir,
         scrollValue, onScroll,
+        erreurCb,
     } = props
 
-    const workers = useWorkers()
     const dispatch = useDispatch()
     const tailleAffichee = useSelector(state => state.fichiers.maxNombreAffiches)
     const liste = useSelector(state => state.fichiers.liste)
     const sortKeys = useSelector(state => state.fichiers.sortKeys)
     const selection = useSelector(state => state.fichiers.selection)
-    // const listeComplete = tailleAffichee?false:true
     const colonnes = useMemo(()=>preparerColonnes(), [preparerColonnes])
 
     const [listeAffichee, listeComplete] = useMemo(()=>{
@@ -453,7 +452,8 @@ export function AffichagePrincipal(props) {
                 liste={liste}
                 tuuid={afficherVideo}
                 fermer={fermerAfficherVideo} 
-                showInfoModalOuvrir={showInfoModalOuvrir} />
+                showInfoModalOuvrir={showInfoModalOuvrir} 
+                erreurCb={erreurCb} />
         )
     } else if(afficherAudio) {
         return (
@@ -461,7 +461,8 @@ export function AffichagePrincipal(props) {
                 liste={liste}
                 tuuid={afficherAudio}
                 fermer={fermerAfficherAudio} 
-                showInfoModalOuvrir={showInfoModalOuvrir} />
+                showInfoModalOuvrir={showInfoModalOuvrir} 
+                erreurCb={erreurCb} />
         )
     }
 
