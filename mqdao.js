@@ -11,7 +11,6 @@ const L2Prive = '2.prive'
 
 const DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles',
-      CONST_DOMAINE_FICHIERS = 'fichiers',
       CONST_TIMEOUT_STREAMTOKEN = 6 * 60 * 60
 
 let _certificatMaitreCles = null
@@ -395,8 +394,7 @@ export function retirerCallbackMajContenuCollection(socket, params, cb) {
 }
 
 const CONST_ROUTINGKEYS_TRANSCODAGE_VIDEO = [
-  // 'evenement.fichiers._FUUID_.transcodageProgres',
-  'evenement.fichiers._USER_ID_.transcodageProgres',
+  'evenement.media._USER_ID_.transcodageProgres',
   'evenement.GrosFichiers._USER_ID_.jobAjoutee',
   'evenement.GrosFichiers._USER_ID_.jobSupprimee',
 ]
@@ -449,18 +447,6 @@ export async function creerTokenStream(socket, enveloppeParams) {
 
     debug("Fuuid a charger : %O", fuuids)
 
-    // const userId = socket.userId
-    // debug("Fuuid a charger pour usager %s : %O", userId, fuuids)
-
-    // Note : la requete est signee par l'usager - meme advenant une erreur session, aucuns probleme.
-    // if(!userId) {
-    //     console.error("creerTokenStream: Erreur session, userId manquant dans session")
-    //     return {ok: false, err: 'Session https invalide'}
-    // }
-
-    // const requete = { user_id: userId, fuuids }
-    // const mq = socket.amqpdao
-    // const resultat = await mq.transmettreRequete('GrosFichiers', params, {action: 'verifierAccesFuuids'})
     const resultat = await transmettreRequete(socket, enveloppeParams, 'verifierAccesFuuids')
     debug("creerTokenStream Resultat verification acces : %O", resultat)
     if(resultat.acces_tous === true) {
@@ -493,57 +479,5 @@ export async function creerTokenStream(socket, enveloppeParams) {
       return {ok: false, err: ''+err}
   }
 
-
-  // // Verifier l'autorisation d'acces au stream
-  // const reponse = await transmettreRequete(socket, params, 'verifierPreuve', 
-  //     {domaine: CONST_DOMAINE_MAITREDESCLES, partition: params.partition, noformat: true})
-
-  // debug("Reponse preuve : %O", reponse)
-  // if(reponse.verification && reponse.verification[fuuid] === true) {
-  //     // Creer un token random pour le stream
-  //     const randomBytes = getRandom(32)
-  //     const token = (await hacher(randomBytes, {hashingCode: 'blake2s-256', encoding: 'base58btc'})).slice(1)
-  //     const cleStream = `streamtoken:${fuuid}:${token}`
-  //     const timeoutStream = 2 * 60 * 60
-
-  //     // Conserver token dans Redis
-  //     const redisClient = socket.redisClient
-  //     await redisClient.set(cleStream, 'ok', {NX: true, EX: timeoutStream})
-
-  //     return {token}
-  // } else {
-  //     return {ok: false, err: "Cle refusee ou inconnue"}
-  // }
 }
 
-// async function ecouterTranscodageProgres(socket, params, cb) {
-//     const opts = {
-//         routingKeys: [`evenement.fichiers.${params.fuuid}.transcodageProgres`],
-//         exchange: [L2Prive],
-//     }
-//     socket.subscribe(opts, cb)
-// }
-
-// async function retirerTranscodageProgres(socket, params, cb) {
-//     const routingKeys = [`2.prive/evenement.fichiers.${params.fuuid}.transcodageProgres`]
-//     socket.unsubscribe({routingKeys})
-//     if(cb) cb(true)
-// }
-
-// module.exports = {
-//     challenge, getDocuments, getFavoris, getCorbeille, getCollection, getRecents,
-//     getClesFichiers, getPermissionCles, rechercheIndex, creerCollection, changerFavoris, 
-//     retirerDocuments, supprimerDocuments, decrireFichier, decrireCollection, 
-//     enregistrerCallbackMajFichier, retirerCallbackMajFichier,
-//     enregistrerCallbackMajCollections, retirerCallbackMajCollections,
-//     enregistrerCallbackTranscodageVideo, retirerCallbackTranscodageVideo,
-//     enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
-//     enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
-//     ajouterFichier, creerTokenStream, getClesChiffrage, supprimerVideo, completerPreviews,
-
-//     syncCollection, syncRecents, syncCorbeille,
-//     requeteJobsVideo, supprimerJobVideo,
-
-//     recupererDocuments, copierVersCollection, deplacerFichiersCollection, 
-//     indexerContenu, transcoderVideo,
-// }
