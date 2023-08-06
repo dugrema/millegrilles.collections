@@ -13,7 +13,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
-import { ArchiverModal, SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
+import { ArchiverModal, SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal, PartagerModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
@@ -243,6 +243,7 @@ function Modals(props) {
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     // const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
+    const [ showPartagerModal, setShowPartagerModal ] = useState(false)
 
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
     const showArchiverModalOuvrir = useCallback(()=>setShowArchiverModal(true), [setShowArchiverModal])
@@ -257,6 +258,8 @@ function Modals(props) {
     const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
     const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
     const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
+    const showPartagerModalOuvrir = useCallback(()=>setShowPartagerModal(true), [setShowPartagerModal])
+    const showPartagerModalFermer = useCallback(()=>setShowPartagerModal(false), [setShowPartagerModal])
 
     const dispatch = useDispatch()
     const workers = useWorkers()
@@ -296,6 +299,7 @@ function Modals(props) {
                 showDeplacerModalOuvrir={showDeplacerModalOuvrir}
                 showInfoModalOuvrir={showInfoModalOuvrir}
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
+                showPartagerModalOuvrir={showPartagerModalOuvrir}
                 cuuid={cuuid}
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
@@ -368,6 +372,12 @@ function Modals(props) {
                 progres={preparationUploadEnCours} 
                 annulerCb={annulerPreparationCb}
               />
+            <PartagerModal 
+                show={showPartagerModal} 
+                hide={showPartagerModalFermer} 
+                fichiers={liste}
+                selection={selection}
+                />
         </>
     )
 }

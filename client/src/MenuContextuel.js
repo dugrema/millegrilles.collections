@@ -132,17 +132,18 @@ export function MenuContextuelRepertoire(props) {
     const { 
         workers, repertoire, contextuel, fermerContextuel, cuuid,
         showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
-        showInfoModalOuvrir, showRenommerModalOuvrir,
+        showInfoModalOuvrir, showRenommerModalOuvrir, showPartagerModalOuvrir,
     } = props
 
-    console.debug("MenuContextuelRepertoire Proppies ", props)
+    // console.debug("MenuContextuelRepertoire Proppies ", props)
 
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
-    const favorisAction = useCallback( () => toggleFavoris(workers, fermerContextuel, cuuid, repertoire), [workers, fermerContextuel, repertoire, cuuid] )
+    // const favorisAction = useCallback( () => toggleFavoris(workers, fermerContextuel, cuuid, repertoire), [workers, fermerContextuel, repertoire, cuuid] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
     const renommerAction = useCallback( () => renommer(fermerContextuel, showRenommerModalOuvrir), [fermerContextuel, showRenommerModalOuvrir] )
     const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
+    const partagerAction = useCallback( () => infoModal(fermerContextuel, showPartagerModalOuvrir), [fermerContextuel, showPartagerModalOuvrir] )
 
     const posX = useMemo(()=>{
         return contextuel.x
@@ -155,8 +156,9 @@ export function MenuContextuelRepertoire(props) {
     return (
         <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={partagerAction}><i className="fa fa-share-alt"/> Partager</Button></Col></Row>
             <hr/>
-            <Row><Col><Button variant="link" onClick={favorisAction}><i className="fa fa-star"/> Favoris</Button></Col></Row>
+            {/* <Row><Col><Button variant="link" onClick={favorisAction}><i className="fa fa-star"/> Favoris</Button></Col></Row> */}
             <Row><Col><Button variant="link" onClick={renommerAction}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={deplacerAction} disabled={!cuuid}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>

@@ -16,6 +16,7 @@ import { ConversionVideo } from './OperationsVideo'
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 
 import actionsNavigationSecondaire, {thunks as thunksNavigationSecondaire} from './redux/navigationSecondaireSlice'
+import { chargerInfoContacts } from './redux/partagerSlice'
 
 export function SupprimerModal(props) {
 
@@ -691,4 +692,99 @@ export function ReindexerModal(props) {
         </Modal>
     )
 
+}
+
+export function PartagerModal(props) {
+
+    const { show, hide } = props
+
+    const workers = useWorkers(),
+          dispatch = useDispatch(),
+          selection = useSelector(state=>state.fichiers.selection),
+          fichiers = useSelector(state=>state.fichiers.liste),
+          contacts = useSelector(state=>state.partager.listeContacts)
+
+    const [selectionContacts, setSelectionContacts] = useState(new Set())
+
+    const collections = useMemo(()=>{
+        if(!show || !fichiers || !selection) return []
+        console.debug("COLLECTIONS Selection ", selection)
+        return fichiers.filter(item=>selection.includes(item.tuuid))
+    }, [show, selection, fichiers])
+
+    const selectionContactsChangeHandler = useCallback(e => {
+        const maj = new Set(selectionContacts)
+        const {value, checked} = e.currentTarget
+        console.debug("Toggle %O = %O", value, checked)
+        if(checked) maj.add(value)
+        else maj.delete(value)
+        setSelectionContacts(maj)
+    }, [selectionContacts, setSelectionContacts])
+
+    const partagerCb = useCallback(()=>{
+        console.debug("selection ", selection)
+        if(selectionContacts.size === 0) return
+
+
+        hide()
+    }, [hide, workers, selection, selectionContacts])
+
+    useEffect(()=>{
+        if(!show) return
+        // Charger la liste des contacts
+        dispatch(chargerInfoContacts(workers))
+            .catch(err=>console.erreur("Erreur chargement des contacts ", err))
+    }, [workers, dispatch, show])
+
+    return (
+        <Modal show={show} onHide={hide}>
+            <Modal.Header closeButton={true}>
+                <h3>Partager avec un autre usager</h3>
+            </Modal.Header>
+
+            <Modal.Body>
+                <Row>
+                    <Col xs={12}>
+                        Partager
+                    </Col>
+                    <Col>
+                        <ul>
+                            {collections.map(item=>{
+                                return (
+                                    <li>{item.nom}</li>
+                                )
+                            })}
+                        </ul>
+                    </Col>
+                </Row>
+
+                Choisir les contacts
+                <p></p>
+                {contacts.map(item=>{
+                    const checked = selectionContacts.has(item.contact_id)
+                    return (
+                        <PartageContact key={item.contact_id} value={item} checked={checked} onChange={selectionContactsChangeHandler} />
+                    )
+                })}
+            </Modal.Body>
+
+            <Modal.Footer>
+                <Button onClick={partagerCb} disabled={selectionContacts.size===0}>Partager</Button>
+            </Modal.Footer>
+        </Modal>
+    )
+}
+
+function PartageContact(props) {
+    const { value, checked, onChange } = props
+    return (
+        <Row>
+            <Col xs={2} md={1}>
+                <Form.Check id={'Check' + value.contact_id} value={value.contact_id} checked={checked} onChange={onChange} />
+            </Col>
+            <Col>
+                <Form.Label htmlFor={'Check' + value.contact_id}>{value.nom_usager}</Form.Label>
+            </Col>
+        </Row>
+    )
 }
