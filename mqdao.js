@@ -214,6 +214,24 @@ export async function submitBatchUpload(socket, params) {
   return {ok: true}
 }
 
+export function chargerContacts(socket, params) {
+  return transmettreRequete(socket, params, 'chargerContacts')
+}
+
+export function ajouterContactLocal(socket, params) {
+  return transmettreCommande(
+      socket, params, 'ajouterContactLocal', 
+      {domaine: DOMAINE_GROSFICHIERS}
+  )
+}
+
+export function supprimerContacts(socket, params) {
+  return transmettreCommande(
+      socket, params, 'supprimerContacts', 
+      {domaine: DOMAINE_GROSFICHIERS}
+  )
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

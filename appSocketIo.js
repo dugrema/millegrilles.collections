@@ -42,6 +42,9 @@ function configurerEvenements(socket) {
       { eventName: 'supprimerJobVideo', callback: (params, cb) => traiter(socket, mqdao.supprimerJobVideo, {params, cb}) },
       { eventName: 'getBatchUpload', callback: (params, cb) => traiter(socket, getBatchUpload, {params, cb}) },
       { eventName: 'submitBatchUpload', callback: (params, cb) => traiter(socket, mqdao.submitBatchUpload, {params, cb}) },
+      { eventName: 'chargerContacts', callback: (params, cb) => traiter(socket, mqdao.chargerContacts, {params, cb}) },
+      { eventName: 'ajouterContactLocal', callback: (params, cb) => traiter(socket, mqdao.ajouterContactLocal, {params, cb}) },
+      { eventName: 'supprimerContacts', callback: (params, cb) => traiter(socket, mqdao.supprimerContacts, {params, cb}) },
 
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},

@@ -15,6 +15,7 @@ import fichiersActions from './redux/fichiersSlice'
 import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUpload, annulerUpload } from './redux/uploaderSlice'
 import { setUserId as setUserIdDownload, supprimerDownloadsParEtat, continuerDownload, arreterDownload, setDownloads } from './redux/downloaderSlice'
 import { setUserId as setUserIdMediaJobs, } from './redux/mediaJobsSlice'
+import { setUserId as setUserIdPartager } from './redux/partagerSlice'
 
 import './i18n'
 
@@ -32,6 +33,7 @@ import './index.scss'
 import './App.css'
 
 import Menu from './Menu'
+
 const NavigationCollections = lazy( () => import('./NavigationCollections') )
 const NavigationRecents = lazy( () => import('./NavigationRecents') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
@@ -346,6 +348,7 @@ function InitialisationUpload(props) {
     dispatch(fichiersActions.setUserId(userId))
     dispatch(setUserIdMediaJobs(userId))
     dispatch(setUserIdUpload(userId))
+    dispatch(setUserIdPartager(userId))
   }, [userId])
 
   useEffect(()=>{

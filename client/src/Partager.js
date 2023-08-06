@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 
 import Button from 'react-bootstrap/Button'
 import Row from 'react-bootstrap/Row'
@@ -7,8 +8,18 @@ import Modal from 'react-bootstrap/Modal'
 import Form from 'react-bootstrap/Form'
 
 import useWorkers, {useEtatConnexion, WorkerProvider, useUsager} from './WorkerContext'
+import { chargerInfoContacts } from './redux/partagerSlice'
 
 function Partager(props) {
+
+    const workers = useWorkers(), 
+          dispatch = useDispatch()
+
+    useEffect(()=>{
+        dispatch(chargerInfoContacts(workers))
+            .catch(err=>console.error("Erreur chargement contacts : ", err))
+    }, [dispatch, workers])
+
     return (
         <div>
             <h2>Collections partagees par quelqu'un d'autre</h2>
@@ -79,7 +90,15 @@ function ModalAjouterUsager(props) {
     const ajouterCb = useCallback( () => {
         if(!nomUsager) return
 
-        hide()
+        workers.connexion.ajouterContactLocal(nomUsager)
+            .then(reponse => {
+                if(reponse.ok !== false) {
+                    hide()
+                } else {
+                    console.error("ModalAjouterUsager Erreur ajout contact : %O", reponse)
+                }
+            })
+            .catch(err=>console.error("ModalAjouterUsager Erreur ajout contact : ", err))
     }, [nomUsager, hide])
 
     return (

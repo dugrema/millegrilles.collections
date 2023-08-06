@@ -252,6 +252,18 @@ async function submitBatchUpload(token) {
   )
 }
 
+function chargerContacts() {
+  const requete = {}
+  const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'chargerContacts', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('chargerContacts', requete, params)
+}
+
+function ajouterContactLocal(nomUsager) {
+  const commande = { nom_usager: nomUsager }
+  const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterContactLocal', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('ajouterContactLocal', commande, params)
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -329,6 +341,8 @@ expose({
     ajouterFichier, creerTokenStream, supprimerVideo,
     regenererPreviews,
     archiverDocuments,
+
+    chargerContacts, ajouterContactLocal,
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,

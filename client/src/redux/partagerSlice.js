@@ -19,7 +19,7 @@ function entretienAction(state, action) {
     // Dummy pour declencher middleware
 }
 
-const mediaJobsSlice = createSlice({
+const slice = createSlice({
     name: SLICE_NAME,
     initialState,
     reducers: {
@@ -30,20 +30,24 @@ const mediaJobsSlice = createSlice({
 
 export const { 
     setUserId, merge, clearCompletes, entretien,
-} = mediaJobsSlice.actions
-export default mediaJobsSlice.reducer
+} = slice.actions
+export default slice.reducer
 
 // Thunks
 
-function chargerInfoContacts(workers) {
+export function chargerInfoContacts(workers) {
     return (dispatch, getState) => traiterChargerInfoContacts(workers, dispatch, getState)
 }
 
 async function traiterChargerInfoContacts(workers, dispatch, getState) {
     const { connexion, clesDao, contactsDao } = workers
     
-    // console.debug("traiterChargerInfoFichiers")
-    
+    console.debug("traiterChargerInfoContacts")
+
+    const contacts = await contactsDao.getContacts()
+    console.debug("Contacts recus : ", contacts)
+    // dispatch(setContacts(contacts))
+
     // const jobsIncompletes = getState()[SLICE_NAME].liste.filter(item=>{
     //     return item.charge !== true
     // })
@@ -150,7 +154,7 @@ async function middlewareListener(workers, action, listenerApi) {
         }
 
         await listenerApi.dispatch(chargerInfoContacts(workers))
-        await listenerApi.dispatch(dechiffrerContacts(workers))
+        // await listenerApi.dispatch(dechiffrerContacts(workers))
 
     } finally {
         await listenerApi.subscribe()
