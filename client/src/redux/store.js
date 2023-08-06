@@ -4,6 +4,7 @@ import { reducer as navigationSecondaire, setup as setupNavigationSecondaire } f
 import uploader, { uploaderMiddlewareSetup } from './uploaderSlice'
 import downloader, { downloaderMiddlewareSetup } from './downloaderSlice'
 import mediaJobs, { middlewareSetup as middlewareSetupMedia } from './mediaJobsSlice'
+import partager, { middlewareSetup as middlewareSetupPartager } from './partagerSlice'
 
 function storeSetup(workers) {
 
@@ -16,6 +17,7 @@ function storeSetup(workers) {
       uploader, 
       downloader,
       mediaJobs,
+      partager,
     },
 
     middleware: (getDefaultMiddleware) => {
@@ -25,6 +27,7 @@ function storeSetup(workers) {
       const uploaderMiddleware = uploaderMiddlewareSetup(workers)
       const downloaderMiddleware = downloaderMiddlewareSetup(workers)
       const mediaJobsMiddleware = middlewareSetupMedia(workers)
+      const partagerMiddleware = middlewareSetupPartager(workers)
 
       // Prepend, evite le serializability check
       return getDefaultMiddleware()
@@ -33,7 +36,7 @@ function storeSetup(workers) {
         .prepend(uploaderMiddleware.middleware)
         .prepend(downloaderMiddleware.middleware)
         .prepend(mediaJobsMiddleware.middleware)
-
+        .prepend(partagerMiddleware.middleware)
     },
   })
 

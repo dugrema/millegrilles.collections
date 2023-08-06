@@ -37,6 +37,7 @@ const NavigationRecents = lazy( () => import('./NavigationRecents') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
 const NavigationRecherche = lazy( () => import('./NavigationRecherche') )
 const MediaJobsModal = lazy( () => import('./MediaJobsModal') )
+const Partager = lazy( () => import('./Partager') )
 
 const CONST_UPLOAD_COMPLET_EXPIRE = 2 * 60 * 60 * 1000,  // Auto-cleanup apres 2 heures (millisecs) de l'upload,
       CONST_DOWNLOAD_COMPLET_EXPIRE = 48 * 60 * 60 * 1000  // Auto-cleanup apres 2 jours (millisecs) du download
@@ -132,6 +133,7 @@ function LayoutMain() {
       case 'recherche': 
       case 'recents': 
       case 'corbeille': 
+      case 'partager':
         setPage(eventKey)
         break
       default:
@@ -189,6 +191,7 @@ function Contenu(props) {
     case 'recherche': Page = NavigationRecherche; break
     case 'recents': Page = NavigationRecents; break
     case 'corbeille': Page = NavigationCorbeille; break
+    case 'partager': Page = Partager; break
     default: Page = NavigationCollections
   }
 

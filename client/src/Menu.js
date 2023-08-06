@@ -92,6 +92,10 @@ function Menu(props) {
           <i className="fa fa-trash-o" /> {' '} {t('menu.corbeille')}
         </Nav.Link>
 
+        <Nav.Link eventKey="partager" title="Partager">
+          <i className="fa fa-share-alt" /> {' '} {t('menu.partager')}
+        </Nav.Link>
+
         <Nav.Link eventKey="mediaJobs" title="Media Jobs">
           <i className="fa fa-film" /> {' '} {t('menu.mediaJobs')}
         </Nav.Link>
