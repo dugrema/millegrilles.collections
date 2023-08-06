@@ -232,6 +232,13 @@ export function supprimerContacts(socket, params) {
   )
 }
 
+export function partagerCollections(socket, params) {
+  return transmettreCommande(
+      socket, params, 'partagerCollections', 
+      {domaine: DOMAINE_GROSFICHIERS}
+  )
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

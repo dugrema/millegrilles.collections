@@ -270,6 +270,12 @@ function supprimerContacts(contactIds) {
   return ConnexionClient.emitBlocking('supprimerContacts', commande, params)
 }
 
+function partagerCollections(cuuids, contactIds) {
+  const commande = { cuuids, contact_ids: contactIds }
+  const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'partagerCollections', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('partagerCollections', commande, params)
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -349,6 +355,7 @@ expose({
     archiverDocuments,
 
     chargerContacts, ajouterContactLocal, supprimerContacts,
+    partagerCollections,
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,

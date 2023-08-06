@@ -708,25 +708,35 @@ export function PartagerModal(props) {
 
     const collections = useMemo(()=>{
         if(!show || !fichiers || !selection) return []
-        console.debug("COLLECTIONS Selection ", selection)
+        // console.debug("COLLECTIONS Selection ", selection)
         return fichiers.filter(item=>selection.includes(item.tuuid))
     }, [show, selection, fichiers])
 
     const selectionContactsChangeHandler = useCallback(e => {
         const maj = new Set(selectionContacts)
         const {value, checked} = e.currentTarget
-        console.debug("Toggle %O = %O", value, checked)
+        // console.debug("Toggle %O = %O", value, checked)
         if(checked) maj.add(value)
         else maj.delete(value)
         setSelectionContacts(maj)
     }, [selectionContacts, setSelectionContacts])
 
     const partagerCb = useCallback(()=>{
-        console.debug("selection ", selection)
+        // console.debug("selection ", selection)
         if(selectionContacts.size === 0) return
 
+        // Convertir selectionContacts de Set vers Array
+        const selectionContactsArray = [...selectionContacts.values()]
 
-        hide()
+        workers.connexion.partagerCollections(selection, selectionContactsArray)
+            .then(reponse=>{
+                if(reponse.ok === false) {
+                    console.error("Erreur partage collections : ", reponse.err)
+                } else {
+                    hide()
+                }
+            })
+            .catch(err=>console.error("Erreur partage collections : ", err))
     }, [hide, workers, selection, selectionContacts])
 
     useEffect(()=>{
