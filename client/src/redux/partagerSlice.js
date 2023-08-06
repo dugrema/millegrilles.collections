@@ -19,17 +19,25 @@ function entretienAction(state, action) {
     // Dummy pour declencher middleware
 }
 
+function setContactsAction(state, action) {
+    const liste = action.payload
+    liste.sort(sortUsagers)
+    state.listeContacts = liste
+}
+
 const slice = createSlice({
     name: SLICE_NAME,
     initialState,
     reducers: {
         setUserId: setUserIdAction,
         entretien: entretienAction,
+        setContacts: setContactsAction,
     }
 })
 
 export const { 
     setUserId, merge, clearCompletes, entretien,
+    setContacts,
 } = slice.actions
 export default slice.reducer
 
@@ -44,91 +52,9 @@ async function traiterChargerInfoContacts(workers, dispatch, getState) {
     
     console.debug("traiterChargerInfoContacts")
 
-    const contacts = await contactsDao.getContacts()
-    console.debug("Contacts recus : ", contacts)
-    // dispatch(setContacts(contacts))
-
-    // const jobsIncompletes = getState()[SLICE_NAME].liste.filter(item=>{
-    //     return item.charge !== true
-    // })
-
-    // let tuuids = new Set(), fuuidsChiffres = new Set()
-    // for await (const job of jobsIncompletes) {
-    //     const { fuuid, tuuid } = job
-
-    //     // Tenter de charger information locale
-    //     if(tuuid) {
-    //         const fichier = (await collectionsDao.getParTuuids([tuuid])).pop()
-    //         if(fichier) {
-    //             // console.debug("Fichier existant : ", fichier)
-    //             const jobMaj = {...fichier, ...job, charge: true}
-    //             if(!fichier.nom) {
-    //                 fuuidsChiffres.add(fuuid)  // Le fichier n'est pas dechiffre
-    //             } else {
-    //                 jobMaj.dechiffre = true
-    //             }
-    //             dispatch(merge(jobMaj))
-    //         } else {
-    //             tuuids.add(tuuid)
-    //         }
-    //     } else {
-    //         console.warn("Job sans tuuid ", job)
-    //     }
-    // }
-
-    // // console.debug("Tuuids a charger : ", tuuids)
-
-    // tuuids = [...tuuids]  // Convertir HashSet en array
-    // if(tuuids.length > 0) {
-    //     const documentsInfo = await connexion.getDocuments(tuuids)
-    //     // console.debug("Recu docs info pour jobs ", documentsInfo)
-    //     if(documentsInfo.fichiers && documentsInfo.fichiers.length > 0) {
-    //         for(const fichier of documentsInfo.fichiers) {
-    //             dispatch(merge({...fichier, fuuid: fichier.fuuid_v_courante, charge: true}))
-    //             collectionsDao.updateDocument(fichier)
-    //                 .catch(err=>console.error("Erreur sauvegarde fichier"))
-    //         }
-    //     }
-    // }
-
-}
-
-function dechiffrerContacts(workers) {
-    return (dispatch, getState) => traiterDechiffrerContacts(workers, dispatch, getState)
-}
-
-async function traiterDechiffrerContacts(workers, dispatch, getState) {
-    const { connexion, clesDao, contactsDao, chiffrage } = workers
-    
-    // console.debug("traiterDechiffrerInfoFichiers")
-
-    // const fuuidsChiffres = getState()[SLICE_NAME].liste.filter(item=>{
-    //     return item.dechiffre !== true
-    // }).map(item=>item.fuuid)
-
-    // // console.debug("Charger cles pour ", fuuidsChiffres)
-    // if(fuuidsChiffres.length > 0) {
-    //     const cles = await clesDao.getCles(fuuidsChiffres)
-    //     // console.debug("Cles recues ", cles)
-
-    //     for await (const job of getState()[SLICE_NAME].liste) {
-    //         const { tuuid, fuuid } = job
-    //         const cle = cles[fuuid]
-    //         if(cle) {
-    //             const version_courante = job.version_courante || {}
-    //             const metadata = version_courante.metadata
-    //             if(metadata) {
-    //                 // console.debug("Dechiffrer ", job)
-    //                 const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cle)
-    //                 // console.debug("Fichier dechiffre : ", metaDechiffree)
-    //                 const jobMaj = {...job, ...metaDechiffree, dechiffre: true}
-    //                 dispatch(merge(jobMaj))
-    //             }
-    //         }
-    //     }
-
-    // }
-    
+    const reponse = await contactsDao.getContacts()
+    console.debug("Contacts recus : ", reponse)
+    dispatch(setContacts(reponse.contacts))
 }
 
 // Middleware
@@ -159,4 +85,9 @@ async function middlewareListener(workers, action, listenerApi) {
     } finally {
         await listenerApi.subscribe()
     }
+}
+
+function sortUsagers(a, b) {
+    const nomA = a.nom_usager, nomB = b.nom_usager
+    return nomA.localeCompare(nomB)
 }

@@ -264,6 +264,12 @@ function ajouterContactLocal(nomUsager) {
   return ConnexionClient.emitBlocking('ajouterContactLocal', commande, params)
 }
 
+function supprimerContacts(contactIds) {
+  const commande = { contact_ids: contactIds }
+  const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerContacts', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('supprimerContacts', commande, params)
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -342,7 +348,7 @@ expose({
     regenererPreviews,
     archiverDocuments,
 
-    chargerContacts, ajouterContactLocal,
+    chargerContacts, ajouterContactLocal, supprimerContacts,
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,

@@ -57,10 +57,18 @@ function ContactsPartage(props) {
 
     const workers = useWorkers()
 
+    const contacts = useSelector(state=>state.partager.listeContacts)
+
     const [showContacts, setShowContacts] = useState(false)
 
     const showAjouterCb = useCallback( e => setShowContacts(true), [])
     const hideAjouterCb = useCallback( e => setShowContacts(false), [])
+
+    const supprimerCb = useCallback( e => {
+        const contactId = e.currentTarget.value
+        workers.contactsDao.supprimerContacts(contactId)
+            .catch(err=>console.error("ContactsPartage Erreur supprimer %s : %O", contactId, err))
+    }, [workers])
 
     return (
         <div>
@@ -70,11 +78,24 @@ function ContactsPartage(props) {
                 </Col>
             </Row>
 
-            <p> ... contacts ... </p>
+            {contacts.map(item=>{
+                return (
+                    <Row>
+                        <Col>{item.nom_usager}</Col>
+                        <Col>
+                            <Button onClick={supprimerCb} value={item.contact_id}>Supprimer</Button>
+                        </Col>
+                    </Row>
+                )
+            })}
 
             <ModalAjouterUsager show={showContacts} hide={hideAjouterCb} />
         </div>
     )
+}
+
+function ContactPartage(props) {
+
 }
 
 function ModalAjouterUsager(props) {
