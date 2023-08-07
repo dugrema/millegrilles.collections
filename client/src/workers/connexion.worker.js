@@ -276,6 +276,12 @@ function partagerCollections(cuuids, contactIds) {
   return ConnexionClient.emitBlocking('partagerCollections', commande, params)
 }
 
+function getPartagesUsager() {
+  const requete = {}
+  const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPartagesUsager', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('getPartagesUsager', requete, params)
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -355,7 +361,7 @@ expose({
     archiverDocuments,
 
     chargerContacts, ajouterContactLocal, supprimerContacts,
-    partagerCollections,
+    partagerCollections, getPartagesUsager,
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,

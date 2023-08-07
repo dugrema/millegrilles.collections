@@ -239,6 +239,10 @@ export function partagerCollections(socket, params) {
   )
 }
 
+export function getPartagesUsager(socket, params) {
+  return transmettreRequete(socket, params, 'getPartagesUsager')
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

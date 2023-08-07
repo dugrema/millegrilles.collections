@@ -7,18 +7,60 @@ import Col from 'react-bootstrap/Col'
 import Modal from 'react-bootstrap/Modal'
 import Form from 'react-bootstrap/Form'
 
-import useWorkers, {useEtatConnexion, WorkerProvider, useUsager} from './WorkerContext'
-import { chargerInfoContacts } from './redux/partagerSlice'
+import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret} from './WorkerContext'
+import { chargerInfoContacts, chargerPartagesUsager } from './redux/partagerSlice'
+import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 
 function Partager(props) {
 
     const workers = useWorkers(), 
-          dispatch = useDispatch()
+          dispatch = useDispatch(),
+          etatPret = useEtatPret()
+
+    //const userId = useSelector(state=>state.fichiers.userId)
 
     useEffect(()=>{
+        if(!etatPret) return
+        // Charger les contacts
         dispatch(chargerInfoContacts(workers))
             .catch(err=>console.error("Erreur chargement contacts : ", err))
-    }, [dispatch, workers])
+        // Charger tous les partages (paires contacts/cuuid)
+        dispatch(chargerPartagesUsager(workers))
+            .catch(err=>console.error("Erreur chargement des partages : ", err))
+    }, [dispatch, workers, etatPret])
+
+    // const naviguerCollection = useCallback( cuuid => {
+    //     setAfficherVideo('')  // Reset affichage
+    //     if(!cuuid) cuuid = ''
+    //     try {
+    //         if(cuuid) {
+    //             dispatch(fichiersActions.breadcrumbPush({tuuid: cuuid}))
+    //         } else {
+    //             dispatch(fichiersActions.breadcrumbSlice())
+    //         }
+    //     } catch(err) {
+    //         console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
+    //     }
+    //     try {
+    //         if(cuuid) {
+    //             dispatch(fichiersThunks.changerCollection(workers, cuuid))
+    //                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
+    //         } else {
+    //             dispatch(fichiersThunks.afficherPlusrecents(workers))
+    //                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
+    //         }
+    //     } catch(err) {
+    //         console.error("naviguerCollection Erreur dispatch changerCollection", err)
+    //     }
+    // }, [dispatch, workers, erreurCb, setAfficherVideo])
+
+    // Declencher chargement initial des favoris
+    // useEffect(()=>{
+    //     if(!etatPret || !userId) return  // Rien a faire
+    //     dispatch(fichiersThunks.afficherPartagesUsager(workers))
+    //         .catch(err=>console.error('Partager Erreur chargement partages ', err))
+
+    // }, [etatPret, userId])
 
     return (
         <div>
@@ -57,7 +99,8 @@ function ContactsPartage(props) {
 
     const workers = useWorkers()
 
-    const contacts = useSelector(state=>state.partager.listeContacts)
+    const contacts = useSelector(state=>state.partager.listeContacts),
+          partagesUsager = useSelector(state=>state.partager.listePartagesUsager)
 
     const [showContacts, setShowContacts] = useState(false)
 
@@ -78,12 +121,32 @@ function ContactsPartage(props) {
                 </Col>
             </Row>
 
+            <Row>
+                <Col>Contact</Col>
+                <Col>Nombre de partages</Col>
+                <Col>Actions</Col>
+            </Row>
+
             {contacts.map(item=>{
+
+                // Compter le nombre de partages pour ce contact
+                const nombrePartages = partagesUsager.reduce((acc, partage)=>{
+                    if(item.contact_id === partage.contact_id) return acc + 1
+                    return acc
+                }, 0)
+
                 return (
                     <Row>
-                        <Col>{item.nom_usager}</Col>
                         <Col>
-                            <Button onClick={supprimerCb} value={item.contact_id}>Supprimer</Button>
+                            <Button variant="link">
+                                {item.nom_usager}
+                            </Button>
+                        </Col>
+                        <Col>
+                            {nombrePartages}
+                        </Col>
+                        <Col>
+                            <Button variant="secondary" onClick={supprimerCb} value={item.contact_id}>Supprimer</Button>
                         </Col>
                     </Row>
                 )

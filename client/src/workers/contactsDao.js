@@ -10,6 +10,9 @@ function build(workers) {
         supprimerContacts(contactIds) {
             return supprimerContacts(workers, contactIds)
         },
+        getPartagesUsager() {
+            return getPartagesUsager(workers)
+        }
     }
 }
 
@@ -25,4 +28,10 @@ async function supprimerContacts(workers, contactIds) {
     if(typeof(contactIds) === 'string') contactIds = [contactIds]
     const { connexion } = workers
     return await connexion.supprimerContacts(contactIds)
+}
+
+async function getPartagesUsager(workers) {
+    const { connexion } = workers
+    const partages = await connexion.getPartagesUsager()
+    return partages
 }

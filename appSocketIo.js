@@ -46,7 +46,8 @@ function configurerEvenements(socket) {
       { eventName: 'ajouterContactLocal', callback: (params, cb) => traiter(socket, mqdao.ajouterContactLocal, {params, cb}) },
       { eventName: 'supprimerContacts', callback: (params, cb) => traiter(socket, mqdao.supprimerContacts, {params, cb}) },
       { eventName: 'partagerCollections', callback: (params, cb) => traiter(socket, mqdao.partagerCollections, {params, cb}) },
-
+      { eventName: 'getPartagesUsager', callback: (params, cb) => traiter(socket, mqdao.getPartagesUsager, {params, cb}) },
+      
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},
       // {eventName: 'ecouterMajCollections', callback: (_, cb) => {mqdao.ecouterMajCollections(socket, cb)}},

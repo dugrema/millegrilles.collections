@@ -5,6 +5,9 @@ const SOURCE_COLLECTION = 'collection',
       SOURCE_PLUS_RECENT = 'plusrecent',
       SOURCE_CORBEILLE = 'corbeille',
       SOURCE_RECHERCHE = 'recherche',
+      SOURCE_PARTAGES_USAGER = 'partagesUsager',  // Usager courant envers d'autres usagers (contacts)
+      SOURCE_PARTAGES_CONTACTS = 'partagesContacts',  // Partages par un autre usager (on est le contact)
+
       // SOURCE_INDEX = 'index'
       CONST_SYNC_BATCH_SIZE = 250,
       SAFEGUARD_BATCH_MAX = 1000,
@@ -217,6 +220,8 @@ function mergeTuuidDataAction(state, action) {
                     }
                 })
             }
+        } else {
+            throw new Error(`Source ${source} non supportee`)
         }
 
         // Maj du breadcrumb au besoin
@@ -547,6 +552,8 @@ export function creerThunks(actions, nomSlice) {
         dispatch(push({liste: []}))
     }
     
+    // DEBUT SOURCES AFFICHAGE
+
     async function syncCollection(dispatch, workers, cuuid, limit, skip) {
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.syncCollection(cuuid, {limit, skip})
@@ -817,6 +824,98 @@ export function creerThunks(actions, nomSlice) {
         // await syncRecherche(dispatch, workers, listeHits.map(item=>item.tuuid))
         await syncRecherche(dispatch, workers, tuuidsManquants)
     }
+
+    // Async partages
+
+    // async function syncPartagesUsager(dispatch, workers, cuuid, limit, skip) {
+    //     const { connexion, collectionsDao } = workers
+    //     const resultat = await connexion.syncCollection(cuuid, {limit, skip})
+    
+    //     const { liste } = resultat
+    //     const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
+    
+    //     // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+    //     if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
+    //         dispatch(chargerTuuids(workers, listeTuuidsDirty))
+    //             .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+    //     } else {
+    //         dispatch(setDechiffrageComplete())
+    //     }
+    
+    //     return resultat
+    // }    
+
+    function afficherPartagesUsager(workers, opts) {
+        opts = opts || {}
+        return (dispatch, getState) => traiterChargerPartagesUsager(workers, opts, dispatch, getState)
+    }    
+
+    async function traiterChargerPartagesUsager(workers, opts, dispatch, getState) {
+        opts = opts || {}
+    
+        const stateInitial = getState()[nomSlice]
+        const { userId, parametresRecherche } = stateInitial
+
+        console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
+    
+        // Changer source, nettoyer la liste
+        dispatch(setSource(SOURCE_PARTAGES_USAGER))
+        dispatch(clear())
+
+        dispatch(setSortKeys({key: 'nom', ordre: 1}))
+    
+        const { connexion, collectionsDao } = workers
+        const resultat = await connexion.getPartagesUsager()
+        console.debug("Resultat getPartagesUsager : ", resultat)
+
+        // const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, CONST_RECHERCHE_LIMITE )
+        // console.debug("Resultat recherche : ", resultatRecherche)
+
+        // if(resultatRecherche.ok !== true) {
+        //     console.warn("Erreur recherche : ", resultatRecherche)
+        //     return
+        // }
+
+        // const listeHits = resultatRecherche.resultat.docs
+        // const itemsDict = listeHits.reduce((acc, item)=>{
+        //     acc[item.tuuid] = item
+        //     item.fuuid = item.id
+        //     delete item.id
+        //     return acc
+        // }, {})
+
+        // // // Charger le contenu de la collection deja connu
+        // let contenuIdb = await collectionsDao.getParTuuids(listeHits.map(item=>item.tuuid))
+        // contenuIdb = contenuIdb.filter(item=>item)
+
+        // // Injecter le score
+        // contenuIdb.forEach(item=>{
+        //     item.score = itemsDict[item.tuuid].score
+        //     delete itemsDict[item.tuuid]
+        // })
+
+        // // Ajouter tous les resultats manquants
+        // const tuuidsManquants = []
+        // for(const item of Object.values(itemsDict)) {
+        //     contenuIdb.push(item)
+        //     tuuidsManquants.push(item.tuuid)
+        // }
+
+        // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+        // if(contenuIdb) {
+        //     // console.debug("Push documents provenance idb : %O", contenuIdb)
+        //     dispatch(push({liste: contenuIdb, nombreFichiersTotal: resultatRecherche.resultat.numFound, clear: true}))
+    
+        //     const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+        //     dispatch(chargerTuuids(workers, tuuids))
+        //         .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+        // }
+    
+        // // await syncRecherche(dispatch, workers, listeHits.map(item=>item.tuuid))
+        // await syncRecherche(dispatch, workers, tuuidsManquants)
+    }
+
+    // FIN SOURCES AFFICHAGE
     
     // Ajouter un nouveau fichier (e.g. debut upload)
     function ajouterFichierVolatil(workers, fichier) {
@@ -914,7 +1013,8 @@ export function creerThunks(actions, nomSlice) {
     
     // Async actions
     const thunks = { 
-        changerCollection, afficherPlusrecents, afficherCorbeille, afficherRecherche,
+        changerCollection, 
+        afficherPlusrecents, afficherCorbeille, afficherRecherche, afficherPartagesUsager,
         chargerTuuids,
         ajouterFichierVolatil, rafraichirCollection, supprimerFichier, restaurerFichier,
     }
