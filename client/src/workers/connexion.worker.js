@@ -28,12 +28,14 @@ function getContenuCollection(tuuidsDocuments, opts) {
 async function getClesFichiers(fuuids, usager, opts) {
   opts = opts || {}
 
+  const partage = opts.partage
+
   const extensions = usager || {}
   const delegationGlobale = extensions.delegationGlobale
 
   if(!delegationGlobale) {
     // On doit demander une permission en premier
-    const params = { fuuids }
+    const params = { fuuids, partage }
     return ConnexionClient.emitBlocking('getPermissionCles', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
   } else {
     const params = {
@@ -120,10 +122,14 @@ function decrireCollection(tuuid, params) {
   )
 }
 
-function getDocuments(tuuids) {
+function getDocuments(tuuids, opts) {
+  opts = opts || {}
+
+  const { partage } = opts
+
   return ConnexionClient.emitBlocking(
     'getDocuments',
-    {tuuids_documents: tuuids},
+    {tuuids_documents: tuuids, partage},
     {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', attacherCertificat: true}
   )
 }
@@ -282,6 +288,12 @@ function getPartagesUsager(contactId) {
   return ConnexionClient.emitBlocking('getPartagesUsager', requete, params)
 }
 
+function getPartagesContact(contactId) {
+  const requete = {contact_id: contactId}
+  const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPartagesContact', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('getPartagesContact', requete, params)
+}
+
 function supprimerPartageUsager(contactId, tuuid) {
   const commande = { contact_id: contactId, tuuid }
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerPartageUsager', ajouterCertificat: true}
@@ -367,7 +379,7 @@ expose({
     archiverDocuments,
 
     chargerContacts, ajouterContactLocal, supprimerContacts,
-    partagerCollections, getPartagesUsager, supprimerPartageUsager,
+    partagerCollections, getPartagesUsager, supprimerPartageUsager, getPartagesContact,
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,

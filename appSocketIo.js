@@ -47,6 +47,7 @@ function configurerEvenements(socket) {
       { eventName: 'supprimerContacts', callback: (params, cb) => traiter(socket, mqdao.supprimerContacts, {params, cb}) },
       { eventName: 'partagerCollections', callback: (params, cb) => traiter(socket, mqdao.partagerCollections, {params, cb}) },
       { eventName: 'getPartagesUsager', callback: (params, cb) => traiter(socket, mqdao.getPartagesUsager, {params, cb}) },
+      { eventName: 'getPartagesContact', callback: (params, cb) => traiter(socket, mqdao.getPartagesContact, {params, cb}) },
       { eventName: 'supprimerPartageUsager', callback: (params, cb) => traiter(socket, mqdao.supprimerPartageUsager, {params, cb}) },
       
       // Evenements

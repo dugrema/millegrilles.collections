@@ -6,8 +6,8 @@ function build(workers) {
 
     return {
         // Recupere une liste de cles, les conserve dans le usagerDao (cache) si applicable
-        getCles(liste_hachage_bytes) {
-            return getCles(workers, liste_hachage_bytes)
+        getCles(liste_hachage_bytes, opts) {
+            return getCles(workers, liste_hachage_bytes, opts)
         },
         getCertificatsMaitredescles() {
             if(cacheCertificatsMaitredescles) return cacheCertificatsMaitredescles
@@ -25,7 +25,10 @@ function build(workers) {
 
 export default build
 
-async function getCles(workers, liste_hachage_bytes) {
+async function getCles(workers, liste_hachage_bytes, opts) {
+    opts = opts || {}
+
+    const partage = opts.partage
 
     if(typeof(liste_hachage_bytes) === 'string') liste_hachage_bytes = [liste_hachage_bytes]
 
@@ -47,7 +50,7 @@ async function getCles(workers, liste_hachage_bytes) {
     // console.debug("Cles connues : %d, cles manquantes : %d", Object.keys(clesDechiffrees).length, clesManquantes.length)
     if(clesManquantes.length > 0) {
         // Recuperer les cles du serveur
-        const reponseClesChiffrees = await connexion.getClesFichiers(liste_hachage_bytes)
+        const reponseClesChiffrees = await connexion.getClesFichiers(liste_hachage_bytes, null, {partage})
         // console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
         for await(const cleHachage_bytes of Object.keys(reponseClesChiffrees.cles)) {
             const infoCle = reponseClesChiffrees.cles[cleHachage_bytes]

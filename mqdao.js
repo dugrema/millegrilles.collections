@@ -243,6 +243,10 @@ export function getPartagesUsager(socket, params) {
   return transmettreRequete(socket, params, 'getPartagesUsager')
 }
 
+export function getPartagesContact(socket, params) {
+  return transmettreRequete(socket, params, 'getPartagesContact')
+}
+
 export function supprimerPartageUsager(socket, params) {
   return transmettreCommande(
       socket, params, 'supprimerPartageUsager', 

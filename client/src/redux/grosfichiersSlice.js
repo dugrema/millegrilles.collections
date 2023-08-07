@@ -202,6 +202,8 @@ function mergeTuuidDataAction(state, action) {
             peutAppend = data.supprime === true
         } else if(source === SOURCE_PARTAGES_USAGER) {
             peutAppend = true  // On n'a pas de filtres sur les partages usager
+        } else if(source === SOURCE_PARTAGES_CONTACTS) {
+            peutAppend = true  // On n'a pas de filtres sur les partages contacts
         } else if(source === SOURCE_PLUS_RECENT) {
             if(data.supprime === true) {
                 // False
@@ -415,30 +417,31 @@ export function creerThunks(actions, nomSlice) {
     
         const tuuidsChiffres = fichiersChiffres.map(item=>item.tuuid)
         for (const fichier of fichiers) {
-            // console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
+            console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
             const dechiffre = ! tuuidsChiffres.includes(fichier.tuuid)
     
             // Mettre a jour dans IDB
             collectionsDao.updateDocument(fichier, {dechiffre})
                 .catch(err=>console.error("Erreur maj document %O dans idb : %O", fichier, err))
     
-            // console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
+            console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
             dispatch(mergeTuuidData({tuuid: fichier.tuuid, data: fichier}))
         }
     }
     
-    function chargerTuuids(workers, tuuids) {
-        return (dispatch, getState) => traiterChargerTuuids(workers, tuuids, dispatch, getState)
+    function chargerTuuids(workers, tuuids, opts) {
+        return (dispatch, getState) => traiterChargerTuuids(workers, tuuids, opts, dispatch, getState)
     }
     
-    async function traiterChargerTuuids(workers, tuuids, dispatch, getState) {
+    async function traiterChargerTuuids(workers, tuuids, opts, dispatch, getState) {
+        opts = opts || {}
         // console.debug("Charger detail fichiers tuuids : %O", tuuids)
     
         const { connexion, collectionsDao } = workers
     
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
     
-        const resultat = await connexion.getDocuments(tuuids)
+        const resultat = await connexion.getDocuments(tuuids, opts)
     
         if(resultat.fichiers) {
     
@@ -905,6 +908,63 @@ export function creerThunks(actions, nomSlice) {
         // await syncRecherche(dispatch, workers, tuuidsManquants)
     }
 
+    function afficherPartagesContact(workers, contactId, opts) {
+        opts = opts || {}
+        return (dispatch, getState) => traiterChargerPartagesContact(workers, contactId, opts, dispatch, getState)
+    }    
+
+    async function traiterChargerPartagesContact(workers, contactId, opts, dispatch, getState) {
+        opts = opts || {}
+    
+        const stateInitial = getState()[nomSlice]
+        const { userId, parametresRecherche } = stateInitial
+
+        console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
+    
+        // Changer source, nettoyer la liste
+        dispatch(setSource(SOURCE_PARTAGES_CONTACTS))
+        dispatch(clear())
+
+        dispatch(setSortKeys({key: 'nom', ordre: 1}))
+    
+        const { connexion, collectionsDao } = workers
+        const resultat = await connexion.getPartagesContact(contactId)
+        console.debug("Resultat getPartagesContact : ", resultat)
+        const partages = resultat.partages
+        const partagesDict = partages.reduce((acc, item)=>{
+            acc[item.tuuid] = item
+            return acc
+        }, {})
+
+        // Charger le contenu de la collection deja connu
+        let contenuIdb = await collectionsDao.getParTuuids(partages.map(item=>item.tuuid))
+        contenuIdb = contenuIdb.filter(item=>item)
+
+        // Injecter le contactId
+        contenuIdb.forEach(item=>{
+            item.contactId = contactId
+            delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
+        })
+
+        // Ajouter tous les resultats manquants
+        const tuuidsManquants = []
+        for(const item of Object.values(partagesDict)) {
+            contenuIdb.push(item)
+            tuuidsManquants.push(item.tuuid)
+        }
+
+        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+        if(contenuIdb) {
+            // console.debug("Push documents provenance idb : %O", contenuIdb)
+            dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
+            const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+            dispatch(chargerTuuids(workers, tuuids, {partage: true}))
+                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+        }
+    
+        // await syncRecherche(dispatch, workers, tuuidsManquants)
+    }
+
     // FIN SOURCES AFFICHAGE
     
     // Ajouter un nouveau fichier (e.g. debut upload)
@@ -1004,7 +1064,8 @@ export function creerThunks(actions, nomSlice) {
     // Async actions
     const thunks = { 
         changerCollection, 
-        afficherPlusrecents, afficherCorbeille, afficherRecherche, afficherPartagesUsager,
+        afficherPlusrecents, afficherCorbeille, afficherRecherche, 
+        afficherPartagesUsager, afficherPartagesContact,
         chargerTuuids,
         ajouterFichierVolatil, rafraichirCollection, supprimerFichier, restaurerFichier,
     }
@@ -1033,6 +1094,8 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
     try {
         // Recuperer la liste des fichiers chiffres
         let fichiersChiffres = [...getState().listeDechiffrage]
+        const source = getState().source
+        const partage = source === SOURCE_PARTAGES_CONTACTS
         while(fichiersChiffres.length > 0) {
             // Trier et slicer une batch de fichiers a dechiffrer
             const sortKeys = getState().sortKeys
@@ -1046,7 +1109,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const {liste_hachage_bytes} = identifierClesHachages(batchFichiers)
             let cles = null
             try {
-                cles = await clesDao.getCles(liste_hachage_bytes)
+                cles = await clesDao.getCles(liste_hachage_bytes, {partage})
             } catch(err) {
                 console.error("Erreur chargement cles %O : %O", liste_hachage_bytes, err)
                 continue  // Prochaine batch

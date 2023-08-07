@@ -8,7 +8,7 @@ import Modal from 'react-bootstrap/Modal'
 import Form from 'react-bootstrap/Form'
 
 import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret} from './WorkerContext'
-import { chargerInfoContacts, chargerPartagesUsager } from './redux/partagerSlice'
+import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesContact } from './redux/partagerSlice'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 
 function Partager(props) {
@@ -24,9 +24,12 @@ function Partager(props) {
         // Charger les contacts
         dispatch(chargerInfoContacts(workers))
             .catch(err=>console.error("Erreur chargement contacts : ", err))
+
         // Charger tous les partages (paires contacts/cuuid)
-        dispatch(chargerPartagesUsager(workers))
-            .catch(err=>console.error("Erreur chargement des partages : ", err))
+        // dispatch(chargerPartagesUsager(workers))
+        //     .catch(err=>console.error("Erreur chargement des partages usager : ", err))
+        // dispatch(chargerPartagesContact(workers))
+        //     .catch(err=>console.error("Erreur chargement des partages contacts : ", err))
     }, [dispatch, workers, etatPret])
 
     const choisirContactId = useCallback(e=>setContactId(e.currentTarget.value), [setContactId])
@@ -71,35 +74,13 @@ function Partager(props) {
 
     return (
         <div>
-            <h2>Collections partagees par quelqu'un d'autre</h2>
-
-            <CollectionsPartageesParAutres />
-
-            <h2>Mes collections partagees</h2>
-
             <h3>Contacts</h3>
-
             <ContactsPartage choisirContactId={choisirContactId} />
-
-            <h3>Collections</h3>
-
-            <CollectionsPartageesParUsager />
-
         </div>
     )
 }
 
 export default Partager
-
-/** Affiche les collections partagees avec d'autres usagers */
-function CollectionsPartageesParUsager(props) {
-    return 'collections par usager'
-}
-
-/** Affiche les collections partagees par un autre avec l'usager courant */
-function CollectionsPartageesParAutres(props) {
-    return 'collections par autres'
-}
 
 /** Contacts supportes pour le partage */
 function ContactsPartage(props) {
@@ -166,10 +147,6 @@ function ContactsPartage(props) {
     )
 }
 
-function ContactPartage(props) {
-
-}
-
 function ModalAjouterUsager(props) {
 
     const { show, hide } = props
@@ -234,6 +211,70 @@ function PageContact(props) {
     const userId = useSelector(state=>state.fichiers.userId)
     const collections = useSelector(state=>state.fichiers.liste)
 
+    const [modePartage, setModePartage] = useState('usager')
+
+    const contact = useMemo(()=>{
+        if(!contacts) return
+        return contacts.filter(item=>item.contact_id === contactId).pop()
+    }, [contacts])
+    
+    // const supprimerPartageCb = useCallback(e=>{
+    //     const tuuid = e.currentTarget.value
+    //     workers.connexion.supprimerPartageUsager(contactId, tuuid)
+    //         .catch(err=>console.error("Erreur suppression partage ", err))
+    // }, [workers])
+
+    // // Charger les informations de dossiers partages avec le contact
+    // useEffect(()=>{
+    //     if(!etatPret || !userId || !contact) return  // Rien a faire
+    //     if(modePartage === 'usager') {
+    //         dispatch(fichiersThunks.afficherPartagesUsager(workers, contactId))
+    //             .catch(err=>console.error('Partager Erreur chargement partages ', err))
+    //     } else if(modePartage === 'contact') {
+    //         dispatch(fichiersThunks.afficherPartagesContact(workers, contactId))
+    //             .catch(err=>console.error('Partager Erreur chargement partages ', err))
+    //     }
+    // }, [workers, etatPret, userId, contactId, modePartage])
+
+    useEffect(()=>{
+        console.debug("Collections partagees : %O", collections)
+    }, [collections])
+
+    if(!contact) return 'Aucune information sur le contact'
+
+    let ListePartages = 'Aucune information sur le contact'
+    switch(modePartage) {
+        case 'usager': ListePartages = ListePartagesUsager; break
+        case 'contact': ListePartages = ListePartagesContact; break
+        default:
+            break
+    }
+
+    // if(modePartage === 'usager') return <ListePartagesUsager contactId={contactId} fermer={fermer} />
+    // if(modePartage === 'contact') return <ListePartagesContact contactId={contactId} fermer={fermer} />
+
+    // return 'Mode non supporte'
+
+    return (
+        <div>
+            <Button onClick={()=>setModePartage('usager')}>Usager</Button>
+            <Button onClick={()=>setModePartage('contact')}>Contact</Button>
+            <ListePartages contactId={contactId} fermer={fermer} />
+        </div>
+    )
+}
+
+function ListePartagesUsager(props) {
+    const { contactId, fermer } = props
+
+    const workers = useWorkers(),
+          dispatch = useDispatch()
+
+    const etatPret = useEtatPret()
+    const contacts = useSelector(state=>state.partager.listeContacts)
+    const userId = useSelector(state=>state.fichiers.userId)
+    const collections = useSelector(state=>state.fichiers.liste)
+
     const contact = useMemo(()=>{
         if(!contacts) return
         return contacts.filter(item=>item.contact_id === contactId).pop()
@@ -274,6 +315,69 @@ function PageContact(props) {
                     <Row>
                         <Col>
                             {item.nom}
+                        </Col>
+                        <Col>
+                            <Button variant="secondary" value={item.tuuid} onClick={supprimerPartageCb}>Supprimer</Button>
+                        </Col>
+                    </Row>
+                )
+            })}
+
+        </div>
+    )
+}
+
+function ListePartagesContact(props) {
+    const { contactId, fermer } = props
+
+    const workers = useWorkers(),
+          dispatch = useDispatch()
+
+    const etatPret = useEtatPret()
+    const contacts = useSelector(state=>state.partager.listeContacts)
+    const userId = useSelector(state=>state.fichiers.userId)
+    const collections = useSelector(state=>state.fichiers.liste)
+
+    const contact = useMemo(()=>{
+        if(!contacts) return
+        return contacts.filter(item=>item.contact_id === contactId).pop()
+    }, [contacts])
+    
+    const supprimerPartageCb = useCallback(e=>{
+        const tuuid = e.currentTarget.value
+        workers.connexion.supprimerPartageUsager(contactId, tuuid)
+            .catch(err=>console.error("Erreur suppression partage ", err))
+    }, [workers])
+
+    // Charger les informations de dossiers partages avec le contact
+    useEffect(()=>{
+        if(!etatPret || !userId || !contact) return  // Rien a faire
+        dispatch(fichiersThunks.afficherPartagesContact(workers, contactId))
+            .catch(err=>console.error('Partager Erreur chargement partages ', err))
+    }, [workers, etatPret, userId, contactId])
+
+    useEffect(()=>{
+        console.debug("Collections partagees : %O", collections)
+    }, [collections])
+
+    if(!contact) return 'Aucune information sur le contact'
+
+    return (
+        <div>
+            <Row>
+                <Col xs={11}>
+                    <h3>Partages avec {contact.nom_usager}</h3>
+                </Col>
+                <Col>
+                    <Button variant="secondary" onClick={fermer}>X</Button>
+                </Col>
+            </Row>
+            
+            {collections && collections.map(item=>{
+                return (
+                    <Row>
+                        <Col>
+                            {item.nom||item.tuuid}
                         </Col>
                         <Col>
                             <Button variant="secondary" value={item.tuuid} onClick={supprimerPartageCb}>Supprimer</Button>
