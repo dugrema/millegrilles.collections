@@ -12,7 +12,7 @@ function build(workers) {
         },
         getPartagesUsager() {
             return getPartagesUsager(workers)
-        }
+        },
     }
 }
 

@@ -17,7 +17,7 @@ function Partager(props) {
           dispatch = useDispatch(),
           etatPret = useEtatPret()
 
-    //const userId = useSelector(state=>state.fichiers.userId)
+    const [contactId, setContactId] = useState('')
 
     useEffect(()=>{
         if(!etatPret) return
@@ -28,6 +28,9 @@ function Partager(props) {
         dispatch(chargerPartagesUsager(workers))
             .catch(err=>console.error("Erreur chargement des partages : ", err))
     }, [dispatch, workers, etatPret])
+
+    const choisirContactId = useCallback(e=>setContactId(e.currentTarget.value), [setContactId])
+    const fermerPageContact = useCallback(()=>setContactId(''), setContactId)
 
     // const naviguerCollection = useCallback( cuuid => {
     //     setAfficherVideo('')  // Reset affichage
@@ -62,6 +65,10 @@ function Partager(props) {
 
     // }, [etatPret, userId])
 
+    if(contactId) {
+        return <PageContact contactId={contactId} fermer={fermerPageContact} />
+    }
+
     return (
         <div>
             <h2>Collections partagees par quelqu'un d'autre</h2>
@@ -72,7 +79,7 @@ function Partager(props) {
 
             <h3>Contacts</h3>
 
-            <ContactsPartage />
+            <ContactsPartage choisirContactId={choisirContactId} />
 
             <h3>Collections</h3>
 
@@ -96,6 +103,8 @@ function CollectionsPartageesParAutres(props) {
 
 /** Contacts supportes pour le partage */
 function ContactsPartage(props) {
+
+    const { choisirContactId } = props
 
     const workers = useWorkers()
 
@@ -138,7 +147,7 @@ function ContactsPartage(props) {
                 return (
                     <Row>
                         <Col>
-                            <Button variant="link">
+                            <Button variant="link" onClick={choisirContactId} value={item.contact_id}>
                                 {item.nom_usager}
                             </Button>
                         </Col>
@@ -210,5 +219,69 @@ function ModalAjouterUsager(props) {
                 <Button variant='secondary' onClick={hide}>Fermer</Button>
             </Modal.Footer>
         </Modal>
+    )
+}
+
+function PageContact(props) {
+
+    const { contactId, fermer } = props
+
+    const workers = useWorkers(),
+          dispatch = useDispatch()
+
+    const etatPret = useEtatPret()
+    const contacts = useSelector(state=>state.partager.listeContacts)
+    const userId = useSelector(state=>state.fichiers.userId)
+    const collections = useSelector(state=>state.fichiers.liste)
+
+    const contact = useMemo(()=>{
+        if(!contacts) return
+        return contacts.filter(item=>item.contact_id === contactId).pop()
+    }, [contacts])
+    
+    const supprimerPartageCb = useCallback(e=>{
+        const tuuid = e.currentTarget.value
+        workers.connexion.supprimerPartageUsager(contactId, tuuid)
+            .catch(err=>console.error("Erreur suppression partage ", err))
+    }, [workers])
+
+    // Charger les informations de dossiers partages avec le contact
+    useEffect(()=>{
+        if(!etatPret || !userId || !contact) return  // Rien a faire
+        dispatch(fichiersThunks.afficherPartagesUsager(workers, contactId))
+            .catch(err=>console.error('Partager Erreur chargement partages ', err))
+    }, [workers, etatPret, userId, contactId])
+
+    useEffect(()=>{
+        console.debug("Collections partagees : %O", collections)
+    }, [collections])
+
+    if(!contact) return 'Aucune information sur le contact'
+
+    return (
+        <div>
+            <Row>
+                <Col xs={11}>
+                    <h3>Partages avec {contact.nom_usager}</h3>
+                </Col>
+                <Col>
+                    <Button variant="secondary" onClick={fermer}>X</Button>
+                </Col>
+            </Row>
+            
+            {collections && collections.map(item=>{
+                return (
+                    <Row>
+                        <Col>
+                            {item.nom}
+                        </Col>
+                        <Col>
+                            <Button variant="secondary" value={item.tuuid} onClick={supprimerPartageCb}>Supprimer</Button>
+                        </Col>
+                    </Row>
+                )
+            })}
+
+        </div>
     )
 }

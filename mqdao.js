@@ -243,6 +243,13 @@ export function getPartagesUsager(socket, params) {
   return transmettreRequete(socket, params, 'getPartagesUsager')
 }
 
+export function supprimerPartageUsager(socket, params) {
+  return transmettreCommande(
+      socket, params, 'supprimerPartageUsager', 
+      {domaine: DOMAINE_GROSFICHIERS}
+  )
+}
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

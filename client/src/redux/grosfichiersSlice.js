@@ -200,6 +200,8 @@ function mergeTuuidDataAction(state, action) {
             }
         } else if(source === SOURCE_CORBEILLE) {
             peutAppend = data.supprime === true
+        } else if(source === SOURCE_PARTAGES_USAGER) {
+            peutAppend = true  // On n'a pas de filtres sur les partages usager
         } else if(source === SOURCE_PLUS_RECENT) {
             if(data.supprime === true) {
                 // False
@@ -845,12 +847,12 @@ export function creerThunks(actions, nomSlice) {
     //     return resultat
     // }    
 
-    function afficherPartagesUsager(workers, opts) {
+    function afficherPartagesUsager(workers, contactId, opts) {
         opts = opts || {}
-        return (dispatch, getState) => traiterChargerPartagesUsager(workers, opts, dispatch, getState)
+        return (dispatch, getState) => traiterChargerPartagesUsager(workers, contactId, opts, dispatch, getState)
     }    
 
-    async function traiterChargerPartagesUsager(workers, opts, dispatch, getState) {
+    async function traiterChargerPartagesUsager(workers, contactId, opts, dispatch, getState) {
         opts = opts || {}
     
         const stateInitial = getState()[nomSlice]
@@ -865,53 +867,41 @@ export function creerThunks(actions, nomSlice) {
         dispatch(setSortKeys({key: 'nom', ordre: 1}))
     
         const { connexion, collectionsDao } = workers
-        const resultat = await connexion.getPartagesUsager()
+        const resultat = await connexion.getPartagesUsager(contactId)
         console.debug("Resultat getPartagesUsager : ", resultat)
+        const partages = resultat.partages
+        const partagesDict = partages.reduce((acc, item)=>{
+            acc[item.tuuid] = item
+            return acc
+        }, {})
 
-        // const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, CONST_RECHERCHE_LIMITE )
-        // console.debug("Resultat recherche : ", resultatRecherche)
+        // Charger le contenu de la collection deja connu
+        let contenuIdb = await collectionsDao.getParTuuids(partages.map(item=>item.tuuid))
+        contenuIdb = contenuIdb.filter(item=>item)
 
-        // if(resultatRecherche.ok !== true) {
-        //     console.warn("Erreur recherche : ", resultatRecherche)
-        //     return
-        // }
 
-        // const listeHits = resultatRecherche.resultat.docs
-        // const itemsDict = listeHits.reduce((acc, item)=>{
-        //     acc[item.tuuid] = item
-        //     item.fuuid = item.id
-        //     delete item.id
-        //     return acc
-        // }, {})
+        // Injecter le contactId
+        contenuIdb.forEach(item=>{
+            item.contactId = contactId
+            delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
+        })
 
-        // // // Charger le contenu de la collection deja connu
-        // let contenuIdb = await collectionsDao.getParTuuids(listeHits.map(item=>item.tuuid))
-        // contenuIdb = contenuIdb.filter(item=>item)
+        // Ajouter tous les resultats manquants
+        const tuuidsManquants = []
+        for(const item of Object.values(partagesDict)) {
+            contenuIdb.push(item)
+            tuuidsManquants.push(item.tuuid)
+        }
 
-        // // Injecter le score
-        // contenuIdb.forEach(item=>{
-        //     item.score = itemsDict[item.tuuid].score
-        //     delete itemsDict[item.tuuid]
-        // })
-
-        // // Ajouter tous les resultats manquants
-        // const tuuidsManquants = []
-        // for(const item of Object.values(itemsDict)) {
-        //     contenuIdb.push(item)
-        //     tuuidsManquants.push(item.tuuid)
-        // }
-
-        // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        // if(contenuIdb) {
-        //     // console.debug("Push documents provenance idb : %O", contenuIdb)
-        //     dispatch(push({liste: contenuIdb, nombreFichiersTotal: resultatRecherche.resultat.numFound, clear: true}))
+        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+        if(contenuIdb) {
+            // console.debug("Push documents provenance idb : %O", contenuIdb)
+            dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
+            const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+            dispatch(chargerTuuids(workers, tuuids))
+                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+        }
     
-        //     const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-        //     dispatch(chargerTuuids(workers, tuuids))
-        //         .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-        // }
-    
-        // // await syncRecherche(dispatch, workers, listeHits.map(item=>item.tuuid))
         // await syncRecherche(dispatch, workers, tuuidsManquants)
     }
 
