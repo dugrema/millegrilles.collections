@@ -179,9 +179,10 @@ function mergeTuuidDataAction(state, action) {
         const data = {...(payloadFichier.data || {})}
         data['_mergeVersion'] = mergeVersion
 
-        const cuuids = data.cuuids || [],
-        images = payloadFichier.images || data.images,
-        video = payloadFichier.video || data.video
+        const cuuid = data.cuuid,
+              cuuids = data.cuuids || [],
+              images = payloadFichier.images || data.images,
+              video = payloadFichier.video || data.video
 
         const liste = state.liste || []
         const cuuidCourant = state.cuuid,
@@ -194,7 +195,7 @@ function mergeTuuidDataAction(state, action) {
                 // false
             } else if(cuuidCourant) {
                 // Verifier si le fichier est sous le cuuid courant
-                peutAppend = cuuids.includes(cuuidCourant)
+                peutAppend = cuuid === cuuidCourant || cuuids.includes(cuuidCourant)
             } else if( ! data.mimetype ) {
                 peutAppend = data.favoris === true  // Inclure si le dossier est un favoris
             }
@@ -451,6 +452,8 @@ export function creerThunks(actions, nomSlice) {
             // Separer fichiers avec chiffrage des fichiers sans chiffrage
             fichiers = fichiers.reduce((acc, item)=>{
                 let chiffre = false
+
+                console.debug("traiterChargerTuuids Traiter item ", item)
                 
                 const version_courante = item.version_courante || {},
                       { images } = version_courante,
