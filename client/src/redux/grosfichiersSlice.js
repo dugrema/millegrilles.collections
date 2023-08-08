@@ -286,7 +286,7 @@ function mergeTuuidDataAction(state, action) {
                     retirer = true
                 } else if( cuuidCourant ) {
                     // Verifier si le fichier est encore candidat pour la liste courante
-                    retirer = ! cuuids.includes(cuuidCourant) 
+                    retirer = ! ( (cuuidCourant === dataCourant.cuuid) || cuuids.includes(cuuidCourant) )
                 } else {
                     // Favoris
                     retirer = dataCourant.favoris !== true
@@ -977,8 +977,6 @@ export function creerThunks(actions, nomSlice) {
     
     async function traiterAjouterFichierVolatil(workers, fichier, dispatch, getState) {
         // console.debug("traiterAjouterFichierVolatil ", fichier)
-        // const entete = fichier['en-tete'] || {},
-        //       tuuid = fichier.tuuid || entete['uuid_transaction']
         const tuuid = fichier.id
         
         const fichierCopie = {tuuid, ...fichier}
