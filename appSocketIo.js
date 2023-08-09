@@ -49,7 +49,8 @@ function configurerEvenements(socket) {
       { eventName: 'getPartagesUsager', callback: (params, cb) => traiter(socket, mqdao.getPartagesUsager, {params, cb}) },
       { eventName: 'getPartagesContact', callback: (params, cb) => traiter(socket, mqdao.getPartagesContact, {params, cb}) },
       { eventName: 'supprimerPartageUsager', callback: (params, cb) => traiter(socket, mqdao.supprimerPartageUsager, {params, cb}) },
-      
+      { eventName: 'getInfoStatistiques', callback: (params, cb) => traiter(socket, mqdao.getInfoStatistiques, {params, cb}) },
+
       // Evenements
       // {eventName: 'ecouterMajFichiers', callback: (_, cb) => {mqdao.ecouterMajFichiers(socket, cb)}},
       // {eventName: 'ecouterMajCollections', callback: (_, cb) => {mqdao.ecouterMajCollections(socket, cb)}},

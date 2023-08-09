@@ -254,6 +254,12 @@ export function supprimerPartageUsager(socket, params) {
   )
 }
 
+export function getInfoStatistiques(socket, params) {
+  return transmettreRequete(socket, params, 'getInfoStatistiques')
+}
+
+// Methodes generiques
+
 async function transmettreRequete(socket, params, action, opts) {
     opts = opts || {}
     const domaine = opts.domaine || DOMAINE_GROSFICHIERS

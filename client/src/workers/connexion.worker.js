@@ -300,6 +300,12 @@ function supprimerPartageUsager(contactId, tuuid) {
   return ConnexionClient.emitBlocking('supprimerPartageUsager', commande, params)
 }
 
+function getInfoStatistiques(cuuid) {
+  const requete = { cuuid }
+  const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getInfoStatistiques', ajouterCertificat: true}
+  return ConnexionClient.emitBlocking('getInfoStatistiques', requete, params)
+}
+
 // Fonctions delegues
 
 function indexerContenu(reset) {
@@ -384,6 +390,8 @@ expose({
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,
     getBatchUpload, submitBatchUpload,
+
+    getInfoStatistiques,
 
     // Event listeners prives
     enregistrerCallbackMajFichier, retirerCallbackMajFichier,
