@@ -636,7 +636,7 @@ function InformationStatistiques(props) {
             if(['Collection', 'Repertoire'].includes(item.type_node)) acc += item.count
             return acc
         }, 0)
-        const fichier = info.filter(item=>item.type_node === 'Fichier').pop()
+        const fichier = info.filter(item=>item.type_node === 'Fichier').pop() || {}
 
         return {nombreRepertoires, taille: fichier.taille, nombreFichiers: fichier.count}
     }, [info])
