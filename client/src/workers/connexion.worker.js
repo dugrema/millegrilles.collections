@@ -19,11 +19,11 @@ function getRecents(params) {
   return ConnexionClient.emitBlocking('getRecents', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
 
-function getContenuCollection(tuuidsDocuments, opts) {
-  opts = opts || {}
-  const params = {...opts, tuuid_collection: tuuidsDocuments}
-  return ConnexionClient.emitBlocking('getCollection', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
-}
+// function getContenuCollection(tuuidsDocuments, opts) {
+//   opts = opts || {}
+//   const params = {...opts, tuuid_collection: tuuidsDocuments}
+//   return ConnexionClient.emitBlocking('getCollection', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
+// }
 
 async function getClesFichiers(fuuids, usager, opts) {
   opts = opts || {}
@@ -375,7 +375,8 @@ expose({
 
     // Requetes et commandes privees
     getDocuments, getClesFichiers,
-    getFavoris, getCorbeille, getRecents, getContenuCollection,
+    getFavoris, getCorbeille, getRecents, 
+    // getContenuCollection,
     creerCollection, toggleFavoris, 
     recupererDocuments, supprimerDocuments,
     decrireFichier, decrireCollection,

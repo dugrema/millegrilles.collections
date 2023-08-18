@@ -350,7 +350,7 @@ export function FormatterColonneDate(props) {
             return <span>En cours de traitement</span>
         }
     } else {
-        return <><FormatterDate value={props.value} />{' '}{symbolesEtat}</>
+        return <span><FormatterDate value={props.value} />{' '}{symbolesEtat}</span>
     }
 }
 

@@ -18,6 +18,8 @@ import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 import actionsNavigationSecondaire, {thunks as thunksNavigationSecondaire} from './redux/navigationSecondaireSlice'
 import { chargerInfoContacts } from './redux/partagerSlice'
 
+const CONST_EXPIRATION_VISITE = 3 * 86_400_000
+
 export function SupprimerModal(props) {
 
     const { workers, show, fermer, selection, cuuid } = props
@@ -406,18 +408,31 @@ function InfoFichier(props) {
 
     const fichier = props.value || {}
     const nom = valueItem.nom
-    const { tuuid, fuuid_v_courante: fuuid, visites } = fichier
+    const { tuuid, fuuid_v_courante: fuuid } = fichier
     const versionCourante = fichier.version_courante || {}
-    const { mimetype, taille } = versionCourante
+    const { mimetype, taille, visites } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
     const dateFichier = valueItem.dateFichier
 
-    const derniereVisite = useMemo(()=>{
-        if(!visites) return ''
-        return Object.values(visites).reduce((acc, item)=>{
+    const infoVisites = useMemo(()=>{
+        if(!visites) return {plusRecente: null, nombreServeurs: 0}
+
+        const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
+
+        let nombreServeurs = 0
+        for (const serveur of Object.keys(visites)) {
+            const derniereVisite = visites[serveur]
+            if(derniereVisite > expire) {
+                nombreServeurs++
+            }
+        }
+
+        const plusRecente = Object.values(visites).reduce((acc, item)=>{
             if(!acc || acc < item) return item
             return acc
-        })
+        }, 0)
+
+        return {plusRecente, nombreServeurs}
     }, [visites])
 
     return (
@@ -459,7 +474,7 @@ function InfoFichier(props) {
                     </Row>
                     <Row>
                         <Col xs={12} md={3}>Plus recente verification</Col>
-                        <Col xs={12} md={9}><FormatterDate value={derniereVisite} /></Col>
+                        <Col xs={12} md={9}><FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)</Col>
                     </Row>
                     <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
                 </Col>
