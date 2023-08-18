@@ -313,7 +313,9 @@ function SectionBreadcrumb(props) {
 
 export function FormatterColonneDate(props) {
     const data = props.data || {}
-    const { archive, upload, visites, folderId } = data
+    const { archive, upload, folderId, version_courante } = data
+
+    const visites = version_courante?version_courante.visites:null
 
     let symbolesEtat = []
     if(archive) symbolesEtat.push(<i key='archive' className='fa fa-snowflake-o' title='Archive'/>)
