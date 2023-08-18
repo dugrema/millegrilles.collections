@@ -209,8 +209,10 @@ export function MenuContextuelCorbeille(props) {
     const { workers, selection, contextuel, fermerContextuel, onRecuperer } = props
 
     const recupererAction = useCallback( 
-        () => recupererMultiple(workers, fermerContextuel, selection, onRecuperer), 
-        [workers, fermerContextuel, selection, onRecuperer] 
+        () => {
+            throw new Error('fix me')
+            // recupererMultiple(workers, fermerContextuel, selection, onRecuperer) 
+        }, [workers, fermerContextuel, selection, onRecuperer] 
     )
 
     const posX = useMemo(()=>{

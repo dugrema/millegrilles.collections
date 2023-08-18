@@ -170,7 +170,7 @@ function AffichagePrincipal(props) {
     const listeAffichee = useMemo(()=>{
         if(!liste) return ''                // Liste vide
         if(!tailleAffichee) return liste    // Liste complete
-        console.debug("Liste fichiers corbeille : ", liste)
+        // console.debug("Liste fichiers corbeille : ", liste)
         return liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
     }, [liste, tailleAffichee])
 
@@ -438,42 +438,43 @@ function preparerColonnes(workers) {
         let recupererPaths = []
 
         // Creer path pour un fichier supprime
-        if(item.cuuids_supprimes && item.map_path_cuuids) {
-            // Fichier
-            for await (const cuuidSupprime of item.cuuids_supprimes) {
-                const pathComplet = item.map_path_cuuids[cuuidSupprime]
-                const tuuids = await collectionsDao.getParTuuids(pathComplet)
-                const tuuidsMappes = {}
-                tuuids.forEach(item=>{
-                    tuuidsMappes[item.tuuid] = item
-                })
-                const tuuidsOrdre = pathComplet.map(cuuid=>{
-                    return tuuidsMappes[cuuid].nom || cuuid
-                })
-                tuuidsOrdre.reverse()
-                // recupererPaths[cuuidSupprime] = '/'+tuuidsOrdre.join('/')
-                recupererPaths.push({cuuid: cuuidSupprime, path: '/'+tuuidsOrdre.join('/')})
-                // supprimePath = '/'+tuuidsOrdre.join('/')
-                // break
-            }
+        // if(item.map_path_cuuids) {
+        //     // Fichier
+        //     for await (const cuuidSupprime of item.cuuids_supprimes) {
+        //         const pathComplet = item.map_path_cuuids[cuuidSupprime]
+        //         const tuuids = await collectionsDao.getParTuuids(pathComplet)
+        //         const tuuidsMappes = {}
+        //         tuuids.forEach(item=>{
+        //             tuuidsMappes[item.tuuid] = item
+        //         })
+        //         const tuuidsOrdre = pathComplet.map(cuuid=>{
+        //             return tuuidsMappes[cuuid].nom || cuuid
+        //         })
+        //         tuuidsOrdre.reverse()
+        //         // recupererPaths[cuuidSupprime] = '/'+tuuidsOrdre.join('/')
+        //         recupererPaths.push({cuuid: cuuidSupprime, path: '/'+tuuidsOrdre.join('/')})
+        //         // supprimePath = '/'+tuuidsOrdre.join('/')
+        //         // break
+        //     }
 
-        } 
+        // } 
 
         // Creer path pour un repertoire supprime
-        if(item.cuuid && item.path_cuuids) {
+        if(['Repertoire', 'Fichier'].includes(item.type_node)) {
             // Repertoire
             const pathComplet = item.path_cuuids
             const tuuids = await collectionsDao.getParTuuids(pathComplet)
             const tuuidsMappes = {}
-            tuuids.forEach(item=>{
+            tuuids.filter(item=>item).forEach(item=>{
                 tuuidsMappes[item.tuuid] = item
             })
             const tuuidsOrdre = pathComplet.map(cuuid=>{
-                return tuuidsMappes[cuuid].nom || cuuid
+                const tuuidMappeVal = tuuidsMappes[cuuid] || {}
+                return tuuidMappeVal.nom || cuuid
             })
             tuuidsOrdre.reverse()
-            // supprimePath = '/'+tuuidsOrdre.join('/')
-            recupererPaths.push({cuuid: item.cuuid, path: '/'+tuuidsOrdre.join('/')})
+            const cuuid = item.path_cuuids?item.path_cuuids[0]:null
+            recupererPaths.push({cuuid, path: '/'+tuuidsOrdre.join('/')})
         } else if(item.type_node === 'Collection') {
             recupererPaths.push({cuuid: item.tuuid, path: '/'})
         }
@@ -506,7 +507,7 @@ function FormatterPathSupprimer(props) {
 
     const restorerCb = useCallback(e=>{
         const { value } = e.currentTarget
-        console.debug("Restorer tuuid %s sous cuuid %s", data.tuuid, value)
+        // console.debug("Restorer tuuid %s sous cuuid %s", data.tuuid, value)
         let items = {}
         if(value === data.tuuid) {
             // C'est une collection
@@ -527,7 +528,7 @@ function FormatterPathSupprimer(props) {
             return (
                 <Row key={idx}>
                     <Col xs={8} lg={9}>{item.path}</Col>
-                    <Col xs={4} lg={3}><Button variant="dark" value={item.cuuid} onClick={restorerCb}>Restorer</Button></Col>
+                    <Col xs={4} lg={3}><Button variant="dark" value={item.cuuid} onClick={restorerCb}>Recuperer</Button></Col>
                 </Row>
             )
         })
