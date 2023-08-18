@@ -203,6 +203,8 @@ function mergeTuuidDataAction(state, action) {
             }
         } else if(source === SOURCE_CORBEILLE) {
             peutAppend = data.supprime === true
+        } else if(source === SOURCE_RECHERCHE) {
+            peutAppend = data.supprime === true
         } else if(source === SOURCE_PARTAGES_USAGER) {
             peutAppend = true  // On n'a pas de filtres sur les partages usager
         } else if(source === SOURCE_PARTAGES_CONTACTS) {
