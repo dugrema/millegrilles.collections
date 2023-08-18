@@ -53,13 +53,13 @@ export async function updateDocument(doc, opts) {
     const store = db.transaction(STORE_FICHIERS, 'readwrite').store
     const fichierDoc = (await store.get(tuuid)) || {}
     Object.assign(fichierDoc, doc)
-    
+
     // Changer flags
     flags.forEach(flag=>{
         const val = opts[flag]
         if(val !== undefined) fichierDoc[flag] = val
     })
-    if(doc.favoris || fichierDoc.favoris) fichierDoc.favorisIdx = 1
+    if(fichierDoc.type_node === 'Collection') fichierDoc.favorisIdx = 1
 
     await store.put(fichierDoc)
 }
@@ -94,47 +94,52 @@ export async function getParCollection(cuuid, userId) {
     const store = db.transaction(STORE_FICHIERS, 'readonly').store        
     //curseur = await store.openCursor()
     if(cuuid) {
-        const index = store.index('cuuids')
+        // const index = store.index('cuuid')
+        const index = store.index('pathCuuids')
         curseur = await index.openCursor(cuuid)
     } else {
         // Favoris
-        const index = store.index('userFavoris')
-        curseur = await index.openCursor([userId, 1])
+        // const index = store.index('userFavoris')
+        const index = store.index('userTypeNode')
+        curseur = await index.openCursor([userId, 'Collection'])
     }
 
+    // Curseur fichiers et sous-repertoires (cuuid)
     const docs = []
     while(curseur) {
         const value = curseur.value
         // console.debug("getParCollection Row %O = %O", curseur, value)
-        const { cuuids, favoris, user_id, supprime } = value
+        const { path_cuuids, type_node, user_id, supprime } = value
         if(supprime === true) {
             // Supprime
         } else if(!cuuid) {
             // Favoris
-            if(user_id === userId && favoris === true) docs.push(value)
-        } else if(cuuids && cuuids.includes(cuuid)) {
+            if(user_id === userId && type_node === 'Collection') docs.push(value)
+        // } else if(cuuids && cuuids.includes(cuuid)) {
+        } else if(path_cuuids && path_cuuids[0] === cuuid) {
             docs.push(value)
         }
         curseur = await curseur.continue()
     }
 
-    // Curseur repertoires (cuuid)
-    if(cuuid) {
-        const index = store.index('cuuid')
-        curseur = await index.openCursor(cuuid)
+    // // Curseur repertoires (cuuid)
+    // if(cuuid) {
+    //     const index = store.index('cuuid')
+    //     curseur = await index.openCursor(cuuid)
 
-        while(curseur) {
-            const value = curseur.value
-            console.debug("getParCollection Row %O = %O", curseur, value)
-            const { cuuid: cuuidDb, supprime } = value
-            if(supprime === true) {
-                // Supprime
-            } else if(cuuid === cuuidDb) {
-                docs.push(value)
-            }
-            curseur = await curseur.continue()
-        }
-    }
+    //     while(curseur) {
+    //         const value = curseur.value
+    //         console.debug("getParCollection Row %O = %O", curseur, value)
+    //         const { cuuid: cuuidDb, supprime } = value
+    //         if(supprime === true) {
+    //             // Supprime
+    //         } else if(cuuid === cuuidDb) {
+    //             docs.push(value)
+    //         }
+    //         curseur = await curseur.continue()
+    //     }
+    // }
+
     console.debug('getParCollection cuuid %s userId: %s resultat collection %O, documents %O', cuuid, userId, collection, docs)
 
     return { collection, documents: docs }

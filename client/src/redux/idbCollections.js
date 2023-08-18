@@ -5,7 +5,7 @@ const DB_NAME = 'collections',
       STORE_UPLOADS = 'uploads',
       STORE_UPLOADS_FICHIERS = 'uploadsFichiers',
       STORE_FICHIERS = 'fichiers',
-      VERSION_COURANTE = 5
+      VERSION_COURANTE = 6
 
 export function ouvrirDB(opts) {
     opts = opts || {}
@@ -45,10 +45,17 @@ function createObjectStores(db, oldVersion, newVersion, transaction) {
                 fichierStore = transaction.objectStore(STORE_FICHIERS)
                 fichierStore.createIndex('cuuids', 'cuuids', {unique: false, multiEntry: true})
                 fichierStore.createIndex('userFavoris', ['user_id', 'favorisIdx'], {unique: false, multiEntry: false})
-            case 4: // Plus recent, rien a faire
+            case 4:
                 fichierStore = transaction.objectStore(STORE_FICHIERS)
                 fichierStore.createIndex('cuuid', 'cuuid', {unique: false})
-            case 5: // Plus recent, rien a faire
+            case 5:
+                fichierStore = transaction.objectStore(STORE_FICHIERS)
+                fichierStore.clear()
+                fichierStore.deleteIndex('cuuids')
+                fichierStore.deleteIndex('userFavoris')
+                fichierStore.createIndex('userTypeNode', ['user_id', 'type_node'], {unique: false, multiEntry: false})
+                fichierStore.createIndex('pathCuuids', 'path_cuuids', {unique: false, multiEntry: true})
+            case 6: // Plus recent, rien a faire
                 break
             default:
                 console.warn("createObjectStores Default..., version %O", oldVersion)
