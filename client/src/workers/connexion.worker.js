@@ -134,11 +134,12 @@ function getDocuments(tuuids, opts) {
   )
 }
 
-function recupererDocuments(tuuids) {
+function recupererDocuments(items) {
+  // Format de items : {[cuuid]: [tuuid, ...]}
   return ConnexionClient.emitBlocking(
-    'recupererDocuments',
-    {tuuids},
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'recupererDocuments', attacherCertificat: true}
+    'recupererDocumentsV2',
+    {items},
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'recupererDocumentsV2', attacherCertificat: true}
   )
 }
 

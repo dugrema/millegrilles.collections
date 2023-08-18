@@ -26,7 +26,7 @@ function configurerEvenements(socket) {
       { eventName: 'archiverDocuments', callback: (params, cb) => traiter(socket, mqdao.archiverDocuments, {params, cb}) },
       { eventName: 'decrireFichier', callback: (params, cb) => traiter(socket, mqdao.decrireFichier, {params, cb}) },
       { eventName: 'decrireCollection', callback: (params, cb) => traiter(socket, mqdao.decrireCollection, {params, cb}) },
-      { eventName: 'recupererDocuments', callback: (params, cb) => traiter(socket, mqdao.recupererDocuments, {params, cb}) },
+      { eventName: 'recupererDocumentsV2', callback: (params, cb) => traiter(socket, mqdao.recupererDocumentsV2, {params, cb}) },
       { eventName: 'copierVersCollection', callback: (params, cb) => traiter(socket, mqdao.copierVersCollection, {params, cb}) },
       { eventName: 'deplacerFichiersCollection', callback: (params, cb) => traiter(socket, mqdao.deplacerFichiersCollection, {params, cb}) },
       { eventName: 'rechercheIndex', callback: (params, cb) => traiter(socket, mqdao.rechercheIndex, {params, cb}) },

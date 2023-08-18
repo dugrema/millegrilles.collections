@@ -51,7 +51,7 @@ async function getCles(workers, liste_hachage_bytes, opts) {
     if(clesManquantes.length > 0) {
         // Recuperer les cles du serveur
         const reponseClesChiffrees = await connexion.getClesFichiers(liste_hachage_bytes, null, {partage})
-        // console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
+        console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
         for await(const cleHachage_bytes of Object.keys(reponseClesChiffrees.cles)) {
             const infoCle = reponseClesChiffrees.cles[cleHachage_bytes]
             const cleSecrete = await chiffrage.dechiffrerCleSecrete(infoCle.cle)

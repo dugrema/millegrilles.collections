@@ -179,9 +179,10 @@ function mergeTuuidDataAction(state, action) {
         const data = {...(payloadFichier.data || {})}
         data['_mergeVersion'] = mergeVersion
 
-        const cuuid = data.cuuid,
-              cuuids = data.cuuids || [],
-              images = payloadFichier.images || data.images,
+        // const cuuid = data.cuuid,
+        //       cuuids = data.cuuids || []
+        const cuuid = data.path_cuuids?data.path_cuuids[0]:null
+        const images = payloadFichier.images || data.images,
               video = payloadFichier.video || data.video
 
         const liste = state.liste || []
@@ -191,13 +192,14 @@ function mergeTuuidDataAction(state, action) {
         
         let peutAppend = false
         if(source === SOURCE_COLLECTION) {
-            if(data.supprime === true) {
+            if( data.supprime === true ) {
                 // false
-            } else if(cuuidCourant) {
+            } else if( cuuidCourant ) {
                 // Verifier si le fichier est sous le cuuid courant
-                peutAppend = cuuid === cuuidCourant || cuuids.includes(cuuidCourant)
-            } else if( ! data.mimetype ) {
-                peutAppend = data.favoris === true  // Inclure si le dossier est un favoris
+                peutAppend = cuuid === cuuidCourant  // || cuuids.includes(cuuidCourant)
+            } else if( data.type_node === 'Collection' ) {
+                // cuuidCourant est falsy, inclure si le dossier est une Collection
+                peutAppend = true
             }
         } else if(source === SOURCE_CORBEILLE) {
             peutAppend = data.supprime === true
@@ -271,7 +273,9 @@ function mergeTuuidDataAction(state, action) {
             }
 
             // Verifier si le fichier fait encore partie de la collection courante
-            const cuuids = dataCourant.cuuids || []
+            // const cuuids = dataCourant.cuuids || []
+            const cuuidDataCourant = dataCourant.path_cuuids?dataCourant.path_cuuids[0]:null
+
             // console.debug("mergeTuuidDataAction Verifier si dataCourant est encore dans %s : %O", cuuidCourant, cuuids)
             let retirer = false
             if( source === SOURCE_CORBEILLE ) {
@@ -286,10 +290,10 @@ function mergeTuuidDataAction(state, action) {
                     retirer = true
                 } else if( cuuidCourant ) {
                     // Verifier si le fichier est encore candidat pour la liste courante
-                    retirer = ! ( (cuuidCourant === dataCourant.cuuid) || cuuids.includes(cuuidCourant) )
+                    retirer = ! ( cuuidCourant === cuuidDataCourant )
                 } else {
                     // Favoris
-                    retirer = dataCourant.favoris !== true
+                    retirer = dataCourant.type_node !== 'Collection'
                 }
             }
 
@@ -418,14 +422,14 @@ export function creerThunks(actions, nomSlice) {
     
         const tuuidsChiffres = fichiersChiffres.map(item=>item.tuuid)
         for (const fichier of fichiers) {
-            console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
+            // console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
             const dechiffre = ! tuuidsChiffres.includes(fichier.tuuid)
     
             // Mettre a jour dans IDB
             collectionsDao.updateDocument(fichier, {dechiffre})
                 .catch(err=>console.error("Erreur maj document %O dans idb : %O", fichier, err))
     
-            console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
+            // console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
             dispatch(mergeTuuidData({tuuid: fichier.tuuid, data: fichier}))
         }
     }
@@ -443,7 +447,8 @@ export function creerThunks(actions, nomSlice) {
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
     
         const resultat = await connexion.getDocuments(tuuids, opts)
-    
+        console.debug("traiterChargerTuuids Reponse ", resultat)
+
         if(resultat.fichiers) {
     
             // Detecter le besoin de cles
@@ -453,11 +458,11 @@ export function creerThunks(actions, nomSlice) {
             fichiers = fichiers.reduce((acc, item)=>{
                 let chiffre = false
 
-                console.debug("traiterChargerTuuids Traiter item ", item)
+                // console.debug("traiterChargerTuuids Traiter item ", item)
                 
                 const version_courante = item.version_courante || {},
                       { images } = version_courante,
-                      metadata = version_courante.metadata || item.metadata
+                      metadata = item.metadata  //version_courante.metadata || item.metadata
                 if(metadata && metadata.data_chiffre) chiffre = true
                 if(images) Object.values(images).forEach(image=>{
                     if(image.data_chiffre) chiffre = true
@@ -1104,10 +1109,11 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const batchFichiers = fichiersChiffres.slice(0, 20)  // Batch de 20 fichiers a la fois
             fichiersChiffres = fichiersChiffres.slice(20)  // Clip 
             listenerApi.dispatch(actions.setFichiersChiffres(fichiersChiffres))
-            // console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
+            console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
 
             // Extraire toutes les cles a charger
             const {liste_hachage_bytes} = identifierClesHachages(batchFichiers)
+            console.debug("Dechiffrer avec liste_hachage_bytes ", liste_hachage_bytes)
             let cles = null
             try {
                 cles = await clesDao.getCles(liste_hachage_bytes, {partage})
@@ -1119,14 +1125,15 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const fichiersDechiffres = []
 
             for await (const fichierChiffre of batchFichiers) {
-                // console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
+                console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
                 // Images inline chiffrees (thumbnail)
                 const tuuid = fichierChiffre.tuuid
                 let dechiffre = true
 
                 const docCourant = (await collectionsDao.getParTuuids([tuuid])).pop()
-                const fuuid_v_courante = docCourant.fuuid_v_courante,
-                      version_courante = docCourant.version_courante || {}
+                // const fuuid_v_courante = docCourant.fuuid_v_courante
+                const version_courante = docCourant.version_courante || {}
+                const fuuid_v_courante = version_courante.fuuid
                 const metadata = version_courante.metadata || docCourant.metadata,
                       images = version_courante.images || {}
 
@@ -1246,9 +1253,10 @@ function identifierClesHachages(liste) {
 
         // Images inline chiffrees (thumbnail)
         const version_courante = item.version_courante || {},
-              { fuuid_v_courante } = item,
+              { fuuids_versions } = item,
               { images } = version_courante,
-              metadata = version_courante.metadata || item.metadata
+              metadata = item.metadata  // version_courante.metadata || item.metadata
+        const fuuid_v_courante = version_courante.fuuid
 
         if(metadata) {
             // Champs proteges

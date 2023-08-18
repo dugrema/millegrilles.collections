@@ -8,21 +8,16 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
-import Form from 'react-bootstrap/Form'
-import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
-import AfficherVideo from './AfficherVideo'
-import { SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelCorbeille, onContextMenu } from './MenuContextuel'
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
-import { ajouterDownload } from './redux/downloaderSlice'
 
 function NavigationCorbeille(props) {
 
@@ -118,13 +113,6 @@ function NavigationCorbeille(props) {
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
-                        // modeView={modeView}
-                        // naviguerCollection={naviguerCollection}
-                        // showPreviewAction={showPreviewAction}
-                        // setContextuel={setContextuel}
-                        // afficherVideo={afficherVideo}
-                        // setAfficherVideo={setAfficherVideo}
-                        // setPreparationUploadEnCours={setPreparationUploadEnCours}
                         modeView={modeView}
                         naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
@@ -160,15 +148,6 @@ export default NavigationCorbeille
 function AffichagePrincipal(props) {
 
     const {
-        // modeView, 
-        // naviguerCollection,
-        // showPreviewAction,
-        // afficherVideo, setAfficherVideo,
-        // setContextuel, 
-        // enteteOnClickCb,
-        // showInfoModalOuvrir,
-        // scrollValue, onScroll,
-
         modeView, 
         naviguerCollection,
         showPreviewAction,
@@ -191,6 +170,7 @@ function AffichagePrincipal(props) {
     const listeAffichee = useMemo(()=>{
         if(!liste) return ''                // Liste vide
         if(!tailleAffichee) return liste    // Liste complete
+        console.debug("Liste fichiers corbeille : ", liste)
         return liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
     }, [liste, tailleAffichee])
 
@@ -441,35 +421,125 @@ function preparerColonnes(workers) {
         // Tenter de mapper le path
         const docMappe = mapDocumentComplet(workers, item, idx)
         let supprimePath = ''
-        if(item.supprime_cuuids_path) {
-            const tuuids = await collectionsDao.getParTuuids(item.supprime_cuuids_path)
+        // if(item.supprime_cuuids_path) {
+        //     const tuuids = await collectionsDao.getParTuuids(item.supprime_cuuids_path)
+        //     const tuuidsMappes = {}
+        //     tuuids.forEach(item=>{
+        //         tuuidsMappes[item.tuuid] = item
+        //     })
+        //     const tuuidsOrdre = item.supprime_cuuids_path.map(cuuid=>{
+        //         return tuuidsMappes[cuuid].nom || cuuid
+        //     })
+            
+        //     console.debug("!!! tuuids ", tuuids)
+        //     supprimePath = '/'+tuuidsOrdre.join('/')
+        // }
+
+        let recupererPaths = []
+
+        // Creer path pour un fichier supprime
+        if(item.cuuids_supprimes && item.map_path_cuuids) {
+            // Fichier
+            for await (const cuuidSupprime of item.cuuids_supprimes) {
+                const pathComplet = item.map_path_cuuids[cuuidSupprime]
+                const tuuids = await collectionsDao.getParTuuids(pathComplet)
+                const tuuidsMappes = {}
+                tuuids.forEach(item=>{
+                    tuuidsMappes[item.tuuid] = item
+                })
+                const tuuidsOrdre = pathComplet.map(cuuid=>{
+                    return tuuidsMappes[cuuid].nom || cuuid
+                })
+                tuuidsOrdre.reverse()
+                // recupererPaths[cuuidSupprime] = '/'+tuuidsOrdre.join('/')
+                recupererPaths.push({cuuid: cuuidSupprime, path: '/'+tuuidsOrdre.join('/')})
+                // supprimePath = '/'+tuuidsOrdre.join('/')
+                // break
+            }
+
+        } 
+
+        // Creer path pour un repertoire supprime
+        if(item.cuuid && item.path_cuuids) {
+            // Repertoire
+            const pathComplet = item.path_cuuids
+            const tuuids = await collectionsDao.getParTuuids(pathComplet)
             const tuuidsMappes = {}
             tuuids.forEach(item=>{
                 tuuidsMappes[item.tuuid] = item
             })
-            const tuuidsOrdre = item.supprime_cuuids_path.map(cuuid=>{
+            const tuuidsOrdre = pathComplet.map(cuuid=>{
                 return tuuidsMappes[cuuid].nom || cuuid
             })
-            
-            console.debug("!!! tuuids ", tuuids)
-            supprimePath = '/'+tuuidsOrdre.join('/')
+            tuuidsOrdre.reverse()
+            // supprimePath = '/'+tuuidsOrdre.join('/')
+            recupererPaths.push({cuuid: item.cuuid, path: '/'+tuuidsOrdre.join('/')})
+        } else if(item.type_node === 'Collection') {
+            recupererPaths.push({cuuid: item.tuuid, path: '/'})
         }
-        docMappe.supprimePath = supprimePath
+
+        // docMappe.supprimePath = supprimePath
+        docMappe.recupererPaths = recupererPaths
         return docMappe
     }
 
     const params = {
-        ordreColonnes: ['nom', 'taille', 'supprimePath', 'dateAjout'],
+        ordreColonnes: ['nom', 'taille', 'supprimePath', /*'dateAjout'*/],
         paramsColonnes: {
             'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
-            'supprimePath': {'label': 'Repertoire', className: 'details', xs: 4, lg: 3},
-            'dateAjout': {'label': 'Date modification', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
+            'supprimePath': {'label': 'Repertoire', className: 'details', formatteur: FormatterPathSupprimer, xs: 9, lg: 6},
+            // 'dateAjout': {'label': 'Date modification', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
         },
         tri: {colonne: 'dateAjout', ordre: -1},
         rowLoader,
     }
     return params
+}
+
+function FormatterPathSupprimer(props) {
+    const data = props.data || {}
+
+    // const recupererPaths = data.recupererPaths
+
+    const workers = useWorkers()
+
+    const restorerCb = useCallback(e=>{
+        const { value } = e.currentTarget
+        console.debug("Restorer tuuid %s sous cuuid %s", data.tuuid, value)
+        let items = {}
+        if(value === data.tuuid) {
+            // C'est une collection
+            items[value] = null  // Va recuperer toute la collection
+        } else {
+            items[value] = [data.tuuid]
+        }
+        workers.connexion.recupererDocuments(items)
+            .then(r=>{
+                console.debug("Resultat recupererDocuments : ", r)
+            })
+            .catch(err=>console.error("Erreur restoration fichiers : ", err))
+    }, [workers, data])
+
+    const liste = useMemo(()=>{
+        if(!data.recupererPaths) return ''
+        return data.recupererPaths.map((item, idx)=>{
+            return (
+                <Row key={idx}>
+                    <Col xs={8} lg={9}>{item.path}</Col>
+                    <Col xs={4} lg={3}><Button variant="dark" value={item.cuuid} onClick={restorerCb}>Restorer</Button></Col>
+                </Row>
+            )
+        })
+    }, [data, restorerCb])
+
+    if(!data.recupererPaths) return ''
+
+    return (
+        <div>
+            {liste}
+        </div>
+    )
 }
 
 function FormatterColonneDate(props) {

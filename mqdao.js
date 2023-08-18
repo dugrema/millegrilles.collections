@@ -111,8 +111,8 @@ export function decrireCollection(socket, params) {
     return transmettreCommande(socket, params, 'decrireCollection')
 }
 
-export function recupererDocuments(socket, params) {
-    return transmettreCommande(socket, params, 'recupererDocuments')
+export function recupererDocumentsV2(socket, params) {
+    return transmettreCommande(socket, params, 'recupererDocumentsV2')
 }
 
 export function copierVersCollection(socket, params) {
