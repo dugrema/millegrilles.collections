@@ -140,7 +140,7 @@ export async function getParCollection(cuuid, userId) {
     //     }
     // }
 
-    console.debug('getParCollection cuuid %s userId: %s resultat collection %O, documents %O', cuuid, userId, collection, docs)
+    // console.debug('getParCollection cuuid %s userId: %s resultat collection %O, documents %O', cuuid, userId, collection, docs)
 
     return { collection, documents: docs }
 }

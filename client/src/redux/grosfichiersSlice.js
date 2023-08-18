@@ -447,7 +447,7 @@ export function creerThunks(actions, nomSlice) {
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
     
         const resultat = await connexion.getDocuments(tuuids, opts)
-        console.debug("traiterChargerTuuids Reponse ", resultat)
+        // console.debug("traiterChargerTuuids Reponse ", resultat)
 
         if(resultat.fichiers) {
     
@@ -1109,11 +1109,11 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const batchFichiers = fichiersChiffres.slice(0, 20)  // Batch de 20 fichiers a la fois
             fichiersChiffres = fichiersChiffres.slice(20)  // Clip 
             listenerApi.dispatch(actions.setFichiersChiffres(fichiersChiffres))
-            console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
+            // console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
 
             // Extraire toutes les cles a charger
             const {liste_hachage_bytes} = identifierClesHachages(batchFichiers)
-            console.debug("Dechiffrer avec liste_hachage_bytes ", liste_hachage_bytes)
+            // console.debug("Dechiffrer avec liste_hachage_bytes ", liste_hachage_bytes)
             let cles = null
             try {
                 cles = await clesDao.getCles(liste_hachage_bytes, {partage})
@@ -1125,7 +1125,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const fichiersDechiffres = []
 
             for await (const fichierChiffre of batchFichiers) {
-                console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
+                // console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
                 // Images inline chiffrees (thumbnail)
                 const tuuid = fichierChiffre.tuuid
                 let dechiffre = true

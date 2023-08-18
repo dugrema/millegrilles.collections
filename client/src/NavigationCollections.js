@@ -643,11 +643,11 @@ function InformationStatistiques(props) {
 
     useEffect(()=>{
         if(!etatPret) return
-        console.debug("InformationStatistiques charger : %O", cuuid)
+        // console.debug("InformationStatistiques charger : %O", cuuid)
         const cuuidStats = cuuid?cuuid:null
         workers.connexion.getInfoStatistiques(cuuidStats)
             .then(reponse=>{
-                console.debug("Reponse stats : %O", reponse)
+                // console.debug("Reponse stats : %O", reponse)
                 setInfo(reponse.info)
             })
             .catch(err=>console.error("Erreur recuperer stats : %O", err))
