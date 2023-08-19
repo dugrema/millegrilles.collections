@@ -100,16 +100,18 @@ function pushAction(state, action) {
     const mergeVersion = state.mergeVersion
     state.mergeVersion++
 
+    const contactId = state.partageContactId
+
     let {liste: payload, clear, nombreFichiersTotal} = action.payload
     if(clear === true) state.liste = []  // Reset liste
 
     let liste = state.liste || []
     if( Array.isArray(payload) ) {
-        const ajouts = payload.map(item=>{return {...item, '_mergeVersion': mergeVersion}})
+        const ajouts = payload.map(item=>{return {...item, '_mergeVersion': mergeVersion, contactId}})
         // console.debug("pushAction ajouter ", ajouts)
         liste = liste.concat(ajouts)
     } else {
-        const ajout = {...payload, '_mergeVersion': mergeVersion}
+        const ajout = {...payload, '_mergeVersion': mergeVersion, contactId}
         // console.debug("pushAction ajouter ", ajout)
         liste.push(ajout)
     }

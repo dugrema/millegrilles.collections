@@ -24,13 +24,16 @@ supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.wa
 export { Icones }
 
 export function mapDocumentComplet(workers, doc) {
-
     // console.debug("mapDocumentComplet : ", doc)
 
     const { connexion, traitementFichiers } = workers
 
     // Instance mediaLoader pour contenu (fichier, images, videos)
-    const creerTokenStreamInst = commande => connexion.creerTokenStream(commande)
+    const creerTokenStreamInst = commande => {
+        if(doc.contactId) commande = {...commande, contact_id: doc.contactId}
+        console.debug("creerTokenStreamInst Commande %O, doc: %O", commande, doc)
+        return connexion.creerTokenStream(commande)
+    }
     const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)
 
     const { nom, tuuid, date_creation, mimetype, archive } = doc

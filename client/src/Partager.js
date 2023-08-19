@@ -13,8 +13,10 @@ import { mapDocumentComplet } from './mapperFichier'
 import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret} from './WorkerContext'
 import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } from './redux/partagerSlice'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
+import PreviewFichiers from './FilePlayer'
 
 import { BoutonsFormat, SectionBreadcrumb, InformationListe, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
+import { CopierModal, InfoModal } from './ModalOperations'
 
 function Partager(props) {
 
@@ -117,7 +119,9 @@ function NavigationPartageTiers(props) {
           listePartagesAutres = useSelector(state=>state.partager.listePartagesAutres),
           contactId = useSelector(state=>state.fichiers.contactId),
           breadcrumb = useSelector(state=>state.fichiers.breadcrumb)
+    const selection = useSelector(state => state.fichiers.selection )
 
+    const [ showPreview, setShowPreview ] = useState(false)
     const [modeView, setModeView] = useState('')
     const [scrollValue, setScrollValue] = useState(0)
     const [ afficherVideo, setAfficherVideo ] = useState('')
@@ -138,6 +142,16 @@ function NavigationPartageTiers(props) {
         if(!userInfo) return {label: 'Partages'}
         return {label: userInfo.nom_usager}
     }, [userInfo])
+
+    // Preview
+    const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
+    const showPreviewAction = useCallback( tuuid => {
+        if(!tuuid && selection && selection.length > 0) {
+            tuuid = selection[0]
+        }
+        setTuuidSelectionne(tuuid)
+        setShowPreview(true)
+    }, [setShowPreview, selection, setTuuidSelectionne])
 
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
     
@@ -218,7 +232,7 @@ function NavigationPartageTiers(props) {
                     preparerColonnes={preparerColonnesCb}
                     modeView={modeView}
                     naviguerCollection={naviguerCollection}
-                    // showPreviewAction={showPreviewAction}
+                    showPreviewAction={showPreviewAction}
                     // setContextuel={setContextuel}
                     afficherVideo={afficherVideo}
                     afficherAudio={afficherAudio}
@@ -232,6 +246,17 @@ function NavigationPartageTiers(props) {
             </Suspense>
 
             <InformationListe />
+
+            <Modals 
+                showPreview={showPreview}
+                setShowPreview={setShowPreview}
+                tuuidSelectionne={tuuidSelectionne}
+                showPreviewAction={showPreviewAction}
+                // contextuel={contextuel}
+                // setContextuel={setContextuel} 
+                // showInfoModal={showInfoModal}
+                // setShowInfoModal={setShowInfoModal}
+                erreurCb={erreurCb} />            
 
         </div>
     )
@@ -578,9 +603,9 @@ function ListePartagesContact(props) {
     )
 }
 
-function preparerColonnes(workers) {
+function preparerColonnes(workers, getState) {
 
-    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
+    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx, {getState})
 
     const params = {
         ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
@@ -596,4 +621,123 @@ function preparerColonnes(workers) {
         rowLoader,
     }
     return params
+}
+
+function Modals(props) {
+
+    const {
+        showCreerRepertoire, setShowCreerRepertoire,
+        showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
+        contextuel, setContextuel, preparationUploadEnCours,
+        showInfoModal, setShowInfoModal, annulerPreparationCb,
+        erreurCb,
+    } = props
+    
+    const usager = useUsager()
+    const etatPret = useEtatPret()
+    const liste = useSelector(state => state.fichiers.liste)
+    const cuuid = useSelector(state => state.fichiers.cuuid)
+    const selection = useSelector(state => state.fichiers.selection )
+
+    const [ showArchiverModal, setShowArchiverModal ] = useState(false)
+    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
+    const [ showCopierModal, setShowCopierModal ] = useState(false)
+    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    // const [ showInfoModal, setShowInfoModal ] = useState(false)
+    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
+    const [ showPartagerModal, setShowPartagerModal ] = useState(false)
+
+    const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
+    const showArchiverModalOuvrir = useCallback(()=>setShowArchiverModal(true), [setShowArchiverModal])
+    const showArchiverModalFermer = useCallback(()=>setShowArchiverModal(false), [setShowArchiverModal])
+    const showSupprimerModalOuvrir = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
+    const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
+    const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
+    const showRenommerModalFermer = useCallback(()=>setShowRenommerModal(false), [setShowRenommerModal])
+    const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
+    const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
+    const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
+    const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
+    const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
+    const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
+    const showPartagerModalOuvrir = useCallback(()=>setShowPartagerModal(true), [setShowPartagerModal])
+    const showPartagerModalFermer = useCallback(()=>setShowPartagerModal(false), [setShowPartagerModal])
+
+    const dispatch = useDispatch()
+    const workers = useWorkers()
+
+    const downloadAction = useCallback((params) => {
+        let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
+        if(fichier) {
+            const videos = fichier.version_courante.video
+            const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
+            // console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
+            // Set le fuuid de video a downloader, params dechiffrage
+            fichier = {
+                ...fichier, 
+                infoDechiffrage: infoVideo,
+                fuuidDownload: params.fuuid
+            }
+            throw new Error("fix me")
+            // dispatch(ajouterDownload(workers, fichier))
+            //     .catch(err=>erreurCb(err, 'Erreur ajout download'))
+        }
+    }, [workers, dispatch, liste])
+
+    return (
+        <>
+            <InformationListe />
+
+            {/* <MenuContextuel
+                contextuel={contextuel} 
+                fermerContextuel={fermerContextuel}
+                fichiers={liste}
+                tuuidSelectionne={tuuidSelectionne}
+                selection={selection}
+                showPreview={showPreviewAction}
+                usager={usager}
+                showArchiverModalOuvrir={showArchiverModalOuvrir}
+                showSupprimerModalOuvrir={showSupprimerModalOuvrir}
+                showCopierModalOuvrir={showCopierModalOuvrir}
+                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
+                showInfoModalOuvrir={showInfoModalOuvrir}
+                showRenommerModalOuvrir={showRenommerModalOuvrir}
+                showPartagerModalOuvrir={showPartagerModalOuvrir}
+                cuuid={cuuid}
+                etatConnexion={etatPret}
+                etatAuthentifie={etatPret}
+                erreurCb={erreurCb}
+              /> */}
+
+            <PreviewFichiers 
+                workers={workers}
+                showPreview={showPreview} 
+                setShowPreview={setShowPreview}
+                tuuidSelectionne={tuuidSelectionne}
+                fichiers={liste}
+              />
+
+            {/* <CopierModal 
+                show={showCopierModal} 
+                fermer={showCopierModalFermer}
+                selection={selection}
+                workers={workers}
+                erreurCb={erreurCb}
+              />
+ */}
+            <InfoModal 
+                show={showInfoModal} 
+                fermer={showInfoModalFermer}
+                fichiers={liste}
+                selection={selection}
+                workers={workers}
+                etatConnexion={etatPret}
+                etatAuthentifie={etatPret}
+                usager={usager}
+                erreurCb={erreurCb}
+                downloadAction={downloadAction}
+              />
+
+        </>
+    )
 }

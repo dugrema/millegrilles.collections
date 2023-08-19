@@ -41,9 +41,10 @@ async function verifierAutorisationStream(req, res) {
                
         let userId = req.session.userId
         
-        if(userId) {
-            // Ok
-        } else if(!userId && jwt) {
+        // if(userId) {
+        //     // Ok
+        // } else if(!userId && jwt) {
+        if(jwt) {
             // On n'a pas de session usager. Utiliser le JWT pour recuperer le userId et fuuid
             try {
                 const resultatToken = await verifierTokenFichier(pki, jwt)

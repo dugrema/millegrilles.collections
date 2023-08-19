@@ -500,7 +500,9 @@ export async function creerTokenStream(socket, enveloppeParams) {
  
         const pki = socket.amqpdao.pki
         const { cle: clePriveePem, fingerprint } = pki
-        const userId = socket.userId
+        // Supporter user_id recu pour partage fichiers
+        const userId = resultat.user_id || socket.userId
+        // const userId = socket.userId
 
         const jwts = {}
         for await (const fuuid of fuuids) {
