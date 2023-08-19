@@ -33,6 +33,9 @@ const initialState = {
     bytesTotalDossier: 0,       // Nombre de bytes dans le dossier
     parametresRecherche: '',    // String de recherche
     nombreFichiersTotal: 0,     // Utilise pour listes partielles (e.g. recherche)
+    
+    partageUserIdTiers: '',     // Le userId tiers du a utiliser pour la navigation
+    partageContactId: '',       // Le contactId du partage de reference
 }
 
 // Actions
@@ -52,12 +55,20 @@ function setCuuidAction(state, action) {
     state.cuuid = action.payload
 }
 
+function setUserContactIdAction(state, action) {
+    const { userId, contactId } = action.payload
+    state.partageUserIdTiers = userId
+    state.partageContactId = contactId
+}
+
 function setSourceAction(state, action) {
     state.source = action.payload
     state.cuuid = null
     state.intervalle = null
     state.breadcrumb = []
     state.liste = null
+    state.partageUserIdTiers = ''
+    state.partageContactId = ''
 }
 
 function setIntervalleAction(state, action) {
@@ -205,8 +216,8 @@ function mergeTuuidDataAction(state, action) {
             peutAppend = data.supprime === true
         } else if(source === SOURCE_RECHERCHE) {
             peutAppend = data.supprime === true
-        } else if(source === SOURCE_PARTAGES_USAGER) {
-            peutAppend = true  // On n'a pas de filtres sur les partages usager
+        // } else if(source === SOURCE_PARTAGES_USAGER) {
+        //     peutAppend = true  // On n'a pas de filtres sur les partages usager
         } else if(source === SOURCE_PARTAGES_CONTACTS) {
             peutAppend = true  // On n'a pas de filtres sur les partages contacts
         } else if(source === SOURCE_PLUS_RECENT) {
@@ -375,6 +386,7 @@ export function creerSlice(name) {
             setUserId: setUserIdAction,
             setCuuid: setCuuidAction,
             setCollectionInfo: setCollectionInfoAction,
+            setUserContactId: setUserContactIdAction,
             push: pushAction, 
             // supprimer: supprimerAction,
             clear: clearAction,
@@ -402,6 +414,7 @@ export function creerThunks(actions, nomSlice) {
     const { 
         setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
         setSortKeys, setSource, setIntervalle, pushFichiersChiffres, setDechiffrageComplete,
+        setUserContactId,
     } = actions
 
     // Async thunks
@@ -442,14 +455,15 @@ export function creerThunks(actions, nomSlice) {
     
     async function traiterChargerTuuids(workers, tuuids, opts, dispatch, getState) {
         opts = opts || {}
-        // console.debug("Charger detail fichiers tuuids : %O", tuuids)
+        console.debug("Charger detail fichiers tuuids : %O, opts : %O", tuuids, opts)
     
         const { connexion, collectionsDao } = workers
+        const contactId = opts.contactId || getState().partageContactId
     
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
     
-        const resultat = await connexion.getDocuments(tuuids, opts)
-        // console.debug("traiterChargerTuuids Reponse ", resultat)
+        const resultat = await connexion.getDocuments(tuuids, {...opts, contactId})
+        console.debug("traiterChargerTuuids Reponse ", resultat)
 
         if(resultat.fichiers) {
     
@@ -523,9 +537,9 @@ export function creerThunks(actions, nomSlice) {
         const { collectionsDao } = workers
     
         const state = getState()[nomSlice]
-        const { userId, cuuid } = state
+        const { userId, cuuid, partageContactId: contactId } = state
     
-        // console.debug("Rafraichir '%s' pour userId", cuuid, userId)
+        console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
     
         // Nettoyer la liste
         dispatch(clear())
@@ -548,14 +562,14 @@ export function creerThunks(actions, nomSlice) {
             // Detecter les documents connus qui sont dirty ou pas encore dechiffres
             const tuuids = documents.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
             if(tuuids.length > 0) {
-                dispatch(chargerTuuids(workers, tuuids))
+                dispatch(chargerTuuids(workers, tuuids, {partage: !!contactId, contactId}))
                     .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
             }
         }
     
         let compteur = 0
         for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
-            let resultatSync = await syncCollection(dispatch, workers, cuuid, CONST_SYNC_BATCH_SIZE, compteur)
+            let resultatSync = await syncCollection(dispatch, workers, cuuid, CONST_SYNC_BATCH_SIZE, compteur, {contactId})
             // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
             if( ! resultatSync || ! resultatSync.liste ) break
             compteur += resultatSync.liste.length
@@ -569,16 +583,18 @@ export function creerThunks(actions, nomSlice) {
     
     // DEBUT SOURCES AFFICHAGE
 
-    async function syncCollection(dispatch, workers, cuuid, limit, skip) {
+    async function syncCollection(dispatch, workers, cuuid, limit, skip, opts) {
+        opts = opts || {}
+        const contactId = opts.contactId
         const { connexion, collectionsDao } = workers
-        const resultat = await connexion.syncCollection(cuuid, {limit, skip})
+        const resultat = await connexion.syncCollection(cuuid, {limit, skip, contactId})
     
         const { liste } = resultat
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
     
         // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-            dispatch(chargerTuuids(workers, listeTuuidsDirty))
+            dispatch(chargerTuuids(workers, listeTuuidsDirty, {partage: !!contactId, contactId}))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
         } else {
             dispatch(setDechiffrageComplete())
@@ -918,12 +934,12 @@ export function creerThunks(actions, nomSlice) {
         // await syncRecherche(dispatch, workers, tuuidsManquants)
     }
 
-    function afficherPartagesContact(workers, contactId, opts) {
+    function afficherPartagesContact(workers, userIdTiers, contactId, opts) {
         opts = opts || {}
-        return (dispatch, getState) => traiterChargerPartagesContact(workers, contactId, opts, dispatch, getState)
+        return (dispatch, getState) => traiterChargerPartagesContact(workers, userIdTiers, contactId, opts, dispatch, getState)
     }    
 
-    async function traiterChargerPartagesContact(workers, contactId, opts, dispatch, getState) {
+    async function traiterChargerPartagesContact(workers, userIdTiers, contactId, opts, dispatch, getState) {
         opts = opts || {}
     
         const stateInitial = getState()[nomSlice]
@@ -935,16 +951,21 @@ export function creerThunks(actions, nomSlice) {
         dispatch(setSource(SOURCE_PARTAGES_CONTACTS))
         dispatch(clear())
 
+        dispatch(setUserContactId({userId: userIdTiers, contactId: contactId}))
         dispatch(setSortKeys({key: 'nom', ordre: 1}))
     
         const { connexion, collectionsDao } = workers
-        const resultat = await connexion.getPartagesContact(contactId)
+        const resultat = await connexion.getPartagesContact(userIdTiers, contactId)
         console.debug("Resultat getPartagesContact : ", resultat)
-        const partages = resultat.partages
-        const partagesDict = partages.reduce((acc, item)=>{
-            acc[item.tuuid] = item
-            return acc
-        }, {})
+        const partages = resultat.partages.filter(item=>{
+            if(contactId) return item.contact_id === contactId
+            return item.user_id === userIdTiers
+        })
+        const partagesDict = partages
+            .reduce((acc, item)=>{
+                acc[item.tuuid] = item
+                return acc
+            }, {})
 
         // Charger le contenu de la collection deja connu
         let contenuIdb = await collectionsDao.getParTuuids(partages.map(item=>item.tuuid))
@@ -965,14 +986,12 @@ export function creerThunks(actions, nomSlice) {
 
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
         if(contenuIdb) {
-            // console.debug("Push documents provenance idb : %O", contenuIdb)
+            console.debug("Push documents provenance idb : %O", contenuIdb)
             dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-            dispatch(chargerTuuids(workers, tuuids, {partage: true}))
+            dispatch(chargerTuuids(workers, tuuids, {partage: true, contactId}))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
         }
-    
-        // await syncRecherche(dispatch, workers, tuuidsManquants)
     }
 
     // FIN SOURCES AFFICHAGE
@@ -1073,7 +1092,8 @@ export function creerThunks(actions, nomSlice) {
     const thunks = { 
         changerCollection, 
         afficherPlusrecents, afficherCorbeille, afficherRecherche, 
-        afficherPartagesUsager, afficherPartagesContact,
+        afficherPartagesUsager, 
+        afficherPartagesContact,
         chargerTuuids,
         ajouterFichierVolatil, rafraichirCollection, supprimerFichier, restaurerFichier,
     }
@@ -1103,7 +1123,8 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
         // Recuperer la liste des fichiers chiffres
         let fichiersChiffres = [...getState().listeDechiffrage]
         const source = getState().source
-        const partage = source === SOURCE_PARTAGES_CONTACTS
+        const contactId = getState().partageContactId
+        const partage = !!(contactId || source === SOURCE_PARTAGES_CONTACTS)
         while(fichiersChiffres.length > 0) {
             // Trier et slicer une batch de fichiers a dechiffrer
             const sortKeys = getState().sortKeys
@@ -1115,7 +1136,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
 
             // Extraire toutes les cles a charger
             const {liste_hachage_bytes} = identifierClesHachages(batchFichiers)
-            // console.debug("Dechiffrer avec liste_hachage_bytes ", liste_hachage_bytes)
+            console.debug("Dechiffrer avec liste_hachage_bytes %s (source: %s, partage: %s) ", liste_hachage_bytes, source, partage)
             let cles = null
             try {
                 cles = await clesDao.getCles(liste_hachage_bytes, {partage})

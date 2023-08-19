@@ -13,6 +13,9 @@ function build(workers) {
         getPartagesUsager() {
             return getPartagesUsager(workers)
         },
+        getPartagesContact() {
+            return getPartagesContact(workers)
+        },
     }
 }
 
@@ -33,5 +36,11 @@ async function supprimerContacts(workers, contactIds) {
 async function getPartagesUsager(workers) {
     const { connexion } = workers
     const partages = await connexion.getPartagesUsager()
+    return partages
+}
+
+async function getPartagesContact(workers) {
+    const { connexion } = workers
+    const partages = await connexion.getPartagesContact()
     return partages
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import Button from 'react-bootstrap/Button'
@@ -7,17 +7,25 @@ import Col from 'react-bootstrap/Col'
 import Modal from 'react-bootstrap/Modal'
 import Form from 'react-bootstrap/Form'
 
+import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
+
+import { mapDocumentComplet } from './mapperFichier'
 import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret} from './WorkerContext'
-import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesContact } from './redux/partagerSlice'
+import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } from './redux/partagerSlice'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 
+import { BoutonsFormat, SectionBreadcrumb, InformationListe, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
+
 function Partager(props) {
+
+    const { erreurCb } = props
 
     const workers = useWorkers(), 
           dispatch = useDispatch(),
           etatPret = useEtatPret()
 
     const [contactId, setContactId] = useState('')
+    const [userIdPartage, setUserIdPartage] = useState('')
 
     useEffect(()=>{
         if(!etatPret) return
@@ -26,14 +34,17 @@ function Partager(props) {
             .catch(err=>console.error("Erreur chargement contacts : ", err))
 
         // Charger tous les partages (paires contacts/cuuid)
-        // dispatch(chargerPartagesUsager(workers))
-        //     .catch(err=>console.error("Erreur chargement des partages usager : ", err))
-        // dispatch(chargerPartagesContact(workers))
-        //     .catch(err=>console.error("Erreur chargement des partages contacts : ", err))
+        dispatch(chargerPartagesUsager(workers))
+            .catch(err=>console.error("Erreur chargement des partages usager : ", err))
+        dispatch(chargerPartagesDeTiers(workers))
+            .catch(err=>console.error("Erreur chargement des partages contacts (tiers avec usager local) : ", err))
     }, [dispatch, workers, etatPret])
 
-    const choisirContactId = useCallback(e=>setContactId(e.currentTarget.value), [setContactId])
+    const choisirContactId = useCallback(e=>{
+        setContactId(e.currentTarget.value)
+    }, [setContactId])
     const fermerPageContact = useCallback(()=>setContactId(''), setContactId)
+    const fermerPagePartageUsager = useCallback(()=>setUserIdPartage(''), setUserIdPartage)
 
     // const naviguerCollection = useCallback( cuuid => {
     //     setAfficherVideo('')  // Reset affichage
@@ -68,12 +79,25 @@ function Partager(props) {
 
     // }, [etatPret, userId])
 
+    if(userIdPartage) {
+        return <NavigationPartageTiers 
+            userId={userIdPartage} 
+            fermer={fermerPagePartageUsager} 
+            erreurCb={erreurCb} />
+    }
+
     if(contactId) {
-        return <PageContact contactId={contactId} fermer={fermerPageContact} />
+        return <PageContact 
+            contactId={contactId} 
+            fermer={fermerPageContact} 
+            erreurCb={erreurCb} />
     }
 
     return (
         <div>
+            <h3>Partages</h3>
+            <PartagesUsagersTiers onSelect={setUserIdPartage} />
+
             <h3>Contacts</h3>
             <ContactsPartage choisirContactId={choisirContactId} />
         </div>
@@ -81,6 +105,160 @@ function Partager(props) {
 }
 
 export default Partager
+
+function NavigationPartageTiers(props) {
+
+    const { userId, fermer, erreurCb } = props
+
+    const workers = useWorkers(),
+          dispatch = useDispatch()
+
+    const userPartages = useSelector(state=>state.partager.userPartages),
+          listePartagesAutres = useSelector(state=>state.partager.listePartagesAutres),
+          contactId = useSelector(state=>state.fichiers.contactId),
+          breadcrumb = useSelector(state=>state.fichiers.breadcrumb)
+
+    const [modeView, setModeView] = useState('')
+    const [scrollValue, setScrollValue] = useState(0)
+    const [ afficherVideo, setAfficherVideo ] = useState('')
+    const [ afficherAudio, setAfficherAudio ] = useState('')
+
+    const userInfo = useMemo(()=>{
+        return userPartages.filter(item=>item.user_id === userId).pop()
+    }, [userPartages, userId])
+
+    const contactInfo = useMemo(()=>{
+        if(!breadcrumb) return ''
+        const tuuidPartage = breadcrumb[1]
+        if(!tuuidPartage) return ''
+        return listePartagesAutres.filter(item=>item.tuuid === tuuidPartage).pop()
+    }, [breadcrumb, listePartagesAutres])
+
+    const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
+    
+    const naviguerCollection = useCallback( cuuid => {
+        setAfficherVideo('')  // Reset affichage
+        setAfficherAudio('')  // Reset affichage
+        if(!cuuid) cuuid = ''
+        try {
+            if(cuuid) {
+                dispatch(fichiersActions.breadcrumbPush({tuuid: cuuid}))
+            } else {
+                dispatch(fichiersActions.breadcrumbSlice())
+            }
+        } catch(err) {
+            console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
+        }
+        try {
+            let contactInfoEffectif = contactInfo
+            if(!contactInfo && cuuid) {
+                contactInfoEffectif = listePartagesAutres.filter(item=>item.tuuid === cuuid).pop()
+            }
+            console.debug("Changer collection pour contact %O, cuuid %O", contactInfoEffectif, cuuid)
+            dispatch(fichiersActions.setUserContactId({userId: userInfo.user_id, contactId: contactInfoEffectif.contact_id}))
+            dispatch(fichiersThunks.changerCollection(workers, cuuid))
+                .catch(err=>erreurCb(err, 'Erreur changer collection'))
+        } catch(err) {
+            console.error("naviguerCollection Erreur dispatch changerCollection", err)
+        }
+    }, [dispatch, workers, userInfo, erreurCb, contactInfo, setAfficherVideo, setAfficherAudio])
+
+    const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
+
+    useEffect(()=>{
+        if(!userId) return  // Il faut au moins avoir une selection d'usager
+        // Reset navigation en mode partage, top-level
+        //setAfficherVideo('')  // Reset affichage
+        //setAfficherAudio('')  // Reset affichage
+        try {
+            // Set tri par date modification desc
+            dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
+                .catch(err=>erreurCb(err, 'Erreur changer collection'))
+        } catch(err) {
+            console.error("naviguerCollection Erreur dispatch changerCollection", err)
+        }
+
+    }, [dispatch, userId, contactId])
+
+    return (
+        <div>
+            <Row>
+                <Col xs={11}><h3>Partage {userInfo.nom_usager}</h3></Col>
+                <Col>
+                    <Button variant="secondary" onClick={fermer}>X</Button>
+                </Col>
+            </Row>
+
+            <Row className='fichiers-header-buttonbar'>
+                <Col xs={12} lg={5}>
+                    <SectionBreadcrumb naviguerCollection={naviguerCollection} />
+                </Col>
+
+                <Col xs={12} sm={3} md={4} lg={2}>
+                    {'nombreFichiers'}
+                </Col>
+
+                <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
+                    <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                </Col>
+            </Row>
+
+            <Suspense fallback={<p>Loading ...</p>}>
+                <AffichagePrincipal 
+                    preparerColonnes={preparerColonnesCb}
+                    modeView={modeView}
+                    naviguerCollection={naviguerCollection}
+                    // showPreviewAction={showPreviewAction}
+                    // setContextuel={setContextuel}
+                    afficherVideo={afficherVideo}
+                    afficherAudio={afficherAudio}
+                    setAfficherVideo={setAfficherVideo}
+                    setAfficherAudio={setAfficherAudio}
+                    // showInfoModalOuvrir={showInfoModalOuvrir}
+                    scrollValue={scrollValue}
+                    onScroll={onScrollHandler}
+                    erreurCb={erreurCb}
+                />
+            </Suspense>
+
+            <InformationListe />
+
+        </div>
+    )
+}
+
+function UsagerPartage(props) {
+
+    const { value, onSelect } = props
+
+    return (
+        <Row>
+            <Col>
+                <Button variant="link" onClick={onSelect} value={value.user_id}>{value.nom_usager}</Button>
+            </Col>
+        </Row>
+    )
+}
+
+function PartagesUsagersTiers(props) {
+
+    const { onSelect } = props
+
+    const userPartages = useSelector(state=>state.partager.userPartages)
+
+    const userIdOnSelect = useCallback(e=>{
+        const { value } = e.currentTarget
+        onSelect(value)
+    }, [onSelect])
+
+    return (
+        <div>
+            {userPartages.map(item=>{
+                return <UsagerPartage key={item.user_id} value={item} onSelect={userIdOnSelect} />
+            })}
+        </div>
+    )
+}
 
 /** Contacts supportes pour le partage */
 function ContactsPartage(props) {
@@ -388,4 +566,24 @@ function ListePartagesContact(props) {
 
         </div>
     )
+}
+
+function preparerColonnes(workers) {
+
+    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
+
+    const params = {
+        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
+        paramsColonnes: {
+            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
+            'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
+            'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
+            // 'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
+            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 3},
+            // 'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
+        },
+        tri: {colonne: 'nom', ordre: 1},
+        rowLoader,
+    }
+    return params
 }

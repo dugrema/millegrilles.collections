@@ -4,9 +4,14 @@ const SLICE_NAME = 'partager'
 
 const initialState = {
     userId: '',         // UserId courant, permet de stocker plusieurs users localement
+
+    // Partage de l'usager courant avec tiers
     listeContacts: [],  // Liste de contacts connus
-    listePartagesUsager: [],    // Liste des partages par l'usager avec d'autres { cuuid, contact_id }
-    listePartagesAutres: [],    // Liste des partages par d'autres usagers avec l'usager courant { cuuid, contact_id }
+    listePartagesUsager: [],    // Liste des partages par l'usager avec d'autres { tuuid, contact_id }
+
+    // Partage de tiers avec l'usager courant
+    listePartagesAutres: [],    // Liste des partages par d'autres usagers avec l'usager courant { tuuid, contact_id, user_id }
+    userPartages: [],           // Liste des usagers qui ont partage au moins une collection { user_id, nom_usager }
 }
 
 // Actions
@@ -29,6 +34,18 @@ function setPartagesUsagerAction(state, action) {
     state.listePartagesUsager = action.payload
 }
 
+function setListePartagesAutresAction(state, action) {
+    state.listePartagesAutres = action.payload
+}
+
+function setUserPartagesAction(state, action) {
+    const listeUsagers = [...action.payload]
+    listeUsagers.sort((a,b)=>{
+        return a.nom_usager.localeCompare(b.nom_usager)
+    })
+    state.userPartages = listeUsagers
+}
+
 const slice = createSlice({
     name: SLICE_NAME,
     initialState,
@@ -37,12 +54,15 @@ const slice = createSlice({
         entretien: entretienAction,
         setContacts: setContactsAction,
         setPartagesUsager: setPartagesUsagerAction,
+        setListePartagesAutres: setListePartagesAutresAction,
+        setUserPartages: setUserPartagesAction,
     }
 })
 
 export const { 
     setUserId, merge, clearCompletes, entretien,
     setContacts, setPartagesUsager, 
+    setListePartagesAutres, setUserPartages,
 } = slice.actions
 export default slice.reducer
 
@@ -74,6 +94,24 @@ async function traiterChargerPartagesUsagers(workers, dispatch, getState) {
     const reponse = await contactsDao.getPartagesUsager()
     console.debug("Partages recus : ", reponse)
     dispatch(setPartagesUsager(reponse.partages))
+}
+
+export function chargerPartagesDeTiers(workers) {
+    return (dispatch, getState) => traiterChargerPartagesDeTiers(workers, dispatch, getState)
+}
+
+async function traiterChargerPartagesDeTiers(workers, dispatch, getState) {
+    const { connexion, contactsDao } = workers
+    
+    console.debug("traiterChargerPartagesDeTiers")
+
+    const reponse = await contactsDao.getPartagesContact()
+    console.debug("Partages tiers recus : ", reponse)
+    dispatch(setListePartagesAutres(reponse.partages))
+
+    // Charger liste des usagers
+    dispatch(setUserPartages(reponse.usagers))
+
 }
 
 // Middleware

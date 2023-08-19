@@ -125,11 +125,11 @@ function decrireCollection(tuuid, params) {
 function getDocuments(tuuids, opts) {
   opts = opts || {}
 
-  const { partage } = opts
+  const { partage, contactId: contact_id } = opts
 
   return ConnexionClient.emitBlocking(
     'getDocuments',
-    {tuuids_documents: tuuids, partage},
+    {tuuids_documents: tuuids, partage, contact_id},
     {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', attacherCertificat: true}
   )
 }
@@ -213,8 +213,9 @@ function creerTokenStream(commande) {
 
 function syncCollection(cuuid, opts) {
   opts = opts || {}
-  const {skip, limit} = opts
+  const {skip, limit, contactId} = opts
   const requete = {skip, limit}
+  if(contactId) requete.contact_id = contactId
   if(cuuid) requete.cuuid = cuuid
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCollection', ajouterCertificat: true}
   // console.debug("syncCollection %O, %O", requete, params)
@@ -289,8 +290,10 @@ function getPartagesUsager(contactId) {
   return ConnexionClient.emitBlocking('getPartagesUsager', requete, params)
 }
 
-function getPartagesContact(contactId) {
-  const requete = {contact_id: contactId}
+function getPartagesContact(opts) {
+  opts = opts || {}
+  const contact_id = opts.contactId
+  const requete = {contact_id}
   const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPartagesContact', ajouterCertificat: true}
   return ConnexionClient.emitBlocking('getPartagesContact', requete, params)
 }

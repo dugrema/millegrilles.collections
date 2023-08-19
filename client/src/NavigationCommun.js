@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
+import Alert from 'react-bootstrap/Alert'
 import Breadcrumb from 'react-bootstrap/Breadcrumb'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -242,7 +243,7 @@ function BoutonUpload(props) {
     )
 }
 
-function SectionBreadcrumb(props) {
+export function SectionBreadcrumb(props) {
 
     const { naviguerCollection, fichier } = props
 
@@ -545,4 +546,36 @@ function AfficherAudioView(props) {
             fermer={fermer} 
             showInfoModalOuvrir={showInfoModalOuvrir} />
     )
+}
+
+export function InformationListe(_props) {
+
+    const liste = useSelector(state => state.fichiers.liste)
+    const cuuid = useSelector(state => state.fichiers.cuuid)
+
+    if (!liste) return <p>Chargement en cours...</p>
+
+    if(!cuuid) {
+        const tailleListe = (liste && liste.length) || 0
+        if(tailleListe === 0) {
+            return (
+                <div>
+                    <br/>
+                    <Alert>
+                        <Alert.Heading>Aucune collection</Alert.Heading>
+                        <p>
+                            Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
+                        </p>
+                    </Alert>
+                </div>
+            )
+        }
+    } else {
+        const tailleListe = (liste && liste.length) || 0
+        if(tailleListe === 0) {
+            return <p>Aucuns fichiers.</p>
+        }
+    }
+
+    return ''
 }
