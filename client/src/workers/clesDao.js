@@ -26,6 +26,7 @@ function build(workers) {
 export default build
 
 async function getCles(workers, liste_hachage_bytes, opts) {
+    console.debug("getCles liste_hachage_bytes, opts", liste_hachage_bytes, opts)
     opts = opts || {}
 
     const partage = opts.partage

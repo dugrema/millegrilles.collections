@@ -52,7 +52,7 @@ function setDownloadsAction(state, action) {
 function pushDownloadAction(state, action) {
     const docDownload = action.payload
 
-    // console.debug("pushDownloadAction payload : ", docDownload)
+    console.debug("pushDownloadAction payload : ", docDownload)
     state.liste.push(docDownload)
 
     const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
@@ -156,15 +156,14 @@ export function ajouterDownload(workers, docDownload) {
 async function traiterAjouterDownload(workers, docDownload, dispatch, getState) {
     const { downloadFichiersDao, clesDao } = workers
     
-    // console.debug("traiterCompleterDownload ", fuuid)
-    // console.debug("traiterAjouterDownload payload : ", docDownload)
+    console.debug("traiterAjouterDownload payload : ", docDownload)
     
     const userId = getState()[SLICE_NAME].userId
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
 
-    const fuuid = docDownload.fuuidDownload || docDownload.fuuid || docDownload.fuuid_v_courante
-    const fuuidCle = docDownload.fuuid_v_courante || fuuid
     const version_courante = docDownload.version_courante || {}
+    const fuuid = docDownload.fuuidDownload || docDownload.fuuid || version_courante.fuuid
+    const fuuidCle = docDownload.fuuid_v_courante || fuuid
     const taille = version_courante.taille
     const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
     // console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
@@ -172,7 +171,8 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
         // Ajouter l'upload, un middleware va charger le reste de l'information
         // console.debug("Ajout upload %O", correlation)
 
-        await clesDao.getCles([fuuidCle])  // Fetch pour cache (ne pas stocker dans redux)
+        // Fetch pour cache (ne pas stocker dans redux)
+        await clesDao.getCles([fuuidCle])
 
         const nouveauDownload = {
             ...docDownload,

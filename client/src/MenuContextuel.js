@@ -339,3 +339,59 @@ export function onContextMenu(event, value, setContextuel) {
 
     setContextuel(params)
 }
+
+export function MenuContextuelPartageFichier(props) {
+    const { 
+        fichier, contextuel, fermerContextuel, showPreview, cuuid, 
+        showCopierModalOuvrir, showInfoModalOuvrir, downloadAction, 
+    } = props
+
+    // Determiner si preview est disponible
+    let previewDisponible = false
+    if(fichier) {
+        const mimetype = fichier.mimetype || '',
+              mimetypeBase = mimetype.split('/').shift()
+        if(mimetype === 'application/pdf') {
+            previewDisponible = true
+        } else {
+            const versionCourante = fichier.version_courante || {}
+            if(mimetypeBase === 'image' && versionCourante.images) {
+                previewDisponible = true
+            } else if(mimetypeBase === 'video' && versionCourante.video) {
+                previewDisponible = true
+            }
+        }
+    }
+
+    const posX = useMemo(()=>{
+        return contextuel.x || 0
+    }, [contextuel])
+
+    const posY = useMemo(()=>{
+        return contextuel.y || 0
+    }, [contextuel])    
+
+    const showPreviewAction = useCallback( event => {
+        if(previewDisponible) showPreview(fichier.fileId)
+        fermerContextuel()
+    }, [fichier, previewDisponible, fermerContextuel, showPreview])
+
+    const downloadEvent = useCallback( async event => {
+        console.debug("Download fichier %O", fichier)
+        const tuuid = fichier.tuuid
+        downloadAction(tuuid)
+        fermerContextuel()
+    }, [fichier, downloadAction, fermerContextuel])
+
+    const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
+    const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
+
+    return (
+        <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
+            <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={downloadEvent}><i className="fa fa-download"/> Download</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
+        </MenuContextuel>
+    )
+}

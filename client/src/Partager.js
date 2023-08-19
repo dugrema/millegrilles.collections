@@ -11,10 +11,12 @@ import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
 import { mapDocumentComplet } from './mapperFichier'
 import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret} from './WorkerContext'
+import { ajouterDownload } from './redux/downloaderSlice'
 import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } from './redux/partagerSlice'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import PreviewFichiers from './FilePlayer'
 
+import { MenuContextuelPartageFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
 import { BoutonsFormat, SectionBreadcrumb, InformationListe, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
 import { CopierModal, InfoModal } from './ModalOperations'
 
@@ -126,6 +128,8 @@ function NavigationPartageTiers(props) {
     const [scrollValue, setScrollValue] = useState(0)
     const [ afficherVideo, setAfficherVideo ] = useState('')
     const [ afficherAudio, setAfficherAudio ] = useState('')
+    const [ showInfoModal, setShowInfoModal ] = useState(false)
+    const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
 
     const userInfo = useMemo(()=>{
         return userPartages.filter(item=>item.user_id === userId).pop()
@@ -233,7 +237,7 @@ function NavigationPartageTiers(props) {
                     modeView={modeView}
                     naviguerCollection={naviguerCollection}
                     showPreviewAction={showPreviewAction}
-                    // setContextuel={setContextuel}
+                    setContextuel={setContextuel}
                     afficherVideo={afficherVideo}
                     afficherAudio={afficherAudio}
                     setAfficherVideo={setAfficherVideo}
@@ -245,17 +249,15 @@ function NavigationPartageTiers(props) {
                 />
             </Suspense>
 
-            <InformationListe />
-
             <Modals 
                 showPreview={showPreview}
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 showPreviewAction={showPreviewAction}
-                // contextuel={contextuel}
-                // setContextuel={setContextuel} 
-                // showInfoModal={showInfoModal}
-                // setShowInfoModal={setShowInfoModal}
+                contextuel={contextuel}
+                setContextuel={setContextuel} 
+                showInfoModal={showInfoModal}
+                setShowInfoModal={setShowInfoModal}
                 erreurCb={erreurCb} />            
 
         </div>
@@ -626,10 +628,8 @@ function preparerColonnes(workers, getState) {
 function Modals(props) {
 
     const {
-        showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
-        contextuel, setContextuel, preparationUploadEnCours,
-        showInfoModal, setShowInfoModal, annulerPreparationCb,
+        contextuel, setContextuel, showInfoModal, setShowInfoModal,
         erreurCb,
     } = props
     
@@ -639,29 +639,12 @@ function Modals(props) {
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
 
-    const [ showArchiverModal, setShowArchiverModal ] = useState(false)
-    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
-    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
-    // const [ showInfoModal, setShowInfoModal ] = useState(false)
-    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
-    const [ showPartagerModal, setShowPartagerModal ] = useState(false)
 
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
-    const showArchiverModalOuvrir = useCallback(()=>setShowArchiverModal(true), [setShowArchiverModal])
-    const showArchiverModalFermer = useCallback(()=>setShowArchiverModal(false), [setShowArchiverModal])
-    const showSupprimerModalOuvrir = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
-    const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
-    const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
-    const showRenommerModalFermer = useCallback(()=>setShowRenommerModal(false), [setShowRenommerModal])
     const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
     const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
     const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
-    const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
-    const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
-    const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
-    const showPartagerModalOuvrir = useCallback(()=>setShowPartagerModal(true), [setShowPartagerModal])
-    const showPartagerModalFermer = useCallback(()=>setShowPartagerModal(false), [setShowPartagerModal])
 
     const dispatch = useDispatch()
     const workers = useWorkers()
@@ -688,7 +671,7 @@ function Modals(props) {
         <>
             <InformationListe />
 
-            {/* <MenuContextuel
+            <MenuContextuel
                 contextuel={contextuel} 
                 fermerContextuel={fermerContextuel}
                 fichiers={liste}
@@ -696,18 +679,13 @@ function Modals(props) {
                 selection={selection}
                 showPreview={showPreviewAction}
                 usager={usager}
-                showArchiverModalOuvrir={showArchiverModalOuvrir}
-                showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 showCopierModalOuvrir={showCopierModalOuvrir}
-                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
                 showInfoModalOuvrir={showInfoModalOuvrir}
-                showRenommerModalOuvrir={showRenommerModalOuvrir}
-                showPartagerModalOuvrir={showPartagerModalOuvrir}
                 cuuid={cuuid}
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
                 erreurCb={erreurCb}
-              /> */}
+              />
 
             <PreviewFichiers 
                 workers={workers}
@@ -740,4 +718,42 @@ function Modals(props) {
 
         </>
     )
+}
+
+function MenuContextuel(props) {
+
+    const { contextuel, selection, erreurCb } = props
+
+    const workers = useWorkers()
+    const dispatch = useDispatch()
+    const fichiers = useSelector(state => state.fichiers.liste)
+    
+    const downloadAction = useCallback(tuuid => {
+        const fichier = fichiers.filter(item=>item.tuuid === tuuid).pop()
+        if(fichier) {
+            dispatch(ajouterDownload(workers, fichier))
+                .catch(err=>erreurCb(err, 'Erreur ajout download'))
+        }
+    }, [workers, dispatch, fichiers])
+
+    if(!contextuel.show) return ''
+
+    if(selection && fichiers) {
+        // console.debug("Selection : ", selection)
+        if( selection.length > 1 ) {
+            return <MenuContextuelMultiselect {...props} workers={workers} />
+        } else if( selection.length === 1 ) {
+            const fichierTuuid = selection[0]
+            const fichier = fichiers.filter(item=>item.tuuid===fichierTuuid).pop()
+            if(fichier) {
+                if(fichier.mimetype && fichier.mimetype !== 'Repertoire') {
+                    return <MenuContextuelPartageFichier {...props} workers={workers} fichier={fichier} downloadAction={downloadAction} />
+                } else {
+                    return <MenuContextuelRepertoire {...props} workers={workers} repertoire={fichier} downloadAction={downloadAction} />
+                }
+            }
+        }
+    }
+
+    return ''
 }
