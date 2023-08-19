@@ -245,12 +245,17 @@ function BoutonUpload(props) {
 
 export function SectionBreadcrumb(props) {
 
-    const { naviguerCollection, fichier } = props
+    const { naviguerCollection, fichier, itemRoot } = props
 
     const dispatch = useDispatch()
     const breadcrumb = useSelector((state) => state.fichiers.breadcrumb),
           liste = useSelector(state=>state.fichiers.liste)
 
+    const itemRoot1 = useMemo(()=>{
+        if(!itemRoot) return {label: 'Favoris'}
+        return itemRoot
+    }, [itemRoot])
+    
     const handlerSliceBreadcrumb = useCallback(event => {
         event.preventDefault()
         event.stopPropagation()
@@ -289,7 +294,7 @@ export function SectionBreadcrumb(props) {
     return (
         <Breadcrumb>
             
-            <Breadcrumb.Item onClick={handlerSliceBreadcrumb}>Favoris</Breadcrumb.Item>
+            <Breadcrumb.Item onClick={handlerSliceBreadcrumb}>{itemRoot1.label}</Breadcrumb.Item>
             
             {breadcrumb.map((item, idxItem)=>{
                 // Dernier

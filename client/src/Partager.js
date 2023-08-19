@@ -134,6 +134,11 @@ function NavigationPartageTiers(props) {
         return listePartagesAutres.filter(item=>item.tuuid === tuuidPartage).pop()
     }, [breadcrumb, listePartagesAutres])
 
+    const itemRootBreadcrumb = useMemo(()=>{
+        if(!userInfo) return {label: 'Partages'}
+        return {label: userInfo.nom_usager}
+    }, [userInfo])
+
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
     
     const naviguerCollection = useCallback( cuuid => {
@@ -156,8 +161,13 @@ function NavigationPartageTiers(props) {
             }
             console.debug("Changer collection pour contact %O, cuuid %O", contactInfoEffectif, cuuid)
             dispatch(fichiersActions.setUserContactId({userId: userInfo.user_id, contactId: contactInfoEffectif.contact_id}))
-            dispatch(fichiersThunks.changerCollection(workers, cuuid))
-                .catch(err=>erreurCb(err, 'Erreur changer collection'))
+            if(cuuid) {
+                dispatch(fichiersThunks.changerCollection(workers, cuuid))
+                    .catch(err=>erreurCb(err, 'Erreur changer collection'))
+            } else {
+                dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
+                    .catch(err=>erreurCb(err, 'Erreur changer collection'))
+            }
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
@@ -191,7 +201,7 @@ function NavigationPartageTiers(props) {
 
             <Row className='fichiers-header-buttonbar'>
                 <Col xs={12} lg={5}>
-                    <SectionBreadcrumb naviguerCollection={naviguerCollection} />
+                    <SectionBreadcrumb naviguerCollection={naviguerCollection} itemRoot={itemRootBreadcrumb} />
                 </Col>
 
                 <Col xs={12} sm={3} md={4} lg={2}>

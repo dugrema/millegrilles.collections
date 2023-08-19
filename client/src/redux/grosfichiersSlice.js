@@ -51,7 +51,7 @@ function setSortKeysAction(state, action) {
 }
 
 function setCuuidAction(state, action) {
-    state.source = SOURCE_COLLECTION
+    // state.source = SOURCE_COLLECTION
     state.cuuid = action.payload
 }
 
@@ -78,7 +78,7 @@ function setIntervalleAction(state, action) {
 function setCollectionInfoAction(state, action) {
     const collection = action.payload
     state.collection = collection
-    state.source = SOURCE_COLLECTION
+    // state.source = SOURCE_COLLECTION
     // state.sortKeys = {}
 
     // Transferer le nom vers le breadcrumb
