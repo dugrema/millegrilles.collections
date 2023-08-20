@@ -37,20 +37,43 @@ export function BarreInformation(props) {
 
     const afficherMedia = afficherVideo || afficherAudio
 
-    let nombreFichiers = ''
+    const [nombreFichiers, nombreRepertoires] = useMemo(()=>{
+        let nombreFichiers = 0, nombreRepertoires = 0
+        if(liste) {
+            liste.forEach(item=>{
+                if(item.type_node === 'Fichier') nombreFichiers++
+                else nombreRepertoires++
+            })
+        }
+        return [nombreFichiers, nombreRepertoires]
+    }, [liste])
+
+    let nombreFichiersRendered = ''
     if(liste) {
-        if(liste.length > 1) {
-            nombreFichiers = (
-                <div>
-                    <div>
+        if(nombreFichiers || nombreRepertoires) {
+            nombreFichiersRendered = (
+                <Row>
+                    <Col xs={2} md={1}>
                         {dechiffrageInitialComplete?
                             '':
                             <i className="fa fa-spinner fa-spin" />
                         }
-                        {' '}{liste.length} fichiers
-                    </div>
-                    <div><FormatteurTaille value={bytesTotalDossier} /></div>
-                </div>
+                    </Col>
+                    <Col>
+                        {nombreRepertoires?
+                            <Row><Col xs={12}>{nombreRepertoires} repertoires</Col></Row>
+                            :''
+                        }
+                        {nombreFichiers?
+                            <Row><Col xs={12}>{nombreFichiers} fichiers</Col></Row>
+                            :''
+                        }
+                        {bytesTotalDossier?
+                            <Row><Col xs={12}><FormatteurTaille value={bytesTotalDossier} /></Col></Row>
+                            :''
+                        }
+                    </Col>
+                </Row>
             )
         }
     }
@@ -62,7 +85,7 @@ export function BarreInformation(props) {
             </Col>
 
             <Col xs={12} sm={3} md={4} lg={2}>
-                {afficherMedia?'':nombreFichiers}
+                {afficherMedia?'':nombreFichiersRendered}
             </Col>
 
             <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">

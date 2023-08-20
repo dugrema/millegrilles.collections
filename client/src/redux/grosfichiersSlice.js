@@ -124,7 +124,7 @@ function pushAction(state, action) {
 
     // Trier
     liste.sort(genererTriListe(state.sortKeys))
-    // console.debug("pushAction liste triee : %O", liste)
+    console.debug("pushAction liste triee : %O", liste)
 
     state.bytesTotalDossier = liste
         .filter(item=>item.version_courante && item.version_courante.taille)
