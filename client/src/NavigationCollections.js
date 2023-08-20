@@ -58,7 +58,9 @@ function NavigationCollections(props) {
     const naviguerCollection = useCallback( cuuid => {
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
-        if(!cuuid) cuuid = ''
+        if(!cuuid) {
+            cuuid = ''
+        }
         try {
             if(cuuid) {
                 dispatch(fichiersActions.breadcrumbPush({tuuid: cuuid}))
@@ -101,9 +103,11 @@ function NavigationCollections(props) {
 
     // Declencher chargement initial des favoris
     useEffect(()=>{
-        if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
+        // if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
+        if(!etatPret || !userId) return  // Rien a faire
+        dispatch(fichiersActions.setSource('collection'))
         naviguerCollection('')
-    }, [naviguerCollection, etatPret, cuuidCourant, userId])
+    }, [dispatch, naviguerCollection, etatPret, cuuidCourant, userId])
 
     return (
         <>

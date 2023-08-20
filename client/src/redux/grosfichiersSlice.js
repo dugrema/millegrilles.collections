@@ -516,7 +516,7 @@ export function creerThunks(actions, nomSlice) {
     }
     
     async function traiterChangerCollection(workers, cuuid, dispatch, getState) {
-        if(cuuid === undefined) cuuid = ''  // Favoris
+        if(cuuid === undefined) cuuid = ''  // Collections
     
         const state = getState()[nomSlice]
         const cuuidPrecedent = state.cuuid
@@ -543,16 +543,16 @@ export function creerThunks(actions, nomSlice) {
     
         console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
     
-        // Nettoyer la liste
-        dispatch(clear())
-    
         // Charger le contenu de la collection deja connu
         promisesPreparationCollection = promisesPreparationCollection || []
         promisesPreparationCollection.push(collectionsDao.getParCollection(cuuid, userId))
-    
+
         // Attendre que les listeners soient prets, recuperer contenu idb
         const contenuIdb = (await Promise.all(promisesPreparationCollection)).pop()
-    
+
+        // Nettoyer la liste
+        dispatch(clear())
+        
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
         // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
