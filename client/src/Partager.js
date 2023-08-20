@@ -327,6 +327,35 @@ function ContactsPartage(props) {
             .catch(err=>console.error("ContactsPartage Erreur supprimer %s : %O", contactId, err))
     }, [workers])
 
+    const contactsRender = useMemo(()=>{
+        if(!contacts) return ''
+
+        return contacts.map(item=>{
+            // Compter le nombre de partages pour ce contact
+            const nombrePartages = partagesUsager.reduce((acc, partage)=>{
+                if(item.contact_id === partage.contact_id) return acc + 1
+                return acc
+            }, 0)
+
+            return (
+                <Row>
+                    <Col>
+                        <Button variant="link" onClick={choisirContactId} value={item.contact_id}>
+                            {item.nom_usager}
+                        </Button>
+                    </Col>
+                    <Col>
+                        {nombrePartages}
+                    </Col>
+                    <Col>
+                        <Button variant="secondary" onClick={supprimerCb} value={item.contact_id}>Supprimer</Button>
+                    </Col>
+                </Row>
+            )            
+        })
+
+    }, [contacts])
+
     return (
         <div>
             <Row>
@@ -341,30 +370,7 @@ function ContactsPartage(props) {
                 <Col>Actions</Col>
             </Row>
 
-            {contacts.map(item=>{
-
-                // Compter le nombre de partages pour ce contact
-                const nombrePartages = partagesUsager.reduce((acc, partage)=>{
-                    if(item.contact_id === partage.contact_id) return acc + 1
-                    return acc
-                }, 0)
-
-                return (
-                    <Row>
-                        <Col>
-                            <Button variant="link" onClick={choisirContactId} value={item.contact_id}>
-                                {item.nom_usager}
-                            </Button>
-                        </Col>
-                        <Col>
-                            {nombrePartages}
-                        </Col>
-                        <Col>
-                            <Button variant="secondary" onClick={supprimerCb} value={item.contact_id}>Supprimer</Button>
-                        </Col>
-                    </Row>
-                )
-            })}
+            {contactsRender}
 
             <ModalAjouterUsager show={showContacts} hide={hideAjouterCb} />
         </div>
@@ -486,6 +492,30 @@ function PageContact(props) {
     )
 }
 
+function CollectionsPartagesUsager(props) {
+    const { value, supprimer } = props
+
+    if(!value || value.length === 0) return (
+        <Alert variant="info">
+            <Alert.Heading>Aucunes collections partagee</Alert.Heading>
+            <p>Pour ajouter un partage, aller dans vos collections et choisissez-en une a partager (option Partager).</p>
+        </Alert>
+    )
+
+    return value.map(item=>{
+        return (
+            <Row key={item.tuuid}>
+                <Col>
+                    {item.nom}
+                </Col>
+                <Col>
+                    <Button variant="secondary" value={item.tuuid} onClick={supprimer}>Supprimer</Button>
+                </Col>
+            </Row>
+        )
+    })
+}
+
 function ListePartagesUsager(props) {
     const { contactId, fermer } = props
 
@@ -532,90 +562,74 @@ function ListePartagesUsager(props) {
                 </Col>
             </Row>
 
-            <Alert variant="info">
-                <Alert.Header>Information</Alert.Header>
-                <p>Pour ajouter un partage, aller dans vos collections et choisissez-en une a partager (option Partager).</p>
-            </Alert>
-            
-            {collections && collections.map(item=>{
-                return (
-                    <Row>
-                        <Col>
-                            {item.nom}
-                        </Col>
-                        <Col>
-                            <Button variant="secondary" value={item.tuuid} onClick={supprimerPartageCb}>Supprimer</Button>
-                        </Col>
-                    </Row>
-                )
-            })}
+            <CollectionsPartagesUsager value={collections} supprimer={supprimerPartageCb} />
 
         </div>
     )
 }
 
-function ListePartagesContact(props) {
-    const { contactId, fermer } = props
+// function ListePartagesContact(props) {
+//     const { contactId, fermer } = props
 
-    const workers = useWorkers(),
-          dispatch = useDispatch()
+//     const workers = useWorkers(),
+//           dispatch = useDispatch()
 
-    const etatPret = useEtatPret()
-    const contacts = useSelector(state=>state.partager.listeContacts)
-    const userId = useSelector(state=>state.fichiers.userId)
-    const collections = useSelector(state=>state.fichiers.liste)
+//     const etatPret = useEtatPret()
+//     const contacts = useSelector(state=>state.partager.listeContacts)
+//     const userId = useSelector(state=>state.fichiers.userId)
+//     const collections = useSelector(state=>state.fichiers.liste)
 
-    const contact = useMemo(()=>{
-        if(!contacts) return
-        return contacts.filter(item=>item.contact_id === contactId).pop()
-    }, [contacts])
+//     const contact = useMemo(()=>{
+//         if(!contacts) return
+//         return contacts.filter(item=>item.contact_id === contactId).pop()
+//     }, [contacts])
     
-    const supprimerPartageCb = useCallback(e=>{
-        const tuuid = e.currentTarget.value
-        workers.connexion.supprimerPartageUsager(contactId, tuuid)
-            .catch(err=>console.error("Erreur suppression partage ", err))
-    }, [workers])
+//     const supprimerPartageCb = useCallback(e=>{
+//         const tuuid = e.currentTarget.value
+//         workers.connexion.supprimerPartageUsager(contactId, tuuid)
+//             .catch(err=>console.error("Erreur suppression partage ", err))
+//     }, [workers])
 
-    // Charger les informations de dossiers partages avec le contact
-    useEffect(()=>{
-        if(!etatPret || !userId || !contact) return  // Rien a faire
-        dispatch(fichiersThunks.afficherPartagesContact(workers, contactId))
-            .catch(err=>console.error('Partager Erreur chargement partages ', err))
-    }, [workers, etatPret, userId, contactId])
+//     // Charger les informations de dossiers partages avec le contact
+//     useEffect(()=>{
+//         if(!etatPret || !userId || !contact) return  // Rien a faire
+//         dispatch(fichiersThunks.afficherPartagesContact(workers, contactId))
+//             .catch(err=>console.error('Partager Erreur chargement partages ', err))
+//     }, [workers, etatPret, userId, contactId])
 
-    useEffect(()=>{
-        console.debug("Collections partagees : %O", collections)
-    }, [collections])
+//     useEffect(()=>{
+//         console.debug("Collections partagees : %O", collections)
+//     }, [collections])
 
-    if(!contact) return 'Aucune information sur le contact'
+//     if(!contact) return 'Aucune information sur le contact'
 
-    return (
-        <div>
-            <Row>
-                <Col xs={11}>
-                    <h3>Partages avec {contact.nom_usager}</h3>
-                </Col>
-                <Col>
-                    <Button variant="secondary" onClick={fermer}>X</Button>
-                </Col>
-            </Row>
+//     return (
+//         <div>
+//             <Row>
+//                 <Col xs={11}>
+//                     <h3>Partages avec {contact.nom_usager}</h3>
+//                 </Col>
+//                 <Col>
+//                     <Button variant="secondary" onClick={fermer}>X</Button>
+//                 </Col>
+//             </Row>
             
-            {collections && collections.map(item=>{
-                return (
-                    <Row>
-                        <Col>
-                            {item.nom||item.tuuid}
-                        </Col>
-                        <Col>
-                            <Button variant="secondary" value={item.tuuid} onClick={supprimerPartageCb}>Supprimer</Button>
-                        </Col>
-                    </Row>
-                )
-            })}
+//             {collections && collections.map(item=>{
+//                 return (
+//                     <Row>
+//                         <Col>
+//                             {item.nom||item.tuuid}
+//                         </Col>
+//                         <Col>
+//                             <Button variant="secondary" value={item.tuuid} onClick={supprimerPartageCb}>Supprimer</Button>
+//                         </Col>
+//                     </Row>
+//                 )
+//             })}
 
-        </div>
-    )
-}
+//         </div>
+//     )
+// }
 
 function preparerColonnes(workers, getState) {
 
