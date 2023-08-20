@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
+import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -153,6 +154,11 @@ function NavigationPartageTiers(props) {
         return [{label: 'Partages', onClick: fermer}, {label: userInfo.nom_usager, onClick: afficherPartageUser}]
     }, [userInfo, fermer])
 
+    const fichierBreadcrumb = useMemo(()=>{
+        if( !afficherAudio && !afficherVideo) return ''
+        return selection[0]
+    }, [afficherAudio, afficherVideo, selection])
+
     // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
     const showPreviewAction = useCallback( tuuid => {
@@ -222,7 +228,7 @@ function NavigationPartageTiers(props) {
 
             <Row className='fichiers-header-buttonbar'>
                 <Col xs={12} lg={5}>
-                    <SectionBreadcrumb naviguerCollection={naviguerCollection} prependItems={itemRootBreadcrumb} />
+                    <SectionBreadcrumb naviguerCollection={naviguerCollection} prependItems={itemRootBreadcrumb} fichier={fichierBreadcrumb} />
                 </Col>
 
                 <Col xs={12} sm={3} md={4} lg={2}>
@@ -421,12 +427,12 @@ function PageContact(props) {
 
     const { contactId, fermer } = props
 
-    const workers = useWorkers(),
-          dispatch = useDispatch()
+    // const workers = useWorkers(),
+    //       dispatch = useDispatch()
 
     const etatPret = useEtatPret()
     const contacts = useSelector(state=>state.partager.listeContacts)
-    const userId = useSelector(state=>state.fichiers.userId)
+    // const userId = useSelector(state=>state.fichiers.userId)
     const collections = useSelector(state=>state.fichiers.liste)
 
     const [modePartage, setModePartage] = useState('usager')
@@ -460,13 +466,13 @@ function PageContact(props) {
 
     if(!contact) return 'Aucune information sur le contact'
 
-    let ListePartages = 'Aucune information sur le contact'
-    switch(modePartage) {
-        case 'usager': ListePartages = ListePartagesUsager; break
-        case 'contact': ListePartages = ListePartagesContact; break
-        default:
-            break
-    }
+    // let ListePartages = 'Aucune information sur le contact'
+    // switch(modePartage) {
+    //     case 'usager': ListePartages = ListePartagesUsager; break
+    //     // case 'contact': ListePartages = ListePartagesContact; break
+    //     default:
+    //         break
+    // }
 
     // if(modePartage === 'usager') return <ListePartagesUsager contactId={contactId} fermer={fermer} />
     // if(modePartage === 'contact') return <ListePartagesContact contactId={contactId} fermer={fermer} />
@@ -475,9 +481,7 @@ function PageContact(props) {
 
     return (
         <div>
-            <Button onClick={()=>setModePartage('usager')}>Usager</Button>
-            <Button onClick={()=>setModePartage('contact')}>Contact</Button>
-            <ListePartages contactId={contactId} fermer={fermer} />
+            <ListePartagesUsager contactId={contactId} fermer={fermer} />
         </div>
     )
 }
@@ -527,6 +531,11 @@ function ListePartagesUsager(props) {
                     <Button variant="secondary" onClick={fermer}>X</Button>
                 </Col>
             </Row>
+
+            <Alert variant="info">
+                <Alert.Header>Information</Alert.Header>
+                <p>Pour ajouter un partage, aller dans vos collections et choisissez-en une a partager (option Partager).</p>
+            </Alert>
             
             {collections && collections.map(item=>{
                 return (

@@ -147,7 +147,7 @@ function clearAction(state) {
 // }
 
 function breadcrumbPushAction(state, action) {
-    // console.debug("State breadcrumb ", state.breadcrumb)
+    console.debug("State breadcrumb %O, action %O", state.breadcrumb, action)
 
     let { tuuid, opts } = action.payload
     opts = opts || {}
