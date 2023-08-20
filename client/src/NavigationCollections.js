@@ -107,7 +107,7 @@ function NavigationCollections(props) {
         if(!etatPret || !userId) return  // Rien a faire
         dispatch(fichiersActions.setSource('collection'))
         naviguerCollection('')
-    }, [dispatch, naviguerCollection, etatPret, cuuidCourant, userId])
+    }, [dispatch, naviguerCollection, etatPret, userId])
 
     return (
         <>

@@ -143,9 +143,15 @@ function NavigationPartageTiers(props) {
     }, [breadcrumb, listePartagesAutres])
 
     const itemRootBreadcrumb = useMemo(()=>{
-        if(!userInfo) return {label: 'Partages'}
-        return {label: userInfo.nom_usager}
-    }, [userInfo])
+        if(!userInfo) return {label: 'Partages', onClick: fermer}
+
+        const afficherPartageUser = () => {
+            dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
+                .catch(err=>erreurCb(err, 'Erreur changer collection'))
+        }
+
+        return [{label: 'Partages', onClick: fermer}, {label: userInfo.nom_usager, onClick: afficherPartageUser}]
+    }, [userInfo, fermer])
 
     // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
@@ -196,8 +202,8 @@ function NavigationPartageTiers(props) {
     useEffect(()=>{
         if(!userId) return  // Il faut au moins avoir une selection d'usager
         // Reset navigation en mode partage, top-level
-        //setAfficherVideo('')  // Reset affichage
-        //setAfficherAudio('')  // Reset affichage
+        setAfficherVideo('')  // Reset affichage
+        setAfficherAudio('')  // Reset affichage
         try {
             // Set tri par date modification desc
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
@@ -206,20 +212,17 @@ function NavigationPartageTiers(props) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
 
-    }, [dispatch, userId, contactId])
+    }, [dispatch, userId, contactId, setAfficherVideo, setAfficherAudio])
 
     return (
         <div>
             <Row>
                 <Col xs={11}><h3>Partage {userInfo.nom_usager}</h3></Col>
-                <Col>
-                    <Button variant="secondary" onClick={fermer}>X</Button>
-                </Col>
             </Row>
 
             <Row className='fichiers-header-buttonbar'>
                 <Col xs={12} lg={5}>
-                    <SectionBreadcrumb naviguerCollection={naviguerCollection} itemRoot={itemRootBreadcrumb} />
+                    <SectionBreadcrumb naviguerCollection={naviguerCollection} prependItems={itemRootBreadcrumb} />
                 </Col>
 
                 <Col xs={12} sm={3} md={4} lg={2}>
