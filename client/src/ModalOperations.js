@@ -13,7 +13,7 @@ import { mapDocumentComplet, estMimetypeMedia } from './mapperFichier'
 import { majFichierMetadata, majCollectionMetadata } from './fonctionsFichiers'
 import { ConversionVideo } from './OperationsVideo'
 
-import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
+import useWorkers, { useEtatAuthentifie, useEtatConnexion, useEtatPret, useUsager } from './WorkerContext'
 
 import actionsNavigationSecondaire, {thunks as thunksNavigationSecondaire} from './redux/navigationSecondaireSlice'
 import { chargerInfoContacts } from './redux/partagerSlice'
@@ -334,19 +334,37 @@ export function ModalNavigationCollections(props) {
 
 export function InfoModal(props) {
     const { 
-        workers, etatConnexion, etatAuthentifie, 
         show, fermer, cuuid, fichiers, selection, support, downloadAction, 
         usager, erreurCb
     } = props
 
-    const { mimetype, docSelectionne, header } = useMemo(()=>{
-        if(!show || !selection || !fichiers) return {}
-        const tuuidSelectionne = selection[0]
-        let docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
+    const workers = useWorkers(),
+          etatConnexion = useEtatConnexion(),
+          etatAuthentifie = useEtatAuthentifie()
+
+    const [infoStatistiques, setInfoStatistiques] = useState('')
+
+    const { docSelectionne, header, tuuidSelectionne } = useMemo(()=>{
+        console.debug("useMemo show : %O, selection %O, fichiers %O", show, selection, fichiers)
+        if(!show || !fichiers) return {}
+
+        let tuuidSelectionne = show
+        let docSelectionne = null
+
+        if(show === 1) {
+            tuuidSelectionne = ''  // Root de l'usager avec toutes les collections
+        } else if(typeof(show) === 'string') {
+            tuuidSelectionne = show
+            // docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
+        } else if(tuuidSelectionne === true) {
+            if(!selection || selection.length === 0) return  // On n'a aucune source pour le tuuid
+            tuuidSelectionne = selection[0]
+            docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
+        }
         
-        let header = null, mimetype = null
+        let header = null
         if(docSelectionne) {
-            mimetype = docSelectionne.mimetype
+            // mimetype = docSelectionne.mimetype
             // Mapper le fichier (thumbnails, etc.)
             docSelectionne = mapDocumentComplet(workers, docSelectionne)
 
@@ -355,24 +373,60 @@ export function InfoModal(props) {
             } else {
                 header = 'Information collection'
             }
+        } else if(tuuidSelectionne === '') {
+            header = 'Collections'
         } else {
             header = 'N/D'
         }
 
-        return {docSelectionne, header, mimetype}
+        return {docSelectionne, header, tuuidSelectionne}
     }, [workers, show, selection, fichiers])
 
+    useEffect(()=>{
+        console.debug("tuuidSelectionne %O", tuuidSelectionne)
+        let cuuid = null
+        if(tuuidSelectionne === '') {
+            // Ok, root des collections
+        } else {
+            if(!tuuidSelectionne) return  // Aucune collection selectionnee
+            cuuid = tuuidSelectionne
+            // if( ! ['Collection', 'Repertoire'].includes(docSelectionne.type_node) ) return
+            // cuuid = docSelectionne.tuuid
+        }
+        // Recuperer statistiques du repertoire
+        workers.connexion.getInfoStatistiques(cuuid)
+            .then(reponse=>{
+                console.debug("statistiques cuuids %s : %O", cuuid, reponse)
+                const infoStatistiques = reponse.info.reduce((acc, item)=>{
+                    if(item.type_node === 'Fichier') {
+                        acc.nombreFichiers = item.count
+                        acc.tailleFichiers = item.taille
+                    } else {
+                        acc.nombreRepertoires = item.count
+                    }
+                    return acc
+                }, {})
+                console.debug("Info statistiques combinees : %O", infoStatistiques)
+                setInfoStatistiques(infoStatistiques)
+            })
+            .catch(err=>console.error("Erreur chargement statistiques : ", err))
+
+        return () => { setInfoStatistiques('') }
+    }, [workers, tuuidSelectionne, docSelectionne, setInfoStatistiques])
+
     let Body = InfoVide
-    if(!docSelectionne) {
+    if(tuuidSelectionne === '') {
+        Body = InfoCollection
+    } else if(!tuuidSelectionne) {
         // Rien a faire
-    } else if(mimetype) {
+    } else if(docSelectionne && docSelectionne.type_node === 'Fichier') {
         Body = InfoFichier
     } else {
         Body = InfoCollection
     }
 
     return (
-        <Modal show={show} onHide={fermer} size="lg">
+        <Modal show={!!show} onHide={fermer} size="lg">
             <Modal.Header closeButton={true}>{header}</Modal.Header>
 
             <Modal.Body>
@@ -386,6 +440,7 @@ export function InfoModal(props) {
                     etatConnexion={etatConnexion}
                     etatAuthentifie={etatAuthentifie}
                     usager={usager}
+                    infoStatistiques={infoStatistiques}
                     erreurCb={erreurCb}
                 />
             </Modal.Body>
@@ -551,6 +606,7 @@ function InfoCollection(props) {
     const valueItem = props.valueItem || {}
     const thumbnailIcon = valueItem.thumbnailIcon
     const fichier = props.value || {}
+    const infoStatistiques = props.infoStatistiques || {}
     const nom = valueItem.nom
     const derniereModification = fichier.derniere_modification || valueItem.dateAjout
 
@@ -564,12 +620,24 @@ function InfoCollection(props) {
                 </Col>
                 <Col xs={12} md={8}>
                     <Row>
-                        <Col xs={12} md={2}>Nom</Col>
-                        <Col xs={12} md={10}>{nom}</Col>
+                        <Col xs={12} md={5}>Nom</Col>
+                        <Col xs={12} md={7}>{nom}</Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={2}>Date</Col>
-                        <Col xs={12} md={10}><FormatterDate value={derniereModification} /></Col>
+                        <Col xs={12} md={5}>Date</Col>
+                        <Col xs={12} md={7}><FormatterDate value={derniereModification} /></Col>
+                    </Row>
+                    <Row>
+                        <Col xs={12} md={5}>Nombre repertoires</Col>
+                        <Col xs={12} md={7}>{infoStatistiques.nombreRepertoires}</Col>
+                    </Row>
+                    <Row>
+                        <Col xs={12} md={5}>Nombre fichiers</Col>
+                        <Col xs={12} md={7}>{infoStatistiques.nombreFichiers}</Col>
+                    </Row>
+                    <Row>
+                        <Col xs={12} md={5}>Taille fichiers</Col>
+                        <Col xs={12} md={7}><FormatteurTaille value={infoStatistiques.tailleFichiers} /></Col>
                     </Row>
                 </Col>
             </Row>

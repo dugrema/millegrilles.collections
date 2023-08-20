@@ -113,8 +113,6 @@ function NavigationCollections(props) {
         <>
             <div>
 
-                <InformationStatistiques />
-
                 <BarreInformation 
                     naviguerCollection={naviguerCollection}
                     modeView={modeView}
@@ -124,6 +122,7 @@ function NavigationCollections(props) {
                     afficherVideo={afficherVideo} 
                     afficherAudio={afficherAudio}
                     signalAnnuler={signalAnnuler.signal} 
+                    setShowInfoModal={setShowInfoModal}
                     />
 
                 <Suspense fallback={<p>Loading ...</p>}>
@@ -624,62 +623,62 @@ async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
 
 }
 
-function InformationStatistiques(props) {
+// function InformationStatistiques(props) {
 
-    const [info, setInfo] = useState('')
+//     const [info, setInfo] = useState('')
 
-    const etatPret = useEtatPret(),
-          workers = useWorkers()
+//     const etatPret = useEtatPret(),
+//           workers = useWorkers()
 
-    const cuuid = useSelector(state=>state.fichiers.cuuid)
+//     const cuuid = useSelector(state=>state.fichiers.cuuid)
 
-    const infoCalculee = useMemo(()=>{
-        if(!info) return null
+//     const infoCalculee = useMemo(()=>{
+//         if(!info) return null
 
-        const nombreRepertoires = info.reduce((acc, item)=>{
-            if(['Collection', 'Repertoire'].includes(item.type_node)) acc += item.count
-            return acc
-        }, 0)
-        const fichier = info.filter(item=>item.type_node === 'Fichier').pop() || {}
+//         const nombreRepertoires = info.reduce((acc, item)=>{
+//             if(['Collection', 'Repertoire'].includes(item.type_node)) acc += item.count
+//             return acc
+//         }, 0)
+//         const fichier = info.filter(item=>item.type_node === 'Fichier').pop() || {}
 
-        return {nombreRepertoires, taille: fichier.taille, nombreFichiers: fichier.count}
-    }, [info])
+//         return {nombreRepertoires, taille: fichier.taille, nombreFichiers: fichier.count}
+//     }, [info])
 
-    useEffect(()=>{
-        if(!etatPret) return
-        // console.debug("InformationStatistiques charger : %O", cuuid)
-        const cuuidStats = cuuid?cuuid:null
-        workers.connexion.getInfoStatistiques(cuuidStats)
-            .then(reponse=>{
-                // console.debug("Reponse stats : %O", reponse)
-                setInfo(reponse.info)
-            })
-            .catch(err=>console.error("Erreur recuperer stats : %O", err))
-    }, [workers, etatPret, cuuid, setInfo])
+//     useEffect(()=>{
+//         if(!etatPret) return
+//         // console.debug("InformationStatistiques charger : %O", cuuid)
+//         const cuuidStats = cuuid?cuuid:null
+//         workers.connexion.getInfoStatistiques(cuuidStats)
+//             .then(reponse=>{
+//                 // console.debug("Reponse stats : %O", reponse)
+//                 setInfo(reponse.info)
+//             })
+//             .catch(err=>console.error("Erreur recuperer stats : %O", err))
+//     }, [workers, etatPret, cuuid, setInfo])
 
-    if(!infoCalculee) return 'Chargement info en cours'
+//     if(!infoCalculee) return 'Chargement info en cours'
 
-    return (
-        <Alert variant='info' show={true}>
-            <Alert.Heading>Information</Alert.Heading>
-            <Row>
-                <Col></Col>
-                <Col>Repertoires</Col>
-                <Col>Fichiers</Col>
-                <Col>Taille</Col>
-            </Row>
-            <Row>
-                <Col>Repertoire</Col>
-                <Col>...todo...</Col>
-                <Col>...todo...</Col>
-                <Col>...todo...</Col>
-            </Row>
-            <Row>
-                <Col>Sous-repertoires</Col>
-                <Col>{infoCalculee.nombreRepertoires}</Col>
-                <Col>{infoCalculee.nombreFichiers}</Col>
-                <Col><FormatteurTaille value={infoCalculee.taille} /></Col>
-            </Row>
-        </Alert>
-    )
-}
+//     return (
+//         <Alert variant='info' show={true}>
+//             <Alert.Heading>Information</Alert.Heading>
+//             <Row>
+//                 <Col></Col>
+//                 <Col>Repertoires</Col>
+//                 <Col>Fichiers</Col>
+//                 <Col>Taille</Col>
+//             </Row>
+//             <Row>
+//                 <Col>Repertoire</Col>
+//                 <Col>...todo...</Col>
+//                 <Col>...todo...</Col>
+//                 <Col>...todo...</Col>
+//             </Row>
+//             <Row>
+//                 <Col>Sous-repertoires</Col>
+//                 <Col>{infoCalculee.nombreRepertoires}</Col>
+//                 <Col>{infoCalculee.nombreFichiers}</Col>
+//                 <Col><FormatteurTaille value={infoCalculee.taille} /></Col>
+//             </Row>
+//         </Alert>
+//     )
+// }

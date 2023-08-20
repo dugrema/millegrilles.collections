@@ -27,7 +27,7 @@ export function BarreInformation(props) {
     const { 
         afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
-        signalAnnuler,
+        signalAnnuler, setShowInfoModal,
     } = props
 
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -47,6 +47,12 @@ export function BarreInformation(props) {
         }
         return [nombreFichiers, nombreRepertoires]
     }, [liste])
+
+    const showInformationRepertoireHandler = useCallback(()=>{
+        console.debug("Show information repertoire ", cuuidCourant)
+        if(cuuidCourant === '') setShowInfoModal(1)
+        else setShowInfoModal(cuuidCourant)
+    }, [cuuidCourant, setShowInfoModal])
 
     let nombreFichiersRendered = ''
     if(liste) {
@@ -91,6 +97,13 @@ export function BarreInformation(props) {
             <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
                 {afficherMedia?'':
                     <div>
+                        <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal}>
+                            <i className="fa fa-info"/>
+                        </Button>
+                        {' '}
+                        <Button variant="secondary" disabled={true}>
+                            <i className="fa fa-download"/>
+                        </Button>
                         <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                         <BoutonsAction 
                             cuuid={cuuidCourant}
