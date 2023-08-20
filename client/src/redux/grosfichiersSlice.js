@@ -1220,11 +1220,12 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
 
 
 function genererTriListe(sortKeys) {
-    
+
     const key = sortKeys.key || 'nom',
           ordre = sortKeys.ordre || 1
 
     return (a, b) => {
+
         if(a === b) return 0
         if(!a) return 1
         if(!b) return -1
@@ -1240,6 +1241,18 @@ function genererTriListe(sortKeys) {
             valB = version_couranteB.taille || b.taille
         }
 
+        if(key === 'nom') {
+            // Fallback, nom/tuuid du fichier, repertoire en premier
+            const typeNodeA = a.type_node, typeNodeB = b.type_node
+            if(typeNodeA !== typeNodeB) {
+                if(!typeNodeA) return 1
+                if(!typeNodeB) return -1
+                if(typeNodeA === 'Fichier') return 1
+                if(typeNodeB === 'Fichier') return -1
+            }
+        }
+
+
         if(valA === valB) return 0
         if(!valA) return 1
         if(!valB) return -1
@@ -1254,7 +1267,6 @@ function genererTriListe(sortKeys) {
             throw new Error(`genererTriListe values ne peut pas etre compare ${''+valA} ? ${''+valB}`)
         }
 
-        // Fallback, nom/tuuid du fichier
         const { tuuid: tuuidA, nom: nomA } = a,
               { tuuid: tuuidB, nom: nomB } = b
 
