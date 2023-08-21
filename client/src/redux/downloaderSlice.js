@@ -193,6 +193,160 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     }    
 }
 
+/** Creer un nouveau download de repertoire par cuuid. Genere un fichier ZIP. */
+export function ajouterZipDownload(workers, cuuid) {
+    return (dispatch, getState) => traiterAjouterZipDownload(workers, cuuid, dispatch, getState)
+}
+
+async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
+    const { connexion, chiffrage, downloadFichiersDao, clesDao } = workers
+    let { cuuid, selection } = params
+    
+    console.debug("traiterAjouterZipDownload cuuid : %s, selection : %O", cuuid, selection)
+    
+    const userId = getState()[SLICE_NAME].userId
+    if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
+
+    // Charger statistiques cuuid, liste de fichiers/dossiers
+    if(cuuid === '') cuuid = null
+    const reponseStructure = await connexion.getStructureRepertoire(cuuid)
+    console.debug("Reponse structure : ", reponseStructure)
+    if(reponseStructure.ok === false) {
+        throw new Error("Erreur preparation ZIP : ", reponseStructure.err)
+    }
+
+    // Batir la hierarchie du repertoire
+    const nodeParTuuid = {}, nodeParCuuidParent = {}, root = [], fuuidsCles = []
+    reponseStructure.liste.forEach(item=>{
+        nodeParTuuid[item.tuuid] = item
+
+        // Ajouter flag noSave=true pour le processus de download. Evite pop-up de sauvegarde.
+        item.noSave = true
+
+        if(item.versions) {
+            // Extraire version courante (idx: 0)
+            const version = item.versions[0]
+            item.version_courante = version
+            // if(version) {
+            //     item.taille = version.taille
+            // }
+        }
+
+        if(item.fuuids_versions) {
+            const fuuid = item.fuuids_versions[0]
+            item.fuuid = fuuid  // Set pour download
+            fuuidsCles.push(fuuid)
+        } else if(item.metadata.ref_hachage_bytes) {
+            fuuidsCles.push(item.metadata.ref_hachage_bytes)
+        }
+
+
+        if(item.path_cuuids && !item.path_cuuids.includes(cuuid)) {
+            const cuuidParent = item.path_cuuids[0]
+            let nodes = nodeParCuuidParent[cuuidParent]
+            if(!nodes) {
+                nodes = []
+                nodeParCuuidParent[cuuidParent] = nodes
+            }
+            nodes.push(item)
+        } else {
+            // Ajouter sous-repertoire (si ce n'est pas le repertoire de base)
+            if(item.tuuid !== cuuid) root.push(item)
+        }
+    })
+    console.debug("nodeParTuuid : %O, nodeParCuuidParent : %O, root: %O, fuuidsCles: %O", 
+        nodeParTuuid, nodeParCuuidParent, root, fuuidsCles)
+
+    for (const cuuid of Object.keys(nodeParCuuidParent)) {
+        const nodes = nodeParCuuidParent[cuuid]
+        const parent = nodeParTuuid[cuuid]
+        console.debug("Wiring sous cuuid parent %s (%O) nodes %O", cuuid, parent, nodes)
+        if(parent) {
+            parent.nodes = nodes
+        } else {
+            console.warn("Aucun lien pour parent %s pour %O, fichiers ignores", cuuid, nodes)
+            // Retirer le download des tuuids 
+            nodes.forEach(item=>{
+                delete nodeParTuuid[item.tuuid]
+            })
+        }
+    }
+
+    const fichiersADownloader = Object.values(nodeParTuuid).filter(item=>item.type_node === 'Fichier')
+
+    console.debug("Arborescence completee : %O\nDownload %d fichiers\n%O", root, fichiersADownloader.length, fichiersADownloader)
+
+    // Preparer toutes les cles (tous les tuuids incluant repertoires)
+    const cles = await clesDao.getCles(fuuidsCles)
+    console.debug("Cles chargees : ", cles)
+
+    // Dechiffrer le contenu des tuuids. On a besoin du nom (fichiers et repertoires)
+    for await(const tuuid of Object.keys(nodeParTuuid)) {
+        const item = nodeParTuuid[tuuid]
+        const metadata = item.metadata
+        let fuuid = metadata.ref_hachage_bytes
+        if(item.fuuids_versions) fuuid = item.fuuids_versions[0]
+        if(!fuuid) {
+            console.warn("Aucun fuuid pour %s - SKIP", tuuid)
+            continue
+        }
+
+        const cle = cles[fuuid]
+        if(!cle) {
+            console.warn("Aucune cle pour fuuid %s - SKIP", fuuid)
+        }
+
+        console.debug("Dechiffrer %O avec cle %O", metadata, cle)
+        const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cle)
+        console.debug("Contenu dechiffre : ", metaDechiffree)
+        // Ajout/override champs de metadonne avec contenu dechiffre
+        Object.assign(item, metaDechiffree)
+    }
+
+    console.debug("Contenu fichier ZIP : ", root)
+
+    // Ajouter tous les fichiers a downloader dans la Q de downloader et demarrer
+    for await(const tuuid of Object.keys(nodeParTuuid)) {
+        const item = nodeParTuuid[tuuid]
+        if(item.fuuids_versions) {
+            await dispatch(ajouterDownload(workers, item))
+        }
+    }
+
+
+    
+    // const version_courante = docDownload.version_courante || {}
+    // const fuuid = docDownload.fuuidDownload || docDownload.fuuid || version_courante.fuuid
+    // const fuuidCle = docDownload.fuuid_v_courante || fuuid
+    // const taille = version_courante.taille
+    // const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
+    // // console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
+    // if(!infoDownload) {
+    //     // Ajouter l'upload, un middleware va charger le reste de l'information
+    //     // console.debug("Ajout upload %O", correlation)
+
+    //     // Fetch pour cache (ne pas stocker dans redux)
+    //     await clesDao.getCles([fuuidCle])
+
+    //     const nouveauDownload = {
+    //         ...docDownload,
+    //         fuuid,
+    //         fuuidCle,
+    //         taille,
+    //         userId,
+    //         etat: ETAT_PRET,
+    //         dateCreation: new Date().getTime(),
+    //     }
+
+    //     // Conserver le nouveau download dans IDB
+    //     await downloadFichiersDao.updateFichierDownload(nouveauDownload)
+
+    //     dispatch(pushDownload(nouveauDownload))
+    // } else {
+    //     throw new Error(`Download ${fuuid} existe deja`)
+    // }    
+}
+
 export function arreterDownload(workers, fuuid) {
     return (dispatch, getState) => traiterArreterDownload(workers, fuuid, dispatch, getState)
 }
@@ -235,12 +389,14 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
         // Maj redux state
         dispatch(updateDownload(downloadCopie))
 
+        const noSave = downloadCopie || false
+
         try {
             // Prompt sauvegarder
             // console.debug("TraitementFichiers ", traitementFichiers)
             const fuuid = download.fuuid,
                 filename = download.nom
-            await traitementFichiers.downloadCache(fuuid, {filename})
+            await traitementFichiers.downloadCache(fuuid, {filename, noSave})
         } catch(err) {
             console.warn("Erreur prompt pour sauvgarder fichier downloade ", err)
         }
@@ -272,7 +428,7 @@ export function downloaderMiddlewareSetup(workers) {
     const uploaderMiddleware = createListenerMiddleware()
     
     uploaderMiddleware.startListening({
-        matcher: isAnyOf(ajouterDownload, setDownloads, continuerDownload),
+        matcher: isAnyOf(ajouterDownload, ajouterZipDownload, setDownloads, continuerDownload),
         effect: (action, listenerApi) => downloaderMiddlewareListener(workers, action, listenerApi)
     }) 
     

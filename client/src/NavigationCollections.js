@@ -19,7 +19,7 @@ import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultisel
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
 
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
-import { ajouterDownload } from './redux/downloaderSlice'
+import { ajouterDownload, ajouterZipDownload } from './redux/downloaderSlice'
 
 import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
 
@@ -96,6 +96,17 @@ function NavigationCollections(props) {
 
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 
+    const downloadRepertoireCb = useCallback(e=>{
+        const { value } = e.currentTarget
+        const cuuid = value || cuuidCourant
+        console.debug("Download repertoire tuuid ", cuuid)
+        dispatch(ajouterZipDownload(workers, {cuuid}))
+            .then(()=>{
+                console.debug("Preparation et download pour ZIP %O commence", cuuid)
+            })
+            .catch(err=>console.error("Erreur ajout download ZIP %s : %O", cuuid, err))
+    }, [workers, dispatch, cuuidCourant])
+
     // Reset signal annuler
     useEffect(()=>{
         if(preparationUploadEnCours===false) signalAnnuler.setValeur(false)
@@ -123,6 +134,7 @@ function NavigationCollections(props) {
                     afficherAudio={afficherAudio}
                     signalAnnuler={signalAnnuler.signal} 
                     setShowInfoModal={setShowInfoModal}
+                    downloadRepertoire={downloadRepertoireCb}
                     />
 
                 <Suspense fallback={<p>Loading ...</p>}>

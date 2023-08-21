@@ -258,6 +258,10 @@ export function getInfoStatistiques(socket, params) {
   return transmettreRequete(socket, params, 'getInfoStatistiques')
 }
 
+export function getStructureRepertoire(socket, params) {
+  return transmettreRequete(socket, params, 'getStructureRepertoire')
+}
+
 // Methodes generiques
 
 async function transmettreRequete(socket, params, action, opts) {

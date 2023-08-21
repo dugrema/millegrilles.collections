@@ -27,7 +27,7 @@ export function BarreInformation(props) {
     const { 
         afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
-        signalAnnuler, setShowInfoModal,
+        signalAnnuler, setShowInfoModal, downloadRepertoire,
     } = props
 
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -101,7 +101,7 @@ export function BarreInformation(props) {
                             <i className="fa fa-info"/>
                         </Button>
                         {' '}
-                        <Button variant="secondary" disabled={true}>
+                        <Button variant="secondary" onClick={downloadRepertoire} disabled={!downloadRepertoire}>
                             <i className="fa fa-download"/>
                         </Button>
                         <BoutonsFormat modeView={modeView} setModeView={setModeView} />
