@@ -8,6 +8,7 @@
     "@babel/plugin-syntax-object-rest-spread": "^7.8.3",
     "@dugrema/millegrilles.reactjs": "git+ssh://git.maple.maceroc.com/git/millegrilles.reactjs#2023.8",
     "buffer": "^6.0.3",
+    "client-zip": "^2.4.4",
     "comlink": "^4.3.1",
     "crypto-browserify": "^3.12.0",
     "font-awesome": "^4.7.0",

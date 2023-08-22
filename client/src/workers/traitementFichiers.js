@@ -263,6 +263,13 @@ async function clean(urlBlobPromise) {
     }
 }
 
+export async function getResponseFuuid(fuuid) {
+    if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
+    const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+    const cacheFichier = await cacheTmp.match('/'+fuuid)
+    return cacheFichier
+}
+
 export async function downloadCache(fuuid, opts) {
     opts = opts || {}
     const { noSave } = opts
