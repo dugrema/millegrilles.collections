@@ -137,10 +137,13 @@ function NavigationPartageTiers(props) {
     }, [userPartages, userId])
 
     const contactInfo = useMemo(()=>{
+        console.debug("NavigationPartageTiers breadcrumb %O", breadcrumb)
         if(!breadcrumb) return ''
-        const tuuidPartage = breadcrumb[1]
+        const tuuidPartage = breadcrumb[0]
         if(!tuuidPartage) return ''
-        return listePartagesAutres.filter(item=>item.tuuid === tuuidPartage).pop()
+        const contactInfo = listePartagesAutres.filter(item=>item.tuuid === tuuidPartage.tuuid).pop()
+        console.debug("NavigationPartageTiers contactInfo %O", contactInfo)
+        return contactInfo
     }, [breadcrumb, listePartagesAutres])
 
     const itemRootBreadcrumb = useMemo(()=>{
@@ -185,9 +188,16 @@ function NavigationPartageTiers(props) {
             console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
         }
         try {
+            console.debug("naviguerCollection contactinfo initial : %O", contactInfo)
             let contactInfoEffectif = contactInfo
             if(!contactInfo && cuuid) {
+                // On n'a pas deja de contactInfo
                 contactInfoEffectif = listePartagesAutres.filter(item=>item.tuuid === cuuid).pop()
+            }
+            console.debug("naviguerCollection contactinfo initial : %O, effectif : %O", contactInfo, contactInfoEffectif)
+            if(!contactInfoEffectif) {
+                console.error("contactInfoEffectif pour %s introuvable (listePartagesAutres: %O)", cuuid, listePartagesAutres)
+                throw new Error(`contactInfoEffectif pour ${cuuid} introuvable`)
             }
             console.debug("Changer collection pour contact %O, cuuid %O", contactInfoEffectif, cuuid)
             dispatch(fichiersActions.setUserContactId({userId: userInfo.user_id, contactId: contactInfoEffectif.contact_id}))

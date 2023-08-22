@@ -25,6 +25,7 @@ function AfficherVideo(props) {
     const videos = useMemo(()=>version_courante.video || {}, [version_courante.video])
 
     const [selecteur, setSelecteur] = useState('')
+    const [selecteurCourant, setSelecteurCourant] = useState('')
     const [srcVideo, setSrcVideo] = useState('')
     const [posterObj, setPosterObj] = useState('')
     // const [genererToken, setGenererToken] = useState(false)
@@ -44,26 +45,6 @@ function AfficherVideo(props) {
             //setVideoChargePret(false)
         }
     }, [setErrVideo, setVideoChargePret, setProgresChargement])
-
-    // useEffect(()=>{
-    //     if(selecteur || !selecteurs) return  // Deja initialise
-    //     // Identifier un selecteur initial
-    //     // const selecteurs = videoLoader.getSelecteurs()
-    //     if(!selecteurs) {
-    //         return setSelecteur('original')
-    //     } else if(selecteurs.includes('faible')) {
-    //         return setSelecteur('faible')
-    //     } else if(selecteurs.includes('medium')) {
-    //         return setSelecteur('medium')
-    //     } else if(selecteurs.includes('haute')) {
-    //         return setSelecteur('haute')
-    //     } else if(selecteurs.includes('original')) {
-    //         // Selectionner l'original, c'est le seul format disponible
-    //         return setSelecteur('original')
-    //     } else {
-    //         console.error("Aucuns format video n'est disponible dans le selecteur")
-    //     }
-    // }, [selecteurs, selecteur, setSelecteur])
 
     const videoTimeUpdateHandler = useCallback(event=>{
         // console.debug("Video time update event : %O", event)
@@ -138,6 +119,10 @@ function AfficherVideo(props) {
     useEffect(()=>{
         if(!selecteur || !fichier.videoLoader) return setSrcVideo('')
 
+        // Debounce : eviter un reload si aucun changement
+        if(selecteur === selecteurCourant) return
+        setSelecteurCourant(selecteur)
+
         // Reset indicateurs
         setVideoChargePret(false)
         setErrVideoCb('')
@@ -154,7 +139,7 @@ function AfficherVideo(props) {
                 setVideoChargePret(true)
                 setProgresChargement('')
             })
-    }, [fichier, selecteur, setSrcVideo, setVideoChargePret, setProgresChargement, setErrVideoCb])
+    }, [fichier, selecteur, selecteurCourant, setSelecteurCourant, setSrcVideo, setVideoChargePret, setProgresChargement, setErrVideoCb])
 
     const onProgress = useCallback(event => {
         // console.debug("onProgress ", event)

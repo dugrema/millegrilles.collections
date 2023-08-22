@@ -322,6 +322,10 @@ export function SectionBreadcrumb(props) {
     const bcFichier = useMemo(()=>{
         if(!fichier || !liste) return ''
         const infoFichier = liste.filter(item=>item.tuuid === fichier).pop()
+        if(!infoFichier) {
+            console.error("breadcrumb Information manquante (infoFichier %O est null, liste : %O", fichier, liste)
+            throw new Error(`breadcrumb Information manquante (infoFichier ${fichier}) est null`)
+        }
         return (
             <span>&nbsp; / {infoFichier.nom}</span>
         )
