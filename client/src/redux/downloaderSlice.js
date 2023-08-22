@@ -322,7 +322,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     for await(const tuuid of Object.keys(nodeParTuuid)) {
         const item = nodeParTuuid[tuuid]
         if(item.fuuids_versions) {
-            // console.debug("SKIP download - TO DO fix me")
+            // console.warn("SKIP download - TO DO fix me")
             await dispatch(ajouterDownload(workers, item))
         }
     }
@@ -336,12 +336,16 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         fuuidZip = 'zip/' + cuuid
     }
 
+    let nomArchive = 'millegrilles'
+    if(nodeRoot.nom) nomArchive = nodeRoot.nom
+
     const docGenererZip = {
         fuuid: fuuidZip,
         cuuid,
         userId,
         root: nodeRoot,
         genererZip: true,
+        nom: nomArchive,
     }
 
     // Conserver le nouveau download dans IDB
