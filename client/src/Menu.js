@@ -84,9 +84,9 @@ function Menu(props) {
           <i className="fa fa-search" /> {' '} {t('menu.recherche')}
         </Nav.Link>
 
-        <Nav.Link eventKey="recents">
+        {/* <Nav.Link eventKey="recents">
           <i className="fa fa-clock-o" /> {' '} {t('menu.recents')}
-        </Nav.Link>
+        </Nav.Link> */}
 
         <Nav.Link eventKey="corbeille" title="Corbeille">
           <i className="fa fa-trash-o" /> {' '} {t('menu.corbeille')}
