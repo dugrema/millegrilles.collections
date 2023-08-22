@@ -674,8 +674,8 @@ function calculerPourcentage(liste, completesCycle) {
         else if(ETAT_SUCCES === etat && completesCycle.includes(fuuid)) inclure = true
 
         if(inclure) {
-            tailleCompleteeTotale += tailleCompletee
-            tailleTotale += taille
+            if(tailleCompletee) tailleCompleteeTotale += tailleCompletee
+            if(taille) tailleTotale += taille
         }
     })
 
