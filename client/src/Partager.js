@@ -174,9 +174,13 @@ function NavigationPartageTiers(props) {
 
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
     
-    const naviguerCollection = useCallback( cuuid => {
+    const naviguerCollection = useCallback( (cuuid, opts) => {
+        opts = opts || {}
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
+
+        if(opts.retourFichier) return   // Plus rien a faire
+
         if(!cuuid) cuuid = ''
         try {
             if(cuuid) {

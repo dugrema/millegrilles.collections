@@ -297,9 +297,23 @@ export function SectionBreadcrumb(props) {
         event.stopPropagation()
 
         const value = event.currentTarget.dataset.idx
+        console.debug("handlerSliceBreadcrumb retour a idx %s, liste : %O", value, breadcrumb)
+
         let tuuid = ''
         if(value) {
             let level = Number.parseInt(value)
+
+            if(fichier && level > breadcrumb.length-2) {
+                console.debug("Navigation de retour de fichier/video : %O", fichier)
+                try {
+                    Promise.resolve(naviguerCollection(null, {retourFichier: true}))
+                        .catch(err=>console.error("SectionBreadcrumb Erreur navigation ", err))
+                } catch(err) {
+                    console.error("handlerSliceBreadcrumb Erreur naviguerCollection %s: ", tuuid, err)
+                }
+                return
+            }
+
             const collection = breadcrumb[level]
             tuuid = collection.tuuid
             dispatch(fichiersActions.breadcrumbSlice(level))
@@ -317,14 +331,14 @@ export function SectionBreadcrumb(props) {
                 console.error("handlerSliceBreadcrumb Erreur naviguerCollection favoris : ", err)
             }
         }
-    }, [dispatch, breadcrumb, naviguerCollection])
+    }, [dispatch, breadcrumb, naviguerCollection, fichier])
 
     const bcFichier = useMemo(()=>{
         if(!fichier || !liste) return ''
         const infoFichier = liste.filter(item=>item.tuuid === fichier).pop()
         if(!infoFichier) {
-            console.error("breadcrumb Information manquante (infoFichier %O est null, liste : %O", fichier, liste)
-            throw new Error(`breadcrumb Information manquante (infoFichier ${fichier}) est null`)
+            console.debug("breadcrumb Information manquante (infoFichier %O est null, liste : %O", fichier, liste)
+            return ''
         }
         return (
             <span>&nbsp; / {infoFichier.nom}</span>

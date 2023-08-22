@@ -55,9 +55,13 @@ function NavigationCollections(props) {
         setShowPreview(true)
     }, [setShowPreview, selection, setTuuidSelectionne])
     
-    const naviguerCollection = useCallback( cuuid => {
+    const naviguerCollection = useCallback( (cuuid, opts) => {
+        opts = opts || {}
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
+
+        if(opts.retourFichier) return   // Plus rien a faire
+
         if(!cuuid) {
             cuuid = ''
         }
