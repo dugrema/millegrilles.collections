@@ -150,12 +150,14 @@ function NavigationPartageTiers(props) {
         if(!userInfo) return {label: 'Partages', onClick: fermer}
 
         const afficherPartageUser = () => {
+            setAfficherVideo('')  // Reset affichage
+            setAfficherAudio('')  // Reset affichage
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         }
 
         return [{label: 'Partages', onClick: fermer}, {label: userInfo.nom_usager, onClick: afficherPartageUser}]
-    }, [userInfo, fermer])
+    }, [userInfo, fermer, setAfficherVideo, setAfficherAudio])
 
     const fichierBreadcrumb = useMemo(()=>{
         if( !afficherAudio && !afficherVideo) return ''
