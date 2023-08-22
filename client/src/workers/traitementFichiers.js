@@ -272,14 +272,13 @@ export async function getResponseFuuid(fuuid) {
 
 export async function downloadCache(fuuid, opts) {
     opts = opts || {}
-    const { noSave } = opts
     if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
-    // console.debug("Download fichier : %s = %O", fuuid, opts)
+    console.debug("Download fichier : %s = %O", fuuid, opts)
     const cacheTmp = await caches.open(CACHE_TEMP_NAME)
     const cacheFichier = await cacheTmp.match('/'+fuuid)
     // console.debug("Cache fichier : %O", cacheFichier)
     if(cacheFichier) {
-        if(!noSave) promptSaveFichier(await cacheFichier.blob(), opts)
+        promptSaveFichier(await cacheFichier.blob(), opts)
     } else {
         console.warn("Fichier '%s' non present dans le cache", fuuid)
     }

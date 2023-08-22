@@ -336,8 +336,8 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         fuuidZip = 'zip/' + cuuid
     }
 
-    let nomArchive = 'millegrilles'
-    if(nodeRoot.nom) nomArchive = nodeRoot.nom
+    let nomArchive = 'millegrilles.zip'
+    if(nodeRoot.nom) nomArchive = nodeRoot.nom + '.zip'
 
     const docGenererZip = {
         fuuid: fuuidZip,
@@ -396,16 +396,20 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
         // Maj redux state
         dispatch(updateDownload(downloadCopie))
 
-        const noSave = downloadCopie || false
+        const noSave = downloadCopie.noSave || false
 
-        try {
-            // Prompt sauvegarder
-            // console.debug("TraitementFichiers ", traitementFichiers)
-            const fuuid = download.fuuid,
-                filename = download.nom
-            await traitementFichiers.downloadCache(fuuid, {filename, noSave})
-        } catch(err) {
-            console.warn("Erreur prompt pour sauvgarder fichier downloade ", err)
+        if(!noSave) {
+            try {
+                // Prompt sauvegarder
+                // console.debug("TraitementFichiers ", traitementFichiers)
+                const fuuid = download.fuuid,
+                      filename = download.nom
+                await traitementFichiers.downloadCache(fuuid, {filename})
+            } catch(err) {
+                console.warn("Erreur prompt pour sauvgarder fichier downloade ", err)
+            }
+        } else {
+            console.debug("Skip prompt sauvegarde %O", download)
         }
     }
 }
@@ -571,8 +575,9 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     // }
 
     // Parcourir tous les repertoires, streamer les fichiers dans le stream
-    const resultatZip = makeZip(streamRepertoireDansZipRecursif(workers, downloadInfo.root.nodes, []))
-    console.debug("Resultat zip : %O", resultatZip)
+    const nodes = downloadInfo.root.nodes
+    const resultatZip = makeZip(parcourirRepertoireDansZipRecursif(workers, nodes, []))
+    // console.debug("Resultat zip : %O", resultatZip)
 
     const headersModifies = new Headers()
     headersModifies.set('content-type', 'application/zip')
@@ -583,13 +588,20 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     const cacheTmp = await caches.open(CACHE_TEMP_NAME)
     await cacheTmp.put('/' + fuuidZip, response)
 
-    console.debug("Marquer download %s comme pret / complete", fuuidZip)
+    // Cleanup downloads individuels - on garde juste le ZIP
+    for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid'})) {
+        const fuuid = info.fuuid
+        // console.debug("Supprimer download fuuid %s", fuuid)
+        await dispatch(arreterDownload(workers, fuuid))
+    }
+
+    // console.debug("Marquer download %s comme pret / complete", fuuidZip)
     await marquerDownloadEtat(workers, dispatch, fuuidZip, {etat: ETAT_SUCCES, userId})
     await dispatch(completerDownload(workers, fuuidZip))
-        .catch(err=>console.error("Erreur cleanup fichier upload ", err))
+        .catch(err=>console.error("Erreur cleanup download fichier zip ", err))
 }
 
-async function* ajouterRepertoireDansZip(workers, node, parents) {
+async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
     console.debug("Ajouter path %O/%s", parents.join('/'), node.nom)
 
     // Ajouter le node dans le zip
@@ -598,14 +610,16 @@ async function* ajouterRepertoireDansZip(workers, node, parents) {
     const nodes = node.nodes
     if(nodes) {
         console.debug("Sous repertoire ", pathAjoute)
-        for await (const fichier of streamRepertoireDansZipRecursif(workers, node.nodes, pathAjoute)) {
+        for await (const fichier of parcourirRepertoireDansZipRecursif(workers, node.nodes, pathAjoute, opts)) {
             console.debug("ajouterRepertoireDansZip Node ", fichier)
             yield fichier
         }
     }
 }
 
-async function* streamRepertoireDansZipRecursif(workers, nodes, parents) {
+async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts) {
+    opts = opts || {}
+    const operation = opts.operation || 'stream'
     console.debug("streamRepertoireDansZipRecursif parents ", parents)
     for await (const node of nodes) {
         if(node.type_node === 'Fichier') {
@@ -615,16 +629,20 @@ async function* streamRepertoireDansZipRecursif(workers, nodes, parents) {
                 nomFichier = parents.join('/') + '/' + node.nom
             }
             
-            // Ouvrir le stream pour le fuuid
-            const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-            const response = await cacheTmp.match('/'+fuuid)
-        
-            console.debug("Conserver fichier %s (parents : %O)", nomFichier, parents)
-            yield {name: nomFichier, input: response}
+            if(operation === 'stream') {
+                // Ouvrir le stream pour le fuuid
+                const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+                const response = await cacheTmp.match('/'+fuuid)
+            
+                console.debug("Conserver fichier %s (parents : %O)", nomFichier, parents)
+                yield {name: nomFichier, input: response}
+            } else if(operation === 'getFuuid') {
+                yield {name: nomFichier, fuuid}
+            }
         } else {
             // Sous-repertoire
             console.debug("streamRepertoireDansZipRecursif Sous repertoire ", node.nom)
-            for await (const sousNode of ajouterRepertoireDansZip(workers, node, parents)) {
+            for await (const sousNode of ajouterRepertoireDansZip(workers, node, parents, opts)) {
                 yield sousNode
             }
         }
