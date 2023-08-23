@@ -78,9 +78,9 @@ export async function majFichierMetadata(workers, tuuid, dataChiffre, data) {
     
     console.debug("majFichierMetadata %O dataChiffre %O data %O", fichier, dataChiffre, data)
 
-    const version_courante = fichier.version_courante
-    const metadataChiffre = version_courante.metadata
-    const ref_hachage_bytes = fichier.fuuid_v_courante
+    // const version_courante = fichier.version_courante
+    const metadataChiffre = fichier.metadata
+    const ref_hachage_bytes = fichier.fuuids_versions[0]
 
     // Recuperer cle
     const cles = await clesDao.getCles([ref_hachage_bytes])

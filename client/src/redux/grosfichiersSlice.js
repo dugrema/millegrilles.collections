@@ -1164,7 +1164,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
                 // const fuuid_v_courante = docCourant.fuuid_v_courante
                 const version_courante = docCourant.version_courante || {}
                 const fuuid_v_courante = version_courante.fuuid
-                const metadata = version_courante.metadata || docCourant.metadata,
+                const metadata = docCourant.metadata || version_courante.metadata,
                       images = version_courante.images || {}
 
                 if( metadata ) {

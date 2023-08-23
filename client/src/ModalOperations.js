@@ -669,7 +669,7 @@ export function RenommerModal(props) {
         event.preventDefault()
         event.stopPropagation()
         
-        // console.debug("Appliquer a %s", tuuidSelectionne)
+        console.debug("Appliquer nom %s (mimetype: %s) a %s", nom, mimetype, docSelectionne.tuuid)
         try {
             let reponse = null
             const tuuid = docSelectionne.tuuid,
