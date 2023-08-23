@@ -46,8 +46,11 @@ function Partager(props) {
     }, [dispatch, workers, etatPret])
 
     const choisirContactId = useCallback(e=>{
-        setContactId(e.currentTarget.value)
-    }, [setContactId])
+        const contactId = e.currentTarget.value
+        console.debug("choisirContactId contactId")
+        setContactId(contactId)
+        dispatch(fichiersActions.setUserContactId({userId: userIdPartage, contactId}))
+    }, [dispatch, userIdPartage, setContactId])
     const fermerPageContact = useCallback(()=>setContactId(''), setContactId)
     const fermerPagePartageUsager = useCallback(()=>setUserIdPartage(''), setUserIdPartage)
 

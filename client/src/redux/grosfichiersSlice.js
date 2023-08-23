@@ -59,6 +59,9 @@ function setUserContactIdAction(state, action) {
     const { userId, contactId } = action.payload
     state.partageUserIdTiers = userId
     state.partageContactId = contactId
+    if(state.liste) state.liste.forEach(item=>{
+        item.contactId = contactId
+    })
 }
 
 function setSourceAction(state, action) {
@@ -184,12 +187,14 @@ function mergeTuuidDataAction(state, action) {
         payload = [payload]
     }
 
+    const contactId = state.partageContactId
+
     for (const payloadFichier of payload) {
         // console.debug("mergeTuuidDataAction action: %O, cuuid courant: %O", action, state.cuuid)
         let { tuuid } = payloadFichier
 
         // Ajout flag _mergeVersion pour rafraichissement ecran
-        const data = {...(payloadFichier.data || {})}
+        const data = {...(payloadFichier.data || {}), contactId}
         data['_mergeVersion'] = mergeVersion
 
         // const cuuid = data.cuuid,
