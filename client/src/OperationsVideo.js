@@ -356,9 +356,11 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
         extensions = usager || {},
         delegationGlobale = extensions.delegationGlobale
 
+  const fuuid = fichier.fuuids_versions[0]
+
   const commande = {
       tuuid: fichier.tuuid,
-      fuuid: fichier.fuuid_v_courante,
+      fuuid,
       ...params,
   }
 
