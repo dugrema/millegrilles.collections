@@ -368,7 +368,7 @@ export function InfoModal(props) {
             // Mapper le fichier (thumbnails, etc.)
             docSelectionne = mapDocumentComplet(workers, docSelectionne)
 
-            if(docSelectionne.mimetype) {
+            if(docSelectionne.type_node === 'Fichier') {
                 header = 'Information fichier'
             } else {
                 header = 'Information collection'
@@ -465,7 +465,8 @@ function InfoFichier(props) {
     const nom = valueItem.nom
     const { tuuid, fuuid_v_courante: fuuid } = fichier
     const versionCourante = fichier.version_courante || {}
-    const { mimetype, taille, visites } = versionCourante
+    const mimetype = fichier.mimetype || versionCourante.mimetype
+    const { taille, visites } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
     const dateFichier = valueItem.dateFichier
 

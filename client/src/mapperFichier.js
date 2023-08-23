@@ -44,7 +44,7 @@ export function mapDocumentComplet(workers, doc) {
     if(tuuid) {
         // Mapper vers fileId ou folderId
         // Utiliser mimetype pour detecter si c'est un repertoire ou fichier
-        if(mimetype) copie.fileId = tuuid
+        if(copie.type_node === 'Fichier') copie.fileId = tuuid
         else {
             copie.mimetype = 'Repertoire'
             copie.folderId = tuuid
@@ -67,7 +67,8 @@ export function mapDocumentComplet(workers, doc) {
     copie.loader = mediaLoader.fichierLoader(fuuid_v_courante, {mimetype})
 
     if(version_courante) {
-        const { anime, taille, images, video, duration, mimetype, header } = version_courante
+        const mimetype = doc.mimetype || version_courante.mimetype
+        const { anime, taille, images, video, duration, header } = version_courante
         
         if(taille) copie.taille = taille
         if(duration) copie.duration = duration

@@ -177,7 +177,7 @@ export function ConversionVideo(props) {
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const versionCourante = fichier.version_courante || {}
-    const mimetype = versionCourante.mimetype || ''
+    const mimetype = fichier.mimetype || versionCourante.mimetype || ''
     const mimetypeBase = mimetype.split('/').shift()
     
     const erreurCb = (err, message) => {
@@ -251,7 +251,8 @@ function FormConversionVideo(props) {
     const maxValueFilterResolution = useCallback(option=>option.value <= resolutionOriginal, [resolutionOriginal])
 
     if(!fichier) return ''
-    if(!versionCourante.mimetype.startsWith('video/')) return ''
+    const mimetype = fichier.mimetype || versionCourante.mimetype
+    if(!mimetype.startsWith('video/')) return ''
 
     const estPret = codecVideo && codecAudio && resolutionVideo && qualityVideo && bitrateAudio
   
