@@ -5,7 +5,9 @@ import { ajouterUpload } from '../redux/uploaderSlice'
 import * as Comlink from 'comlink'
 
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
-      CONST_TIMEOUT_DOWNLOAD = 120_000
+      CONST_TIMEOUT_DOWNLOAD = 120_000,
+      CONST_1MB = 1024 * 1024,
+      CONST_BLOB_DOWNLOAD_CHUNKSIZE = 100 * CONST_1MB
 
 function setup(workers) {
     return {

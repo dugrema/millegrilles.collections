@@ -1,4 +1,4 @@
-import { wrap, releaseProxy } from 'comlink'
+import { proxy, wrap, releaseProxy } from 'comlink'
 
 import { usagerDao } from '@dugrema/millegrilles.reactjs'
 // import * as traitementFichiers from './traitementFichiers'
@@ -43,7 +43,7 @@ export function setupWorkers() {
 }
 
 async function wireWorkers(workers) {
-    const { connexion, chiffrage, transfertFichiers } = workers
+    const { connexion, chiffrage, transfertFichiers, downloadFichiersDao } = workers
     transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
 
     const urlLocal = new URL(window.location.href)
@@ -52,6 +52,12 @@ async function wireWorkers(workers) {
     console.debug("Download path : %O", downloadHref)
     transfertFichiers.down_setUrlDownload(downloadHref)
     
+    const callbackAjouterChunkIdb = proxy((fuuid, position, blob) => {
+        console.debug("callbackAjouterChunkIdb proxy fuuid %s, position %d, blob %O", fuuid, position, blob)
+        return downloadFichiersDao.ajouterFichierDownloadFile(fuuid, position, blob)
+    })
+    transfertFichiers.down_setCallbackAjouterChunkIdb(callbackAjouterChunkIdb)
+
     urlLocal.pathname = '/collections/fichiers/upload'
     const uploadHref = urlLocal.href
     console.debug("Upload path : %O", uploadHref)
