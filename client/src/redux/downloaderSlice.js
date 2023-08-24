@@ -179,7 +179,7 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     const fuuidCle = docDownload.fuuid_v_courante || fuuid
     const taille = version_courante.taille
     const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
-    // console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
+    console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
     if(!infoDownload) {
         // Ajouter l'upload, un middleware va charger le reste de l'information
         // console.debug("Ajout upload %O", correlation)
@@ -346,6 +346,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         root: nodeRoot,
         genererZip: true,
         nom: nomArchive,
+        mimetype: 'application/zip',
     }
 
     // Conserver le nouveau download dans IDB
@@ -364,7 +365,6 @@ async function traiterArreterDownload(workers, fuuid, dispatch, getState) {
     const state = getState()[SLICE_NAME]
     const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
     if(download) {
-        
         // Arreter et retirer download state (interrompt le middleware au besoin)
         dispatch(supprimerDownload(fuuid))
 
@@ -401,12 +401,11 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
         if(!noSave) {
             try {
                 // Prompt sauvegarder
-                // console.debug("TraitementFichiers ", traitementFichiers)
                 const fuuid = download.fuuid,
                       filename = download.nom
                 await traitementFichiers.downloadCache(fuuid, {filename})
             } catch(err) {
-                console.warn("Erreur prompt pour sauvgarder fichier downloade ", err)
+                console.warn("Erreur prompt pour sauvegarder fichier downloade ", err)
             }
         } else {
             console.debug("Skip prompt sauvegarde %O", download)
@@ -568,6 +567,8 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
 
 async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
+    const { downloadFichiersDao } = workers
+
     const fuuidZip = downloadInfo.fuuid, userId = downloadFichier.userId
 
     // for await (const fichier of streamRepertoireDansZipRecursif(workers, downloadInfo.root.nodes, [])) {
@@ -582,11 +583,47 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     const headersModifies = new Headers()
     headersModifies.set('content-type', 'application/zip')
     headersModifies.set('content-disposition', `attachment; filename="${encodeURIComponent('root.zip')}"`)
-    // const reader = resultatZip.getReader()
-    const response = new Response(resultatZip, {headers: headersModifies, status: 200})
 
-    const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-    await cacheTmp.put('/' + fuuidZip, response)
+    // Sauvegarder blob 
+    // const response = new Response(resultatZip, {headers: headersModifies, status: 200})
+    // const blob = await response.blob()
+    // await downloadFichiersDao.ajouterFichierDownloadFile(fuuidZip, 0, blob)
+
+    const stream = resultatZip.getReader()
+    let arrayBuffers = [], tailleChunks = 0, position = 0
+    while(true) {
+        const val = await stream.read()
+        console.debug("genererFichierZip Stream read %O", val)
+        const data = val.value
+        if(data) {
+            arrayBuffers.push(data)
+            tailleChunks += data.length
+            position += data.length
+        }
+
+        if(tailleChunks > 10_000) {
+            // Split chunks
+            const blob = new Blob(arrayBuffers)
+            const positionBlob = position - blob.size
+            console.debug("Blob cree position %d : ", positionBlob, blob)
+            await downloadFichiersDao.ajouterFichierDownloadFile(fuuidZip, positionBlob, blob)
+            arrayBuffers = []
+            tailleChunks = 0
+        }
+
+        if(val.done) break  // Termine
+        if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
+    }
+
+    if(arrayBuffers.length > 0) {
+        const blob = new Blob(arrayBuffers)
+        const positionBlob = position - blob.size
+        console.debug("Dernier blob position %d : ", positionBlob, blob)
+        await downloadFichiersDao.ajouterFichierDownloadFile(fuuidZip, positionBlob, blob)
+    }
+
+    // const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+    // await cacheTmp.put('/' + fuuidZip, response)
 
     // Cleanup downloads individuels - on garde juste le ZIP
     for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid'})) {

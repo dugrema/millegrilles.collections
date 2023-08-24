@@ -72,7 +72,8 @@ export async function supprimerFichier(correlation) {
     const storeFichiers = db.transaction(STORE_UPLOADS_FICHIERS, 'readwrite').store
     
     // Supprimer fichiers (blobs)
-    let cursorFichiers = await storeFichiers.openCursor()
+    const keyRange = IDBKeyRange.bound([correlation, 0], [correlation, Number.MAX_SAFE_INTEGER])
+    let cursorFichiers = await storeFichiers.openCursor(keyRange, 'next')
     while(cursorFichiers) {
         const correlationCursor = cursorFichiers.value.correlation
         if(correlationCursor === correlation) {

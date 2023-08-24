@@ -25,7 +25,9 @@ function setup(workers) {
         },
         resLoader,
         clean,
-        downloadCache,
+        downloadCache(fuuid, opts) {
+            return downloadCache(workers, fuuid, opts)
+        },
 
         // Remplacement pour getFichierChiffre
         getUrlFuuid,
@@ -270,17 +272,26 @@ export async function getResponseFuuid(fuuid) {
     return cacheFichier
 }
 
-export async function downloadCache(fuuid, opts) {
+export async function downloadCache(workers, fuuid, opts) {
     opts = opts || {}
+    const { downloadFichiersDao } = workers
     if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
     console.debug("Download fichier : %s = %O", fuuid, opts)
-    const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-    const cacheFichier = await cacheTmp.match('/'+fuuid)
-    // console.debug("Cache fichier : %O", cacheFichier)
-    if(cacheFichier) {
-        promptSaveFichier(await cacheFichier.blob(), opts)
+
+    const resultat = await downloadFichiersDao.getDownloadComplet(fuuid)
+    console.debug("Resultat donwload complet IDB DAO : ", resultat)
+
+    if(resultat && resultat.blob) {
+        promptSaveFichier(resultat.blob, opts)
     } else {
-        console.warn("Fichier '%s' non present dans le cache", fuuid)
+        const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+        const cacheFichier = await cacheTmp.match('/'+fuuid)
+        // console.debug("Cache fichier : %O", cacheFichier)
+        if(cacheFichier) {
+            promptSaveFichier(await cacheFichier.blob(), opts)
+        } else {
+            console.warn("Fichier '%s' non present dans le cache", fuuid)
+        }
     }
 }
 

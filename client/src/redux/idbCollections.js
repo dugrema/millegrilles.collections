@@ -2,10 +2,11 @@ import { openDB } from 'idb'
 
 const DB_NAME = 'collections',
       STORE_DOWNLOADS = 'downloads',
+      STORE_DOWNLOADS_FICHIERS = 'downloadsFichiers',
       STORE_UPLOADS = 'uploads',
       STORE_UPLOADS_FICHIERS = 'uploadsFichiers',
       STORE_FICHIERS = 'fichiers',
-      VERSION_COURANTE = 6
+      VERSION_COURANTE = 7
 
 export function ouvrirDB(opts) {
     opts = opts || {}
@@ -39,9 +40,7 @@ function createObjectStores(db, oldVersion, newVersion, transaction) {
                 fichierStore = db.createObjectStore(STORE_FICHIERS, {keyPath: 'tuuid'})
                 db.createObjectStore(STORE_UPLOADS_FICHIERS, {keyPath: ['correlation', 'position']})
             case 3:
-                // Recreer store fichiers pour ajouter index sur favorisIdx (nouveau champ helper)
-                // db.deleteObjectStore(STORE_FICHIERS)
-                // fichierStore = db.createObjectStore(STORE_FICHIERS, {keyPath: 'tuuid'})
+                // ajouter index sur favorisIdx (nouveau champ helper)
                 fichierStore = transaction.objectStore(STORE_FICHIERS)
                 fichierStore.createIndex('cuuids', 'cuuids', {unique: false, multiEntry: true})
                 fichierStore.createIndex('userFavoris', ['user_id', 'favorisIdx'], {unique: false, multiEntry: false})
@@ -55,7 +54,9 @@ function createObjectStores(db, oldVersion, newVersion, transaction) {
                 fichierStore.deleteIndex('userFavoris')
                 fichierStore.createIndex('userTypeNode', ['user_id', 'type_node'], {unique: false, multiEntry: false})
                 fichierStore.createIndex('pathCuuids', 'path_cuuids', {unique: false, multiEntry: true})
-            case 6: // Plus recent, rien a faire
+            case 6:
+                db.createObjectStore(STORE_DOWNLOADS_FICHIERS, {keyPath: ['fuuid', 'position']})
+            case 7: // Plus recent, rien a faire
                 break
             default:
                 console.warn("createObjectStores Default..., version %O", oldVersion)
