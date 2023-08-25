@@ -91,8 +91,7 @@ export async function getDownloadComplet(fuuid) {
     console.debug("getDownloadComplet Info ", info)
 
     const mimetype = info.mimetype
-    
-    // Supprimer fichiers (blobs)
+
     const storeDownloadsFichiers = db.transaction(STORE_DOWNLOADS_FICHIERS, 'readonly').store
     const keyRange = IDBKeyRange.bound([fuuid, 0], [fuuid, Number.MAX_SAFE_INTEGER])
     let cursorFichiers = await storeDownloadsFichiers.openCursor(keyRange, 'next')

@@ -3,6 +3,7 @@ import multibase from 'multibase'
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { ajouterUpload } from '../redux/uploaderSlice'
 import * as Comlink from 'comlink'
+// import { downloadZip } from 'client-zip'
 
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       CONST_TIMEOUT_DOWNLOAD = 120_000,
@@ -285,6 +286,9 @@ export async function downloadCache(workers, fuuid, opts) {
 
     if(resultat && resultat.blob) {
         promptSaveFichier(resultat.blob, opts)
+    // } else if(resultat && resultat.genererZip === true) {
+    //     const blob = await genererFichierZip(workers, resultat)
+    //     promptSaveFichier(blob, opts)
     } else {
         const cacheTmp = await caches.open(CACHE_TEMP_NAME)
         const cacheFichier = await cacheTmp.match('/'+fuuid)
@@ -296,6 +300,17 @@ export async function downloadCache(workers, fuuid, opts) {
         }
     }
 }
+
+// async function genererFichierZip(workers, downloadInfo) {
+//     console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
+
+//     // Parcourir tous les repertoires, streamer les fichiers dans le stream
+//     const nodes = downloadInfo.root.nodes
+//     const resultatZip = downloadZip(parcourirRepertoireDansZipRecursif(workers, nodes, []))
+
+//     // Generer blob 
+//     return await resultatZip.blob()
+// }
 
 function promptSaveFichier(blob, opts) {
     opts = opts || {}
@@ -414,3 +429,54 @@ async function submitBatchUpload(workers, doc) {
     // Utiliser le token, garanti que l'usager n'essaie pas de faire un submit sur la batch d'un tiers
     await workers.connexion.submitBatchUpload(doc.token)
 }
+
+// async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
+//     console.debug("Ajouter path %O/%s", parents.join('/'), node.nom)
+
+//     // Ajouter le node dans le zip
+
+//     const pathAjoute = [...parents, node.nom]
+//     const nodes = node.nodes
+//     if(nodes) {
+//         console.debug("Sous repertoire ", pathAjoute)
+//         for await (const fichier of parcourirRepertoireDansZipRecursif(workers, node.nodes, pathAjoute, opts)) {
+//             console.debug("ajouterRepertoireDansZip Node ", fichier)
+//             yield fichier
+//         }
+//     }
+// }
+
+// async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts) {
+//     opts = opts || {}
+//     const { downloadFichiersDao } = workers
+//     const operation = opts.operation || 'stream'
+//     console.debug("streamRepertoireDansZipRecursif parents ", parents)
+//     for await (const node of nodes) {
+//         if(node.type_node === 'Fichier') {
+//             const fuuid = node.fuuid
+//             let nomFichier = node.nom
+//             if(parents && parents.length > 0) {
+//                 nomFichier = parents.join('/') + '/' + node.nom
+//             }
+            
+//             if(operation === 'stream') {
+//                 // Ouvrir le stream pour le fuuid
+//                 // const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+//                 // const response = await cacheTmp.match('/'+fuuid)
+//                 const fichierDownload = await downloadFichiersDao.getDownloadComplet(fuuid)
+//                 const blob = fichierDownload.blob
+            
+//                 console.debug("Conserver fichier %s (parents : %O)", nomFichier, parents)
+//                 yield {name: nomFichier, input: blob}
+//             } else if(operation === 'getFuuid') {
+//                 yield {name: nomFichier, fuuid}
+//             }
+//         } else {
+//             // Sous-repertoire
+//             console.debug("streamRepertoireDansZipRecursif Sous repertoire ", node.nom)
+//             for await (const sousNode of ajouterRepertoireDansZip(workers, node, parents, opts)) {
+//                 yield sousNode
+//             }
+//         }
+//     }
+// }
