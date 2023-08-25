@@ -231,6 +231,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     }
 
     // Batir la hierarchie du repertoire
+    let tailleTotale = 0
     const nodeParTuuid = {}, nodeParCuuidParent = {}, root = [], fuuidsCles = []
     reponseStructure.liste.forEach(item=>{
         nodeParTuuid[item.tuuid] = item
@@ -242,6 +243,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
             // Extraire version courante (idx: 0)
             const version = item.versions[0]
             item.version_courante = version
+            if(version) tailleTotale += version.taille
             // if(version) {
             //     item.taille = version.taille
             // }
@@ -268,8 +270,22 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
             if(item.tuuid !== cuuid) root.push(item)
         }
     })
-    // console.debug("nodeParTuuid : %O, nodeParCuuidParent : %O, root: %O, fuuidsCles: %O", 
-    //     nodeParTuuid, nodeParCuuidParent, root, fuuidsCles)
+    console.debug("traiterAjouterZipDownload Taille totale : %s, nodeParTuuid : %O, nodeParCuuidParent : %O, root: %O, fuuidsCles: %O", 
+        tailleTotale, nodeParTuuid, nodeParCuuidParent, root, fuuidsCles)
+
+    // Verifier s'il y a assez d'espace pour tout downloader et generer le ZIP
+    if('storage' in navigator) {
+        const estimate = await navigator.storage.estimate()
+        console.debug("traiterAjouterZipDownload storage estimate ", estimate)
+        const quota = estimate.quota
+        if(quota && quota < 2*tailleTotale) {
+            const error = new Error(`Espace disponible dans le navigateur insuffisant : requis ${Math.floor(2*tailleTotale/CONST_1MB)} MB, disponible ${quota/CONST_1MB} MB`)
+            error.code = 1
+            error.tailleTotale = tailleTotale
+            error.tailleDisponible = quota
+            throw error
+        }
+    }
 
     for (const cuuidLoop of Object.keys(nodeParCuuidParent)) {
         const nodes = nodeParCuuidParent[cuuidLoop]
@@ -623,49 +639,11 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
 
     const headersModifies = new Headers()
     headersModifies.set('content-type', 'application/zip')
-    headersModifies.set('content-disposition', `attachment; filename="${encodeURIComponent('root.zip')}"`)
+    headersModifies.set('content-disposition', `attachment; filename="${encodeURIComponent('millegrilles.zip')}"`)
 
     // Sauvegarder blob 
-    // const response = new Response(resultatZip, {headers: headersModifies, status: 200})
-    // const blob = await response.blob()
-    // await downloadFichiersDao.ajouterFichierDownloadFile(fuuidZip, 0, blob)
-
     const reader = resultatZip.getReader()
     await streamToDownloadIDB(workers, fuuidZip, reader)
-    // let arrayBuffers = [], tailleChunks = 0, position = 0
-    // while(true) {
-    //     const val = await stream.read()
-    //     console.debug("genererFichierZip Stream read %O", val)
-    //     const data = val.value
-    //     if(data) {
-    //         arrayBuffers.push(data)
-    //         tailleChunks += data.length
-    //         position += data.length
-    //     }
-
-    //     if(tailleChunks > CONST_BLOB_DOWNLOAD_CHUNKSIZE) {
-    //         // Split chunks
-    //         const blob = new Blob(arrayBuffers)
-    //         const positionBlob = position - blob.size
-    //         console.debug("Blob cree position %d : ", positionBlob, blob)
-    //         await downloadFichiersDao.ajouterFichierDownloadFile(fuuidZip, positionBlob, blob)
-    //         arrayBuffers = []
-    //         tailleChunks = 0
-    //     }
-
-    //     if(val.done) break  // Termine
-    //     if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
-    // }
-
-    // if(arrayBuffers.length > 0) {
-    //     const blob = new Blob(arrayBuffers)
-    //     const positionBlob = position - blob.size
-    //     console.debug("Dernier blob position %d : ", positionBlob, blob)
-    //     await downloadFichiersDao.ajouterFichierDownloadFile(fuuidZip, positionBlob, blob)
-    // }
-
-    // const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-    // await cacheTmp.put('/' + fuuidZip, response)
 
     // Cleanup downloads individuels - on garde juste le ZIP
     for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid'})) {
@@ -698,6 +676,7 @@ async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
 
 async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts) {
     opts = opts || {}
+    const { downloadFichiersDao } = workers
     const operation = opts.operation || 'stream'
     console.debug("streamRepertoireDansZipRecursif parents ", parents)
     for await (const node of nodes) {
@@ -710,11 +689,13 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
             
             if(operation === 'stream') {
                 // Ouvrir le stream pour le fuuid
-                const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-                const response = await cacheTmp.match('/'+fuuid)
+                // const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+                // const response = await cacheTmp.match('/'+fuuid)
+                const fichierDownload = await downloadFichiersDao.getDownloadComplet(fuuid)
+                const blob = fichierDownload.blob
             
                 console.debug("Conserver fichier %s (parents : %O)", nomFichier, parents)
-                yield {name: nomFichier, input: response}
+                yield {name: nomFichier, input: blob}
             } else if(operation === 'getFuuid') {
                 yield {name: nomFichier, fuuid}
             }

@@ -108,8 +108,11 @@ function NavigationCollections(props) {
             .then(()=>{
                 console.debug("Preparation et download pour ZIP %O commence", cuuid)
             })
-            .catch(err=>console.error("Erreur ajout download ZIP %s : %O", cuuid, err))
-    }, [workers, dispatch, cuuidCourant])
+            .catch(err=>{
+                console.error("Erreur ajout download ZIP %s : %O", cuuid, err)
+                erreurCb(err, 'Erreur creation download ZIP')
+            })
+    }, [workers, dispatch, cuuidCourant, erreurCb])
 
     // Reset signal annuler
     useEffect(()=>{
