@@ -279,10 +279,10 @@ export async function downloadCache(workers, fuuid, opts) {
     opts = opts || {}
     const { downloadFichiersDao } = workers
     if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
-    console.debug("Download fichier : %s = %O", fuuid, opts)
+    // console.debug("Download fichier : %s = %O", fuuid, opts)
 
     const resultat = await downloadFichiersDao.getDownloadComplet(fuuid)
-    console.debug("Resultat donwload complet IDB DAO : ", resultat)
+    // console.debug("Resultat donwload complet IDB DAO : ", resultat)
 
     if(resultat && resultat.blob) {
         promptSaveFichier(resultat.blob, opts)

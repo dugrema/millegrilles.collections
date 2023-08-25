@@ -122,7 +122,7 @@ export async function getDownloadComplet(fuuid) {
     }
 
     const blobComplet = new Blob(blobs, {type: mimetype})
-    console.debug("getDownloadComplet Blob ", blobComplet)
+    // console.debug("getDownloadComplet Blob ", blobComplet)
 
     return { ...info, blob: blobComplet }
 }
