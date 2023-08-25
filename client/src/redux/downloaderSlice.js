@@ -279,7 +279,11 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         console.debug("traiterAjouterZipDownload storage estimate ", estimate)
         const quota = estimate.quota
         if(quota && quota < 2*tailleTotale) {
-            const error = new Error(`Espace disponible dans le navigateur insuffisant : requis ${Math.floor(2*tailleTotale/CONST_1MB)} MB, disponible ${quota/CONST_1MB} MB`)
+            const error = new Error(
+                `Espace disponible dans le navigateur insuffisant : 
+                requis ${Math.floor(2*tailleTotale/CONST_1MB)} MB, 
+                disponible ${quota/CONST_1MB} MB`
+            )
             error.code = 1
             error.tailleTotale = tailleTotale
             error.tailleDisponible = quota
@@ -371,6 +375,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     }
 
     // Conserver le nouveau download dans IDB
+    console.debug("Doc generer zip : %O", docGenererZip)
     await downloadFichiersDao.updateFichierDownload(docGenererZip)
     // Inserer dans la Q de traitement
     dispatch(pushGenererZip(docGenererZip))
@@ -626,7 +631,8 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
     const { transfertFichiers, downloadFichiersDao } = workers
 
-    const fuuidZip = downloadInfo.fuuid, userId = downloadFichier.userId
+    const fuuidZip = downloadInfo.fuuid, 
+          userId = downloadInfo.userId
 
     // for await (const fichier of streamRepertoireDansZipRecursif(workers, downloadInfo.root.nodes, [])) {
     //     console.debug("Ajouter fichier %O", fichier)
