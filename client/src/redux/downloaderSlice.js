@@ -182,22 +182,22 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     const taille = version_courante.taille
 
     // Verifier s'il y a assez d'espace pour downloader le fichier
-    if('storage' in navigator) {
-        const estimate = await navigator.storage.estimate()
-        console.debug("traiterAjouterDownload storage estimate ", estimate)
-        const quota = estimate.quota
-        if(quota && quota < taille) {
-            const error = new Error(
-                `Espace disponible dans le navigateur insuffisant : 
-                requis ${Math.floor(taille/CONST_1MB)} MB, 
-                disponible ${quota/CONST_1MB} MB`
-            )
-            error.code = 1
-            error.tailleTotale = taille
-            error.tailleDisponible = quota
-            throw error
-        }
-    }
+    // if('storage' in navigator) {
+    //     const estimate = await navigator.storage.estimate()
+    //     console.debug("traiterAjouterDownload storage estimate ", estimate)
+    //     const quota = estimate.quota
+    //     if(quota && quota < taille) {
+    //         const error = new Error(
+    //             `Espace disponible dans le navigateur insuffisant : 
+    //             requis ${Math.floor(taille/CONST_1MB)} MB, 
+    //             disponible ${quota/CONST_1MB} MB`
+    //         )
+    //         error.code = 1
+    //         error.tailleTotale = taille
+    //         error.tailleDisponible = quota
+    //         throw error
+    //     }
+    // }
 
     const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
     console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
@@ -293,22 +293,22 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         tailleTotale, nodeParTuuid, nodeParCuuidParent, root, fuuidsCles)
 
     // Verifier s'il y a assez d'espace pour tout downloader et generer le ZIP
-    if('storage' in navigator) {
-        const estimate = await navigator.storage.estimate()
-        console.debug("traiterAjouterZipDownload storage estimate ", estimate)
-        const quota = estimate.quota
-        if(quota && quota < 2*tailleTotale) {
-            const error = new Error(
-                `Espace disponible dans le navigateur insuffisant : 
-                requis ${Math.floor(2*tailleTotale/CONST_1MB)} MB, 
-                disponible ${quota/CONST_1MB} MB`
-            )
-            error.code = 1
-            error.tailleTotale = tailleTotale
-            error.tailleDisponible = quota
-            throw error
-        }
-    }
+    // if('storage' in navigator) {
+    //     const estimate = await navigator.storage.estimate()
+    //     console.debug("traiterAjouterZipDownload storage estimate ", estimate)
+    //     const quota = estimate.quota
+    //     if(quota && quota < 2*tailleTotale) {
+    //         const error = new Error(
+    //             `Espace disponible dans le navigateur insuffisant : 
+    //             requis ${Math.floor(2*tailleTotale/CONST_1MB)} MB, 
+    //             disponible ${quota/CONST_1MB} MB`
+    //         )
+    //         error.code = 1
+    //         error.tailleTotale = tailleTotale
+    //         error.tailleDisponible = quota
+    //         throw error
+    //     }
+    // }
 
     for (const cuuidLoop of Object.keys(nodeParCuuidParent)) {
         const nodes = nodeParCuuidParent[cuuidLoop]
