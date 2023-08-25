@@ -358,14 +358,18 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         Object.assign(item, metaDechiffree)
     }
 
-    console.debug("Contenu fichier ZIP : ", root)
+    // console.debug("Contenu fichier ZIP : ", root)
 
     // Ajouter tous les fichiers a downloader dans la Q de downloader et demarrer
     for await(const tuuid of Object.keys(nodeParTuuid)) {
         const item = nodeParTuuid[tuuid]
         if(item.fuuids_versions) {
             // console.warn("SKIP download - TO DO fix me")
-            await dispatch(ajouterDownload(workers, item))
+            try {
+                await dispatch(ajouterDownload(workers, item))
+            } catch(err) {
+                console.warn("Erreur ajout fuuid %s dans downloads - on assume qu'il existe deja : %O", item.fuuid, err)
+            }
         }
     }
 
