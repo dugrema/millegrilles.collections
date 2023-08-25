@@ -180,6 +180,25 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     const fuuid = docDownload.fuuidDownload || docDownload.fuuid || version_courante.fuuid
     const fuuidCle = docDownload.fuuid_v_courante || fuuid
     const taille = version_courante.taille
+
+    // Verifier s'il y a assez d'espace pour downloader le fichier
+    if('storage' in navigator) {
+        const estimate = await navigator.storage.estimate()
+        console.debug("traiterAjouterDownload storage estimate ", estimate)
+        const quota = estimate.quota
+        if(quota && quota < taille) {
+            const error = new Error(
+                `Espace disponible dans le navigateur insuffisant : 
+                requis ${Math.floor(taille/CONST_1MB)} MB, 
+                disponible ${quota/CONST_1MB} MB`
+            )
+            error.code = 1
+            error.tailleTotale = taille
+            error.tailleDisponible = quota
+            throw error
+        }
+    }
+
     const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
     console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
     if(!infoDownload) {
