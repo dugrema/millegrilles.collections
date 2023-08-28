@@ -13,6 +13,8 @@ import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 
 import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 
+const HTTP_STATUS_ATTENTE = [202, 204]
+
 function AfficherVideo(props) {
 
     const { support, showInfoModalOuvrir } = props
@@ -65,7 +67,7 @@ function AfficherVideo(props) {
         if(info.status === 200) {
             // Complete
             setProgresChargement(100)
-        } else if(info.status === 202) {
+        } else if(HTTP_STATUS_ATTENTE.includes(info.status)) {
             const headers = info.headers
             console.debug("headers ", headers)
 
@@ -236,7 +238,7 @@ async function attendreChargement(source, majChargement, setSrcVideo, setErrVide
                     timeout: 20_000,
                 })
                 majChargement(reponse)
-                if(reponse.status !== 202) break
+                if( ! HTTP_STATUS_ATTENTE.includes(reponse.status) ) break
             } catch(err) {
                 const reponse = err.response
                 if(reponse) {

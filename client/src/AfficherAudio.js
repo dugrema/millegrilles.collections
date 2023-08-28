@@ -7,6 +7,8 @@ import Button from 'react-bootstrap/Button'
 import Alert from 'react-bootstrap/Alert'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
+const HTTP_STATUS_ATTENTE = [202, 204]
+
 function AfficherAudio(props) {
 
     const { support, showInfoModalOuvrir } = props
@@ -89,7 +91,7 @@ function AudioPlayer(props) {
         if(info.status === 200) {
             // Complete
             setProgresChargement(100)
-        } else if(info.status === 202) {
+        } else if(HTTP_STATUS_ATTENTE.includes(info.status)) {
             const headers = info.headers
             console.debug("headers ", headers)
 
@@ -127,7 +129,7 @@ function AudioPlayer(props) {
                             timeout: 20_000,
                         })
                         majChargement(reponse)
-                        if(reponse.status !== 202) break
+                        if( ! HTTP_STATUS_ATTENTE.includes(reponse.status) ) break
                         await new Promise(resolve=>setTimeout(resolve, 2000))
                     }
 
