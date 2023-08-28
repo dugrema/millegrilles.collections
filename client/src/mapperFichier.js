@@ -32,7 +32,18 @@ export function mapDocumentComplet(workers, doc) {
     const creerTokenStreamInst = commande => {
         if(doc.contactId) commande = {...commande, contact_id: doc.contactId}
         console.debug("creerTokenStreamInst Commande %O, doc: %O", commande, doc)
-        return connexion.creerTokenStream(commande)
+
+        const fuuid = commande.fuuids[0]
+        const commandeV2 = { fuuid }
+        if(commande.fuuidStream && commande.fuuidStream != fuuid) {
+            // Remplacer le fuuid par fuuidStream - le fuuid devient la reference de dechiffrage
+            commandeV2.fuuid = commande.fuuidStream
+            commandeV2.fuuid_ref = fuuid
+        }
+        if(doc.contactId) commandeV2.contact_id = doc.contactId
+        console.debug("creerTokenStreamInst Commande V2 %O", commandeV2)
+
+        return connexion.creerTokenStream(commandeV2)
     }
     const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)
 

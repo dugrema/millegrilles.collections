@@ -51,10 +51,12 @@ async function verifierAutorisationStream(req, res) {
                 debug("verifierAutorisationStream Contenu token JWT (valide) : ", resultatToken)
 
                 // S'assurer que le certificat signataire est de type collections
-                const roles = resultatToken.extensions.roles,
+                const domaines = resultatToken.extensions.domaines,
+                      // roles = resultatToken.extensions.roles,
                       niveauxSecurite = resultatToken.extensions.niveauxSecurite
-                if( ! roles.includes('collections') || ! niveauxSecurite.includes('2.prive') ) {
-                    debug("verifierAutorisationStream JWT signe par mauvais type de certificat (doit etre collections/2.prive)")
+                // if( ! roles.includes('collections') || ! niveauxSecurite.includes('2.prive') ) {
+                if( ! domaines.includes('GrosFichiers') || ! niveauxSecurite.includes('4.secure') ) {
+                    debug("verifierAutorisationStream JWT signe par mauvais type de certificat (doit etre GrosFichiers/4.secure)")
                     return res.sendStatus(403)
                 }
 

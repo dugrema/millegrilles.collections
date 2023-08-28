@@ -207,7 +207,7 @@ function creerTokenStream(commande) {
   return ConnexionClient.emitBlocking(
     'creerTokenStream', 
     commande, 
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'verifierAccesFuuids', ajouterCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getJwtStreaming', ajouterCertificat: true}
   )
 }
 

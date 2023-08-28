@@ -497,35 +497,42 @@ export async function creerTokenStream(socket, enveloppeParams) {
 
     debug("Fuuid a charger : %O", fuuids)
 
-    const resultat = await transmettreRequete(socket, enveloppeParams, 'verifierAccesFuuids')
+    // const resultat = await transmettreRequete(socket, enveloppeParams, 'verifierAccesFuuids')
+    const resultat = await transmettreRequete(socket, enveloppeParams, 'getJwtStreaming')
     debug("creerTokenStream Resultat verification acces : %O", resultat)
-    if(resultat.acces_tous === true) {
-        debug("creerTokenStream Acces stream OK")
- 
-        const pki = socket.amqpdao.pki
-        const { cle: clePriveePem, fingerprint } = pki
-        // Supporter user_id recu pour partage fichiers
-        const userId = resultat.user_id || socket.userId
-        // const userId = socket.userId
-
-        const jwts = {}
-        for await (const fuuid of fuuids) {
-          const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuid, {mimetype})
-          debug("JWT cree pour userId %s sur fuuid %s : %O", userId, fuuid, jwt)
-          jwts[fuuid] = jwt
-
-          if(fuuidStream) {
-            const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuidStream, {ref: fuuid, mimetype, ...dechiffrageVideo})
-            debug("JWT cree pour userId %s sur video %s (fuuid %s) : %O", userId, fuuidStream, fuuid, jwt)
-            jwts[fuuidStream] = jwt
-          }
-        }
-
-        return {ok: true, jwts}
+    if(resultat.ok) {
+      return resultat
     } else {
-        debug("creerTokenStream Acces stream refuse")
-        return {ok: false, err: 'Acces refuse'}
+      debug("creerTokenStream Acces stream refuse")
+      return {ok: false, err: 'Acces refuse'}
     }
+    // if(resultat.acces_tous === true) {
+    //     debug("creerTokenStream Acces stream OK")
+ 
+    //     const pki = socket.amqpdao.pki
+    //     const { cle: clePriveePem, fingerprint } = pki
+    //     // Supporter user_id recu pour partage fichiers
+    //     const userId = resultat.user_id || socket.userId
+    //     // const userId = socket.userId
+
+    //     const jwts = {}
+    //     for await (const fuuid of fuuids) {
+    //       const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuid, {mimetype})
+    //       debug("JWT cree pour userId %s sur fuuid %s : %O", userId, fuuid, jwt)
+    //       jwts[fuuid] = jwt
+
+    //       if(fuuidStream) {
+    //         const jwt = await signerTokenFichier(fingerprint, clePriveePem, userId, fuuidStream, {ref: fuuid, mimetype, ...dechiffrageVideo})
+    //         debug("JWT cree pour userId %s sur video %s (fuuid %s) : %O", userId, fuuidStream, fuuid, jwt)
+    //         jwts[fuuidStream] = jwt
+    //       }
+    //     }
+
+    //     return {ok: true, jwts}
+    // } else {
+    //     debug("creerTokenStream Acces stream refuse")
+    //     return {ok: false, err: 'Acces refuse'}
+    // }
   } catch(err) {
       debug("creerTokenStream Erreur verification acces stream : %O", err)
       return {ok: false, err: ''+err}
