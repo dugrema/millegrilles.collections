@@ -16,161 +16,260 @@ class SocketIoCollectionsHandler(SocketIoHandler):
     async def _preparer_socketio_events(self):
         await super()._preparer_socketio_events()
 
-        # Instances
-        self._sio.on('getCategoriesUsager', handler=self.requete_categories_usager)
-        self._sio.on('getGroupesUsager', handler=self.requete_groupes_usager)
-        self._sio.on('getDocumentsGroupe', handler=self.requete_documents_groupe)
-        self._sio.on('getClesGroupes', handler=self.requete_cles_groupes)
-        self._sio.on('sauvegarderCategorieUsager', handler=self.sauvegarder_categorie_usager)
-        self._sio.on('sauvegarderGroupeUsager', handler=self.sauvegarder_groupe_usager)
-        self._sio.on('sauvegarderDocument', handler=self.sauvegarder_document)
+        # Requetes
+        self._sio.on('getDocuments', handler=self.requete_documents)
+        self._sio.on('getFavoris', handler=self.requete_favoris)
+        self._sio.on('getCorbeille', handler=self.requete_corbeille)
+        self._sio.on('getCollection', handler=self.requete_collection)
+        self._sio.on('getRecents', handler=self.requete_recents)
+        self._sio.on('getClesFichiers', handler=self.requete_cles_fichiers)
+        self._sio.on('rechercheIndex', handler=self.requete_recherche_index)
+        self._sio.on('syncCollection', handler=self.requete_sync_collection)
+        self._sio.on('syncRecents', handler=self.requete_sync_recents)
+        self._sio.on('syncCorbeille', handler=self.requete_sync_corbeille)
+        self._sio.on('requeteJobsVideo', handler=self.requete_jobs_video)
+        self._sio.on('chargerContacts', handler=self.requete_contacts)
+        self._sio.on('getPartagesUsager', handler=self.requete_partages_usager)
+        self._sio.on('getPartagesContact', handler=self.requete_partages_contact)
+        self._sio.on('getInfoStatistiques', handler=self.requete_info_statistiques)
+        self._sio.on('getStructureRepertoire', handler=self.requete_structure_repertoire)
+        self._sio.on('getBatchUpload', handler=self.requete_batch_upload)
+        self._sio.on('getPermissionCles', handler=self.requete_permission_cles)
+
+        # Commandes
+        self._sio.on('creerCollection', handler=self.creer_collection)
+        self._sio.on('changerFavoris', handler=self.changer_favoris)
+        self._sio.on('retirerDocuments', handler=self.retirer_documents)
+        self._sio.on('supprimerDocuments', handler=self.supprimer_documents)
+        self._sio.on('archiverDocuments', handler=self.archiver_documents)
+        self._sio.on('decrireFichier', handler=self.decrire_fichier)
+        self._sio.on('decrireCollection', handler=self.decrire_collection)
+        self._sio.on('recupererDocumentsV2', handler=self.recuperer_documents_v2)
+        self._sio.on('copierVersCollection', handler=self.copier_vers_collection)
+        self._sio.on('deplacerFichiersCollection', handler=self.decplacer_fichiers_collection)
+        self._sio.on('transcoderVideo', handler=self.transcoder_video)
+        self._sio.on('ajouterFichier', handler=self.ajouter_fichier)
+        self._sio.on('supprimerVideo', handler=self.supprimer_video)
+        self._sio.on('creerTokenStream', handler=self.creer_token_stream)
+        self._sio.on('completerPreviews', handler=self.completer_previews)
+        self._sio.on('supprimerJobVideo', handler=self.supprimer_job_video)
+        self._sio.on('submitBatchUpload', handler=self.submit_batch_upload)
+        self._sio.on('ajouterContactLocal', handler=self.ajouter_contact_local)
+        self._sio.on('supprimerContacts', handler=self.supprimer_contacts)
+        self._sio.on('partagerCollections', handler=self.partager_collections)
+        self._sio.on('supprimerPartageUsager', handler=self.supprimer_partage_usager)
+        self._sio.on('indexerContenu', handler=self.indexer_contenu)
 
         # Listeners
-        self._sio.on('ecouterEvenementsCategoriesUsager', handler=self.ecouter_categories_usager)
-        self._sio.on('retirerEvenementsCategoriesUsager', handler=self.retirer_categories_usager)
-        self._sio.on('ecouterEvenementsGroupesUsager', handler=self.ecouter_groupes_usager)
-        self._sio.on('retirerEvenementsGroupesUsager', handler=self.retirer_groupes_usager)
-        self._sio.on('ecouterEvenementsDocumentsUsager', handler=self.ecouter_documents_usager)
-        self._sio.on('retirerEvenementsDocumentsUsager', handler=self.retirer_documents_usager)
+        # self._sio.on('enregistrerCallbackMajFichier', handler=self.ecouter_categories_usager)
+        # self._sio.on('retirerCallbackMajFichier', handler=self.ecouter_categories_usager)
+        # self._sio.on('enregistrerCallbackMajFichierCollection', handler=self.ecouter_categories_usager)
+        # self._sio.on('retirerCallbackMajFichierCollection', handler=self.ecouter_categories_usager)
+        # self._sio.on('enregistrerCallbackMajCollections', handler=self.ecouter_categories_usager)
+        # self._sio.on('retirerCallbackMajCollections', handler=self.ecouter_categories_usager)
+        # self._sio.on('enregistrerCallbackMajContenuCollection', handler=self.ecouter_categories_usager)
+        # self._sio.on('retirerCallbackMajContenuCollection', handler=self.ecouter_categories_usager)
+        # self._sio.on('enregistrerCallbackTranscodageVideo', handler=self.ecouter_categories_usager)
+        # self._sio.on('retirerCallbackTranscodageVideo', handler=self.ecouter_categories_usager)
 
     @property
     def exchange_default(self):
         return ConstantesCollections.EXCHANGE_DEFAUT
 
-    async def requete_categories_usager(self, sid: str, message: dict):
+    async def requete_documents(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getCategoriesUsager')
+                                           ConstantesCollections.NOM_DOMAINE, 'documentsParTuuid')
 
-    async def requete_groupes_usager(self, sid: str, message: dict):
+    async def requete_favoris(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getGroupesUsager')
+                                           ConstantesCollections.NOM_DOMAINE, 'favoris')
 
-    async def requete_documents_groupe(self, sid: str, message: dict):
+    async def requete_corbeille(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getDocumentsGroupe')
+                                           ConstantesCollections.NOM_DOMAINE, 'getCorbeille')
 
-    async def requete_cles_groupes(self, sid: str, message: dict):
+    async def requete_collection(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getClesGroupes')
+                                           ConstantesCollections.NOM_DOMAINE, 'contenuCollection')
 
-    async def sauvegarder_categorie_usager(self, sid: str, message: dict):
+    async def requete_recents(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'activiteRecente')
+
+    async def requete_cles_fichiers(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           Constantes.DOMAINE_MAITRE_DES_CLES, 'dechiffrage')
+
+    async def requete_recherche_index(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.DOMAINE_SOLR_RELAI, 'fichiers')
+
+    async def requete_sync_collection(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'syncCollection')
+
+    async def requete_sync_recents(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'syncRecents')
+
+    async def requete_sync_corbeille(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'syncCorbeille')
+
+    async def requete_jobs_video(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'requeteJobsVideo')
+
+    async def requete_contacts(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'chargerContacts')
+
+    async def requete_partages_usager(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getPartagesUsager')
+
+    async def requete_partages_contact(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getPartagesContact')
+
+    async def requete_info_statistiques(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getInfoStatistiques')
+
+    async def requete_structure_repertoire(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getStructureRepertoire')
+
+    async def requete_batch_upload(self, sid: str, message: dict):
+        raise NotImplementedError('obsolete?')
+
+    async def requete_permission_cles(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getClesFichiers')
+
+    # Commandes
+
+    async def creer_collection(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'sauvegarderCategorieUsager')
+                                            ConstantesCollections.NOM_DOMAINE, 'nouvelleCollection')
 
-    async def sauvegarder_groupe_usager(self, sid: str, message: dict):
+    async def changer_favoris(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'sauvegarderGroupeUsager')
+                                            ConstantesCollections.NOM_DOMAINE, 'changerFavoris')
 
-    async def sauvegarder_document(self, sid: str, message: dict):
+    async def retirer_documents(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'sauvegarderDocument')
+                                            ConstantesCollections.NOM_DOMAINE, 'retirerDocumentsCollection')
+
+    async def supprimer_documents(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerDocuments')
+
+    async def archiver_documents(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'archiverDocuments')
+
+    async def decrire_fichier(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'decrireFichier')
+
+    async def decrire_collection(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'decrireCollection')
+
+    async def recuperer_documents_v2(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'recupererDocumentsV2')
+
+    async def copier_vers_collection(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'ajouterFichiersCollection')
+
+    async def decplacer_fichiers_collection(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'deplacerFichiersCollection')
+
+    async def transcoder_video(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'transcoderVideo')
+
+    async def ajouter_fichier(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'commandeNouveauFichier')
+
+    async def supprimer_video(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideo')
+
+    async def creer_token_stream(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'getJwtStreaming')
+
+    async def completer_previews(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'completerPreviews')
+
+    async def supprimer_job_video(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideo')
+
+    async def submit_batch_upload(self, sid: str, message: dict):
+        raise NotImplementedError('todo')
+
+    async def ajouter_contact_local(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'ajouterContactLocal')
+
+    async def supprimer_contacts(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerContacts')
+
+    async def partager_collections(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'partagerCollections')
+
+    async def supprimer_partage_usager(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerPartageUsager')
+
+    async def indexer_contenu(self, sid: str, message: dict):
+        return await self.executer_commande(sid, message,
+                                            ConstantesCollections.NOM_DOMAINE, 'indexerContenu')
 
     # Listeners
 
-    async def ecouter_categories_usager(self, sid: str, message: dict):
-        async with self._sio.session(sid) as session:
-            try:
-                enveloppe = await self.authentifier_message(session, message)
-            except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        user_id = enveloppe.get_user_id
-
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [
-            f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
-        ]
-        reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
-
-        return reponse_signee
-
-    async def retirer_categories_usager(self, sid: str, message: dict):
-        async with self._sio.session(sid) as session:
-            try:
-                enveloppe = await self.authentifier_message(session, message)
-            except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        user_id = enveloppe.get_user_id
-
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [
-            f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
-        ]
-        reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
-
-        return reponse_signee
-
-    async def ecouter_groupes_usager(self, sid: str, message: dict):
-        async with self._sio.session(sid) as session:
-            try:
-                enveloppe = await self.authentifier_message(session, message)
-            except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        user_id = enveloppe.get_user_id
-
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [
-            f'evenement.Documents.{user_id}.sauvegarderGroupeUsager'
-        ]
-        reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
-
-        return reponse_signee
-
-    async def retirer_groupes_usager(self, sid: str, message: dict):
-        async with self._sio.session(sid) as session:
-            try:
-                enveloppe = await self.authentifier_message(session, message)
-            except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        user_id = enveloppe.get_user_id
-
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [
-            f'evenement.Documents.{user_id}.sauvegarderGroupeUsager'
-        ]
-        reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
-
-        return reponse_signee
-
-    async def ecouter_documents_usager(self, sid: str, message: dict):
-        async with self._sio.session(sid) as session:
-            try:
-                enveloppe = await self.authentifier_message(session, message)
-            except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        user_id = enveloppe.get_user_id
-
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [
-            f'evenement.Documents.{user_id}.sauvegarderDocument'
-        ]
-        reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
-
-        return reponse_signee
-
-    async def retirer_documents_usager(self, sid: str, message: dict):
-        async with self._sio.session(sid) as session:
-            try:
-                enveloppe = await self.authentifier_message(session, message)
-            except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        user_id = enveloppe.get_user_id
-
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [
-            f'evenement.Documents.{user_id}.sauvegarderDocument'
-        ]
-        reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
-
-        return reponse_signee
+    # async def ecouter_categories_usager(self, sid: str, message: dict):
+    #     async with self._sio.session(sid) as session:
+    #         try:
+    #             enveloppe = await self.authentifier_message(session, message)
+    #         except ErreurAuthentificationMessage as e:
+    #             return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+    #
+    #     user_id = enveloppe.get_user_id
+    #
+    #     exchanges = [Constantes.SECURITE_PRIVE]
+    #     routing_keys = [
+    #         f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
+    #     ]
+    #     reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
+    #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+    #
+    #     return reponse_signee
+    #
+    # async def retirer_categories_usager(self, sid: str, message: dict):
+    #     async with self._sio.session(sid) as session:
+    #         try:
+    #             enveloppe = await self.authentifier_message(session, message)
+    #         except ErreurAuthentificationMessage as e:
+    #             return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+    #
+    #     user_id = enveloppe.get_user_id
+    #
+    #     exchanges = [Constantes.SECURITE_PRIVE]
+    #     routing_keys = [
+    #         f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
+    #     ]
+    #     reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
+    #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+    #
+    #     return reponse_signee

@@ -1,12 +1,12 @@
 {
   "name": "millegrilles.collection-client",
-  "version": "2023.8.2",
+  "version": "2023.9.0",
   "private": true,
-  "proxy": "https://localhost:3037",
+  "proxy": "https://localhost:4037",
   "homepage": "/collections",
   "dependencies": {
     "@babel/plugin-syntax-object-rest-spread": "^7.8.3",
-    "@dugrema/millegrilles.reactjs": "git+ssh://git.maple.maceroc.com/git/millegrilles.reactjs#2023.8",
+    "@dugrema/millegrilles.reactjs": "git+ssh://git.maple.maceroc.com/git/millegrilles.reactjs#2023.9",
     "buffer": "^6.0.3",
     "client-zip": "^2.4.4",
     "comlink": "^4.3.1",
@@ -32,7 +32,7 @@
     "react-redux": "^8.0"
   },
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "export FAST_REFRESH=false && react-app-rewired start",
     "build": "BABEL_ENV=production react-app-rewired build",
     "eject": "react-scripts eject"
   },
