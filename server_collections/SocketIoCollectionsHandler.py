@@ -61,16 +61,16 @@ class SocketIoCollectionsHandler(SocketIoHandler):
         self._sio.on('indexerContenu', handler=self.indexer_contenu)
 
         # Listeners
-        # self._sio.on('enregistrerCallbackMajFichier', handler=self.ecouter_categories_usager)
-        # self._sio.on('retirerCallbackMajFichier', handler=self.ecouter_categories_usager)
-        # self._sio.on('enregistrerCallbackMajFichierCollection', handler=self.ecouter_categories_usager)
-        # self._sio.on('retirerCallbackMajFichierCollection', handler=self.ecouter_categories_usager)
-        # self._sio.on('enregistrerCallbackMajCollections', handler=self.ecouter_categories_usager)
-        # self._sio.on('retirerCallbackMajCollections', handler=self.ecouter_categories_usager)
-        # self._sio.on('enregistrerCallbackMajContenuCollection', handler=self.ecouter_categories_usager)
-        # self._sio.on('retirerCallbackMajContenuCollection', handler=self.ecouter_categories_usager)
-        # self._sio.on('enregistrerCallbackTranscodageVideo', handler=self.ecouter_categories_usager)
-        # self._sio.on('retirerCallbackTranscodageVideo', handler=self.ecouter_categories_usager)
+        # self._sio.on('enregistrerCallbackMajFichier', handler=self.ecouter_maj_fichier)
+        # self._sio.on('retirerCallbackMajFichier', handler=self.retirer_maj_fichier)
+        # self._sio.on('enregistrerCallbackMajFichierCollection', handler=self.ecouter_maj_fichier_collection)
+        # self._sio.on('retirerCallbackMajFichierCollection', handler=self.retirer_maj_fichier_collection)
+        # self._sio.on('enregistrerCallbackMajCollections', handler=self.ecouter_maj_collections)
+        # self._sio.on('retirerCallbackMajCollections', handler=self.retirer_maj_collections)
+        self._sio.on('enregistrerCallbackMajContenuCollection', handler=self.ecouter_maj_contenu_collection)
+        self._sio.on('retirerCallbackMajContenuCollection', handler=self.retirer_maj_contenu_collection)
+        self._sio.on('enregistrerCallbackTranscodageVideo', handler=self.ecouter_transcodage_video)
+        self._sio.on('retirerCallbackTranscodageVideo', handler=self.retirer_transcodage_video)
 
     @property
     def exchange_default(self):
@@ -238,7 +238,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
 
     # Listeners
 
-    # async def ecouter_categories_usager(self, sid: str, message: dict):
+    # async def ecouter_maj_fichier(self, sid: str, message: dict):
     #     async with self._sio.session(sid) as session:
     #         try:
     #             enveloppe = await self.authentifier_message(session, message)
@@ -255,8 +255,8 @@ class SocketIoCollectionsHandler(SocketIoHandler):
     #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
     #
     #     return reponse_signee
-    #
-    # async def retirer_categories_usager(self, sid: str, message: dict):
+
+    # async def retirer_maj_fichier(self, sid: str, message: dict):
     #     async with self._sio.session(sid) as session:
     #         try:
     #             enveloppe = await self.authentifier_message(session, message)
@@ -273,3 +273,154 @@ class SocketIoCollectionsHandler(SocketIoHandler):
     #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
     #
     #     return reponse_signee
+
+    # async def ecouter_maj_fichier_collection(self, sid: str, message: dict):
+    #     async with self._sio.session(sid) as session:
+    #         try:
+    #             enveloppe = await self.authentifier_message(session, message)
+    #         except ErreurAuthentificationMessage as e:
+    #             return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+    #
+    #     user_id = enveloppe.get_user_id
+    #
+    #     exchanges = [Constantes.SECURITE_PRIVE]
+    #     routing_keys = [
+    #         f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
+    #     ]
+    #     reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
+    #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+    #
+    #     return reponse_signee
+
+    # async def retirer_maj_fichier_collection(self, sid: str, message: dict):
+    #     async with self._sio.session(sid) as session:
+    #         try:
+    #             enveloppe = await self.authentifier_message(session, message)
+    #         except ErreurAuthentificationMessage as e:
+    #             return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+    #
+    #     user_id = enveloppe.get_user_id
+    #
+    #     exchanges = [Constantes.SECURITE_PRIVE]
+    #     routing_keys = [
+    #         f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
+    #     ]
+    #     reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
+    #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+    #
+    #     return reponse_signee
+
+
+    # async def ecouter_maj_collections(self, sid: str, message: dict):
+    #     async with self._sio.session(sid) as session:
+    #         try:
+    #             enveloppe = await self.authentifier_message(session, message)
+    #         except ErreurAuthentificationMessage as e:
+    #             return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+    #
+    #     user_id = enveloppe.get_user_id
+    #
+    #     exchanges = [Constantes.SECURITE_PRIVE]
+    #     routing_keys = [
+    #         f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
+    #     ]
+    #     reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
+    #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+    #
+    #     return reponse_signee
+
+    # async def retirer_maj_collections(self, sid: str, message: dict):
+    #     async with self._sio.session(sid) as session:
+    #         try:
+    #             enveloppe = await self.authentifier_message(session, message)
+    #         except ErreurAuthentificationMessage as e:
+    #             return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+    #
+    #     user_id = enveloppe.get_user_id
+    #
+    #     exchanges = [Constantes.SECURITE_PRIVE]
+    #     routing_keys = [
+    #         f'evenement.Documents.{user_id}.sauvegarderCategorieUsager'
+    #     ]
+    #     reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
+    #     reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+    #
+    #     return reponse_signee
+
+    async def ecouter_maj_contenu_collection(self, sid: str, message: dict):
+        async with self._sio.session(sid) as session:
+            try:
+                enveloppe = await self.authentifier_message(session, message)
+            except ErreurAuthentificationMessage as e:
+                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+
+        contenu = json.loads(message['contenu'])
+        cuuid = contenu['cuuid']
+
+        exchanges = [Constantes.SECURITE_PRIVE]
+        routing_keys = [
+            f'evenement.grosfichiers.{cuuid}.majContenuCollection'
+        ]
+        reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
+        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+
+        return reponse_signee
+
+    async def retirer_maj_contenu_collection(self, sid: str, message: dict):
+        async with self._sio.session(sid) as session:
+            try:
+                enveloppe = await self.authentifier_message(session, message)
+            except ErreurAuthentificationMessage as e:
+                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+
+        contenu = json.loads(message['contenu'])
+        cuuid = contenu['cuuid']
+
+        exchanges = [Constantes.SECURITE_PRIVE]
+        routing_keys = [
+            f'evenement.grosfichiers.{cuuid}.majContenuCollection'
+        ]
+        reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
+        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+
+        return reponse_signee
+
+    async def ecouter_transcodage_video(self, sid: str, message: dict):
+        async with self._sio.session(sid) as session:
+            try:
+                enveloppe = await self.authentifier_message(session, message)
+            except ErreurAuthentificationMessage as e:
+                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+
+        user_id = enveloppe.get_user_id
+
+        exchanges = [Constantes.SECURITE_PRIVE]
+        routing_keys = [
+            f'evenement.media.{user_id}.transcodageProgres',
+            f'evenement.GrosFichiers.{user_id}.jobAjoutee',
+            f'evenement.GrosFichiers.{user_id}.jobSupprimee',
+        ]
+        reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
+        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+
+        return reponse_signee
+
+    async def retirer_transcodage_video(self, sid: str, message: dict):
+        async with self._sio.session(sid) as session:
+            try:
+                enveloppe = await self.authentifier_message(session, message)
+            except ErreurAuthentificationMessage as e:
+                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+
+        user_id = enveloppe.get_user_id
+
+        exchanges = [Constantes.SECURITE_PRIVE]
+        routing_keys = [
+            f'evenement.media.{user_id}.transcodageProgres',
+            f'evenement.GrosFichiers.{user_id}.jobAjoutee',
+            f'evenement.GrosFichiers.{user_id}.jobSupprimee',
+        ]
+        reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
+        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+
+        return reponse_signee
