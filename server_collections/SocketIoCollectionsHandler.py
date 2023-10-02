@@ -1,10 +1,15 @@
 import asyncio
+import datetime
 import json
+import uuid
+
+import pytz
 
 from typing import Optional
 
 from millegrilles_messages.messages import Constantes
 from millegrilles_web.SocketIoHandler import SocketIoHandler, ErreurAuthentificationMessage
+from millegrilles_web.JwtUtils import creer_token_fichier
 from server_collections import Constantes as ConstantesCollections
 
 
@@ -141,7 +146,29 @@ class SocketIoCollectionsHandler(SocketIoHandler):
                                            ConstantesCollections.NOM_DOMAINE, 'getStructureRepertoire')
 
     async def requete_batch_upload(self, sid: str, message: dict):
-        raise NotImplementedError('obsolete?')
+        async with self._sio.session(sid) as session:
+            try:
+                enveloppe = await self.authentifier_message(session, message)
+            except ErreurAuthentificationMessage as e:
+                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+
+        user_id = enveloppe.get_user_id
+        cle_certificat = self.etat.clecertificat
+
+        # Signer un token JWT
+        expiration = datetime.datetime.now(tz=pytz.UTC) + datetime.timedelta(days=1)
+        uuid_batch = str(uuid.uuid4())
+        token = creer_token_fichier(cle_certificat,
+                                    issuer='collections', user_id=user_id, fuuid=uuid_batch, expiration=expiration)
+
+        return {'token': token, 'batchId': uuid_batch}
+
+        #   const userId = socket.userId
+        #   const optsExp = {expiration: '7d', ...opts}
+        #   const uuid_transaction = ''+uuidv4()
+        #   const { cle: clePriveePem, fingerprint } = mq.pki
+        #   const token = await signerTokenFichier(fingerprint, clePriveePem, userId, uuid_transaction, optsExp)
+        #   return { token, batchId: uuid_transaction }
 
     async def requete_permission_cles(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
@@ -215,6 +242,42 @@ class SocketIoCollectionsHandler(SocketIoHandler):
 
     async def submit_batch_upload(self, sid: str, message: dict):
         raise NotImplementedError('todo')
+
+        #   debug("submitBatchUpload params ", params)
+        #   const mq = socket.amqpdao
+        #   const { fichiersMiddleware, fichiersTransfertUpstream } = socket
+        #
+        #   const infoToken = await verifierTokenFichier(mq.pki, params.token)
+        #   debug("submitBatchUpload Token ", infoToken)
+        #
+        #   const batchId = infoToken.payload.sub
+        #
+        #   // Deplacer repertoire batch vers ready
+        #   const source = fichiersMiddleware.getPathBatch(batchId)
+        #   const pathReady = await fichiersTransfertUpstream.takeTransfertBatch(batchId, source)
+        #
+        #   // Declencher upload
+        #   await fichiersTransfertUpstream.ajouterFichierConsignation(batchId)
+        #
+        #   // Charger toutes les transactions, soumettre immediatement (ok si echec / fichier disparu)
+        #   const promiseReaddirp = readdirp(pathReady, {
+        #     type: 'files',
+        #     fileFilter: 'transactionContenu.json',
+        #     depth: 2,
+        #   })
+        #
+        #   for await (const entry of promiseReaddirp) {
+        #       debug("Entry path : %O", entry);
+        #       try {
+        #         const transaction = JSON.parse(await fsPromises.readFile(entry.fullPath))
+        #         await transmettreCommande(socket, transaction, 'nouvelleVersion', {domaine: 'GrosFichiers'})
+        #         debug("submitBatchUpload Transmission pre-emptive de la transaction GrosFichiers %s (OK)", entry.path)
+        #       } catch(err) {
+        #         debug("submitBatchUpload Erreur transmission pre-emptive de la transaction GrosFichiers pour %s : %O", entry.path, err)
+        #       }
+        #   }
+        #
+        #   return {ok: true}
 
     async def ajouter_contact_local(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
