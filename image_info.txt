@@ -8,6 +8,5 @@ BUILD=`cat build.txt`
 VERSION=$BRANCH.$BUILD
 echo $VERSION > version.txt
 
-
 URL_SERVEUR_DEV=mathieu@webappsrc
 VERSION=$BRANCH.$BUILD
