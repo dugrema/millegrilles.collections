@@ -337,36 +337,20 @@ async function regenererPreviews(fuuids) {
 
 // Listeners
 
-function enregistrerCallbackMajFichier(params, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajFichier', cb, params)
+function enregistrerCallbackMajCollection(cuuid, cb) { 
+  return ConnexionClient.subscribe('enregistrerCallbackMajCollections', cb, {cuuid})
 }
 
-function retirerCallbackMajFichier(params, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajFichier', cb, params) 
+function retirerCallbackMajCollection(cuuid, cb) { 
+  return ConnexionClient.unsubscribe('retirerCallbackMajCollections', cb, {cuuid}) 
 }
 
-function enregistrerCallbackMajFichierCollection(params, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajFichierCollection', cb, params)
+function enregistrerCallbackMajContenuCollection(cuuid, cb) { 
+  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, {cuuid})
 }
 
-function retirerCallbackMajFichierCollection(params, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajFichierCollection', cb, params) 
-}
-
-function enregistrerCallbackMajCollections(params, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajCollections', cb, params) 
-}
-
-function retirerCallbackMajCollections(params, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajCollections', cb, params) 
-}
-
-function enregistrerCallbackMajContenuCollection(params, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, params)
-}
-
-function retirerCallbackMajContenuCollection(params, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, params) 
+function retirerCallbackMajContenuCollection(cuuid, cb) { 
+  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, {cuuid}) 
 }
 
 function enregistrerCallbackTranscodageProgres(params, cb) { 
@@ -405,10 +389,8 @@ expose({
     getInfoStatistiques, getStructureRepertoire,
 
     // Event listeners prives
-    enregistrerCallbackMajFichier, retirerCallbackMajFichier,
-    enregistrerCallbackMajCollections, retirerCallbackMajCollections,
+    enregistrerCallbackMajCollection, retirerCallbackMajCollection,
     enregistrerCallbackTranscodageProgres, retirerCallbackTranscodageProgres,
-    enregistrerCallbackMajFichierCollection, retirerCallbackMajFichierCollection,
     enregistrerCallbackMajContenuCollection, retirerCallbackMajContenuCollection,
 
     // Commandes delegue

@@ -51,7 +51,7 @@ function Menu(props) {
       case 'information': setShowModalInfo(true); break
       case 'mediaJobs': showMediaJobs(); break
       case 'portail': window.location = '/millegrilles'; break
-      case 'deconnecter': window.location = '/millegrilles/authentification/fermer'; break
+      case 'deconnecter': window.location = '/auth/deconnecter_usager'; break
       default:
         onSelect(eventKey)
     }

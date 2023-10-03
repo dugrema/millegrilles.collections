@@ -218,13 +218,13 @@ function HandlerEvenements(_props) {
         // Enregistrer listeners
         // console.debug("HandlerEvenements Enregistrer listeners collection ", cuuid)
         if(cuuid) {
-            connexion.enregistrerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
+            connexion.enregistrerCallbackMajCollection(cuuid, evenementCollectionCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
-            connexion.enregistrerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
+            connexion.enregistrerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
         } else {
             // Favoris
-            connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
+            connexion.enregistrerCallbackMajContenuCollection(userId, evenementContenuCollectionCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
         }
 
@@ -232,12 +232,12 @@ function HandlerEvenements(_props) {
         return () => {
             // console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
             if(cuuid) {
-                connexion.retirerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
+                connexion.retirerCallbackMajCollection(cuuid, evenementCollectionCb)
                     .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
-                connexion.retirerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
+                connexion.retirerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb)
                     .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
             } else {
-                connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
+                connexion.retirerCallbackMajContenuCollection(userId, evenementContenuCollectionCb)
                     .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
             }
         }
