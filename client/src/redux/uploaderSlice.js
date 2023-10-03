@@ -418,11 +418,12 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     
     transaction.attachements = {cle}
 
-    console.debug("Transactions signees : %O", transaction)
+    console.debug("Confirmer upload de transactions signees : %O", transaction)
     await transfertFichiers.confirmerUpload(token, correlation, {transaction})
+    console.debug("Upload confirme")
 
     // Emettre submit pour la batch
-    await traitementFichiers.submitBatchUpload(fichier)
+    // await traitementFichiers.submitBatchUpload(fichier)
 
     // Upload complete, dispatch nouvel etat
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_COMPLETE})

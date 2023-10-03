@@ -43,7 +43,6 @@ class WebServerCollections(WebServer):
         app_path = self.app_path
         self._app.add_routes([
             # Authentification
-            web.get(f'{app_path}/fichiers/verifier', self.handle_verifier_fichier),
             web.get(f'{app_path}/streams/verifier', self.handle_verifier_streams),
         ])
 
@@ -58,12 +57,7 @@ class WebServerCollections(WebServer):
         ]
         await asyncio.gather(*tasks)
 
-    async def handle_verifier_fichier(self, request: Request):
-        async with self.__semaphore_web_verifier:
-            self.__logger.warning("handle_verifier_fichier NOT IMPLEMENTED")
-            return web.HTTPUnauthorized()
-
     async def handle_verifier_streams(self, request: Request):
         async with self.__semaphore_web_verifier:
-            self.__logger.warning("handle_verifier_streams NOT IMPLEMENTED")
+            self.__logger.warning("handle_verifier_streams NOT IMPLEMENTED - deplacer vers streams ou webauth")
             return web.HTTPUnauthorized()

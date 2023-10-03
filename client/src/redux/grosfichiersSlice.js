@@ -462,7 +462,7 @@ export function creerThunks(actions, nomSlice) {
     
     async function traiterChargerTuuids(workers, tuuids, opts, dispatch, getState) {
         opts = opts || {}
-        console.debug("Charger detail fichiers tuuids : %O, opts : %O", tuuids, opts)
+        // console.debug("Charger detail fichiers tuuids : %O, opts : %O", tuuids, opts)
     
         const { connexion, collectionsDao } = workers
         const contactId = opts.contactId || getState().partageContactId
@@ -470,7 +470,7 @@ export function creerThunks(actions, nomSlice) {
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
     
         const resultat = await connexion.getDocuments(tuuids, {...opts, contactId})
-        console.debug("traiterChargerTuuids Reponse ", resultat)
+        // console.debug("traiterChargerTuuids Reponse ", resultat)
 
         if(resultat.fichiers) {
     

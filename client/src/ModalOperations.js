@@ -345,7 +345,7 @@ export function InfoModal(props) {
     const [infoStatistiques, setInfoStatistiques] = useState('')
 
     const { docSelectionne, header, tuuidSelectionne } = useMemo(()=>{
-        console.debug("useMemo show : %O, selection %O, fichiers %O", show, selection, fichiers)
+        // console.debug("useMemo show : %O, selection %O, fichiers %O", show, selection, fichiers)
         if(!show || !fichiers) return {}
 
         let tuuidSelectionne = show

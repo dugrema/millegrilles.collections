@@ -58,7 +58,6 @@ class SocketIoCollectionsHandler(SocketIoHandler):
         self._sio.on('creerTokenStream', handler=self.creer_token_stream)
         self._sio.on('completerPreviews', handler=self.completer_previews)
         self._sio.on('supprimerJobVideo', handler=self.supprimer_job_video)
-        self._sio.on('submitBatchUpload', handler=self.submit_batch_upload)
         self._sio.on('ajouterContactLocal', handler=self.ajouter_contact_local)
         self._sio.on('supprimerContacts', handler=self.supprimer_contacts)
         self._sio.on('partagerCollections', handler=self.partager_collections)
@@ -229,8 +228,8 @@ class SocketIoCollectionsHandler(SocketIoHandler):
                                             ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideo')
 
     async def creer_token_stream(self, sid: str, message: dict):
-        return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'getJwtStreaming')
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getJwtStreaming')
 
     async def completer_previews(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
@@ -239,45 +238,6 @@ class SocketIoCollectionsHandler(SocketIoHandler):
     async def supprimer_job_video(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
                                             ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideo')
-
-    async def submit_batch_upload(self, sid: str, message: dict):
-        raise NotImplementedError('todo')
-
-        #   debug("submitBatchUpload params ", params)
-        #   const mq = socket.amqpdao
-        #   const { fichiersMiddleware, fichiersTransfertUpstream } = socket
-        #
-        #   const infoToken = await verifierTokenFichier(mq.pki, params.token)
-        #   debug("submitBatchUpload Token ", infoToken)
-        #
-        #   const batchId = infoToken.payload.sub
-        #
-        #   // Deplacer repertoire batch vers ready
-        #   const source = fichiersMiddleware.getPathBatch(batchId)
-        #   const pathReady = await fichiersTransfertUpstream.takeTransfertBatch(batchId, source)
-        #
-        #   // Declencher upload
-        #   await fichiersTransfertUpstream.ajouterFichierConsignation(batchId)
-        #
-        #   // Charger toutes les transactions, soumettre immediatement (ok si echec / fichier disparu)
-        #   const promiseReaddirp = readdirp(pathReady, {
-        #     type: 'files',
-        #     fileFilter: 'transactionContenu.json',
-        #     depth: 2,
-        #   })
-        #
-        #   for await (const entry of promiseReaddirp) {
-        #       debug("Entry path : %O", entry);
-        #       try {
-        #         const transaction = JSON.parse(await fsPromises.readFile(entry.fullPath))
-        #         await transmettreCommande(socket, transaction, 'nouvelleVersion', {domaine: 'GrosFichiers'})
-        #         debug("submitBatchUpload Transmission pre-emptive de la transaction GrosFichiers %s (OK)", entry.path)
-        #       } catch(err) {
-        #         debug("submitBatchUpload Erreur transmission pre-emptive de la transaction GrosFichiers pour %s : %O", entry.path, err)
-        #       }
-        #   }
-        #
-        #   return {ok: true}
 
     async def ajouter_contact_local(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
