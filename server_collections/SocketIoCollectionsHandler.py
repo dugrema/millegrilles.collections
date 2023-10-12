@@ -5,8 +5,6 @@ import uuid
 
 import pytz
 
-from typing import Optional
-
 from millegrilles_messages.messages import Constantes
 from millegrilles_web.SocketIoHandler import SocketIoHandler, ErreurAuthentificationMessage
 from millegrilles_web.JwtUtils import creer_token_fichier

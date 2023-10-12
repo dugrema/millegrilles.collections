@@ -1,8 +1,6 @@
 import asyncio
 import logging
 
-from aiohttp import web
-from aiohttp.web_request import Request
 from typing import Optional
 
 from millegrilles_web.WebServer import WebServer
