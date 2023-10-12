@@ -348,9 +348,10 @@ export function SectionBreadcrumb(props) {
     return (
         <Breadcrumb>
             
-            {itemsRoot.map(item=>{
+            {itemsRoot.map((item, idxItem)=>{
+                const key = item.label || ''+idxItem
                 const onClick = item.onClick || handlerSliceBreadcrumb
-                return <Breadcrumb.Item onClick={onClick}>{item.label}</Breadcrumb.Item>
+                return <Breadcrumb.Item key={key} onClick={onClick}>{item.label}</Breadcrumb.Item>
             })}
             
             {breadcrumb.map((item, idxItem)=>{

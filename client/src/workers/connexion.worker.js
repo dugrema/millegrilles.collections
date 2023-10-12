@@ -338,11 +338,11 @@ async function regenererPreviews(fuuids) {
 // Listeners
 
 function enregistrerCallbackMajCollection(cuuid, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajCollections', cb, {cuuid})
+  return ConnexionClient.subscribe('enregistrerCallbackMajCollection', cb, {cuuid})
 }
 
 function retirerCallbackMajCollection(cuuid, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajCollections', cb, {cuuid}) 
+  return ConnexionClient.unsubscribe('retirerCallbackMajCollection', cb, {cuuid}) 
 }
 
 function enregistrerCallbackMajContenuCollection(cuuid, cb) { 
