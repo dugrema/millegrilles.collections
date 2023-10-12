@@ -14,7 +14,8 @@ import { formatterDateString } from '@dugrema/millegrilles.reactjs/src/formatter
 
 import AfficherVideo from './AfficherVideo'
 import AfficherAudio from './AfficherAudio'
-import { mapDocumentComplet } from './mapperFichier'
+import { estMimetypeMedia, mapDocumentComplet } from './mapperFichier'
+import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes.js'
 import { onContextMenu } from './MenuContextuel'
 import useWorkers, { useUsager } from './WorkerContext'
 
@@ -484,7 +485,8 @@ export function AffichagePrincipal(props) {
             // console.debug("dbl click liste : %O, value : %O", liste, value)
             // const fileItem = liste.filter(item=>item.tuuid===value).pop()
             // const mimetype = fileItem.mimetype || ''
-            if(mimetype.startsWith('video/')) setAfficherVideo(value)
+            // if(mimetype.startsWith('video/')) setAfficherVideo(value)
+            if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
             else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
             else if(mimetype.startsWith('image/')) showPreviewAction(value)
             else if(mimetype === 'application/pdf') showPreviewAction(value)

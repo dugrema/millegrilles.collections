@@ -8,6 +8,7 @@ import Col from 'react-bootstrap/Col'
 import Row from 'react-bootstrap/Row'
 
 import { AfficherListeJobs } from './MediaJobsModal'
+import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
 
 const VIDEO_CODEC = [
   {label: 'HEVC (mp4)', value: "hevc"},
@@ -178,13 +179,14 @@ export function ConversionVideo(props) {
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const versionCourante = fichier.version_courante || {}
     const mimetype = fichier.mimetype || versionCourante.mimetype || ''
-    const mimetypeBase = mimetype.split('/').shift()
+    const estVideo = estMimetypeVideo(mimetype)
+    // const mimetypeBase = mimetype.split('/').shift()
     
     const erreurCb = (err, message) => {
       console.error("ConversionVideo Erreur %s : %O", message, err)
     }
 
-    if(mimetypeBase !== 'video') return ''
+    if(!estVideo) return ''
 
     return (
         <>

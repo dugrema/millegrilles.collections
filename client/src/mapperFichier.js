@@ -1,5 +1,6 @@
 import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
+import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes.js'
 
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>
 const ICONE_FICHIER = <i className="fa fa-file fa-lg"/>
@@ -89,7 +90,8 @@ export function mapDocumentComplet(workers, doc) {
             copie.thumbnailLoader = mediaLoader.thumbnailLoader(images, {cle_id: fuuid_v_courante, local: true})
         }
 
-        if(mimetype.toLowerCase().startsWith('video/')) {
+        if(estMimetypeVideo(mimetype)) {
+        // if(mimetype.toLowerCase().startsWith('video/')) {
             copie.videoLoader = mediaLoader.videoLoader(video || {}, {fuuid: fuuid_v_courante, mimetype})
         } else if(mimetype.toLowerCase().startsWith('audio/')) {
             copie.audioLoader = mediaLoader.audioLoader(fuuid_v_courante, mimetype)
@@ -115,7 +117,7 @@ function getThumbnailIcon(mimetype) {
 
     if(mimetypeBase === 'image') {
         return ICONE_FICHIER_IMAGE
-    } else if(mimetypeBase === 'video') {
+    } else if(estMimetypeVideo(mimetype)) {
         return ICONE_FICHIER_VIDEO
     } else if(mimetypeBase === 'audio') {
         return ICONE_FICHIER_AUDIO
@@ -134,7 +136,7 @@ export function estMimetypeMedia(mimetype) {
     const mimetypeBase = mimetype.split('/').shift()
     if(mimetypeBase === 'image') {
         return true
-    } else if(mimetypeBase === 'video') {
+    } else if(estMimetypeVideo(mimetype)) {
         return true
     }
 

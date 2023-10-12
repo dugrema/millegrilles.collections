@@ -179,7 +179,8 @@ function AfficherVideo(props) {
                         srcVideo={srcVideo}
                         selecteur={selecteur}
                         videoChargePret={videoChargePret}
-                        errVideo={errVideo} >
+                        errVideo={errVideo} 
+                        posterPresent={!!fichier.imageLoader}>
                             <VideoViewer 
                                 // videos={srcVideo} 
                                 srcVideo={srcVideo}
@@ -304,7 +305,7 @@ function ProgresChargement(props) {
 
 function PlayerEtatPassthrough(props) {
 
-    const {posterObj, srcVideo, selecteur, videoChargePret, errVideo} = props
+    const {posterObj, srcVideo, selecteur, videoChargePret, posterPresent, errVideo} = props
 
     const [delaiSelecteur, setDelaiSelecteur] = useState(false)
 
@@ -325,7 +326,7 @@ function PlayerEtatPassthrough(props) {
         )
     }
 
-    if(!posterObj || !srcVideo || delaiSelecteur !== selecteur) {
+    if((!posterObj && posterPresent !== false) || !srcVideo || delaiSelecteur !== selecteur) {
 
         let message = null
 
