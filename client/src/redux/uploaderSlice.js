@@ -1,7 +1,7 @@
 import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit'
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 
-const ETAT_PREPARATION = 1,
+const // ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
       ETAT_UPLOADING = 3,
       ETAT_COMPLETE = 4,

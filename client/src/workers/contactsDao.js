@@ -1,4 +1,4 @@
-const CONST_TIMEOUT_CERTIFICAT = 2 * 60 * 1000
+// const CONST_TIMEOUT_CERTIFICAT = 2 * 60 * 1000
 
 function build(workers) {
 

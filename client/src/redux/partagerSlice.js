@@ -73,7 +73,7 @@ export function chargerInfoContacts(workers) {
 }
 
 async function traiterChargerInfoContacts(workers, dispatch, getState) {
-    const { connexion, contactsDao } = workers
+    const { contactsDao } = workers
     
     console.debug("traiterChargerInfoContacts")
 
@@ -87,7 +87,7 @@ export function chargerPartagesUsager(workers) {
 }
 
 async function traiterChargerPartagesUsagers(workers, dispatch, getState) {
-    const { connexion, contactsDao } = workers
+    const { contactsDao } = workers
     
     console.debug("traiterChargerPartages")
 
@@ -101,7 +101,7 @@ export function chargerPartagesDeTiers(workers) {
 }
 
 async function traiterChargerPartagesDeTiers(workers, dispatch, getState) {
-    const { connexion, contactsDao } = workers
+    const { contactsDao } = workers
     
     console.debug("traiterChargerPartagesDeTiers")
 

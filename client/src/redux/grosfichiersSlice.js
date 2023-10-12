@@ -799,7 +799,7 @@ export function creerThunks(actions, nomSlice) {
         opts = opts || {}
     
         const stateInitial = getState()[nomSlice]
-        const { userId, parametresRecherche } = stateInitial
+        const {parametresRecherche } = stateInitial
 
         console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
     
@@ -892,7 +892,7 @@ export function creerThunks(actions, nomSlice) {
         opts = opts || {}
     
         const stateInitial = getState()[nomSlice]
-        const { userId, parametresRecherche } = stateInitial
+        const { parametresRecherche } = stateInitial
 
         console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
     
@@ -950,7 +950,7 @@ export function creerThunks(actions, nomSlice) {
         opts = opts || {}
     
         const stateInitial = getState()[nomSlice]
-        const { userId, parametresRecherche } = stateInitial
+        const { parametresRecherche } = stateInitial
 
         console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
     
@@ -1295,7 +1295,7 @@ function identifierClesHachages(liste) {
 
         // Images inline chiffrees (thumbnail)
         const version_courante = item.version_courante || {},
-              { fuuids_versions } = item,
+              // { fuuids_versions } = item,
               { images } = version_courante,
               metadata = item.metadata  // version_courante.metadata || item.metadata
         const fuuid_v_courante = version_courante.fuuid

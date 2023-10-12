@@ -1,14 +1,12 @@
-import axios from 'axios'
-import multibase from 'multibase'
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { ajouterUpload } from '../redux/uploaderSlice'
 import * as Comlink from 'comlink'
 // import { downloadZip } from 'client-zip'
 
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
-      CONST_TIMEOUT_DOWNLOAD = 120_000,
-      CONST_1MB = 1024 * 1024,
-      CONST_BLOB_DOWNLOAD_CHUNKSIZE = 100 * CONST_1MB
+      CONST_1MB = 1024 * 1024 //,
+      // CONST_TIMEOUT_DOWNLOAD = 120_000,
+      // CONST_BLOB_DOWNLOAD_CHUNKSIZE = 100 * CONST_1MB
 
 function setup(workers) {
     return {
@@ -234,26 +232,26 @@ export function resLoader(fichier, typeRessource, opts) {
         selection = {versionCourante, fuuid: fichier.fuuid}
     }
 
-    if(selection) {
-        const fuuid = selection.fuuid_video || selection.hachage || selection.fuuid
-        const mimetype = selection.mimetype || versionCourante.mimetype || fichier.mimetype
-        if(!fuuid) {
-            console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
-            throw new Error(`Aucun fuuid trouve pour file_id: ${fileId}`)
-        }
-        // console.debug("Charger video selection %O, mimetype: %O, fuuid video: %s", selection, mimetype, fuuid)
+    // if(selection) {
+    //     const fuuid = selection.fuuid_video || selection.hachage || selection.fuuid
+    //     // const mimetype = selection.mimetype || versionCourante.mimetype || fichier.mimetype
+    //     if(!fuuid) {
+    //         console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
+    //         throw new Error(`Aucun fuuid trouve pour file_id: ${fileId}`)
+    //     }
+    //     // console.debug("Charger video selection %O, mimetype: %O, fuuid video: %s", selection, mimetype, fuuid)
 
-        throw new Error('obsolete')
-        // const controller = new AbortController()
-        // const urlBlob = getFichierChiffre(fuuid, {mimetype, controller})
-        //     .then(blob=>URL.createObjectURL(blob))
-        //     // .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
+    //     throw new Error('obsolete')
+    //     // const controller = new AbortController()
+    //     // const urlBlob = getFichierChiffre(fuuid, {mimetype, controller})
+    //     //     .then(blob=>URL.createObjectURL(blob))
+    //     //     // .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
 
-        // return { srcPromise: urlBlob, clean: ()=>{
-        //     try { controller.abort() } catch(err) {console.debug("Erreur annulation getFichierChiffre : %O", err)}
-        //     clean(urlBlob) 
-        // }}
-    }
+    //     // return { srcPromise: urlBlob, clean: ()=>{
+    //     //     try { controller.abort() } catch(err) {console.debug("Erreur annulation getFichierChiffre : %O", err)}
+    //     //     clean(urlBlob) 
+    //     // }}
+    // }
 
     return false
 }
@@ -336,7 +334,7 @@ function promptSaveFichier(blob, opts) {
 
 async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
-    const { acceptedFiles, /*token, batchId,*/ cuuid, userId } = params
+    const { acceptedFiles, /*token, batchId, cuuid, */ userId } = params
     const { setProgres, signalAnnuler } = opts
     const { transfertFichiers } = workers
     // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)

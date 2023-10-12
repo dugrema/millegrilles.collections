@@ -103,7 +103,7 @@ function chargerInfoFichiers(workers) {
 }
 
 async function traiterChargerInfoFichiers(workers, dispatch, getState) {
-    const { connexion, clesDao, collectionsDao } = workers
+    const { connexion, collectionsDao } = workers
     
     // console.debug("traiterChargerInfoFichiers")
     
@@ -157,7 +157,7 @@ function dechiffrerInfoFichiers(workers) {
 }
 
 async function traiterDechiffrerInfoFichiers(workers, dispatch, getState) {
-    const { connexion, clesDao, collectionsDao, chiffrage } = workers
+    const { /* connexion, collectionsDao, */ clesDao, chiffrage } = workers
     
     // console.debug("traiterDechiffrerInfoFichiers")
 
@@ -171,7 +171,7 @@ async function traiterDechiffrerInfoFichiers(workers, dispatch, getState) {
         // console.debug("Cles recues ", cles)
 
         for await (const job of getState()[SLICE_NAME].liste) {
-            const { tuuid, fuuid } = job
+            const { /* tuuid, */ fuuid } = job
             const cle = cles[fuuid]
             if(cle) {
                 const version_courante = job.version_courante || {}
