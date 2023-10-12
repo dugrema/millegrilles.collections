@@ -86,7 +86,7 @@ export function mapDocumentComplet(workers, doc) {
 
         if(images) {
             copie.imageLoader = mediaLoader.imageLoader(images, {cle_id: fuuid_v_courante, fuuid: fuuid_v_courante, mimetype, anime, header})
-            copie.thumbnailLoader = mediaLoader.thumbnailLoader(images, {cle_id: fuuid_v_courante})
+            copie.thumbnailLoader = mediaLoader.thumbnailLoader(images, {cle_id: fuuid_v_courante, local: true})
         }
 
         if(mimetype.toLowerCase().startsWith('video/')) {

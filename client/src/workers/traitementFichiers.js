@@ -32,8 +32,9 @@ function setup(workers) {
 
         // Remplacement pour getFichierChiffre
         getUrlFuuid,
-        getCleSecrete(cle_id) {
-            return getCleSecrete(workers, cle_id)
+        getCleSecrete(cle_id, opts) {
+            opts = opts || {}
+            return getCleSecrete(workers, cle_id, opts)
         },
     }
 }
@@ -148,10 +149,12 @@ function getUrlFuuid(fuuid, opts) {
 //     console.error("Erreur chargement image %s (erreur recuperation cle ou download)", fuuid)
 // }
 
-async function getCleSecrete(workers, cle_id) {
+async function getCleSecrete(workers, cle_id, opts) {
+    opts = opts || {}
     if(!cle_id) throw new Error('dechiffrer Fournir cle_id ou cle_secrete+header')
 
     const { connexion, usagerDao, chiffrage } = workers
+    const local = opts || false
 
     try {
         const cleFichier = await usagerDao.getCleDechiffree(cle_id)
@@ -160,6 +163,8 @@ async function getCleSecrete(workers, cle_id) {
     } catch(err) {
         console.error("Erreur acces usagerDao ", err)
     }
+
+    if(local) return  // La cle n'existe pas localement, abort
 
     const reponse = await connexion.getClesFichiers([cle_id])
 
