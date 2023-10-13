@@ -205,7 +205,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
     const { acceptedFiles, /*token, batchId, cuuid, */ userId } = params
     const { setProgres, signalAnnuler } = opts
-    const { transfertFichiers } = workers
+    const { transfertFichiers, usagerDao } = workers
     // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
 
     // const certificatsMaitredescles = await workers.connexion.getClesChiffrage()
@@ -249,13 +249,18 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
             (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
         )
     
-        await transfertFichiers.traiterAcceptedFilesV2(
+        const resultat = await transfertFichiers.traiterAcceptedFilesV2(
             paramBatch, 
             ajouterPartProxy, 
             updateFichierProxy,
             setProgresProxy,
             signalAnnuler
         )
+
+        // Conserver les cles dans IDB pour reference future
+        for await (const cle of resultat.chiffrage) {
+            await usagerDao.saveCleDechiffree(cle.hachage, cle.key, cle)
+        }
 
         infoTaille.positionChiffre += file.size
         infoTaille.positionFichier++
