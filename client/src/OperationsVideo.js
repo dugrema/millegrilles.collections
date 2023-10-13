@@ -254,7 +254,8 @@ function FormConversionVideo(props) {
 
     if(!fichier) return ''
     const mimetype = fichier.mimetype || versionCourante.mimetype
-    if(!mimetype.startsWith('video/')) return ''
+    const estVideo = estMimetypeVideo(mimetype)
+    if(!estVideo) return ''
 
     const estPret = codecVideo && codecAudio && resolutionVideo && qualityVideo && bitrateAudio
   
