@@ -418,9 +418,9 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     
     transaction.attachements = {cle}
 
-    console.debug("Confirmer upload de transactions signees : %O", transaction)
+    // console.debug("Confirmer upload de transactions signees : %O", transaction)
     await transfertFichiers.confirmerUpload(token, correlation, {transaction})
-    console.debug("Upload confirme")
+    // console.debug("uploadFichier Upload confirme")
 
     // Emettre submit pour la batch
     // await traitementFichiers.submitBatchUpload(fichier)
@@ -429,6 +429,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_COMPLETE})
     await dispatch(confirmerUpload(workers, correlation))
         .catch(err=>console.error("Erreur cleanup fichier upload ", err))
+    // console.debug("uploadFichier Fin appel")
 }
 
 async function marquerUploadEtat(workers, dispatch, correlation, etat) {

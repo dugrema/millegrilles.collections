@@ -1,22 +1,12 @@
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { ajouterUpload } from '../redux/uploaderSlice'
 import * as Comlink from 'comlink'
-// import { downloadZip } from 'client-zip'
 
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
-      CONST_1MB = 1024 * 1024 //,
-      // CONST_TIMEOUT_DOWNLOAD = 120_000,
-      // CONST_BLOB_DOWNLOAD_CHUNKSIZE = 100 * CONST_1MB
+      CONST_1MB = 1024 * 1024
 
 function setup(workers) {
     return {
-        // getFichierChiffre(fuuid, opts) {
-        //     return getFichierChiffre(workers, fuuid, opts)
-        // },
-        // traiterAcceptedFiles(dispatch, usager, cuuid, acceptedFiles, opts) {
-        //     opts = opts || {}
-        //     return traiterAcceptedFiles(workers, dispatch, usager, cuuid, acceptedFiles, opts)
-        // },
         traiterAcceptedFiles(dispatch, params, opts) {
             opts = opts || {}
             return traiterAcceptedFiles(workers, dispatch, params, opts)
@@ -41,18 +31,6 @@ function setup(workers) {
 
 export default setup
 
-// var _workers = null
-
-// export function setWorkers(workers) {
-//     _workers = workers
-// }
-
-// export async function getThumbnail(fuuid, opts) {
-//     opts = opts || {}
-//     const blob = await getFichierChiffre(fuuid, opts)
-//     return blob
-// }
-
 function getUrlFuuid(fuuid, opts) {
     opts = opts || {}
     const jwt = opts.jwt
@@ -69,85 +47,6 @@ function getUrlFuuid(fuuid, opts) {
 
     return url.href
 }
-
-// async function getFichierChiffre(workers, fuuid, opts) {
-//     opts = opts || {}
-//     const { dataChiffre, mimetype, controller, progress, ref_hachage_bytes } = opts
-//     const { connexion, chiffrage, usagerDao } = workers
-
-//     // Recuperer la cle de fichier
-//     const cleFichierFct = async () => {
-//         const hachage_bytes = ref_hachage_bytes || fuuid
-
-//         let cleFichier = null
-//         try {
-//             cleFichier = await usagerDao.getCleDechiffree(hachage_bytes)
-//             if(cleFichier) return cleFichier
-//         } catch(err) {
-//             console.error("Erreur acces usagerDao ", err)
-//         }
-
-//         const reponse = await connexion.getClesFichiers([hachage_bytes])
-
-//         cleFichier = reponse.cles[hachage_bytes]
-//         const cleSecrete = await chiffrage.dechiffrerCleSecrete(cleFichier.cle)
-//         cleFichier.cleSecrete = cleSecrete
-
-//         // Sauvegarder la cle pour reutilisation
-//         usagerDao.saveCleDechiffree(hachage_bytes, cleSecrete, cleFichier)
-//             .catch(err=>{
-//                 console.warn("Erreur sauvegarde cle dechiffree %s dans la db locale", err)
-//             })
-
-//         return cleFichier
-//     }
-
-//     let fichierFct = async () => {
-//         if( dataChiffre ) {
-//             // Convertir de multibase en array
-//             // console.debug("Data chiffre a dechiffrer : %O", dataChiffre)
-//             return multibase.decode(dataChiffre)
-//         } else {
-//             // const controller = new AbortController();
-//             const signal = controller?controller.signal:null
-
-//             // Recuperer le fichier
-//             const reponse = await axios({
-//                 method: 'GET',
-//                 url: `/collections/fichiers/${fuuid}`,
-//                 responseType: 'arraybuffer',
-//                 timeout: CONST_TIMEOUT_DOWNLOAD,
-//                 progress,
-//                 // signal,
-//             })
-//             const abIn = Buffer.from(reponse.data)
-//             return abIn
-//         }
-//     }
-
-//     var [cleFichier, abFichier] = await Promise.all([cleFichierFct(), fichierFct()])
-//     if(cleFichier && abFichier) {
-//         // console.debug("Dechiffrer : cle %O, contenu : %O", cleFichier, abFichier)
-//         try {
-//             const champsOverrides = ['header', 'format']
-//             const overrides = {}
-//             for (const champ of champsOverrides) {
-//                 if(opts[champ]) overrides[champ] = opts[champ]
-//             }
-//             const cleEffective = {...cleFichier, ...overrides}  // Permet override par header, format, etc pour images/video
-//             // console.debug("Dechiffre avec cle effective %O (cle %O)", cleEffective, cleFichier)
-//             const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, abFichier, cleEffective)
-//             // console.debug("Contenu dechiffre : %O", ab)
-//             const blob = new Blob([ab], {type: mimetype})
-//             return blob
-//         } catch(err) {
-//             console.error("Erreur dechiffrage traitementFichiers : %O", err)
-//             throw err
-//         }
-//     }
-
-//     console.error("Erreur chargement image %s (erreur recuperation cle ou download)", fuuid)
-// }
 
 async function getCleSecrete(workers, cle_id, opts) {
     opts = opts || {}
@@ -237,27 +136,6 @@ export function resLoader(fichier, typeRessource, opts) {
         selection = {versionCourante, fuuid: fichier.fuuid}
     }
 
-    // if(selection) {
-    //     const fuuid = selection.fuuid_video || selection.hachage || selection.fuuid
-    //     // const mimetype = selection.mimetype || versionCourante.mimetype || fichier.mimetype
-    //     if(!fuuid) {
-    //         console.warn("Aucun fuuid trouve pour file_id: %s (selection: %O)", fileId, selection)
-    //         throw new Error(`Aucun fuuid trouve pour file_id: ${fileId}`)
-    //     }
-    //     // console.debug("Charger video selection %O, mimetype: %O, fuuid video: %s", selection, mimetype, fuuid)
-
-    //     throw new Error('obsolete')
-    //     // const controller = new AbortController()
-    //     // const urlBlob = getFichierChiffre(fuuid, {mimetype, controller})
-    //     //     .then(blob=>URL.createObjectURL(blob))
-    //     //     // .catch(err=>console.error("Erreur creation url blob fichier %s : %O", selection.hachage, err))
-
-    //     // return { srcPromise: urlBlob, clean: ()=>{
-    //     //     try { controller.abort() } catch(err) {console.debug("Erreur annulation getFichierChiffre : %O", err)}
-    //     //     clean(urlBlob) 
-    //     // }}
-    // }
-
     return false
 }
 
@@ -289,9 +167,6 @@ export async function downloadCache(workers, fuuid, opts) {
 
     if(resultat && resultat.blob) {
         promptSaveFichier(resultat.blob, opts)
-    // } else if(resultat && resultat.genererZip === true) {
-    //     const blob = await genererFichierZip(workers, resultat)
-    //     promptSaveFichier(blob, opts)
     } else {
         const cacheTmp = await caches.open(CACHE_TEMP_NAME)
         const cacheFichier = await cacheTmp.match('/'+fuuid)
@@ -303,17 +178,6 @@ export async function downloadCache(workers, fuuid, opts) {
         }
     }
 }
-
-// async function genererFichierZip(workers, downloadInfo) {
-//     console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
-
-//     // Parcourir tous les repertoires, streamer les fichiers dans le stream
-//     const nodes = downloadInfo.root.nodes
-//     const resultatZip = downloadZip(parcourirRepertoireDansZipRecursif(workers, nodes, []))
-
-//     // Generer blob 
-//     return await resultatZip.blob()
-// }
 
 function promptSaveFichier(blob, opts) {
     opts = opts || {}
@@ -364,10 +228,12 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
         positionFichier: 0,
     }
 
+    // let debutFichier = new Date().getTime()
     for await (let file of acceptedFiles) {
         // Recuperer un token, faire 1 fichier par batch
+        // const debutGetBatch = new Date().getTime()
         const infoBatch = await workers.connexion.getBatchUpload()
-        // console.debug("InfoBatch ", infoBatch)
+        // console.debug("traiterAcceptedFiles InfoBatch %O (duree get %d)", infoBatch, new Date().getTime()-debutGetBatch)
         const { batchId, token } = infoBatch
         const paramBatch = {...params, acceptedFiles: [file], token, batchId, infoTaille}
 
@@ -375,7 +241,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
 
         const updateFichierProxy = Comlink.proxy((doc, opts) => {
             const docWithIds = {...doc, userId, batchId, token}
-            console.debug("updateFichierProxy docWithIds ", docWithIds)
+            // console.debug("updateFichierProxy docWithIds ", docWithIds)
             return updateFichier(workers, dispatch, docWithIds, opts)
         })
 
@@ -393,6 +259,9 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
 
         infoTaille.positionChiffre += file.size
         infoTaille.positionFichier++
+
+        // console.debug("traiterAcceptedFiles Temps traiter fichier %d ms", new Date().getTime()-debutFichier)
+        // debutFichier = new Date().getTime()
     }
 }
 
@@ -432,54 +301,3 @@ async function submitBatchUpload(workers, doc) {
     // Utiliser le token, garanti que l'usager n'essaie pas de faire un submit sur la batch d'un tiers
     await workers.connexion.submitBatchUpload(doc.token)
 }
-
-// async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
-//     console.debug("Ajouter path %O/%s", parents.join('/'), node.nom)
-
-//     // Ajouter le node dans le zip
-
-//     const pathAjoute = [...parents, node.nom]
-//     const nodes = node.nodes
-//     if(nodes) {
-//         console.debug("Sous repertoire ", pathAjoute)
-//         for await (const fichier of parcourirRepertoireDansZipRecursif(workers, node.nodes, pathAjoute, opts)) {
-//             console.debug("ajouterRepertoireDansZip Node ", fichier)
-//             yield fichier
-//         }
-//     }
-// }
-
-// async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts) {
-//     opts = opts || {}
-//     const { downloadFichiersDao } = workers
-//     const operation = opts.operation || 'stream'
-//     console.debug("streamRepertoireDansZipRecursif parents ", parents)
-//     for await (const node of nodes) {
-//         if(node.type_node === 'Fichier') {
-//             const fuuid = node.fuuid
-//             let nomFichier = node.nom
-//             if(parents && parents.length > 0) {
-//                 nomFichier = parents.join('/') + '/' + node.nom
-//             }
-            
-//             if(operation === 'stream') {
-//                 // Ouvrir le stream pour le fuuid
-//                 // const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-//                 // const response = await cacheTmp.match('/'+fuuid)
-//                 const fichierDownload = await downloadFichiersDao.getDownloadComplet(fuuid)
-//                 const blob = fichierDownload.blob
-            
-//                 console.debug("Conserver fichier %s (parents : %O)", nomFichier, parents)
-//                 yield {name: nomFichier, input: blob}
-//             } else if(operation === 'getFuuid') {
-//                 yield {name: nomFichier, fuuid}
-//             }
-//         } else {
-//             // Sous-repertoire
-//             console.debug("streamRepertoireDansZipRecursif Sous repertoire ", node.nom)
-//             for await (const sousNode of ajouterRepertoireDansZip(workers, node, parents, opts)) {
-//                 yield sousNode
-//             }
-//         }
-//     }
-// }

@@ -26,7 +26,7 @@ function build(workers) {
 export default build
 
 async function getCles(workers, liste_hachage_bytes, opts) {
-    console.debug("getCles liste_hachage_bytes, opts", liste_hachage_bytes, opts)
+    // console.debug("getCles liste_hachage_bytes %s", liste_hachage_bytes)
     opts = opts || {}
 
     const partage = opts.partage
@@ -48,7 +48,7 @@ async function getCles(workers, liste_hachage_bytes, opts) {
         }
     }
 
-    console.debug("Cles connues : %d, cles manquantes : %d (opts)", Object.keys(clesDechiffrees).length, clesManquantes.length, opts)
+    console.debug("Cles connues : %d, cles manquantes : %d", Object.keys(clesDechiffrees).length, clesManquantes.length)
     if(clesManquantes.length > 0) {
         // Recuperer les cles du serveur
         const reponseClesChiffrees = await connexion.getClesFichiers(liste_hachage_bytes, null, {partage})

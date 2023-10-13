@@ -40,6 +40,10 @@ class CoupdoeilAppMain(WebAppMain):
         adjust_logging(LOGGING_NAMES_WEB, args)
         return args
 
+    @property
+    def nb_reply_correlation_max(self):
+        return 50
+
 
 async def demarrer():
     main_inst = CoupdoeilAppMain()
