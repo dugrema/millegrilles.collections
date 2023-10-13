@@ -553,10 +553,11 @@ function InfoMedia(props) {
     const fichier = props.fichier || {}
     const versionCourante = fichier.version_courante
 
-    const fuuid = fichier.fuuid_v_courante
+    const fuuid = versionCourante.fuuid
     const connexion = props.workers.connexion
     const erreurCb = props.erreurCb
     const genererPreviewHandler = useCallback(()=>{
+        console.debug("InfoMedia Regenerer previews pour fichier %s", fuuid)
         connexion.regenererPreviews([fuuid])
             .catch(err=>erreurCb(err, 'Erreur generer images'))
     }, [connexion, fuuid])
