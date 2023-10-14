@@ -297,7 +297,7 @@ async function updateFichier(workers, dispatch, doc, opts) {
     await uploadFichiersDao.updateFichierUpload(doc)
 
     // Declencher l'upload si applicable
-    console.debug("Ajouter upload ", doc)
+    // console.debug("Ajouter upload ", doc)
     if(demarrer) dispatch(ajouterUpload(doc))
 }
 

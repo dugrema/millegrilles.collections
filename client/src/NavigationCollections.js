@@ -435,7 +435,7 @@ function ModalCreerRepertoire(props) {
             const certificatsChiffrage = await connexion.getCertificatsMaitredescles()
             // console.debug("creerCollection certificatChiffrage ", certificatsChiffrage)
             const {doc: metadataChiffre, commandeMaitrecles} = await chiffrage.chiffrerDocument(
-                metadataDechiffre, 'GrosFichiers', certificatsChiffrage, {identificateurs_document, userId, DEBUG: true})
+                metadataDechiffre, 'GrosFichiers', certificatsChiffrage, {identificateurs_document, userId, DEBUG: false})
             // console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
 
             const opts = {}

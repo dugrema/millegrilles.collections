@@ -20,6 +20,7 @@ export async function syncDocuments(docs) {
         if(fichierDoc) {
             if(derniere_modification !== fichierDoc.derniere_modification) {
                 // Fichier connu avec une date differente
+                console.debug("syncDocuments Push dirty doc %O (local %O)", infoFichier, fichierDoc)
                 dirtyDocs.push(tuuid)
                 if(fichierDoc.dirty !== false) {
                     // Conserver flag dirty

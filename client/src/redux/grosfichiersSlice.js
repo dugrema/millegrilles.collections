@@ -25,7 +25,8 @@ const initialState = {
     breadcrumb: [],             // Breadcrumb du path de la collection affichee
     userId: '',                 // UserId courant, permet de stocker plusieurs users localement
     intervalle: null,           // Intervalle de temps des donnees, l'effet depend de la source
-    listeDechiffrage: [],       // Liste de fichiers a dechiffrer
+    // listeDechiffrage: [],       // Liste de fichiers a dechiffrer
+    dictDechiffrage: {},        // Dict de dechiffrage (tuuid:doc)
     selection: null,            // Fichiers/collections selectionnees
     mergeVersion: 0,            // Utilise pour flagger les changements
     maxNombreAffiches: TAILLE_AFFICHEE_INIT,
@@ -127,7 +128,7 @@ function pushAction(state, action) {
 
     // Trier
     liste.sort(genererTriListe(state.sortKeys))
-    console.debug("pushAction liste triee : %O", liste)
+    // console.debug("pushAction liste triee : %O", liste)
 
     state.bytesTotalDossier = liste
         .filter(item=>item.version_courante && item.version_courante.taille)
@@ -150,7 +151,7 @@ function clearAction(state) {
 // }
 
 function breadcrumbPushAction(state, action) {
-    console.debug("State breadcrumb %O, action %O", state.breadcrumb, action)
+    // console.debug("State breadcrumb %O, action %O", state.breadcrumb, action)
 
     let { tuuid, opts } = action.payload
     opts = opts || {}
@@ -336,17 +337,30 @@ function mergeTuuidDataAction(state, action) {
 
 // Ajouter des fichiers a la liste de fichiers a dechiffrer
 function pushFichiersChiffresAction(state, action) {
-    const fichiers = action.payload
-    state.listeDechiffrage = [...state.listeDechiffrage, ...fichiers]
+    // const fichiers = action.payload
+    const fichiers = action.payload.reduce((acc, item)=>{
+        acc[item.tuuid] = item
+        return acc
+    }, {})
+    // console.debug("pushFichiersChiffresAction Dechiffrer ", fichiers)
+    // state.listeDechiffrage = [...state.listeDechiffrage, ...fichiers]
+    state.dictDechiffrage = {...state.dictDechiffrage, ...fichiers}
 }
 
 function setFichiersChiffresAction(state, action) {
-    state.listeDechiffrage = action.payload
+    const fichiers = action.payload.reduce((acc, item)=>{
+        acc[item.tuuid] = item
+        return acc
+    }, {})
+    // console.debug("setFichiersChiffresAction Dechiffrer ", fichiers)
+    // state.listeDechiffrage = fichiers
+    state.dictDechiffrage = fichiers
 }
 
 // Retourne un fichier de la liste a dechiffrer
 function clearFichiersChiffresAction(state) {
-    state.listeDechiffrage = []
+    // state.listeDechiffrage = []
+    state.dictDechiffrage = {}
 }
 
 function selectionTuuidsAction(state, action) {
@@ -546,7 +560,7 @@ export function creerThunks(actions, nomSlice) {
         const state = getState()[nomSlice]
         const { userId, cuuid, partageContactId: contactId } = state
     
-        console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
+        // console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
     
         // Charger le contenu de la collection deja connu
         promisesPreparationCollection = promisesPreparationCollection || []
@@ -595,7 +609,7 @@ export function creerThunks(actions, nomSlice) {
         const contactId = opts.contactId
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.syncCollection(cuuid, {limit, skip, contactId})
-    
+        // console.debug("syncCollection liste sync docs : ", resultat)
         const { liste } = resultat
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
     
@@ -865,24 +879,6 @@ export function creerThunks(actions, nomSlice) {
 
     // Async partages
 
-    // async function syncPartagesUsager(dispatch, workers, cuuid, limit, skip) {
-    //     const { connexion, collectionsDao } = workers
-    //     const resultat = await connexion.syncCollection(cuuid, {limit, skip})
-    
-    //     const { liste } = resultat
-    //     const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
-    
-    //     // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
-    //     if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-    //         dispatch(chargerTuuids(workers, listeTuuidsDirty))
-    //             .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
-    //     } else {
-    //         dispatch(setDechiffrageComplete())
-    //     }
-    
-    //     return resultat
-    // }    
-
     function afficherPartagesUsager(workers, contactId, opts) {
         opts = opts || {}
         return (dispatch, getState) => traiterChargerPartagesUsager(workers, contactId, opts, dispatch, getState)
@@ -1128,22 +1124,35 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
     await listenerApi.unsubscribe()
     try {
         // Recuperer la liste des fichiers chiffres
-        let fichiersChiffres = [...getState().listeDechiffrage]
+        // let fichiersChiffres = [...getState().listeDechiffrage]
+        let tuuidsChiffres = Object.values(getState().dictDechiffrage).map(item=>item.tuuid)
         const source = getState().source
         const contactId = getState().partageContactId
         const partage = !!(contactId || source === SOURCE_PARTAGES_CONTACTS)
-        while(fichiersChiffres.length > 0) {
+        while(tuuidsChiffres.length > 0) {
             // Trier et slicer une batch de fichiers a dechiffrer
-            const sortKeys = getState().sortKeys
-            fichiersChiffres.sort(genererTriListe(sortKeys))
-            const batchFichiers = fichiersChiffres.slice(0, 20)  // Batch de 20 fichiers a la fois
-            fichiersChiffres = fichiersChiffres.slice(20)  // Clip 
-            listenerApi.dispatch(actions.setFichiersChiffres(fichiersChiffres))
-            // console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", batchFichiers.length, fichiersChiffres.length)
+            // const sortKeys = getState().sortKeys
+            // fichiersChiffres.sort(genererTriListe(sortKeys))
+            const batchTuuids = tuuidsChiffres.slice(0, 20)  // Batch de 20 fichiers a la fois
+            tuuidsChiffres = tuuidsChiffres.slice(20)  // Clip
+
+            // Recuperer valeurs a dechiffrer. Si la liste est longue, elle peut etre mise a jour
+            // pendant qu'on dechiffre d'autres fichiers.
+            const dictDechiffrageMaj = {...getState().dictDechiffrage}
+            const tuuidsValues = batchTuuids.map(tuuid=>{
+                const valeur = dictDechiffrageMaj[tuuid]
+                delete dictDechiffrageMaj[tuuid]
+                return valeur
+            })
+            const listeRestante = Object.values(dictDechiffrageMaj)
+            listenerApi.dispatch(actions.setFichiersChiffres(Object.values(listeRestante)))
+
+            // console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", tuuidsValues.length, listeRestante.length)
+            // console.debug("dechiffrageMiddlewareListener Dechiffrer batch ", tuuidsValues)
 
             // Extraire toutes les cles a charger
-            const {liste_hachage_bytes} = identifierClesHachages(batchFichiers)
-            console.debug("Dechiffrer avec liste_hachage_bytes %s (source: %s, partage: %s) ", liste_hachage_bytes, source, partage)
+            const {liste_hachage_bytes} = identifierClesHachages(tuuidsValues)
+            // console.debug("Dechiffrer avec liste_hachage_bytes %s (source: %s, partage: %s) ", liste_hachage_bytes, source, partage)
             let cles = null
             try {
                 cles = await clesDao.getCles(liste_hachage_bytes, {partage})
@@ -1154,7 +1163,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
 
             const fichiersDechiffres = []
 
-            for await (const fichierChiffre of batchFichiers) {
+            for await (const fichierChiffre of tuuidsValues) {
                 // console.debug("dechiffrageMiddlewareListener dechiffrer : %O", fichierChiffre)
                 // Images inline chiffrees (thumbnail)
                 const tuuid = fichierChiffre.tuuid
@@ -1212,7 +1221,8 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             listenerApi.dispatch(actions.mergeTuuidData(fichiersDechiffres))
 
             // Continuer tant qu'il reste des fichiers chiffres
-            fichiersChiffres = [...getState().listeDechiffrage]
+            // tuuidsChiffres = [...getState().listeDechiffrage]
+            tuuidsChiffres = Object.values(getState().dictDechiffrage).map(item=>item.tuuid)
         }
 
         listenerApi.dispatch(actions.setDechiffrageComplete())
