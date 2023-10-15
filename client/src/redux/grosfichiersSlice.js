@@ -574,8 +574,13 @@ export function creerThunks(actions, nomSlice) {
         
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
         // console.debug("Contenu idb : %O", contenuIdb)
+        let documentsExistants = new Set()
         if(contenuIdb) {
             const { documents, collection } = contenuIdb
+
+            // Conserver la liste de tuuids pour determiner si on doit les retirer (e.g. deplace vers autre collection)
+            for (const doc of documents) { documentsExistants.add(doc.tuuid) }
+
             // console.debug("Push documents provenance idb : %O", documents)
             dispatch(setCollectionInfo(collection))
             dispatch(push({liste: documents}))
@@ -590,7 +595,10 @@ export function creerThunks(actions, nomSlice) {
     
         let compteur = 0
         for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
-            let resultatSync = await syncCollection(dispatch, workers, cuuid, CONST_SYNC_BATCH_SIZE, compteur, {contactId})
+            let resultatSync = await syncCollection(
+                dispatch, workers, cuuid, CONST_SYNC_BATCH_SIZE, compteur, 
+                {existants: documentsExistants, contactId}
+            )
             // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
             if( ! resultatSync || ! resultatSync.liste ) break
             compteur += resultatSync.liste.length
@@ -598,6 +606,16 @@ export function creerThunks(actions, nomSlice) {
         }
         if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCollection")
     
+        if(documentsExistants.size > 0) {
+            // console.debug("Documents retires/deplaces de '%s' : %O", cuuid, documentsExistants)
+            const tuuids = []
+            for(const tuuid of documentsExistants) {
+                dispatch(mergeTuuidData({tuuid, data: {tuuid, cuuid, supprime: true}}))
+                tuuids.push(tuuid)
+            }
+            await collectionsDao.deleteDocuments(tuuids)
+        }
+
         // On marque la fin du chargement/sync
         dispatch(push({liste: []}))
     }
@@ -607,11 +625,17 @@ export function creerThunks(actions, nomSlice) {
     async function syncCollection(dispatch, workers, cuuid, limit, skip, opts) {
         opts = opts || {}
         const contactId = opts.contactId
+        const existants = opts.existants
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.syncCollection(cuuid, {limit, skip, contactId})
         // console.debug("syncCollection liste sync docs : ", resultat)
         const { liste } = resultat
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
+        if(existants) {
+            for (const doc of liste) {
+                existants.delete(doc.tuuid)
+            }
+        }
     
         // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
