@@ -24,6 +24,7 @@
     "stream-browserify": "^3.0.0"
   },
   "peerDependencies": {
+    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2023.10",
     "@reduxjs/toolkit": "^1.8",
     "bootstrap": "^5.1",
     "react": "^18.2.0",

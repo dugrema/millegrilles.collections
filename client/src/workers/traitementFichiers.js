@@ -249,8 +249,15 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
             (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
         )
     
+        // const resultat = await transfertFichiers.traiterAcceptedFilesV2(
+        //     paramBatch, 
+        //     ajouterPartProxy, 
+        //     updateFichierProxy,
+        //     setProgresProxy,
+        //     signalAnnuler
+        // )
         const resultat = await transfertFichiers.traiterAcceptedFilesV2(
-            paramBatch, 
+            Comlink.transfer(paramBatch),
             ajouterPartProxy, 
             updateFichierProxy,
             setProgresProxy,
