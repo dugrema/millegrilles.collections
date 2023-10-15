@@ -17,7 +17,7 @@ import AfficherAudio from './AfficherAudio'
 import { estMimetypeMedia, mapDocumentComplet } from './mapperFichier'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes.js'
 import { onContextMenu } from './MenuContextuel'
-import useWorkers, { useUsager } from './WorkerContext'
+import useWorkers, { useCapabilities, useUsager } from './WorkerContext'
 
 import fichiersActions from './redux/fichiersSlice'
 
@@ -435,6 +435,8 @@ export function AffichagePrincipal(props) {
         erreurCb,
     } = props
 
+    const capabilities = useCapabilities()
+
     const dispatch = useDispatch()
     const tailleAffichee = useSelector(state => state.fichiers.maxNombreAffiches)
     const liste = useSelector(state => state.fichiers.liste)
@@ -470,30 +472,21 @@ export function AffichagePrincipal(props) {
     }, [setContextuel])
 
     const onOpenHandler = useCallback( item => {
-        // const value = event.currentTarget.dataset.value
         window.getSelection().removeAllRanges()
 
         const value = item.tuuid,
-              mimetype = item.mimetype || ''
-        
-        // const folderId = value.folderId || dataset.folderId
-        // const fileId = value.fileId || dataset.fileId
+              mimetype = item.mimetype || '',
+              typeNode = item.type_node
 
-        // if(folderId) {
-        //     naviguerCollection(folderId)
-        // } else if(fileId) {
-            // console.debug("dbl click liste : %O, value : %O", liste, value)
-            // const fileItem = liste.filter(item=>item.tuuid===value).pop()
-            // const mimetype = fileItem.mimetype || ''
-            // if(mimetype.startsWith('video/')) setAfficherVideo(value)
-            if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
-            else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
-            else if(mimetype.startsWith('image/')) showPreviewAction(value)
-            else if(mimetype === 'application/pdf') showPreviewAction(value)
-            else if(mimetype) showInfoModalOuvrir()
-            else naviguerCollection(value)
-            
-        // }
+        if(['Collection', 'Repertoire'].includes(typeNode)) {
+            return naviguerCollection(value)
+        }
+        
+        if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
+        else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
+        else if(mimetype.startsWith('image/')) showPreviewAction(value)
+        else if(mimetype === 'application/pdf') showPreviewAction(value)
+        else showInfoModalOuvrir()
 
     }, [naviguerCollection, showPreviewAction, liste])
 
@@ -537,6 +530,7 @@ export function AffichagePrincipal(props) {
     // Default - liste fichiers
     return (
         <ListeFichiers 
+            capabilities={capabilities}
             modeView={modeView}
             colonnes={colonnesEffectives}
             rows={listeAffichee} 

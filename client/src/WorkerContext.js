@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
 import { init as initCollectionsIdb } from './redux/collectionsIdbDao'
+import { 
+    supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled,
+} from '@dugrema/millegrilles.reactjs'
 
 const CONST_INTERVAL_VERIF_SESSION = 600_000
 
@@ -39,6 +42,10 @@ export function useEtatPret() {
     return useContext(Context).etatPret
 }
 
+export function useCapabilities() {
+    return useContext(Context).capabilities
+}
+
 // Provider
 export function WorkerProvider(props) {
 
@@ -48,6 +55,7 @@ export function WorkerProvider(props) {
     const [etatConnexion, setEtatConnexion] = useState('')
     const [formatteurPret, setFormatteurPret] = useState('')
     const [infoConnexion, setInfoConnexion] = useState('')
+    const [capabilities, setCapabilities] = useState('')
 
     const etatAuthentifie = useMemo(()=>usager && formatteurPret, [usager, formatteurPret])
     const etatPret = useMemo(()=>{
@@ -55,8 +63,8 @@ export function WorkerProvider(props) {
     }, [etatConnexion, usager, formatteurPret])
 
     const value = useMemo(()=>{
-        if(workersPrets) return { usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret }
-    }, [workersPrets, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret])
+        if(workersPrets) return { usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret, capabilities }
+    }, [workersPrets, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret, capabilities])
 
     useEffect(()=>{
         // console.info("Initialiser web workers (ready : %O, workers : %O)", ready, _workers)
@@ -123,6 +131,16 @@ export function WorkerProvider(props) {
             .catch(err=>console.error("Erreur preload certificat maitre des cles : %O", err))
         }
     }, [etatAuthentifie])
+
+    useEffect(()=>{
+        // Charger capabilities
+        loadCapabilities()
+            .then(capabilities => {
+                console.info("Browser capabilities : %O", capabilities)
+                setCapabilities(capabilities)
+            })
+            .catch(err=>console.error("Erreur chargement capabilities ", err))
+    }, [setCapabilities])
   
     if(!workersPrets) return props.attente
 
@@ -155,4 +173,12 @@ function redirigerPortail(err) {
     const url = new URL(window.location.href)
     url.pathname = '/millegrilles'
     window.location = url
+}
+
+async function loadCapabilities() {
+    const touchEnabled = isTouchEnabled()
+    const webp = await supporteFormatWebp()
+    const webm = supporteFormatWebm()
+    const stream = supporteFileStream()
+    return { touchEnabled, webp, webm, stream }
 }

@@ -493,6 +493,13 @@ function preparerColonnes(workers) {
             'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 3},
             // 'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
+        ordreColonnesMobile: ['nom', 'taille', 'dateFichier', 'mimetype'],
+        paramsColonnesMobile: {
+            'nom': {'label': 'Nom', xs: 12},
+            'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 12},
+            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 12},
+            'mimetype': {'label': 'Type', className: 'details', xs: 12},
+        },
         tri: {colonne: 'nom', ordre: 1},
         rowLoader,
     }
