@@ -4,8 +4,7 @@ import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 
 
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
-      CONST_DOMAINE_MAITREDESCLES = 'MaitreDesCles'
-      /* , CONST_DOMAINE_FICHIERS = 'fichiers' */
+      CONST_DOMAINE_FICHIERS = 'fichiers'
 
 function getFavoris() {
   return ConnexionClient.emitBlocking('getFavoris', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
@@ -19,31 +18,31 @@ function getRecents(params) {
   return ConnexionClient.emitBlocking('getRecents', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
 
-// function getContenuCollection(tuuidsDocuments, opts) {
-//   opts = opts || {}
-//   const params = {...opts, tuuid_collection: tuuidsDocuments}
-//   return ConnexionClient.emitBlocking('getCollection', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'contenuCollection', ajouterCertificat: true})
-// }
-
 async function getClesFichiers(fuuids, usager, opts) {
   opts = opts || {}
 
   const partage = opts.partage
 
-  const extensions = usager || {}
-  const delegationGlobale = extensions.delegationGlobale
+  // const extensions = usager || {}
+  // const delegationGlobale = extensions.delegationGlobale
 
-  if(!delegationGlobale) {
+  // if(!delegationGlobale) {
     // On doit demander une permission en premier
     const params = { fuuids, partage }
-    return ConnexionClient.emitBlocking('getPermissionCles', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', ajouterCertificat: true})
-  } else {
-    const params = {
-      liste_hachage_bytes: fuuids,
-      domaine: CONST_DOMAINE_GROSFICHIERS,
-    }
-    return ConnexionClient.emitBlocking('getClesFichiers', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
-  }
+    return ConnexionClient.emitBlocking(
+      'getPermissionCles', params, 
+      {
+        kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', 
+        timeout: 30_000, ajouterCertificat: true
+      }
+    )
+  // } else {
+  //   const params = {
+  //     liste_hachage_bytes: fuuids,
+  //     domaine: CONST_DOMAINE_GROSFICHIERS,
+  //   }
+  //   return ConnexionClient.emitBlocking('getClesFichiers', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
+  // }
 }
 
 async function getPermission(fuuids) {
@@ -81,14 +80,6 @@ function toggleFavoris(etatFavoris) {
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'changerFavoris', attacherCertificat: true}
   )
 }
-
-// function retirerDocumentsCollection(cuuid, tuuids) {
-//   return ConnexionClient.emitBlocking(
-//     'retirerDocuments',
-//     {cuuid, retirer_tuuids: tuuids},
-//     {domaine: CONST_DOMAINE_GROSFICHIERS, action: 'retirerDocumentsCollection', attacherCertificat: true}
-//   )
-// }
 
 function supprimerDocuments(cuuid, tuuids, supprimePath) {
   return ConnexionClient.emitBlocking(
@@ -165,7 +156,7 @@ function rechercheIndex(mots_cles, from_idx, size) {
   return ConnexionClient.emitBlocking(
     'rechercheIndex',
     {query: mots_cles, start: from_idx, limit: size},
-    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'solrrelai', action: 'fichiers', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'solrrelai', action: CONST_DOMAINE_FICHIERS, attacherCertificat: true}
   )
 }
 
@@ -255,7 +246,7 @@ async function submitBatchUpload(token) {
   return ConnexionClient.emitBlocking(
     'submitBatchUpload',
     commande,
-    {noformat: true}
+    {noformat: true, timeout: 60_000}
   )
 }
 
@@ -305,7 +296,10 @@ function supprimerPartageUsager(contactId, tuuid) {
 
 function getInfoStatistiques(cuuid) {
   const requete = { cuuid }
-  const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getInfoStatistiques', ajouterCertificat: true}
+  const params = {
+    kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getInfoStatistiques', 
+    timeout: 45_000, ajouterCertificat: true
+  }
   return ConnexionClient.emitBlocking('getInfoStatistiques', requete, params)
 }
 
@@ -368,7 +362,6 @@ expose({
     // Requetes et commandes privees
     getDocuments, getClesFichiers,
     getFavoris, getCorbeille, getRecents, 
-    // getContenuCollection,
     creerCollection, toggleFavoris, 
     recupererDocuments, supprimerDocuments,
     decrireFichier, decrireCollection,
