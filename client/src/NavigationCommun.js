@@ -8,8 +8,10 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import ProgressBar from 'react-bootstrap/ProgressBar'
+import Fade from 'react-bootstrap/Fade'
 
 import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
+import { isTouchEnabled } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 import { formatterDateString } from '@dugrema/millegrilles.reactjs/src/formatterUtils'
 
 import AfficherVideo from './AfficherVideo'
@@ -20,10 +22,19 @@ import { onContextMenu } from './MenuContextuel'
 import useWorkers, { useCapabilities, useUsager } from './WorkerContext'
 
 import fichiersActions from './redux/fichiersSlice'
+import { FormCheck } from 'react-bootstrap'
 
 const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
+const TOUCH_ENABLED = isTouchEnabled()  // Detecter touch (appareil mobile)
+
+
 export function BarreInformation(props) {
+    if(TOUCH_ENABLED) return BarreInformationMobile(props)
+    return BarreInformationDesktop(props)
+}
+
+export function BarreInformationDesktop(props) {
 
     const { 
         afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
@@ -119,6 +130,108 @@ export function BarreInformation(props) {
     )
 }
 
+export function BarreInformationMobile(props) {
+
+    const { 
+        afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
+        setShowCreerRepertoire, setPreparationUploadEnCours,
+        signalAnnuler, setShowInfoModal, downloadRepertoire,
+    } = props
+
+    const dispatch = useDispatch()
+    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
+    const liste = useSelector(state => state.fichiers.liste )
+    const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
+    const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)
+    const breadcrumb = useSelector((state) => state.fichiers.breadcrumb)
+
+    const afficherMedia = afficherVideo || afficherAudio
+
+    const [nombreFichiers, nombreRepertoires] = useMemo(()=>{
+        let nombreFichiers = 0, nombreRepertoires = 0
+        if(liste) {
+            liste.forEach(item=>{
+                if(item.type_node === 'Fichier') nombreFichiers++
+                else nombreRepertoires++
+            })
+        }
+        return [nombreFichiers, nombreRepertoires]
+    }, [liste])
+
+    const nomRepertoireCourant = useMemo(()=>{
+        const dernierItem = breadcrumb[breadcrumb.length - 1]
+        if(dernierItem) {
+            const label = dernierItem.label
+            if(label !== cuuidCourant) return label
+            return ''
+        }
+        return '/'
+    }, [breadcrumb, cuuidCourant])
+
+    const showInformationRepertoireHandler = useCallback(()=>{
+        console.debug("Show information repertoire ", cuuidCourant)
+        if(cuuidCourant === '') setShowInfoModal(1)
+        else setShowInfoModal(cuuidCourant)
+    }, [cuuidCourant, setShowInfoModal])
+
+    const naviguerCollectionUpHandler = useCallback(()=>{
+        console.debug("naviguerCollectionUpHandler Breadcrumb %O", breadcrumb)
+        let level = breadcrumb.length
+        const toLevel = level - 2
+        console.debug("naviguerCollectionUpHandler to level %d, %d", level, toLevel)
+        dispatch(fichiersActions.breadcrumbSlice(toLevel))
+        if(toLevel < 0) {
+            Promise.resolve(naviguerCollection())
+                .catch(err=>console.error("naviguerCollectionUpHandler Erreur navigation vers favoris", err))
+        } else {
+            const item = breadcrumb[toLevel]
+            console.debug("Naviguer vers tuuid : %O", item)
+            Promise.resolve(naviguerCollection(item.tuuid))
+                .catch(err=>console.error("naviguerCollectionUpHandler Erreur navigation vers favoris", err))
+        }
+    }, [dispatch, breadcrumb])
+
+    return (
+        <Row className='fichiers-header-buttonbar-mobile'>
+            <Row>
+                <Col xs={7}>
+                    <Fade in={!!nomRepertoireCourant} appear={true}>
+                        <span>{nomRepertoireCourant}</span>
+                    </Fade>
+                </Col>
+                <Col xs={5}>
+                    <span>
+                        <FormCheck type="switch" label="Select" />
+                    </span>
+                </Col>
+            </Row>
+            <Row>
+                <Col xs={12}>
+                    {afficherMedia?'':
+                        <div>
+                            <Button variant="secondary" className="fixed" disabled={!cuuidCourant} onClick={naviguerCollectionUpHandler}>
+                                <i className="fa fa-arrow-up"/>
+                            </Button>
+                            {' '}
+                            <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal} className="fixed">
+                                <i className="fa fa-info"/>
+                            </Button>
+                            {' '}
+                            <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                            <BoutonsAction 
+                                cuuid={cuuidCourant}
+                                setShowCreerRepertoire={setShowCreerRepertoire}
+                                setPreparationUploadEnCours={setPreparationUploadEnCours}
+                                signalAnnuler={signalAnnuler}
+                            />
+                        </div>
+                    }
+                </Col>
+            </Row>
+        </Row>
+    )
+}
+
 export function BoutonsFormat(props) {
 
     const { modeView, setModeView } = props
@@ -134,8 +247,8 @@ export function BoutonsFormat(props) {
 
     return (
         <ButtonGroup>
-            <Button variant={variantListe} onClick={setModeListe}><i className="fa fa-list" /></Button>
-            <Button variant={variantThumbnail} onClick={setModeThumbnails}><i className="fa fa-th-large" /></Button>
+            <Button variant={variantListe} onClick={setModeListe} className="fixed"><i className="fa fa-list" /></Button>
+            <Button variant={variantThumbnail} onClick={setModeThumbnails} className="fixed"><i className="fa fa-th-large" /></Button>
         </ButtonGroup>
     )
 }
@@ -444,6 +557,11 @@ export function AffichagePrincipal(props) {
     const selection = useSelector(state => state.fichiers.selection)
     const colonnes = useMemo(()=>preparerColonnes(), [preparerColonnes])
 
+    const classnameContenu = useMemo(()=>{
+        if(TOUCH_ENABLED) return 'fichiers-contenu-mobile'
+        return 'fichiers-contenu'
+    }, [])
+
     const [listeAffichee, listeComplete] = useMemo(()=>{
         if(!liste) return ''                // Liste vide
         if(!tailleAffichee) return [liste, true]    // Liste complete
@@ -529,21 +647,31 @@ export function AffichagePrincipal(props) {
 
     // Default - liste fichiers
     return (
-        <ListeFichiers 
-            capabilities={capabilities}
-            modeView={modeView}
-            colonnes={colonnesEffectives}
-            rows={listeAffichee} 
-            isListeComplete={listeComplete}
-            selection={selection}
-            onOpen={onOpenHandler}
-            onContextMenu={onContextMenuClick}
-            onSelect={onSelectionLignes}
-            onClickEntete={enteteOnClickCb}
-            suivantCb={suivantCb}
-            scrollValue={scrollValue}
-            onScroll={onScroll}
-        />
+        <div className={classnameContenu}>
+            <ListeFichiers 
+                capabilities={capabilities}
+                modeView={modeView}
+                colonnes={colonnesEffectives}
+                rows={listeAffichee} 
+                isListeComplete={listeComplete}
+                selection={selection}
+                onOpen={onOpenHandler}
+                onContextMenu={onContextMenuClick}
+                onSelect={onSelectionLignes}
+                onClickEntete={enteteOnClickCb}
+                suivantCb={suivantCb}
+                scrollValue={scrollValue}
+                onScroll={onScroll}
+            />
+
+            {TOUCH_ENABLED?
+                <Row>
+                    <Col xs={12} lg={5}>
+                        <SectionBreadcrumb naviguerCollection={naviguerCollection} fichier={afficherVideo||afficherAudio} />
+                    </Col>
+                </Row>    
+            :''}
+        </div>
     )
 }
 

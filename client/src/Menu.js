@@ -72,7 +72,8 @@ function Menu(props) {
         labelMenu="Menu" 
         etatConnexion={etatConnexion} 
         onSelect={handlerSelect}
-        expand="lg">
+        expand="lg"
+        className="sticky">
 
         <Nav.Item>
             <Nav.Link title="Upload/Download" onClick={showTransfertModal}>

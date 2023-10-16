@@ -47,6 +47,38 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     margin-left: 0.25rem;
 }
 
+.fichiers-header-buttonbar-mobile {
+    background: $first-color;
+    z-index: 100;
+    margin-bottom: 1rem;
+    text-align: left;
+
+    /* sticky */
+    position: fixed;
+    top: 3.7rem;
+    width: 100%;
+}
+
+.fichiers-header-buttonbar-mobile div div {
+    /*margin-left: 0.10rem;*/
+    margin-top: 0.2rem;
+}
+
+.fichiers-header-buttonbar-mobile button {
+    margin-left: 0.05rem;
+    margin-right: 0.05rem;
+    padding-left: 0.15rem;
+    padding-right: 0.15rem;
+}
+
+.fichiers-header-buttonbar-mobile button.fixed {
+    width: 1.9rem;
+}
+
+.fichiers-contenu-mobile {
+    padding-top: 7rem;
+}
+
 div.upload {
     display: inline-block;
 }

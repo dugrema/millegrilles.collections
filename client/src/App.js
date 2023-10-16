@@ -155,16 +155,16 @@ function LayoutMain() {
   )
 
   return (
-    <LayoutMillegrilles menu={menu}>
+    <LayoutMillegrilles menu={menu} fluid='md'>
 
-      <Container className="contenu">
+      <div>
         <Suspense fallback={<Attente />}>
           <Contenu 
               page={page}
               erreurCb={erreurCb}
             />
         </Suspense>
-      </Container>
+      </div>
 
       <Modals 
           showTransfertModal={showTransfertModal}
