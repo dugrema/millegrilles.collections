@@ -40,11 +40,22 @@ $xsmall-width: map.get($grid-breakpoints, xs);
 
 .fichiers-header-buttonbar {
     margin-bottom: 1rem;
-    text-align: right;
+    background: $first-color;
+    z-index: 100;
+    /* text-align: right; */
+
+    /* sticky */
+    position: fixed;
+    top: 3.7rem;
+    width: 100%;
 }
 
-.fichiers-header-buttonbar div div {
+.fichiers-header-buttonbar button {
     margin-left: 0.25rem;
+}
+
+.fichiers-contenu {
+    padding-top: 7.2rem;
 }
 
 .fichiers-header-buttonbar-mobile {

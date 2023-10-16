@@ -98,35 +98,33 @@ export function BarreInformationDesktop(props) {
 
     return (
         <Row className='fichiers-header-buttonbar'>
-            <Col xs={12} lg={5}>
-                <SectionBreadcrumb naviguerCollection={naviguerCollection} fichier={afficherVideo||afficherAudio} />
-            </Col>
-
-            <Col xs={12} sm={3} md={4} lg={2}>
-                {afficherMedia?'':nombreFichiersRendered}
-            </Col>
-
-            <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
-                {afficherMedia?'':
-                    <div>
-                        <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal}>
-                            <i className="fa fa-info"/>
-                        </Button>
-                        {' '}
-                        <Button variant="secondary" onClick={downloadRepertoire} disabled={!downloadRepertoire}>
-                            <i className="fa fa-download"/>
-                        </Button>
-                        <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                        <BoutonsAction 
-                            cuuid={cuuidCourant}
-                            setShowCreerRepertoire={setShowCreerRepertoire}
-                            setPreparationUploadEnCours={setPreparationUploadEnCours}
-                            signalAnnuler={signalAnnuler}
-                        />
-                    </div>
-                }
-            </Col>
-        </Row>            
+            <Row>
+                <Col xs={12}>
+                    <SectionBreadcrumb naviguerCollection={naviguerCollection} fichier={afficherVideo||afficherAudio} />
+                </Col>
+            </Row>
+            <Row>
+                <Col xs={12} md={8} className="buttonbars fichiers-headers-boutons">
+                    <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal}>
+                        <i className="fa fa-info"/>
+                    </Button>
+                    {' '}
+                    <Button variant="secondary" onClick={downloadRepertoire} disabled={!downloadRepertoire}>
+                        <i className="fa fa-download"/>
+                    </Button>
+                    <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                    <BoutonsAction 
+                        cuuid={cuuidCourant}
+                        setShowCreerRepertoire={setShowCreerRepertoire}
+                        setPreparationUploadEnCours={setPreparationUploadEnCours}
+                        signalAnnuler={signalAnnuler}
+                    />
+                </Col>
+                <Col xs={12} md={4}>
+                    {nombreFichiersRendered}
+                </Col>
+            </Row>            
+        </Row>
     )
 }
 
