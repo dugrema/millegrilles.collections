@@ -7,7 +7,7 @@ import Modal from 'react-bootstrap/Modal'
 import Col from 'react-bootstrap/Col'
 import Row from 'react-bootstrap/Row'
 
-import { FormatteurTaille, FormatterDate, FormatterDuree, Thumbnail, FilePicker } from '@dugrema/millegrilles.reactjs'
+import { FormatteurTaille, FormatterDate, FormatterDuree, Thumbnail, FilePicker, hachage } from '@dugrema/millegrilles.reactjs'
 
 import { mapDocumentComplet, estMimetypeMedia } from './mapperFichier'
 import { majFichierMetadata, majCollectionMetadata } from './fonctionsFichiers'
@@ -456,6 +456,8 @@ function InfoVide(props) {
 function InfoFichier(props) {
     const { workers, etatConnexion, etatAuthentifie, support, downloadAction, usager, erreurCb } = props
 
+    console.debug("fichier : ", props)
+
     const valueItem = props.valueItem || {}
     const thumbnail = valueItem.thumbnail || {}
     const {thumbnailIcon} = thumbnail
@@ -470,6 +472,17 @@ function InfoFichier(props) {
     const { taille, visites } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
     const dateFichier = valueItem.dateFichier
+
+    const hachageOriginal = useMemo(()=>{
+        const hachageOriginal = fichier.hachage_original
+        if(!hachageOriginal) return '' // Hachage non disponible
+
+        // Convertir en hex
+        const {algo, digest} = hachage.decoderHachage(hachageOriginal)
+        console.debug("Valeur hachage : algo %O, digest %O", algo, digest)
+        const digestHex = Buffer.from(digest).toString('hex')
+        return { algo, digest: digestHex }
+    }, [fichier])
 
     const infoVisites = useMemo(()=>{
         if(!visites) return {plusRecente: null, nombreServeurs: 0, serveurs: []}
@@ -513,7 +526,7 @@ function InfoFichier(props) {
                     </Row>
                     <Row>
                         <Col xs={12} md={3}>Taille</Col>
-                        <Col xs={12} md={9}><FormatteurTaille value={taille} /></Col>
+                        <Col xs={12} md={9}><FormatteurTaille value={taille} /> ({taille} bytes)</Col>
                     </Row>
                     <Row>
                         <Col xs={12} md={3}>Date</Col>
@@ -523,6 +536,16 @@ function InfoFichier(props) {
                         <Col xs={12} md={3}>Modification</Col>
                         <Col xs={12} md={9}><FormatterDate value={derniereModification} /></Col>
                     </Row>
+                    {hachageOriginal?
+                        <Row>
+                            <Col xs={12} md={3}>Hachage</Col>
+                            <Col xs={12} md={9} className='fuuid'>
+                                {hachageOriginal.digest}<br/>
+                                Algorithme : {hachageOriginal.algo}
+                            </Col>
+                        </Row>
+                        :''
+                    }
                     <Row>
                         <Col xs={12} md={3}>id systeme</Col>
                         <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
