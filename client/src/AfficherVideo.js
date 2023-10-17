@@ -27,18 +27,77 @@ function AfficherVideo(props) {
     const videos = useMemo(()=>version_courante.video || {}, [version_courante.video])
 
     const [selecteur, setSelecteur] = useState('')
+    const [timeStamp, setTimeStamp] = useState(-1)
+    const [abLoop, setAbLoop] = useState(null)
+
+    const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
+
+    const abLoopToggleHandler = useCallback(()=>{
+        let ts = timeStamp
+        if(ts === -1 || !ts) ts = 0
+        if(!abLoop) {
+            // console.debug("AB Loop - set valeur A ", ts)
+            setAbLoop({a: ts})
+        } else {
+            if(!(abLoop.b >= 0)) {
+                // console.debug("AB Loop - set valeur B ", ts)
+                setAbLoop({...abLoop, b: ts})
+            } else {
+                // console.debug("AB Loop - reset")
+                setAbLoop(null)
+            }
+        }
+    }, [abLoop, setAbLoop, timeStamp])
+
+    return (
+        <div>
+            <Row>
+                <Col>
+                    <WrapperPlayer 
+                        fichier={fichier}
+                        selecteur={selecteur} abLoop={abLoop} 
+                        timeStamp={timeStamp} setTimeStamp={setTimeStamp}
+                        />
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    <PanneauInformation 
+                        fichier={fichier}
+                        nomFichier={nomFichier}
+                        fermer={props.fermer}
+                        showInfoModalOuvrir={showInfoModalOuvrir}
+                        videos={videos}
+                        support={support}
+                        selecteurs={selecteurs}
+                        selecteur={selecteur}
+                        setSelecteur={setSelecteur}
+                        toggleAbLoop={abLoopToggleHandler}
+                        abLoop={abLoop}
+                        />
+                </Col>
+
+            </Row>
+
+        </div>
+    )
+}
+
+export default AfficherVideo
+
+export function WrapperPlayer(props) {
+    const { selecteur, abLoop, timeStamp, setTimeStamp } = props
+
+    const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
+
     const [selecteurCourant, setSelecteurCourant] = useState('')
     const [srcVideo, setSrcVideo] = useState('')
     const [posterObj, setPosterObj] = useState('')
     // const [genererToken, setGenererToken] = useState(false)
-    const [timeStamp, setTimeStamp] = useState(-1)
     const [jumpToTimeStamp, setJumpToTimeStamp] = useState(null)
     const [videoChargePret, setVideoChargePret] = useState(false)
     const [errVideo, setErrVideo] = useState('')
     const [progresChargement, setProgresChargement] = useState(0)
-    const [abLoop, setAbLoop] = useState(null)
-
-    const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
 
     const setErrVideoCb = useCallback(err=>{
         setErrVideo(err)
@@ -79,23 +138,6 @@ function AfficherVideo(props) {
             setProgresChargement(progres)
         }
     }, [setProgresChargement])
-
-    const abLoopToggleHandler = useCallback(()=>{
-        let ts = timeStamp
-        if(ts === -1 || !ts) ts = 0
-        if(!abLoop) {
-            // console.debug("AB Loop - set valeur A ", ts)
-            setAbLoop({a: ts})
-        } else {
-            if(!(abLoop.b >= 0)) {
-                // console.debug("AB Loop - set valeur B ", ts)
-                setAbLoop({...abLoop, b: ts})
-            } else {
-                // console.debug("AB Loop - reset")
-                setAbLoop(null)
-            }
-        }
-    }, [abLoop, setAbLoop, timeStamp])
 
     useEffect(()=>{
         if(!fichier || !fichier.imageLoader) return // Metadata n'est pas encore genere
@@ -171,61 +213,34 @@ function AfficherVideo(props) {
 
     return (
         <div>
-            <Row>
-                
-                <Col>
-                    <PlayerEtatPassthrough
-                        posterObj={posterObj}
+            <PlayerEtatPassthrough
+                posterObj={posterObj}
+                srcVideo={srcVideo}
+                selecteur={selecteur}
+                videoChargePret={videoChargePret}
+                errVideo={errVideo} 
+                posterPresent={!!fichier.imageLoader}>
+                    <VideoViewer 
                         srcVideo={srcVideo}
-                        selecteur={selecteur}
-                        videoChargePret={videoChargePret}
-                        errVideo={errVideo} 
-                        posterPresent={!!fichier.imageLoader}>
-                            <VideoViewer 
-                                // videos={srcVideo} 
-                                srcVideo={srcVideo}
-                                poster={posterObj} 
-                                height='100%' 
-                                width='100%' 
-                                onTimeUpdate={videoTimeUpdateHandler} 
-                                timeStamp={timeStamp} 
-                                jumpToTimeStamp={jumpToTimeStamp}
-                                onProgress={onProgress}
-                                onPlay={onPlay}
-                                onError={onError}
-                                onWaiting={onWaiting}
-                                onCanPlay={onCanPlay}
-                                onAbort={onAbort}
-                                onEmptied={onEmptied}
-                                />
-                    </PlayerEtatPassthrough>
-                    <ProgresChargement value={progresChargement} srcVideo={srcVideo} />
-                </Col>
-            </Row>
-            <Row>
-                <Col>
-                    <PanneauInformation 
-                        fichier={fichier}
-                        nomFichier={nomFichier}
-                        fermer={props.fermer}
-                        showInfoModalOuvrir={showInfoModalOuvrir}
-                        videos={videos}
-                        support={support}
-                        selecteurs={selecteurs}
-                        selecteur={selecteur}
-                        setSelecteur={setSelecteur}
-                        toggleAbLoop={abLoopToggleHandler}
-                        abLoop={abLoop}
+                        poster={posterObj} 
+                        height='100%' 
+                        width='100%' 
+                        onTimeUpdate={videoTimeUpdateHandler} 
+                        timeStamp={timeStamp} 
+                        jumpToTimeStamp={jumpToTimeStamp}
+                        onProgress={onProgress}
+                        onPlay={onPlay}
+                        onError={onError}
+                        onWaiting={onWaiting}
+                        onCanPlay={onCanPlay}
+                        onAbort={onAbort}
+                        onEmptied={onEmptied}
                         />
-                </Col>
-
-            </Row>
-
+            </PlayerEtatPassthrough>
+            <ProgresChargement value={progresChargement} srcVideo={srcVideo} />
         </div>
     )
 }
-
-export default AfficherVideo
 
 async function attendreChargement(source, majChargement, setSrcVideo, setErrVideo) {
     try {
@@ -402,7 +417,7 @@ function PanneauInformation(props) {
 }
 
 
-function SelecteurResolution(props) {
+export function SelecteurResolution(props) {
     const { listeVideos, /*support,*/ selecteur, setSelecteur, /*videoLoader,*/ selecteurs } = props
 
     const [listeOptions, setListeOptions] = useState([])

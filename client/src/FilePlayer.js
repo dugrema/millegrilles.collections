@@ -21,6 +21,7 @@ import { mapDocumentComplet } from './mapperFichier'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
 import { InfoGenerique, InfoMedia } from './ModalOperations'
 import useWorkers, { useEtatAuthentifie, useEtatConnexion, useUsager } from './WorkerContext'
+import { SelecteurResolution, WrapperPlayer } from './AfficherVideo'
 
 function PreviewFichiers(props) {
     // console.debug("PreviewFichiers proppies : %O", props)
@@ -187,7 +188,58 @@ function PreviewMediaMobile(props) {
 }
 
 function PreviewVideoMobile(props) {
-    return <p>Preview video</p>
+
+    const { fichier } = props
+
+    const videoLoader = fichier.videoLoader,
+          version_courante = fichier.version_courante
+
+    const support = useDetecterSupport()
+
+    const { device, orientation } = useMediaQuery()
+
+    const [selecteur, setSelecteur] = useState('')
+    const [timeStamp, setTimeStamp] = useState(-1)
+    const [abLoop, setAbLoop] = useState(null)
+
+    const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
+    const videos = useMemo(()=>version_courante.video || {}, [version_courante])
+
+    const cols = useMemo(()=>{
+        if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
+        else return [{xs: 12}, {}]
+    }, [orientation])
+
+    const setErrCb = useCallback(e => {
+        console.error("Erreur chargement image : %O", e)
+    }, [])
+
+    return (
+        <Row>
+            <Col {...cols[0]} className={'player-media-container ' + orientation}>
+                <Ratio aspectRatio='4x3'>
+                    <div className={"player-media-image mobile " + orientation}>
+                        <WrapperPlayer 
+                            fichier={fichier}
+                            selecteur={selecteur} abLoop={abLoop} 
+                            timeStamp={timeStamp} setTimeStamp={setTimeStamp}
+                            />
+                    </div>
+                </Ratio>
+            </Col>
+            <Col {...cols[1]}>
+                <SelecteurResolution 
+                    listeVideos={videos} 
+                    support={support}
+                    selecteurs={selecteurs} 
+                    selecteur={selecteur} 
+                    setSelecteur={setSelecteur} 
+                    videoLoader={videoLoader} />
+                <OperationsImage {...props} />                    
+            </Col>
+        </Row>
+
+    )
 }
 
 function PreviewImageMobile(props) {
