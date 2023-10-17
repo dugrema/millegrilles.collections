@@ -601,12 +601,12 @@ export function InfoGenerique(props) {
                 <Col xs={5} md={3}>Date</Col>
                 <Col xs={7} md={9}><FormatterDate value={dateFichier} /></Col>
             </Row>
-            <Row>
-                <Col xs={5} md={3}>Modification</Col>
-                <Col xs={7} md={9}><FormatterDate value={derniereModification} /></Col>
-            </Row>
             {detail?(
                 <>
+                <Row>
+                    <Col xs={5} md={3}>Modification</Col>
+                    <Col xs={7} md={9}><FormatterDate value={derniereModification} /></Col>
+                </Row>
                 {hachageOriginal?
                     <Row>
                         <Col xs={12} md={3}>Hachage</Col>
