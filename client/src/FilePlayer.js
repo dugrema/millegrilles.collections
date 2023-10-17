@@ -170,21 +170,23 @@ function PreviewMediaMobile(props) {
 
     const { fichier } = props
 
-    const [ estImage, estVideo, estDocument ] = useMemo(()=>{
+    const [ estImage, estVideo, estAudio, estDocument ] = useMemo(()=>{
         const mimetype = fichier.mimetype
-        let image = false, estDocument = false
+        let image = false, audio = false, estDocument = false
         const video = estMimetypeVideo(mimetype)
         if(mimetype.startsWith('image/')) image = true
+        if(mimetype.startsWith('audio/')) audio = true
         if(mimetype.startsWith('application/pdf')) estDocument = true
-        return [image, video, estDocument]
+        return [image, video, audio, estDocument]
     }, [fichier])
 
     if(!fichier) return ''
     if(estVideo) return PreviewVideoMobile(props)
     if(estImage) return PreviewImageMobile(props)
+    if(estAudio) return PreviewAudioMobile(props)
     if(estDocument) return PreviewDocumentMobile(props)
 
-    return ''
+    return PreviewFichierGeneriqueMobile(props)
 }
 
 function PreviewVideoMobile(props) {
@@ -314,11 +316,19 @@ function PreviewImageMobile(props) {
 
 function PreviewDocumentMobile(props) {
     // Preview d'un document qui peut etre ouvert par le navigateur (e.g. PDF)
-    return <p>Preview document</p>
+    return PreviewFichierGeneriqueMobile(props)
+}
+
+function PreviewAudioMobile(props) {
+    return PreviewFichierGeneriqueMobile(props)
 }
 
 function PreviewFichierGeneriqueMobile(props) {
-
+    return (
+        <div>
+            <OperationsImage {...props} />
+        </div>
+    )
 }
 
 function OperationsImage(props) {
