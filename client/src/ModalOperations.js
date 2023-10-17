@@ -463,23 +463,26 @@ function InfoFichier(props) {
 
     const fichier = props.value || {}
     const nom = valueItem.nom
-    const { tuuid, fuuid_v_courante: fuuid } = fichier
+    const { tuuid } = fichier
     const versionCourante = fichier.version_courante || {}
+    const fuuid = versionCourante.fuuid
     const mimetype = fichier.mimetype || versionCourante.mimetype
     const { taille, visites } = versionCourante
     const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
     const dateFichier = valueItem.dateFichier
 
     const infoVisites = useMemo(()=>{
-        if(!visites) return {plusRecente: null, nombreServeurs: 0}
+        if(!visites) return {plusRecente: null, nombreServeurs: 0, serveurs: []}
 
         const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
 
-        let nombreServeurs = 0
+        let nombreServeurs = 0,
+            serveurs = []
         for (const serveur of Object.keys(visites)) {
             const derniereVisite = visites[serveur]
             if(derniereVisite > expire) {
                 nombreServeurs++
+                serveurs.push(serveur)
             }
         }
 
@@ -488,7 +491,7 @@ function InfoFichier(props) {
             return acc
         }, 0)
 
-        return {plusRecente, nombreServeurs}
+        return {plusRecente, nombreServeurs, serveurs}
     }, [visites])
 
     return (
@@ -522,15 +525,22 @@ function InfoFichier(props) {
                     </Row>
                     <Row>
                         <Col xs={12} md={3}>id systeme</Col>
-                        <Col xs={12} md={9}>{tuuid}</Col>
+                        <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
                     </Row>
                     <Row>
                         <Col xs={12} md={3}>fuuid</Col>
-                        <Col xs={12} md={9}>{fuuid}</Col>
+                        <Col xs={12} md={9} className='fuuid'>{fuuid}</Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={3}>Plus recente verification</Col>
-                        <Col xs={12} md={9}><FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)</Col>
+                        <Col xs={12} md={3}>Presence</Col>
+                        <Col xs={12} md={9}>
+                            <div>
+                                <FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)
+                            </div>
+                            <ul>
+                                {infoVisites.serveurs.map(item=><li>{item}</li>)}
+                            </ul>
+                        </Col>
                     </Row>
                     <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
                 </Col>
