@@ -149,4 +149,24 @@ div.upload {
 
 .tuuid, .fuuid {
     font-size: small;
+    word-wrap: break-word;
+    /*overflow: scroll;*/
+}
+
+.player-contenu {
+    padding-top: 2.5rem;
+}
+
+.player-contenu.player-header {
+    padding-bottom: 1.5rem;
+}
+
+.player-media-container.portrait {
+    text-align: center;
+}
+
+.player-media-image IMG {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }

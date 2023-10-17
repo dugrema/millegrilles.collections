@@ -135,6 +135,7 @@ export function BarreInformationDesktop(props) {
 export function BarreInformationMobile(props) {
 
     const { 
+        hide,
         afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
         signalAnnuler, setShowInfoModal, downloadRepertoire,
@@ -206,7 +207,7 @@ export function BarreInformationMobile(props) {
         return () => setModeSelection(false)  // Re-initialiser a false
     }, [setModeSelection])
 
-    if(afficherMedia) return ''
+    if(afficherMedia || hide) return ''
 
     return (
         <Row className='fichiers-header-buttonbar-mobile'>
@@ -684,7 +685,8 @@ export function AffichagePrincipal(props) {
             return naviguerCollection(value)
         }
         
-        if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
+        if(TOUCH_ENABLED) showPreviewAction(value)  // Utiliser un ecran de navigation pour mobile
+        else if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
         else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
         else if(mimetype.startsWith('image/')) showPreviewAction(value)
         else if(mimetype === 'application/pdf') showPreviewAction(value)

@@ -138,8 +138,8 @@ function NavigationCollections(props) {
     return (
         <>
             <div>
-
                 <BarreInformation 
+                    hide={!!showPreview}
                     naviguerCollection={naviguerCollection}
                     modeView={modeView}
                     setModeView={setModeView} 
@@ -162,6 +162,7 @@ function NavigationCollections(props) {
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
+                        hide={!!showPreview}
                         preparerColonnes={preparerColonnesCb}
                         modeView={modeView}
                         naviguerCollection={naviguerCollection}

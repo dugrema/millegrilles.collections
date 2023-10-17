@@ -517,54 +517,10 @@ function InfoFichier(props) {
                 </Col>
                 <Col xs={12} lg={8} className="text-hardwrap info-labels">
                     <Row>
-                        <Col xs={12} md={3}>Nom</Col>
-                        <Col xs={12} md={9}>{nom}</Col>
+                        <Col xs={5} md={3}>Nom</Col>
+                        <Col xs={7} md={9}>{nom}</Col>
                     </Row>
-                    <Row>
-                        <Col xs={12} md={3}>Type</Col>
-                        <Col xs={12} md={9}>{mimetype}</Col>
-                    </Row>
-                    <Row>
-                        <Col xs={12} md={3}>Taille</Col>
-                        <Col xs={12} md={9}><FormatteurTaille value={taille} /> ({taille} bytes)</Col>
-                    </Row>
-                    <Row>
-                        <Col xs={12} md={3}>Date</Col>
-                        <Col xs={12} md={9}><FormatterDate value={dateFichier} /></Col>
-                    </Row>
-                    <Row>
-                        <Col xs={12} md={3}>Modification</Col>
-                        <Col xs={12} md={9}><FormatterDate value={derniereModification} /></Col>
-                    </Row>
-                    {hachageOriginal?
-                        <Row>
-                            <Col xs={12} md={3}>Hachage</Col>
-                            <Col xs={12} md={9} className='fuuid'>
-                                {hachageOriginal.digest}<br/>
-                                Algorithme : {hachageOriginal.algo}
-                            </Col>
-                        </Row>
-                        :''
-                    }
-                    <Row>
-                        <Col xs={12} md={3}>id systeme</Col>
-                        <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
-                    </Row>
-                    <Row>
-                        <Col xs={12} md={3}>fuuid</Col>
-                        <Col xs={12} md={9} className='fuuid'>{fuuid}</Col>
-                    </Row>
-                    <Row>
-                        <Col xs={12} md={3}>Presence</Col>
-                        <Col xs={12} md={9}>
-                            <div>
-                                <FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)
-                            </div>
-                            <ul>
-                                {infoVisites.serveurs.map(item=><li>{item}</li>)}
-                            </ul>
-                        </Col>
-                    </Row>
+                    <InfoGenerique fichier={fichier} valueItem={valueItem} />
                     <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
                 </Col>
             </Row>
@@ -582,9 +538,112 @@ function InfoFichier(props) {
     )
 }
 
-function InfoMedia(props) {
+export function InfoGenerique(props) {
+
+    console.debug("InfoGenerique proppies", props)
+
+    const valueItem = props.valueItem || {}
+    const fichier = props.value || {}
+
+    const nom = valueItem.nom
+    const { tuuid } = fichier
+    const versionCourante = fichier.version_courante || {}
+    const fuuid = versionCourante.fuuid
+    const mimetype = fichier.mimetype || versionCourante.mimetype
+    const { taille, visites } = versionCourante
+    const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
+    const dateFichier = valueItem.dateFichier
+
+    const hachageOriginal = useMemo(()=>{
+        const hachageOriginal = fichier.hachage_original
+        if(!hachageOriginal) return '' // Hachage non disponible
+
+        // Convertir en hex
+        const {algo, digest} = hachage.decoderHachage(hachageOriginal)
+        console.debug("Valeur hachage : algo %O, digest %O", algo, digest)
+        const digestHex = Buffer.from(digest).toString('hex')
+        return { algo, digest: digestHex }
+    }, [fichier])
+
+    const infoVisites = useMemo(()=>{
+        if(!visites) return {plusRecente: null, nombreServeurs: 0, serveurs: []}
+
+        const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
+
+        let nombreServeurs = 0,
+            serveurs = []
+        for (const serveur of Object.keys(visites)) {
+            const derniereVisite = visites[serveur]
+            if(derniereVisite > expire) {
+                nombreServeurs++
+                serveurs.push(serveur)
+            }
+        }
+
+        const plusRecente = Object.values(visites).reduce((acc, item)=>{
+            if(!acc || acc < item) return item
+            return acc
+        }, 0)
+
+        return {plusRecente, nombreServeurs, serveurs}
+    }, [visites])    
+
+    console.debug("InfoGenerique versionCourante ", versionCourante)
+
+    return (
+        <div>
+            <Row>
+                <Col xs={5} md={3}>Type</Col>
+                <Col xs={7} md={9}>{mimetype}</Col>
+            </Row>
+            <Row>
+                <Col xs={5} md={3}>Taille</Col>
+                <Col xs={7} md={9}><FormatteurTaille value={taille} /> ({taille} bytes)</Col>
+            </Row>
+            <Row>
+                <Col xs={5} md={3}>Date</Col>
+                <Col xs={7} md={9}><FormatterDate value={dateFichier} /></Col>
+            </Row>
+            <Row>
+                <Col xs={5} md={3}>Modification</Col>
+                <Col xs={7} md={9}><FormatterDate value={derniereModification} /></Col>
+            </Row>
+            {hachageOriginal?
+                <Row>
+                    <Col xs={12} md={3}>Hachage</Col>
+                    <Col xs={12} md={9} className='fuuid'>
+                        {hachageOriginal.digest}<br/>
+                        Algorithme : {hachageOriginal.algo}
+                    </Col>
+                </Row>
+                :''
+            }
+            <Row>
+                <Col xs={12} md={3}>id systeme</Col>
+                <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
+            </Row>
+            <Row>
+                <Col xs={12} md={3}>fuuid</Col>
+                <Col xs={12} md={9} className='fuuid'>{fuuid}</Col>
+            </Row>
+            <Row>
+                <Col xs={12} md={3}>Presence</Col>
+                <Col xs={12} md={9}>
+                    <div>
+                        <FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)
+                    </div>
+                    <ul>
+                        {infoVisites.serveurs.map(item=><li>{item}</li>)}
+                    </ul>
+                </Col>
+            </Row>            
+        </div>
+    )
+}
+
+export function InfoMedia(props) {
     const fichier = props.fichier || {}
-    const versionCourante = fichier.version_courante
+    const versionCourante = fichier.version_courante || {}
 
     const fuuid = versionCourante.fuuid
     const connexion = props.workers.connexion
@@ -596,8 +655,9 @@ function InfoMedia(props) {
     }, [connexion, fuuid])
 
     // console.debug("Info videos fichier %O : %O", fichier)
+    if(!fichier.mimetype) return ''
     const estMedia = estMimetypeMedia(fichier.mimetype)
-    if(!versionCourante || !estMedia) return ''
+    if(!estMedia) return ''
 
     const infoRows = []
     if(versionCourante.height && versionCourante.width) {
@@ -621,8 +681,8 @@ function InfoMedia(props) {
         <>
             {infoRows.map(item=>(
                 <Row key={item.label}>
-                    <Col xs={12} md={3}>{item.label}</Col>
-                    <Col xs={12} md={9}>{item.value}</Col>
+                    <Col xs={5} md={3}>{item.label}</Col>
+                    <Col xs={7} md={9}>{item.value}</Col>
                 </Row>
             ))}
             {!imagesGenerees?

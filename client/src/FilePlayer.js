@@ -1,10 +1,25 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState, useCallback } from 'react'
+
+import Alert from 'react-bootstrap/Alert'
+import Breadcrumb from 'react-bootstrap/Breadcrumb'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
+import Button from 'react-bootstrap/Button'
+import ButtonGroup from 'react-bootstrap/ButtonGroup'
+import ProgressBar from 'react-bootstrap/ProgressBar'
+import Fade from 'react-bootstrap/Fade'
+import Ratio from 'react-bootstrap/Ratio'
+
+import { useMediaQuery } from '@react-hooks-hub/use-media-query'
 
 import { ModalViewer, useDetecterSupport } from '@dugrema/millegrilles.reactjs'
 import {trouverLabelImage} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reactjs/src/imageLoading'
 
 import { mapDocumentComplet } from './mapperFichier'
+import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
+import { InfoGenerique, InfoMedia } from './ModalOperations'
+import useWorkers, { useEtatAuthentifie, useEtatConnexion, useUsager } from './WorkerContext'
 
 function PreviewFichiers(props) {
     // console.debug("PreviewFichiers proppies : %O", props)
@@ -34,6 +49,18 @@ function PreviewFichiers(props) {
     // }, [workers, tuuidSelectionne, fichiers, showPreview, support, setListe] )
 
     // console.debug("PreviewFichiers liste : %O", liste)
+
+    if(support.touch) {
+        // Mode mobile
+        if(!showPreview) return ''
+        return (
+            <AfficherMobile 
+                fermer={ () => setShowPreview(false) } 
+                fichiers={liste} 
+                tuuidSelectionne={ tuuidSelectionne }
+                />
+        )
+    }
 
     return (
         <ModalViewer 
@@ -114,4 +141,159 @@ function filtrerTypesPreview(item) {
         if(mimetypeBase === 'image') return true
     }
     return false
+}
+
+function AfficherMobile(props) {
+    const { fermer, fichiers, tuuidSelectionne } = props
+
+    const fichier = useMemo(()=>{
+        const vals = fichiers.filter(item=>item.tuuid === tuuidSelectionne)
+        let fichier = {}
+        if(vals.length === 1) fichier = vals[0]
+        console.debug("AfficherMobile Fichier ", fichier)
+        return fichier
+    }, [fichiers, tuuidSelectionne])
+
+    useEffect(()=>{
+        console.debug("AfficherMobile proppies ", props)
+    }, [props])
+
+    return (
+        <div>
+            <Row className="player-contenu mobile player-header">
+                <Col xs={2}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
+                <Col>{fichier.nom}</Col>
+            </Row>
+            <PreviewMediaMobile fichier={fichier} />
+        </div>
+    )
+}
+
+function PreviewMediaMobile(props) {
+
+    const { fichier } = props
+
+    const [ estImage, estVideo, estDocument ] = useMemo(()=>{
+        const mimetype = fichier.mimetype
+        let image = false, estDocument = false
+        const video = estMimetypeVideo(mimetype)
+        if(mimetype.startsWith('image/')) image = true
+        if(mimetype.startsWith('application/pdf')) estDocument = true
+        return [image, video, estDocument]
+    }, [fichier])
+
+    if(!fichier) return ''
+    if(estVideo) return PreviewVideoMobile(props)
+    if(estImage) return PreviewImageMobile(props)
+    if(estDocument) return PreviewDocumentMobile(props)
+
+    return ''
+}
+
+function PreviewVideoMobile(props) {
+    return <p>Preview video</p>
+}
+
+function PreviewImageMobile(props) {
+
+    const { fichier } = props
+
+    const { device, orientation } = useMediaQuery()
+
+    const [srcImage, setSrcImage] = useState('')
+    const [complet, setComplet] = useState(false)
+    const [srcLocal, setSrcLocal] = useState('')
+
+    const cols = useMemo(()=>{
+        if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
+        else return [{xs: 12}, {}]
+    }, [orientation])
+
+    const [anime, imageLoader] = useMemo(()=>{
+        if(!fichier) return [false, null]
+        return [fichier.anime, fichier.imageLoader]
+    }, [fichier])
+
+    const setErrCb = useCallback(e => {
+        console.error("Erreur chargement image : %O", e)
+    }, [])
+
+    // Load / unload
+    useEffect(()=>{
+        if(!imageLoader) return
+
+        imageLoader.load({setFirst: setSrcImage, erreurCb: setErrCb})
+            .then(src=>{
+                setSrcLocal(src)
+                if(!anime) {
+                    setSrcImage(src)
+                }
+            })
+            .catch(err=>{
+                console.error("Erreur load image : %O", err)
+                setErrCb(err)
+            })
+            .finally(()=>setComplet(true))
+
+        return () => {
+            imageLoader.unload()
+                .then(()=>{
+                    setSrcImage('')
+                    setComplet(false)
+                })
+                .catch(err=>console.warn("Erreur unload image : %O", err))
+        }
+    }, [anime, imageLoader, setSrcImage, setErrCb, setComplet])
+
+    return (
+        <Row>
+            <Col {...cols[0]} className={'player-media-container ' + orientation}>
+                <Ratio aspectRatio='4x3'>
+                    <div className={"player-media-image mobile " + orientation}>
+                        {srcImage?
+                            <img src={srcImage} />
+                            :''
+                        }
+                    </div>
+                </Ratio>
+            </Col>
+            <Col {...cols[1]}>
+                <OperationsImage {...props} />
+            </Col>
+        </Row>
+    )
+}
+
+function PreviewDocumentMobile(props) {
+    // Preview d'un document qui peut etre ouvert par le navigateur (e.g. PDF)
+    return <p>Preview document</p>
+}
+
+function PreviewFichierGeneriqueMobile(props) {
+
+}
+
+function OperationsImage(props) {
+
+    const { fichier, erreurCb } = props
+
+    const workers = useWorkers(),
+          etatConnexion = useEtatConnexion(),
+          etatAuthentifie = useEtatAuthentifie(),
+          usager = useUsager(),
+          support = useDetecterSupport()
+
+    // const fichierMappe = useMemo(()=>{
+    //     return mapDocumentComplet(workers, fichier)
+    // }, [workers, fichier])
+
+
+    if(!fichier) return ''
+
+    return (
+        <div>
+            <InfoGenerique value={fichier} valueItem={fichier} />
+            <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
+        </div>
+    )
 }
