@@ -45,9 +45,9 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     /* text-align: right; */
 
     /* sticky */
-    position: fixed;
+    position: sticky;
     top: 3.7rem;
-    width: 100%;
+    width: 105%;  /* Les lignes fichiers table utilisent un gutter */
 }
 
 .fichiers-header-buttonbar button {
@@ -55,7 +55,7 @@ $xsmall-width: map.get($grid-breakpoints, xs);
 }
 
 .fichiers-contenu {
-    padding-top: 7.2rem;
+    padding-top: 1rem;
 }
 
 .fichiers-header-buttonbar-mobile {
@@ -65,9 +65,9 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     text-align: left;
 
     /* sticky */
-    position: fixed;
+    position: sticky;
     top: 3.7rem;
-    width: 100%;
+    width: 107%; /* Les lignes fichiers table utilisent un gutter */
 }
 
 .fichiers-header-buttonbar-mobile div div {
@@ -86,8 +86,17 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     width: 1.9rem;
 }
 
+.fichiers-header-buttonbar-mobile button.fixed-lg {
+    width: 3rem;
+    margin-right: 0.75rem;
+}
+
+.fichiers-header-inforep {
+    font-size: small;
+}
+
 .fichiers-contenu-mobile {
-    padding-top: 7rem;
+    padding-top: 1rem;
 }
 
 div.upload {

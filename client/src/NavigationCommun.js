@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import Alert from 'react-bootstrap/Alert'
@@ -70,7 +70,7 @@ export function BarreInformationDesktop(props) {
     if(liste) {
         if(nombreFichiers || nombreRepertoires) {
             nombreFichiersRendered = (
-                <Row>
+                <Row className='fichiers-header-inforep'>
                     <Col xs={2} md={1}>
                         {dechiffrageInitialComplete?
                             '':
@@ -78,18 +78,22 @@ export function BarreInformationDesktop(props) {
                         }
                     </Col>
                     <Col>
-                        {nombreRepertoires?
-                            <Row><Col xs={12}>{nombreRepertoires} repertoires</Col></Row>
-                            :''
-                        }
-                        {nombreFichiers?
-                            <Row><Col xs={12}>{nombreFichiers} fichiers</Col></Row>
-                            :''
-                        }
-                        {bytesTotalDossier?
-                            <Row><Col xs={12}><FormatteurTaille value={bytesTotalDossier} /></Col></Row>
-                            :''
-                        }
+                        <Row>
+                            {nombreRepertoires?
+                                <Col xs={12}>{nombreRepertoires} repertoires</Col>
+                                :''
+                            }
+                        </Row>
+                        <Row>
+                            {nombreFichiers?
+                                <Col xs={6}>{nombreFichiers} fichiers</Col>
+                                :''
+                            }
+                            {bytesTotalDossier?
+                                <Col xs={6}><FormatteurTaille value={bytesTotalDossier} /></Col>
+                                :''
+                            }
+                        </Row>
                     </Col>
                 </Row>
             )
@@ -134,6 +138,7 @@ export function BarreInformationMobile(props) {
         afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
         signalAnnuler, setShowInfoModal, downloadRepertoire,
+        modeSelection, setModeSelection,
     } = props
 
     const dispatch = useDispatch()
@@ -189,6 +194,17 @@ export function BarreInformationMobile(props) {
         }
     }, [dispatch, breadcrumb])
 
+    const onChangeModeSelection = useCallback( e => {
+        const checked = e.currentTarget.checked || false
+        setModeSelection(checked)
+    }, [setModeSelection])
+
+    useEffect(()=>{
+        return () => setModeSelection(false)  // Re-initialiser a false
+    }, [setModeSelection])
+
+    if(afficherMedia) return ''
+
     return (
         <Row className='fichiers-header-buttonbar-mobile'>
             <Row>
@@ -199,34 +215,80 @@ export function BarreInformationMobile(props) {
                 </Col>
                 <Col xs={5}>
                     <span>
-                        <FormCheck type="switch" label="Select" />
+                        <FormCheck 
+                            id="switch-mode-selection" 
+                            type="switch" 
+                            label="Editer" 
+                            checked={modeSelection} 
+                            onChange={onChangeModeSelection} />
                     </span>
                 </Col>
             </Row>
             <Row>
                 <Col xs={12}>
-                    {afficherMedia?'':
-                        <div>
-                            <Button variant="secondary" className="fixed" disabled={!cuuidCourant} onClick={naviguerCollectionUpHandler}>
-                                <i className="fa fa-arrow-up"/>
-                            </Button>
-                            {' '}
-                            <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal} className="fixed">
-                                <i className="fa fa-info"/>
-                            </Button>
-                            {' '}
-                            <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                            <BoutonsAction 
-                                cuuid={cuuidCourant}
-                                setShowCreerRepertoire={setShowCreerRepertoire}
-                                setPreparationUploadEnCours={setPreparationUploadEnCours}
-                                signalAnnuler={signalAnnuler}
-                            />
-                        </div>
-                    }
+                    <BoutonsNavigation 
+                        modeView={modeView}
+                        modeSelection={modeSelection}
+                        setModeView={setModeView}
+                        cuuid={cuuidCourant} 
+                        naviguerCollectionUpHandler={naviguerCollectionUpHandler} 
+                        showInformationRepertoireHandler={showInformationRepertoireHandler}
+                        setShowInfoModal={setShowInfoModal} 
+                        setShowCreerRepertoire={setShowCreerRepertoire} 
+                        setPreparationUploadEnCours={setPreparationUploadEnCours}
+                        signalAnnuler={signalAnnuler} />
                 </Col>
             </Row>
         </Row>
+    )
+}
+
+function BoutonsNavigation(props) {
+
+    const {
+        modeView, setModeView, modeSelection,
+        cuuid, naviguerCollectionUpHandler, showInformationRepertoireHandler, setShowInfoModal,
+        setShowCreerRepertoire, setPreparationUploadEnCours,
+        signalAnnuler,
+    } = props
+
+    if(modeSelection === true) {
+        return (
+            <div>
+                <Button variant="secondary" className="fixed-lg">
+                    <i className="fa fa-copy"/>
+                </Button>
+                {' '}
+                <Button variant="secondary" className="fixed-lg">
+                    <i className="fa fa-cut"/>
+                </Button>
+                {' '}
+                <Button variant="secondary" className="fixed-lg">
+                    <i className="fa fa-trash-o"/>
+                </Button>
+            </div>
+        )
+    }
+
+
+    return (
+        <div>
+            <Button variant="secondary" className="fixed" disabled={!cuuid} onClick={naviguerCollectionUpHandler}>
+                <i className="fa fa-arrow-up"/>
+            </Button>
+            {' '}
+            <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal} className="fixed">
+                <i className="fa fa-info"/>
+            </Button>
+            {' '}
+            <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+            <BoutonsAction 
+                cuuid={cuuid}
+                setShowCreerRepertoire={setShowCreerRepertoire}
+                setPreparationUploadEnCours={setPreparationUploadEnCours}
+                signalAnnuler={signalAnnuler}
+            />
+        </div>
     )
 }
 
@@ -543,6 +605,7 @@ export function AffichagePrincipal(props) {
         setContextuel, 
         showInfoModalOuvrir,
         scrollValue, onScroll,
+        modeSelection,
         erreurCb,
     } = props
 
@@ -649,6 +712,7 @@ export function AffichagePrincipal(props) {
             <ListeFichiers 
                 capabilities={capabilities}
                 modeView={modeView}
+                modeSelection={modeSelection}
                 colonnes={colonnesEffectives}
                 rows={listeAffichee} 
                 isListeComplete={listeComplete}

@@ -35,6 +35,7 @@ function NavigationCollections(props) {
 
     const [modeView, setModeView] = useState('')
     const [scrollValue, setScrollValue] = useState(0)
+    const [modeSelection, setModeSelection] = useState(false)
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
@@ -127,6 +128,10 @@ function NavigationCollections(props) {
         naviguerCollection('')
     }, [dispatch, naviguerCollection, etatPret, userId])
 
+    useEffect(()=>{
+        if(!modeSelection) dispatch(fichiersActions.selectionTuuids(''))  // Vider selection
+    }, [dispatch, modeSelection])
+
     return (
         <>
             <div>
@@ -142,6 +147,8 @@ function NavigationCollections(props) {
                     signalAnnuler={signalAnnuler.signal} 
                     setShowInfoModal={setShowInfoModal}
                     downloadRepertoire={downloadRepertoireCb}
+                    modeSelection={modeSelection}
+                    setModeSelection={setModeSelection}
                     />
 
                 <Suspense fallback={<p>Loading ...</p>}>
@@ -159,6 +166,7 @@ function NavigationCollections(props) {
                         showInfoModalOuvrir={showInfoModalOuvrir}
                         scrollValue={scrollValue}
                         onScroll={onScrollHandler}
+                        modeSelection={modeSelection}
                         erreurCb={erreurCb}
                     />
                 </Suspense>
