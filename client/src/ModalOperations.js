@@ -520,7 +520,7 @@ function InfoFichier(props) {
                         <Col xs={5} md={3}>Nom</Col>
                         <Col xs={7} md={9}>{nom}</Col>
                     </Row>
-                    <InfoGenerique fichier={fichier} valueItem={valueItem} />
+                    <InfoGenerique value={fichier} valueItem={valueItem} detail={true} />
                     <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
                 </Col>
             </Row>
@@ -541,6 +541,8 @@ function InfoFichier(props) {
 export function InfoGenerique(props) {
 
     console.debug("InfoGenerique proppies", props)
+
+    const { detail } = props
 
     const valueItem = props.valueItem || {}
     const fichier = props.value || {}
@@ -608,35 +610,39 @@ export function InfoGenerique(props) {
                 <Col xs={5} md={3}>Modification</Col>
                 <Col xs={7} md={9}><FormatterDate value={derniereModification} /></Col>
             </Row>
-            {hachageOriginal?
+            {detail?(
+                <>
+                {hachageOriginal?
+                    <Row>
+                        <Col xs={12} md={3}>Hachage</Col>
+                        <Col xs={12} md={9} className='fuuid'>
+                            {hachageOriginal.digest}<br/>
+                            Algorithme : {hachageOriginal.algo}
+                        </Col>
+                    </Row>
+                    :''
+                }
                 <Row>
-                    <Col xs={12} md={3}>Hachage</Col>
-                    <Col xs={12} md={9} className='fuuid'>
-                        {hachageOriginal.digest}<br/>
-                        Algorithme : {hachageOriginal.algo}
-                    </Col>
+                    <Col xs={12} md={3}>id systeme</Col>
+                    <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
                 </Row>
-                :''
+                <Row>
+                    <Col xs={12} md={3}>fuuid</Col>
+                    <Col xs={12} md={9} className='fuuid'>{fuuid}</Col>
+                </Row>
+                <Row>
+                    <Col xs={12} md={3}>Presence</Col>
+                    <Col xs={12} md={9}>
+                        <div>
+                            <FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)
+                        </div>
+                        <ul>
+                            {infoVisites.serveurs.map(item=><li>{item}</li>)}
+                        </ul>
+                    </Col>
+                </Row>            
+                </>):''
             }
-            <Row>
-                <Col xs={12} md={3}>id systeme</Col>
-                <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
-            </Row>
-            <Row>
-                <Col xs={12} md={3}>fuuid</Col>
-                <Col xs={12} md={9} className='fuuid'>{fuuid}</Col>
-            </Row>
-            <Row>
-                <Col xs={12} md={3}>Presence</Col>
-                <Col xs={12} md={9}>
-                    <div>
-                        <FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)
-                    </div>
-                    <ul>
-                        {infoVisites.serveurs.map(item=><li>{item}</li>)}
-                    </ul>
-                </Col>
-            </Row>            
         </div>
     )
 }

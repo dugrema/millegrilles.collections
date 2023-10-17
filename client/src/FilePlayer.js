@@ -292,8 +292,8 @@ function OperationsImage(props) {
 
     return (
         <div>
-            <InfoGenerique value={fichier} valueItem={fichier} />
             <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
+            <InfoGenerique value={fichier} valueItem={fichier} detail={false} />
         </div>
     )
 }
