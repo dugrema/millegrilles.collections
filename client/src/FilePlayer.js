@@ -150,13 +150,8 @@ function AfficherMobile(props) {
         const vals = fichiers.filter(item=>item.tuuid === tuuidSelectionne)
         let fichier = {}
         if(vals.length === 1) fichier = vals[0]
-        console.debug("AfficherMobile Fichier ", fichier)
         return fichier
     }, [fichiers, tuuidSelectionne])
-
-    useEffect(()=>{
-        console.debug("AfficherMobile proppies ", props)
-    }, [props])
 
     return (
         <div>

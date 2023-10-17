@@ -540,8 +540,6 @@ function InfoFichier(props) {
 
 export function InfoGenerique(props) {
 
-    console.debug("InfoGenerique proppies", props)
-
     const { detail } = props
 
     const valueItem = props.valueItem || {}
@@ -562,7 +560,6 @@ export function InfoGenerique(props) {
 
         // Convertir en hex
         const {algo, digest} = hachage.decoderHachage(hachageOriginal)
-        console.debug("Valeur hachage : algo %O, digest %O", algo, digest)
         const digestHex = Buffer.from(digest).toString('hex')
         return { algo, digest: digestHex }
     }, [fichier])
@@ -589,8 +586,6 @@ export function InfoGenerique(props) {
 
         return {plusRecente, nombreServeurs, serveurs}
     }, [visites])    
-
-    console.debug("InfoGenerique versionCourante ", versionCourante)
 
     return (
         <div>
