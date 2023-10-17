@@ -138,6 +138,9 @@ export function BarreInformationMobile(props) {
         afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
         signalAnnuler, setShowInfoModal, downloadRepertoire,
+        showSupprimerModal, setShowSupprimerModal,
+        showCopierModal, setShowCopierModal,
+        showDeplacerModal, setShowDeplacerModal,
         modeSelection, setModeSelection,
     } = props
 
@@ -234,6 +237,12 @@ export function BarreInformationMobile(props) {
                         naviguerCollectionUpHandler={naviguerCollectionUpHandler} 
                         showInformationRepertoireHandler={showInformationRepertoireHandler}
                         setShowInfoModal={setShowInfoModal} 
+                        showSupprimerModal={showSupprimerModal}
+                        setShowSupprimerModal={setShowSupprimerModal}
+                        showCopierModal={showCopierModal}
+                        setShowCopierModal={setShowCopierModal}
+                        showDeplacerModal={showDeplacerModal}
+                        setShowDeplacerModal={setShowDeplacerModal}
                         setShowCreerRepertoire={setShowCreerRepertoire} 
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
                         signalAnnuler={signalAnnuler} />
@@ -247,23 +256,37 @@ function BoutonsNavigation(props) {
 
     const {
         modeView, setModeView, modeSelection,
-        cuuid, naviguerCollectionUpHandler, showInformationRepertoireHandler, setShowInfoModal,
-        setShowCreerRepertoire, setPreparationUploadEnCours,
+        cuuid, naviguerCollectionUpHandler, showInformationRepertoireHandler,
+        setShowCreerRepertoire, setPreparationUploadEnCours, 
+        setShowInfoModal,
+        showSupprimerModal, setShowSupprimerModal,
+        showCopierModal, setShowCopierModal,
+        showDeplacerModal, setShowDeplacerModal,
         signalAnnuler,
     } = props
+
+    const showCopierHandler = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
+    const showDeplacerHandler = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
+    const showSupprimerHandler = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
+
+    const selection = useSelector(state => state.fichiers.selection)
+
+    const selectionPresente = useMemo(()=>{
+        return selection && selection.length > 0
+    }, [selection])
 
     if(modeSelection === true) {
         return (
             <div>
-                <Button variant="secondary" className="fixed-lg">
+                <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showCopierHandler}>
                     <i className="fa fa-copy"/>
                 </Button>
                 {' '}
-                <Button variant="secondary" className="fixed-lg">
+                <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showDeplacerHandler}>
                     <i className="fa fa-cut"/>
                 </Button>
                 {' '}
-                <Button variant="secondary" className="fixed-lg">
+                <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showSupprimerHandler}>
                     <i className="fa fa-trash-o"/>
                 </Button>
             </div>

@@ -45,6 +45,9 @@ function NavigationCollections(props) {
     const [ afficherAudio, setAfficherAudio ] = useState('')
     const [ preparationUploadEnCours, setPreparationUploadEnCours ] = useState(false)
     const [ showInfoModal, setShowInfoModal ] = useState(false)
+    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
+    const [ showCopierModal, setShowCopierModal ] = useState(false)
+    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
 
     // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
@@ -146,6 +149,12 @@ function NavigationCollections(props) {
                     afficherAudio={afficherAudio}
                     signalAnnuler={signalAnnuler.signal} 
                     setShowInfoModal={setShowInfoModal}
+                    showSupprimerModal={showSupprimerModal}
+                    setShowSupprimerModal={setShowSupprimerModal}
+                    showCopierModal={showCopierModal}
+                    setShowCopierModal={setShowCopierModal}
+                    showDeplacerModal={showDeplacerModal}
+                    setShowDeplacerModal={setShowDeplacerModal}
                     downloadRepertoire={downloadRepertoireCb}
                     modeSelection={modeSelection}
                     setModeSelection={setModeSelection}
@@ -186,6 +195,12 @@ function NavigationCollections(props) {
                 setContextuel={setContextuel} 
                 showInfoModal={showInfoModal}
                 setShowInfoModal={setShowInfoModal}
+                showSupprimerModal={showSupprimerModal}
+                showCopierModal={showCopierModal}
+                setShowCopierModal={setShowCopierModal}
+                showDeplacerModal={showDeplacerModal}
+                setShowDeplacerModal={setShowDeplacerModal}
+                setShowSupprimerModal={setShowSupprimerModal}
                 annulerPreparationCb={annulerPreparationUpload}
                 erreurCb={erreurCb} />
         </>
@@ -261,6 +276,9 @@ function Modals(props) {
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, preparationUploadEnCours,
         showInfoModal, setShowInfoModal, annulerPreparationCb,
+        showSupprimerModal, setShowSupprimerModal,
+        showCopierModal, setShowCopierModal,
+        showDeplacerModal, setShowDeplacerModal,
         erreurCb,
     } = props
     
@@ -271,9 +289,9 @@ function Modals(props) {
     const selection = useSelector(state => state.fichiers.selection )
 
     const [ showArchiverModal, setShowArchiverModal ] = useState(false)
-    const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
-    const [ showCopierModal, setShowCopierModal ] = useState(false)
-    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    // const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
+    // const [ showCopierModal, setShowCopierModal ] = useState(false)
+    // const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     // const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ showPartagerModal, setShowPartagerModal ] = useState(false)
