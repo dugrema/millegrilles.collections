@@ -2,6 +2,7 @@ import { useMemo, useEffect, useState, useCallback } from 'react'
 
 import Alert from 'react-bootstrap/Alert'
 import Breadcrumb from 'react-bootstrap/Breadcrumb'
+import Form from 'react-bootstrap/Form'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -272,11 +273,10 @@ function OperationsImage(props) {
 
     const { fichier, erreurCb } = props
 
-    const workers = useWorkers(),
-          etatConnexion = useEtatConnexion(),
-          etatAuthentifie = useEtatAuthentifie(),
-          usager = useUsager(),
-          support = useDetecterSupport()
+    const workers = useWorkers()
+
+    const [detail, setDetail] = useState(false)
+    const toggleDetailHandler = useCallback(e=>setDetail(e.currentTarget.checked), [setDetail])
 
     // const fichierMappe = useMemo(()=>{
     //     return mapDocumentComplet(workers, fichier)
@@ -288,7 +288,8 @@ function OperationsImage(props) {
     return (
         <div>
             <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
-            <InfoGenerique value={fichier} valueItem={fichier} detail={false} />
+            <InfoGenerique value={fichier} valueItem={fichier} detail={detail} />
+            <Form.Check id="toggle-switch-detail" type="switch" checked={detail} onChange={toggleDetailHandler} label='Afficher detail' />
         </div>
     )
 }
