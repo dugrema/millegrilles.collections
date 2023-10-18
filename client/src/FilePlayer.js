@@ -145,6 +145,12 @@ function AfficherMobile(props) {
     )
 }
 
+function verifierEstDocument(mimetype) {
+    if(mimetype === 'application/pdf') return true
+    if(mimetype.startsWith('text/')) return true
+    return false
+}
+
 function PreviewMediaMobile(props) {
 
     const { fichier } = props
@@ -155,7 +161,7 @@ function PreviewMediaMobile(props) {
         const video = estMimetypeVideo(mimetype)
         if(mimetype.startsWith('image/')) image = true
         if(mimetype.startsWith('audio/')) audio = true
-        if(mimetype.startsWith('application/pdf')) estDocument = true
+        estDocument = verifierEstDocument(mimetype)
         return [image, video, audio, estDocument]
     }, [fichier])
 
