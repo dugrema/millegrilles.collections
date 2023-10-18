@@ -18,6 +18,7 @@ import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
 import { InfoGenerique, InfoMedia } from './ModalOperations'
 import useWorkers from './WorkerContext'
 import { SelecteurResolution, WrapperPlayer } from './AfficherVideo'
+import { AudioPlayer } from './AfficherAudio'
 
 function PreviewFichiers(props) {
     const support = useDetecterSupport()
@@ -400,7 +401,30 @@ function PreviewDocumentMobile(props) {
 }
 
 function PreviewAudioMobile(props) {
-    return PreviewFichierGeneriqueMobile(props)
+    const { fichier, erreurCb } = props
+
+    console.debug("PreviewDocumentMobile proppies ", props)
+
+    const { orientation } = useMediaQuery()
+    const cols = useMemo(()=>{
+        if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
+        else return [{xs: 12}, {}]
+    }, [orientation])
+
+    const setErrCb = useCallback(e => {
+        console.error("PreviewDocumentMobile Erreur chargement document : %O", e)
+    }, [])
+
+    return (
+        <Row>
+            <Col {...cols[0]} className={'player-audio-container ' + orientation}>
+                <AudioPlayer fichier={fichier} />
+            </Col>
+            <Col {...cols[1]} className={'player-media-information ' + orientation}>
+                <InformationFichier {...props} />
+            </Col>
+        </Row>
+    )
 }
 
 function PreviewFichierGeneriqueMobile(props) {

@@ -49,7 +49,7 @@ function AfficherAudio(props) {
 
 export default AfficherAudio
 
-function AudioPlayer(props) {
+export function AudioPlayer(props) {
 
     const { fichier } = props
 
@@ -148,7 +148,6 @@ function AudioPlayer(props) {
 
     return (
         <div>
-            <div>Audio player</div>
             <Alert variant="danger" show={!!errChargement}>
                 <Alert.Heading>Erreur chargement</Alert.Heading>
                 <p>{''+errChargement}</p>
