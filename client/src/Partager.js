@@ -553,9 +553,10 @@ function ListePartagesUsager(props) {
     
     const supprimerPartageCb = useCallback(e=>{
         const tuuid = e.currentTarget.value
+        console.debug("ListePartagesUsager Supprimer partage %s avec usager %s", tuuid, contactId)
         workers.connexion.supprimerPartageUsager(contactId, tuuid)
             .catch(err=>console.error("Erreur suppression partage ", err))
-    }, [workers])
+    }, [workers, contactId])
 
     // Charger les informations de dossiers partages avec le contact
     useEffect(()=>{

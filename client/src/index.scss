@@ -54,9 +54,11 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     margin-left: 0.25rem;
 }
 
-.fichiers-contenu {
-    padding-top: 1rem;
+.top-contenu {
+    padding-top: 2rem;
 }
+
+// .fichiers-contenu { padding-top: 1rem; }
 
 .fichiers-header-buttonbar-mobile {
     background: $first-color;
@@ -95,9 +97,7 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     font-size: small;
 }
 
-.fichiers-contenu-mobile {
-    padding-top: 1rem;
-}
+// .fichiers-contenu-mobile { padding-top: 1rem; }
 
 div.upload {
     display: inline-block;

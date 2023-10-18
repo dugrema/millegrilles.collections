@@ -157,7 +157,7 @@ function LayoutMain() {
   return (
     <LayoutMillegrilles menu={menu} fluid='md'>
 
-      <div>
+      <div className='top-contenu'>
         <Suspense fallback={<Attente />}>
           <Contenu 
               page={page}
