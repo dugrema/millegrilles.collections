@@ -165,7 +165,7 @@ div.upload {
     text-align: center;
 }
 
-.player-media-image IMG {
+.player-media-image IMG, .player-media-document IMG {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
@@ -173,4 +173,12 @@ div.upload {
 
 .player-media-image .video-window {
     height: 100%;
+}
+
+.player-media-information.portrait BUTTON.player-media-ouvrir {
+    width: 100%;
+}
+
+.player-media-document.mobile IMG {
+    cursor: pointer;
 }

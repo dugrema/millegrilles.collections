@@ -320,6 +320,18 @@ function PreviewDocumentMobile(props) {
         console.error("PreviewDocumentMobile Erreur chargement document : %O", e)
     }, [])
 
+    const viewSrcClick = useCallback( event => {
+        if(!srcLocal) return setErrCb("Le document source n'est pas pret")
+
+        console.debug("PreviewDocumentMobile %O", srcLocal)
+        const link = document.createElement('a')
+        link.href = srcLocal
+        link.setAttribute('target', '_blank')
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }, [srcLocal, setErrCb])
+
     // Load / unload
     useEffect(()=>{
         if(!loader) return  // Pas pret
@@ -363,15 +375,18 @@ function PreviewDocumentMobile(props) {
         <Row>
             <Col {...cols[0]} className={'player-media-container ' + orientation}>
                 <Ratio aspectRatio='4x3'>
-                    <div className={"player-media-image mobile " + orientation}>
+                    <div className={"player-media-document mobile " + orientation}>
                         {srcImage?
-                            <img src={srcImage} />
+                            <img src={srcImage} onClick={viewSrcClick} />
                             :''
                         }
                     </div>
                 </Ratio>
             </Col>
-            <Col {...cols[1]}>
+            <Col {...cols[1]} className={'player-media-information ' + orientation}>
+                <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
+                    <i className='fa fa-file-pdf-o'/> Ouvrir
+                </Button>
                 <InformationFichier {...props} />
             </Col>
         </Row>
