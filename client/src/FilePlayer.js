@@ -129,7 +129,7 @@ function AfficherMobile(props) {
     const { fermer, fichiers, tuuidSelectionne } = props
 
     const fichier = useMemo(()=>{
-        const vals = fichiers.filter(item=>item.tuuid === tuuidSelectionne)
+        const vals = fichiers.filter(item=>item && item.tuuid === tuuidSelectionne)
         let fichier = {}
         if(vals.length === 1) fichier = vals[0]
         return fichier
@@ -254,6 +254,18 @@ function PreviewImageMobile(props) {
         console.error("Erreur chargement image : %O", e)
     }, [])
 
+    const viewSrcClick = useCallback( event => {
+        if(!srcImage) return setErrCb("Le document source n'est pas pret")
+
+        console.debug("PreviewDocumentMobile %O", srcImage)
+        const link = document.createElement('a')
+        link.href = srcImage
+        link.setAttribute('target', '_blank')
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }, [srcImage, setErrCb])
+
     // Load / unload
     useEffect(()=>{
         if(!imageLoader) return
@@ -272,11 +284,9 @@ function PreviewImageMobile(props) {
             .finally(()=>setComplet(true))
 
         return () => {
+            setSrcImage('')
+            setComplet(false)
             imageLoader.unload()
-                .then(()=>{
-                    setSrcImage('')
-                    setComplet(false)
-                })
                 .catch(err=>console.warn("Erreur unload image : %O", err))
         }
     }, [anime, imageLoader, setSrcImage, setErrCb, setComplet])
@@ -287,13 +297,16 @@ function PreviewImageMobile(props) {
                 <Ratio aspectRatio='4x3'>
                     <div className={"player-media-image mobile " + orientation}>
                         {srcImage?
-                            <img src={srcImage} />
+                            <img src={srcImage} onClick={viewSrcClick} />
                             :''
                         }
                     </div>
                 </Ratio>
             </Col>
-            <Col {...cols[1]}>
+            <Col {...cols[1]} className={'player-media-information ' + orientation}>
+                <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
+                    <i className='fa fa-file-image-o'/> Ouvrir
+                </Button>
                 <InformationFichier {...props} />
             </Col>
         </Row>
@@ -303,8 +316,6 @@ function PreviewImageMobile(props) {
 function PreviewDocumentMobile(props) {
     // Preview d'un document qui peut etre ouvert par le navigateur (e.g. PDF)
     const { fichier, erreurCb } = props
-
-    console.debug("PreviewDocumentMobile proppies ", props)
 
     const { orientation } = useMediaQuery()
 
@@ -345,12 +356,8 @@ function PreviewDocumentMobile(props) {
 
         // Thumbnail / poster video
         if(imageLoader) {
-            console.debug("Load small : ", imageLoader)
             imageLoader.load(null, {setFirst: setSrcImage})
-                .then(src=>{
-                    console.debug("PreviewDocumentMobile imageLoader %O", src)
-                    setSrcImage(src)
-                })
+                .then(setSrcImage)
                 .catch(err=>{
                     console.warn("Erreur chargement thumbnail : %O", err)
                 })
@@ -359,10 +366,7 @@ function PreviewDocumentMobile(props) {
         // Loader fichier source (original)
         console.debug("Load src : ", loader)
         loader.load()
-            .then(src=>{
-                console.debug("PreviewDocumentMobile loader %O", src)
-                setSrcLocal(src)
-            })
+            .then(setSrcLocal)
             .catch(err=>{
                 console.error("Erreur load fichier : %O", err)
                 setErrCb(err)
