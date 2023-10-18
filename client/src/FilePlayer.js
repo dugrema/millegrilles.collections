@@ -1,14 +1,10 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
 
 import Alert from 'react-bootstrap/Alert'
-import Breadcrumb from 'react-bootstrap/Breadcrumb'
 import Form from 'react-bootstrap/Form'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
-import ButtonGroup from 'react-bootstrap/ButtonGroup'
-import ProgressBar from 'react-bootstrap/ProgressBar'
-import Fade from 'react-bootstrap/Fade'
 import Ratio from 'react-bootstrap/Ratio'
 
 import { useMediaQuery } from '@react-hooks-hub/use-media-query'
@@ -20,17 +16,13 @@ import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reac
 import { mapDocumentComplet } from './mapperFichier'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
 import { InfoGenerique, InfoMedia } from './ModalOperations'
-import useWorkers, { useEtatAuthentifie, useEtatConnexion, useUsager } from './WorkerContext'
+import useWorkers from './WorkerContext'
 import { SelecteurResolution, WrapperPlayer } from './AfficherVideo'
 
 function PreviewFichiers(props) {
-    // console.debug("PreviewFichiers proppies : %O", props)
-
     const support = useDetecterSupport()
 
     const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview } = props
-
-    // const [ liste, setListe ] = useState([])
 
     const liste = useMemo(()=>{
         if(!showPreview || !fichiers || !tuuidSelectionne) return []  // Rien a faire
@@ -38,19 +30,6 @@ function PreviewFichiers(props) {
         const listeMappee = fichiers.map(mapper)
         return preparerPreviews(workers, tuuidSelectionne, listeMappee, support)
     },[workers, tuuidSelectionne, fichiers, showPreview, support])
-
-    // useEffect(()=>{
-    //     if(showPreview) {
-    //         const liste = preparerPreviews(workers, tuuidSelectionne, fichiers, support)
-    //         // console.debug("Liste fichiers pour previews : %O", liste)
-    //         setListe(liste)
-    //     } else {
-    //         // Vider la liste
-    //         setListe([])
-    //     }
-    // }, [workers, tuuidSelectionne, fichiers, showPreview, support, setListe] )
-
-    // console.debug("PreviewFichiers liste : %O", liste)
 
     if(support.touch) {
         // Mode mobile
@@ -237,7 +216,7 @@ function PreviewVideoMobile(props) {
                     selecteur={selecteur} 
                     setSelecteur={setSelecteur} 
                     videoLoader={videoLoader} />
-                <OperationsImage {...props} />                    
+                <InformationFichier {...props} />                    
             </Col>
         </Row>
 
@@ -308,7 +287,7 @@ function PreviewImageMobile(props) {
                 </Ratio>
             </Col>
             <Col {...cols[1]}>
-                <OperationsImage {...props} />
+                <InformationFichier {...props} />
             </Col>
         </Row>
     )
@@ -316,7 +295,87 @@ function PreviewImageMobile(props) {
 
 function PreviewDocumentMobile(props) {
     // Preview d'un document qui peut etre ouvert par le navigateur (e.g. PDF)
-    return PreviewFichierGeneriqueMobile(props)
+    const { fichier, erreurCb } = props
+
+    console.debug("PreviewDocumentMobile proppies ", props)
+
+    const { orientation } = useMediaQuery()
+
+    const [srcImage, setSrcImage] = useState('')
+    const [complet, setComplet] = useState(false)
+    const [srcLocal, setSrcLocal] = useState('')
+
+    const cols = useMemo(()=>{
+        if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
+        else return [{xs: 12}, {}]
+    }, [orientation])
+
+    const [loader, imageLoader] = useMemo(()=>{
+        if(!fichier) return [null, null]
+        const { loader, imageLoader } = fichier
+        return [loader, imageLoader]
+    }, [fichier])
+
+    const setErrCb = useCallback(e => {
+        console.error("PreviewDocumentMobile Erreur chargement document : %O", e)
+    }, [])
+
+    // Load / unload
+    useEffect(()=>{
+        if(!loader) return  // Pas pret
+
+        // Thumbnail / poster video
+        if(imageLoader) {
+            console.debug("Load small : ", imageLoader)
+            imageLoader.load(null, {setFirst: setSrcImage})
+                .then(src=>{
+                    console.debug("PreviewDocumentMobile imageLoader %O", src)
+                    setSrcImage(src)
+                })
+                .catch(err=>{
+                    console.warn("Erreur chargement thumbnail : %O", err)
+                })
+        }
+
+        // Loader fichier source (original)
+        console.debug("Load src : ", loader)
+        loader.load()
+            .then(src=>{
+                console.debug("PreviewDocumentMobile loader %O", src)
+                setSrcLocal(src)
+            })
+            .catch(err=>{
+                console.error("Erreur load fichier : %O", err)
+                setErrCb(err)
+            })
+            .finally(()=>setComplet(true))
+
+        return () => {
+            setSrcImage('')
+            setSrcLocal('')
+            setComplet(false)
+            if(imageLoader) imageLoader.unload().catch(err=>console.debug("Erreur unload thumbnail : %O", err))
+            loader.unload().catch(err=>console.warn("Erreur unload fichier : %O", err))
+        }
+    }, [loader, imageLoader, setSrcImage, setErrCb, setComplet])
+
+    return (
+        <Row>
+            <Col {...cols[0]} className={'player-media-container ' + orientation}>
+                <Ratio aspectRatio='4x3'>
+                    <div className={"player-media-image mobile " + orientation}>
+                        {srcImage?
+                            <img src={srcImage} />
+                            :''
+                        }
+                    </div>
+                </Ratio>
+            </Col>
+            <Col {...cols[1]}>
+                <InformationFichier {...props} />
+            </Col>
+        </Row>
+    )    
 }
 
 function PreviewAudioMobile(props) {
@@ -326,12 +385,12 @@ function PreviewAudioMobile(props) {
 function PreviewFichierGeneriqueMobile(props) {
     return (
         <div>
-            <OperationsImage {...props} />
+            <InformationFichier {...props} />
         </div>
     )
 }
 
-function OperationsImage(props) {
+function InformationFichier(props) {
 
     const { fichier, erreurCb } = props
 
@@ -339,11 +398,6 @@ function OperationsImage(props) {
 
     const [detail, setDetail] = useState(false)
     const toggleDetailHandler = useCallback(e=>setDetail(e.currentTarget.checked), [setDetail])
-
-    // const fichierMappe = useMemo(()=>{
-    //     return mapDocumentComplet(workers, fichier)
-    // }, [workers, fichier])
-
 
     if(!fichier) return ''
 
