@@ -11,7 +11,6 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 import Fade from 'react-bootstrap/Fade'
 
 import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
-import { isTouchEnabled } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 import { formatterDateString } from '@dugrema/millegrilles.reactjs/src/formatterUtils'
 
 import AfficherVideo from './AfficherVideo'
@@ -26,12 +25,12 @@ import { FormCheck } from 'react-bootstrap'
 
 const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
-const TOUCH_ENABLED = isTouchEnabled()  // Detecter touch (appareil mobile)
-
-
 export function BarreInformation(props) {
-    if(TOUCH_ENABLED) return BarreInformationMobile(props)
-    return BarreInformationDesktop(props)
+    const capabilities = useCapabilities()
+    if(capabilities.device === 'mobile') {
+        return <BarreInformationMobile {...props}/>
+    }
+    return <BarreInformationDesktop {...props} />
 }
 
 export function BarreInformationDesktop(props) {
@@ -642,10 +641,12 @@ export function AffichagePrincipal(props) {
     const selection = useSelector(state => state.fichiers.selection)
     const colonnes = useMemo(()=>preparerColonnes(), [preparerColonnes])
 
+    const isMobile = useMemo(()=>capabilities.device==='mobile', [capabilities])
+
     const classnameContenu = useMemo(()=>{
-        if(TOUCH_ENABLED) return 'fichiers-contenu-mobile'
+        if(isMobile) return 'fichiers-contenu-mobile'
         return 'fichiers-contenu'
-    }, [])
+    }, [isMobile])
 
     const [listeAffichee, listeComplete] = useMemo(()=>{
         if(!liste) return ''                // Liste vide
@@ -685,7 +686,7 @@ export function AffichagePrincipal(props) {
             return naviguerCollection(value)
         }
         
-        if(TOUCH_ENABLED) showPreviewAction(value)  // Utiliser un ecran de navigation pour mobile
+        if(isMobile) showPreviewAction(value)  // Utiliser un ecran de navigation pour mobile
         else if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
         else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
         else if(mimetype.startsWith('image/')) showPreviewAction(value)
@@ -731,11 +732,14 @@ export function AffichagePrincipal(props) {
         )
     }
 
+    console.debug("isMobile : ", isMobile)
+
     // Default - liste fichiers
     return (
         <div className={classnameContenu}>
             <ListeFichiers 
                 capabilities={capabilities}
+                estMobile={isMobile}
                 modeView={modeView}
                 modeSelection={modeSelection}
                 colonnes={colonnesEffectives}
@@ -751,7 +755,7 @@ export function AffichagePrincipal(props) {
                 onScroll={onScroll}
             />
 
-            {TOUCH_ENABLED?
+            {isMobile?
                 <Row>
                     <Col xs={12} lg={5}>
                         <SectionBreadcrumb naviguerCollection={naviguerCollection} fichier={afficherVideo||afficherAudio} />

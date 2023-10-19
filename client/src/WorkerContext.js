@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
+import { useMediaQuery } from '@react-hooks-hub/use-media-query'
+
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
 import { init as initCollectionsIdb } from './redux/collectionsIdbDao'
 import { 
@@ -48,6 +50,8 @@ export function useCapabilities() {
 
 // Provider
 export function WorkerProvider(props) {
+
+    const { device, orientation } = useMediaQuery()
 
     // const [workers, setWorkers] = useState('')
     const [workersPrets, setWorkersPrets] = useState(false)
@@ -136,11 +140,12 @@ export function WorkerProvider(props) {
         // Charger capabilities
         loadCapabilities()
             .then(capabilities => {
-                console.info("Browser capabilities : %O", capabilities)
-                setCapabilities(capabilities)
+                const caps = {...capabilities, device, orientation}
+                console.info("Browser capabilities : %O", caps)
+                setCapabilities(caps)
             })
             .catch(err=>console.error("Erreur chargement capabilities ", err))
-    }, [setCapabilities])
+    }, [setCapabilities, device, orientation])
   
     if(!workersPrets) return props.attente
 
