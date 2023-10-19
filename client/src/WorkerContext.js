@@ -138,6 +138,7 @@ export function WorkerProvider(props) {
 
     useEffect(()=>{
         // Charger capabilities
+        if(!device) return  // Bug dev, device est mis a undefined apres chargement
         loadCapabilities()
             .then(capabilities => {
                 const caps = {...capabilities, device, orientation}
