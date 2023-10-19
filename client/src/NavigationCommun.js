@@ -732,8 +732,6 @@ export function AffichagePrincipal(props) {
         )
     }
 
-    console.debug("isMobile : ", isMobile)
-
     // Default - liste fichiers
     return (
         <div className={classnameContenu}>

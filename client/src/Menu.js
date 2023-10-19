@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 
@@ -33,7 +33,7 @@ function Menu(props) {
     i18n, etatConnexion, manifest, onSelect, etatTransfert, 
     showTransfertModal, showMediaJobs,
   } = props
- 
+
   const { t } = useTranslation()
   const infoConnexion = useInfoConnexion()
   const usager = useUsager()
@@ -65,21 +65,24 @@ function Menu(props) {
     </Navbar.Brand>
   )
 
+  const transfert = (
+    <Nav.Item>
+      <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
+          <LabelTransfert etatTransfert={etatTransfert} />
+      </Nav.Link>
+  </Nav.Item>
+  )
+
   return (
     <>
       <MenuMillegrilles 
         brand={brand} 
+        transfer={transfert}
         labelMenu="Menu" 
         etatConnexion={etatConnexion} 
         onSelect={handlerSelect}
         expand="lg"
         className="sticky">
-
-        <Nav.Item>
-            <Nav.Link title="Upload/Download" onClick={showTransfertModal}>
-                <LabelTransfert etatTransfert={etatTransfert} />
-            </Nav.Link>
-        </Nav.Item>
 
         <Nav.Link eventKey="recherche">
           <i className="fa fa-search" /> {' '} {t('menu.recherche')}
