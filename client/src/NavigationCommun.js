@@ -27,10 +27,10 @@ const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
 export function BarreInformation(props) {
     const capabilities = useCapabilities()
-    if(capabilities.device === 'mobile') {
-        return <BarreInformationMobile {...props}/>
+    if(capabilities.device === 'desktop') {
+        return <BarreInformationDesktop {...props} />
     }
-    return <BarreInformationDesktop {...props} />
+    return <BarreInformationMobile {...props}/>
 }
 
 export function BarreInformationDesktop(props) {
@@ -641,7 +641,7 @@ export function AffichagePrincipal(props) {
     const selection = useSelector(state => state.fichiers.selection)
     const colonnes = useMemo(()=>preparerColonnes(), [preparerColonnes])
 
-    const isMobile = useMemo(()=>capabilities.device==='mobile', [capabilities])
+    const isMobile = useMemo(()=>capabilities.device!=='desktop', [capabilities])
 
     const classnameContenu = useMemo(()=>{
         if(isMobile) return 'fichiers-contenu-mobile'

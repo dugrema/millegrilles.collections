@@ -9,7 +9,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import { Menu as MenuMillegrilles, DropDownLanguage, ModalInfo } from '@dugrema/millegrilles.reactjs'
 
-import { useInfoConnexion, useUsager } from './WorkerContext'
+import { useCapabilities, useInfoConnexion, useUsager } from './WorkerContext'
 
 const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
 const ETAT_PREPARATION = 1,
@@ -33,6 +33,9 @@ function Menu(props) {
     i18n, etatConnexion, manifest, onSelect, etatTransfert, 
     showTransfertModal, showMediaJobs,
   } = props
+
+  const capabilities = useCapabilities()
+  const estMobile = capabilities.device !== 'desktop'
 
   const { t } = useTranslation()
   const infoConnexion = useInfoConnexion()
@@ -84,24 +87,20 @@ function Menu(props) {
         expand="lg"
         className="sticky">
 
-        <Nav.Link eventKey="recherche">
-          <i className="fa fa-search" /> {' '} {t('menu.recherche')}
+        <Nav.Link eventKey="recherche" title={t('menu.recherche')}>
+          <i className="fa fa-search" /> {estMobile?' ' + t('menu.recherche'):''}
         </Nav.Link>
 
-        {/* <Nav.Link eventKey="recents">
-          <i className="fa fa-clock-o" /> {' '} {t('menu.recents')}
-        </Nav.Link> */}
-
-        <Nav.Link eventKey="corbeille" title="Corbeille">
-          <i className="fa fa-trash-o" /> {' '} {t('menu.corbeille')}
+        <Nav.Link eventKey="corbeille" title={t('menu.corbeille')}>
+          <i className="fa fa-trash-o" /> {estMobile?' ' + t('menu.corbeille'):''}
         </Nav.Link>
 
-        <Nav.Link eventKey="partager" title="Partager">
-          <i className="fa fa-share-alt" /> {' '} {t('menu.partager')}
+        <Nav.Link eventKey="partager" title={t('menu.partager')}>
+          <i className="fa fa-share-alt" /> {estMobile?' ' + t('menu.partager'):''}
         </Nav.Link>
 
-        <Nav.Link eventKey="mediaJobs" title="Media Jobs">
-          <i className="fa fa-film" /> {' '} {t('menu.mediaJobs')}
+        <Nav.Link eventKey="mediaJobs" title={t('menu.mediaJobs')}>
+          <i className="fa fa-film" /> {estMobile?' ' + t('menu.mediaJobs'):''}
         </Nav.Link>
 
         <Nav.Link eventKey="information" title="Afficher l'information systeme">

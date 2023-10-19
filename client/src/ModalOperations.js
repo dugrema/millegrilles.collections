@@ -383,7 +383,6 @@ export function InfoModal(props) {
     }, [workers, show, selection, fichiers])
 
     useEffect(()=>{
-        console.debug("tuuidSelectionne %O", tuuidSelectionne)
         let cuuid = null
         if(tuuidSelectionne === '') {
             // Ok, root des collections

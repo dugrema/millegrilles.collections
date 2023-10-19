@@ -141,7 +141,9 @@ export function WorkerProvider(props) {
         if(!device) return  // Bug dev, device est mis a undefined apres chargement
         loadCapabilities()
             .then(capabilities => {
-                const caps = {...capabilities, device, orientation}
+                let dev = device
+                if(device === 'desktop' && capabilities.touchEnabled) dev = 'tablet'
+                const caps = {...capabilities, device: dev, orientation}
                 console.info("Browser capabilities : %O", caps)
                 setCapabilities(caps)
             })
