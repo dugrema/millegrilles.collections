@@ -38,7 +38,7 @@ export function BarreInformationDesktop(props) {
     const { 
         afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
-        signalAnnuler, setShowInfoModal, downloadRepertoire,
+        signalAnnuler, setShowInfoModal,
     } = props
 
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -110,10 +110,6 @@ export function BarreInformationDesktop(props) {
                 <Col xs={12} md={8} className="buttonbars fichiers-headers-boutons">
                     <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal}>
                         <i className="fa fa-info"/>
-                    </Button>
-                    {' '}
-                    <Button variant="secondary" onClick={downloadRepertoire} disabled={!downloadRepertoire}>
-                        <i className="fa fa-download"/>
                     </Button>
                     <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                     <BoutonsAction 

@@ -155,7 +155,6 @@ function NavigationCollections(props) {
                     setShowCopierModal={setShowCopierModal}
                     showDeplacerModal={showDeplacerModal}
                     setShowDeplacerModal={setShowDeplacerModal}
-                    downloadRepertoire={downloadRepertoireCb}
                     modeSelection={modeSelection}
                     setModeSelection={setModeSelection}
                     />
@@ -203,6 +202,7 @@ function NavigationCollections(props) {
                 setShowDeplacerModal={setShowDeplacerModal}
                 setShowSupprimerModal={setShowSupprimerModal}
                 annulerPreparationCb={annulerPreparationUpload}
+                downloadRepertoire={downloadRepertoireCb}
                 erreurCb={erreurCb} />
         </>
     )
@@ -280,6 +280,7 @@ function Modals(props) {
         showSupprimerModal, setShowSupprimerModal,
         showCopierModal, setShowCopierModal,
         showDeplacerModal, setShowDeplacerModal,
+        downloadRepertoire,
         erreurCb,
     } = props
     
@@ -409,6 +410,7 @@ function Modals(props) {
                 usager={usager}
                 erreurCb={erreurCb}
                 downloadAction={downloadAction}
+                downloadRepertoire={downloadRepertoire}
               />
 
             <RenommerModal

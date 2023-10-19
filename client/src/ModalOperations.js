@@ -13,7 +13,7 @@ import { mapDocumentComplet, estMimetypeMedia } from './mapperFichier'
 import { majFichierMetadata, majCollectionMetadata } from './fonctionsFichiers'
 import { ConversionVideo } from './OperationsVideo'
 
-import useWorkers, { useEtatAuthentifie, useEtatConnexion, useEtatPret, useUsager } from './WorkerContext'
+import useWorkers, { useCapabilities, useEtatAuthentifie, useEtatConnexion, useEtatPret, useUsager } from './WorkerContext'
 
 import actionsNavigationSecondaire, {thunks as thunksNavigationSecondaire} from './redux/navigationSecondaireSlice'
 import { chargerInfoContacts } from './redux/partagerSlice'
@@ -335,7 +335,7 @@ export function ModalNavigationCollections(props) {
 export function InfoModal(props) {
     const { 
         show, fermer, cuuid, fichiers, selection, support, downloadAction, 
-        usager, erreurCb
+        usager, downloadRepertoire, erreurCb
     } = props
 
     const workers = useWorkers(),
@@ -376,7 +376,7 @@ export function InfoModal(props) {
         } else if(tuuidSelectionne === '') {
             header = 'Collections'
         } else {
-            header = 'N/D'
+            header = 'Repertoire'
         }
 
         return {docSelectionne, header, tuuidSelectionne}
@@ -411,7 +411,7 @@ export function InfoModal(props) {
             .catch(err=>console.error("Erreur chargement statistiques : ", err))
 
         return () => { setInfoStatistiques('') }
-    }, [workers, tuuidSelectionne, docSelectionne, setInfoStatistiques])
+    }, [workers, tuuidSelectionne, setInfoStatistiques])
 
     let Body = InfoVide
     if(tuuidSelectionne === '') {
@@ -433,6 +433,7 @@ export function InfoModal(props) {
                     workers={workers}
                     support={support}
                     cuuid={cuuid}
+                    tuuid={tuuidSelectionne}
                     valueItem={docSelectionne}
                     value={docSelectionne}
                     downloadAction={downloadAction}
@@ -440,6 +441,8 @@ export function InfoModal(props) {
                     etatAuthentifie={etatAuthentifie}
                     usager={usager}
                     infoStatistiques={infoStatistiques}
+                    downloadRepertoire={downloadRepertoire}
+                    fermer={fermer}
                     erreurCb={erreurCb}
                 />
             </Modal.Body>
@@ -698,44 +701,125 @@ export function InfoMedia(props) {
 }
 
 function InfoCollection(props) {
-    const valueItem = props.valueItem || {}
-    const thumbnailIcon = valueItem.thumbnailIcon
-    const fichier = props.value || {}
+    const { fermer, tuuid, downloadRepertoire } = props
+
+    console.debug("InfoCollection proppies ", props)
+    const workers = useWorkers()
+    const capabilities = useCapabilities()
+    const estMobile = useMemo(()=>capabilities.device !== 'desktop', [capabilities])
+
+    const liste = useSelector(state => state.fichiers.liste )
+    const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
+
+    const [nombreFichiers, nombreRepertoires] = useMemo(()=>{
+        let nombreFichiers = 0, nombreRepertoires = 0
+        if(liste) {
+            liste.forEach(item=>{
+                if(item.type_node === 'Fichier') nombreFichiers++
+                else if(item.tuuid !== tuuid) nombreRepertoires++
+            })
+        }
+        return [nombreFichiers, nombreRepertoires]
+    }, [tuuid, liste])
+
+    const [repertoire, setRepertoire] = useState({})
+
+    const downloadComplet = useCallback(e => {
+        downloadRepertoire(e)
+        fermer()
+    }, [fermer, downloadRepertoire])
+
+    useEffect(()=>{
+        if(!tuuid) return setRepertoire({nom: 'Favoris'})
+        workers.collectionsDao.getParTuuids([tuuid])
+        .then(docs=>{
+            const repertoire = docs[0]
+            console.debug("InfoCollection repertoire ", repertoire)
+            setRepertoire(repertoire)
+        })
+        .catch(err=>console.error("InfoCollection Erreur chargement collection : ", err))
+    }, [workers, tuuid, setRepertoire])
+
     const infoStatistiques = props.infoStatistiques || {}
-    const nom = valueItem.nom
-    const derniereModification = fichier.derniere_modification || valueItem.dateAjout
+    const nombreSousRepertoires = useMemo(()=>{
+        if(!infoStatistiques || !infoStatistiques.nombreRepertoires) return 0
+        if(tuuid) return infoStatistiques.nombreRepertoires - 1  // Retirer le repertoire courant
+        return infoStatistiques.nombreRepertoires
+    }, [infoStatistiques, tuuid])
+    const nom = repertoire.nom
+    const derniereModification = repertoire.derniere_modification || repertoire.dateAjout
 
     return (
         <div>
             <Row>
-                <Col xs={12} md={4}>
-                    <Thumbnail placeholder={thumbnailIcon}>
-                        <span></span>
-                    </Thumbnail>
-                </Col>
                 <Col xs={12} md={8}>
                     <Row>
-                        <Col xs={12} md={5}>Nom</Col>
-                        <Col xs={12} md={7}>{nom}</Col>
+                        <Col xs={7} md={3}>Nom</Col>
+                        <Col xs={5} md={9}>{nom}</Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={5}>Date</Col>
-                        <Col xs={12} md={7}><FormatterDate value={derniereModification} /></Col>
+                        <Col xs={7} md={3}>Date</Col>
+                        <Col xs={5} md={9}><FormatterDate value={derniereModification} /></Col>
+                    </Row>
+
+                    <br/>
+
+                    <Row>
+                        <Col>Statistiques du repertoire courant</Col>
+                    </Row>
+
+                    <Row>
+                        <Col xs={7} md={3}>Nombre repertoires</Col>
+                        <Col xs={5} md={9}>{nombreRepertoires}</Col>
                     </Row>
                     <Row>
-                        <Col xs={12} md={5}>Nombre repertoires</Col>
-                        <Col xs={12} md={7}>{infoStatistiques.nombreRepertoires}</Col>
+                        <Col xs={7} md={3}>Nombre fichiers</Col>
+                        <Col xs={5} md={9}>{nombreFichiers}</Col>
                     </Row>
+
                     <Row>
-                        <Col xs={12} md={5}>Nombre fichiers</Col>
-                        <Col xs={12} md={7}>{infoStatistiques.nombreFichiers}</Col>
+                        <Col xs={7} md={3}>Taille fichiers</Col>
+                        <Col xs={5} md={9}><FormatteurTaille value={bytesTotalDossier} /></Col>
                     </Row>
-                    <Row>
-                        <Col xs={12} md={5}>Taille fichiers</Col>
-                        <Col xs={12} md={7}><FormatteurTaille value={infoStatistiques.tailleFichiers} /></Col>
-                    </Row>
+
+                    {nombreRepertoires > 0?
+                        <>
+                            <br/>
+
+                            <Row>
+                                <Col>Statistiques incluant sous-repertoires</Col>
+                            </Row>
+                            <Row>
+                                <Col xs={7} md={3}>Nombre repertoires</Col>
+                                <Col xs={5} md={9}>{nombreSousRepertoires}</Col>
+                            </Row>
+                            <Row>
+                                <Col xs={7} md={3}>Nombre fichiers</Col>
+                                <Col xs={5} md={9}>{infoStatistiques.nombreFichiers}</Col>
+                            </Row>
+
+                            <Row>
+                                <Col xs={7} md={3}>Taille fichiers</Col>
+                                <Col xs={5} md={9}><FormatteurTaille value={infoStatistiques.tailleFichiers} /></Col>
+                            </Row>
+                        </>
+                    :''}
                 </Col>
             </Row>
+
+            {estMobile?'':
+                <>
+                    <br />
+                    <Row>
+                        <Col xs={7} md={3}>Download complet (zip)</Col>
+                        <Col xs={5} md={9}>
+                            <Button variant="secondary" onClick={downloadComplet}>
+                                <i className='fa fa-download' />
+                            </Button>
+                        </Col>
+                    </Row>
+                </>
+            }
         </div>
     )
 }
