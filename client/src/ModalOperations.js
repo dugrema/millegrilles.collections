@@ -17,6 +17,7 @@ import useWorkers, { useCapabilities, useEtatAuthentifie, useEtatConnexion, useE
 
 import actionsNavigationSecondaire, {thunks as thunksNavigationSecondaire} from './redux/navigationSecondaireSlice'
 import { chargerInfoContacts } from './redux/partagerSlice'
+import { PathFichier } from './NavigationCommun'
 
 const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
@@ -395,7 +396,7 @@ export function InfoModal(props) {
         // Recuperer statistiques du repertoire
         workers.connexion.getInfoStatistiques(cuuid)
             .then(reponse=>{
-                console.debug("statistiques cuuids %s : %O", cuuid, reponse)
+                // console.debug("statistiques cuuids %s : %O", cuuid, reponse)
                 const infoStatistiques = reponse.info.reduce((acc, item)=>{
                     if(item.type_node === 'Fichier') {
                         acc.nombreFichiers = item.count
@@ -405,7 +406,7 @@ export function InfoModal(props) {
                     }
                     return acc
                 }, {})
-                console.debug("Info statistiques combinees : %O", infoStatistiques)
+                // console.debug("Info statistiques combinees : %O", infoStatistiques)
                 setInfoStatistiques(infoStatistiques)
             })
             .catch(err=>console.error("Erreur chargement statistiques : ", err))
@@ -458,8 +459,6 @@ function InfoVide(props) {
 function InfoFichier(props) {
     const { workers, etatConnexion, etatAuthentifie, support, downloadAction, usager, erreurCb } = props
 
-    console.debug("fichier : ", props)
-
     const valueItem = props.valueItem || {}
     const thumbnail = valueItem.thumbnail || {}
     const {thumbnailIcon} = thumbnail
@@ -467,47 +466,6 @@ function InfoFichier(props) {
 
     const fichier = props.value || {}
     const nom = valueItem.nom
-    const { tuuid } = fichier
-    const versionCourante = fichier.version_courante || {}
-    const fuuid = versionCourante.fuuid
-    const mimetype = fichier.mimetype || versionCourante.mimetype
-    const { taille, visites } = versionCourante
-    const derniereModification = fichier.derniere_modification || versionCourante.dateFichier
-    const dateFichier = valueItem.dateFichier
-
-    const hachageOriginal = useMemo(()=>{
-        const hachageOriginal = fichier.hachage_original
-        if(!hachageOriginal) return '' // Hachage non disponible
-
-        // Convertir en hex
-        const {algo, digest} = hachage.decoderHachage(hachageOriginal)
-        console.debug("Valeur hachage : algo %O, digest %O", algo, digest)
-        const digestHex = Buffer.from(digest).toString('hex')
-        return { algo, digest: digestHex }
-    }, [fichier])
-
-    const infoVisites = useMemo(()=>{
-        if(!visites) return {plusRecente: null, nombreServeurs: 0, serveurs: []}
-
-        const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
-
-        let nombreServeurs = 0,
-            serveurs = []
-        for (const serveur of Object.keys(visites)) {
-            const derniereVisite = visites[serveur]
-            if(derniereVisite > expire) {
-                nombreServeurs++
-                serveurs.push(serveur)
-            }
-        }
-
-        const plusRecente = Object.values(visites).reduce((acc, item)=>{
-            if(!acc || acc < item) return item
-            return acc
-        }, 0)
-
-        return {plusRecente, nombreServeurs, serveurs}
-    }, [visites])
 
     return (
         <div>
@@ -605,39 +563,46 @@ export function InfoGenerique(props) {
             </Row>
             {detail?(
                 <>
-                <Row>
-                    <Col xs={5} md={3}>Modification</Col>
-                    <Col xs={7} md={9}><FormatterDate value={derniereModification} /></Col>
-                </Row>
-                {hachageOriginal?
                     <Row>
-                        <Col xs={12} md={3}>Hachage</Col>
-                        <Col xs={12} md={9} className='fuuid'>
-                            {hachageOriginal.digest}<br/>
-                            Algorithme : {hachageOriginal.algo}
+                        <Col xs={5} md={3}>Path</Col>
+                        <Col xs={7} md={9}>
+                            <PathFichier pathCuuids={fichier.path_cuuids} />
                         </Col>
                     </Row>
-                    :''
-                }
-                <Row>
-                    <Col xs={12} md={3}>id systeme</Col>
-                    <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
-                </Row>
-                <Row>
-                    <Col xs={12} md={3}>fuuid</Col>
-                    <Col xs={12} md={9} className='fuuid'>{fuuid}</Col>
-                </Row>
-                <Row>
-                    <Col xs={12} md={3}>Presence</Col>
-                    <Col xs={12} md={9}>
-                        <div>
-                            <FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)
-                        </div>
-                        <ul>
-                            {infoVisites.serveurs.map(item=><li>{item}</li>)}
-                        </ul>
-                    </Col>
-                </Row>            
+
+                    <Row>
+                        <Col xs={5} md={3}>Modification</Col>
+                        <Col xs={7} md={9}><FormatterDate value={derniereModification} /></Col>
+                    </Row>
+                    {hachageOriginal?
+                        <Row>
+                            <Col xs={12} md={3}>Hachage</Col>
+                            <Col xs={12} md={9} className='fuuid'>
+                                {hachageOriginal.digest}<br/>
+                                Algorithme : {hachageOriginal.algo}
+                            </Col>
+                        </Row>
+                        :''
+                    }
+                    <Row>
+                        <Col xs={12} md={3}>id systeme</Col>
+                        <Col xs={12} md={9} className='tuuid'>{tuuid}</Col>
+                    </Row>
+                    <Row>
+                        <Col xs={12} md={3}>fuuid</Col>
+                        <Col xs={12} md={9} className='fuuid'>{fuuid}</Col>
+                    </Row>
+                    <Row>
+                        <Col xs={12} md={3}>Presence</Col>
+                        <Col xs={12} md={9}>
+                            <div>
+                                <FormatterDate value={infoVisites.plusRecente} /> ({infoVisites.nombreServeurs} serveurs)
+                            </div>
+                            <ul>
+                                {infoVisites.serveurs.map(item=><li>{item}</li>)}
+                            </ul>
+                        </Col>
+                    </Row>            
                 </>):''
             }
         </div>
@@ -703,7 +668,6 @@ export function InfoMedia(props) {
 function InfoCollection(props) {
     const { fermer, tuuid, downloadRepertoire } = props
 
-    console.debug("InfoCollection proppies ", props)
     const workers = useWorkers()
     const capabilities = useCapabilities()
     const estMobile = useMemo(()=>capabilities.device !== 'desktop', [capabilities])
@@ -734,7 +698,6 @@ function InfoCollection(props) {
         workers.collectionsDao.getParTuuids([tuuid])
         .then(docs=>{
             const repertoire = docs[0]
-            console.debug("InfoCollection repertoire ", repertoire)
             setRepertoire(repertoire)
         })
         .catch(err=>console.error("InfoCollection Erreur chargement collection : ", err))

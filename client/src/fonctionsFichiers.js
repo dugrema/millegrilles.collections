@@ -70,6 +70,41 @@
     
 // }
 
+export async function getDocuments(workers, tuuids) {
+    const { connexion, chiffrage, clesDao } = workers
+    const chiffrageUtils = chiffrage.chiffrage
+    // console.debug("getDocuments Charger documents ", tuuids)
+    const reponseFichiers = await connexion.getDocuments(tuuids)
+    // console.debug("getDocuments Resultat chargement fichiers : ", reponseFichiers)
+    const fichiers = reponseFichiers.fichiers
+
+    const ref_hachage_bytes = fichiers.map(item=>item.metadata.ref_hachage_bytes)
+    // console.debug("getDocuments Charger cles documents : %O", ref_hachage_bytes)
+    const cles = await clesDao.getCles(ref_hachage_bytes)
+
+    const resultat = []
+    for await (const fichier of fichiers) {
+        // console.debug("getDocuments Recu fichier %O", fichier)
+
+        // const version_courante = fichier.version_courante
+        const metadataChiffre = fichier.metadata
+        const ref_hachage_bytes = metadataChiffre.ref_hachage_bytes
+
+        // Recuperer cle
+        const cle = cles[ref_hachage_bytes]
+
+        // Dechiffrer metadata
+        const metaDechiffree = await chiffrageUtils.dechiffrerChampsChiffres(metadataChiffre, cle)
+        // console.debug("metadata dechiffre : %O", metaDechiffree)
+
+        const contenu = {...fichier, ...metaDechiffree}
+        // console.debug("Contenu fichier dechiffre : %O", contenu)
+        resultat.push(contenu)
+    }
+
+    return resultat
+}
+
 export async function majFichierMetadata(workers, tuuid, dataChiffre, data) {
     const { connexion, chiffrage, clesDao } = workers
     const chiffrageUtils = chiffrage.chiffrage

@@ -22,6 +22,7 @@ import useWorkers, { useCapabilities, useUsager } from './WorkerContext'
 
 import fichiersActions from './redux/fichiersSlice'
 import { FormCheck } from 'react-bootstrap'
+import { getDocuments } from './fonctionsFichiers'
 
 const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
@@ -490,14 +491,14 @@ export function SectionBreadcrumb(props) {
         event.stopPropagation()
 
         const value = event.currentTarget.dataset.idx
-        console.debug("handlerSliceBreadcrumb retour a idx %s, liste : %O", value, breadcrumb)
+        // console.debug("handlerSliceBreadcrumb retour a idx %s, liste : %O", value, breadcrumb)
 
         let tuuid = ''
         if(value) {
             let level = Number.parseInt(value)
 
             if(fichier && level > breadcrumb.length-2) {
-                console.debug("Navigation de retour de fichier/video : %O", fichier)
+                // console.debug("Navigation de retour de fichier/video : %O", fichier)
                 try {
                     Promise.resolve(naviguerCollection(null, {retourFichier: true}))
                         .catch(err=>console.error("SectionBreadcrumb Erreur navigation ", err))
@@ -564,6 +565,64 @@ export function SectionBreadcrumb(props) {
             {bcFichier}
 
         </Breadcrumb>
+    )
+
+}
+
+export function PathFichier(props) {
+
+    const { pathCuuids } = props
+
+    const workers = useWorkers()
+
+    const [repertoires, setRepertoires] = useState('N/D')
+
+    useEffect(()=>{
+        if(!pathCuuids || pathCuuids.length === 0) return
+
+        // console.debug("PathFichier Charger path cuuids ", pathCuuids)
+        workers.collectionsDao.getParTuuids(pathCuuids)
+            .then(async repertoires => {
+                // console.debug("Repertoires charges localement : ", repertoires)
+                const dictRepertoires = repertoires.reduce((acc, item)=>{
+                    if(item) {
+                        acc[item.tuuid] = item
+                    }
+                    return acc
+                }, {})
+                // Trouver repertoires manquants
+                const cuuidsManquants = []
+                for(const cuuid of pathCuuids) {
+                    if(!dictRepertoires[cuuid]) cuuidsManquants.push(cuuid)
+                }
+                // Charger repertoires manquants
+                if(cuuidsManquants.length > 0) {
+                    const resultat = await getDocuments(workers, cuuidsManquants)
+                    for(const rep of resultat) {
+                        dictRepertoires[rep.tuuid] = rep
+                    }
+                }
+
+                // console.debug("PathFichier Dict repertoires ", dictRepertoires)
+                const nomPath = []
+                for(const cuuid of pathCuuids) {
+                    const rep = dictRepertoires[cuuid]
+                    if(!rep) {
+                        console.warn("PathFichier Repertoire %s inconnu", cuuid)
+                        nomPath.push(cuuid)
+                    }
+                    else nomPath.push(rep.nom)
+                }
+                nomPath.reverse()
+
+                const repertoiresString = 'Favoris/' + nomPath.join('/')
+                setRepertoires(repertoiresString)
+            })
+            .catch(err=>console.error("PathFichier Erreur chargement tuuids ", err))
+    }, [workers, pathCuuids])
+
+    return (
+        <span>{repertoires}</span>
     )
 
 }
