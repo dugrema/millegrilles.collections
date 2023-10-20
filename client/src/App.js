@@ -252,7 +252,6 @@ function Modals(props) {
           show={showMediaJobs}
           fermer={showMediaJobsFermer}
         />
-
     </div>
   )
 }

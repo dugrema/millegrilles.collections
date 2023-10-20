@@ -13,7 +13,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
 import PreviewFichiers from './FilePlayer'
-import { ArchiverModal, SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal, PartagerModal } from './ModalOperations'
+import { ArchiverModal, SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal, PartagerModal, ConversionVideoModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
 import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
@@ -48,6 +48,7 @@ function NavigationCollections(props) {
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    const [ showConversionVideo, setShowConversionVideo ] = useState(false)
 
     // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
@@ -173,6 +174,7 @@ function NavigationCollections(props) {
                         setAfficherAudio={setAfficherAudio}
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
                         showInfoModalOuvrir={showInfoModalOuvrir}
+                        setShowConversionVideo={setShowConversionVideo}
                         scrollValue={scrollValue}
                         onScroll={onScrollHandler}
                         modeSelection={modeSelection}
@@ -201,6 +203,8 @@ function NavigationCollections(props) {
                 showDeplacerModal={showDeplacerModal}
                 setShowDeplacerModal={setShowDeplacerModal}
                 setShowSupprimerModal={setShowSupprimerModal}
+                showConversionVideo={showConversionVideo}
+                setShowConversionVideo={setShowConversionVideo}
                 annulerPreparationCb={annulerPreparationUpload}
                 downloadRepertoire={downloadRepertoireCb}
                 erreurCb={erreurCb} />
@@ -280,6 +284,7 @@ function Modals(props) {
         showSupprimerModal, setShowSupprimerModal,
         showCopierModal, setShowCopierModal,
         showDeplacerModal, setShowDeplacerModal,
+        showConversionVideo, setShowConversionVideo,
         downloadRepertoire,
         erreurCb,
     } = props
@@ -313,6 +318,8 @@ function Modals(props) {
     const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
     const showPartagerModalOuvrir = useCallback(()=>setShowPartagerModal(true), [setShowPartagerModal])
     const showPartagerModalFermer = useCallback(()=>setShowPartagerModal(false), [setShowPartagerModal])
+    const showConversionVideoOuvrir = useCallback(()=>setShowConversionVideo(true), [setShowConversionVideo])
+    const showConversionVideoFermer = useCallback(()=>setShowConversionVideo(false), [setShowConversionVideo])
 
     const dispatch = useDispatch()
     const workers = useWorkers()
@@ -365,7 +372,7 @@ function Modals(props) {
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
-                showConversionVideo={showInfoModalOuvrir}
+                showConversionVideo={showConversionVideoOuvrir}
               />
 
             <ModalCreerRepertoire 
@@ -427,9 +434,17 @@ function Modals(props) {
                 progres={preparationUploadEnCours} 
                 annulerCb={annulerPreparationCb}
               />
+
             <PartagerModal 
                 show={showPartagerModal} 
                 hide={showPartagerModalFermer} 
+                fichiers={liste}
+                selection={selection}
+                />
+
+            <ConversionVideoModal 
+                show={showConversionVideo} 
+                fermer={showConversionVideoFermer} 
                 fichiers={liste}
                 selection={selection}
                 />

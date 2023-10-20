@@ -190,7 +190,6 @@ export function ConversionVideo(props) {
 
     return (
         <>
-            <h2>Conversion video</h2>
             <FormConversionVideo 
                 workers={workers}
                 fichier={fichier}

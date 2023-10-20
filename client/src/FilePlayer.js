@@ -62,7 +62,7 @@ function preparerPreviews(workers, tuuidSelectionne, liste, support) {
 
     const optionsLoader = {supporteWebm: support.webm, supporteWebp: support.webp}
 
-    const fichierSelectionne = liste.filter(item=>item.tuuid===tuuidSelectionne).pop()
+    const fichierSelectionne = liste.filter(item=>item.tuuid===tuuidSelectionne).pop() || {}
     const versionCourante = fichierSelectionne.version_courante || {}
     const mimetypeSelectionne = versionCourante.mimetype || '',
           mimetypeBase = mimetypeSelectionne.split('/').shift()

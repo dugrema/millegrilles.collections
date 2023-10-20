@@ -787,6 +787,77 @@ function InfoCollection(props) {
     )
 }
 
+export function ConversionVideoModal(props) {
+
+    console.debug("ConversionVideoModal proppies ", props)
+
+    const { 
+        show, fermer, cuuid, fichiers, selection, support, downloadAction, 
+        usager, downloadRepertoire, erreurCb
+    } = props
+
+    const workers = useWorkers(),
+          etatConnexion = useEtatConnexion(),
+          etatAuthentifie = useEtatAuthentifie()
+
+    const { docSelectionne, header, tuuidSelectionne } = useMemo(()=>{
+        // console.debug("useMemo show : %O, selection %O, fichiers %O", show, selection, fichiers)
+        if(!show || !fichiers) return {}
+
+        let tuuidSelectionne = show
+        let docSelectionne = null
+
+        if(show === 1) {
+            tuuidSelectionne = ''  // Root de l'usager avec toutes les collections
+        } else if(typeof(show) === 'string') {
+            tuuidSelectionne = show
+            // docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
+        } else if(tuuidSelectionne === true) {
+            if(!selection || selection.length === 0) return  // On n'a aucune source pour le tuuid
+            tuuidSelectionne = selection[0]
+            docSelectionne = fichiers.filter(item=>tuuidSelectionne===item.tuuid).pop()
+        }
+        
+        let header = null
+        if(docSelectionne) {
+            // mimetype = docSelectionne.mimetype
+            // Mapper le fichier (thumbnails, etc.)
+            docSelectionne = mapDocumentComplet(workers, docSelectionne)
+
+            if(docSelectionne.type_node === 'Fichier') {
+                header = 'Information fichier'
+            } else {
+                header = 'Information collection'
+            }
+        } else if(tuuidSelectionne === '') {
+            header = 'Collections'
+        } else {
+            header = 'Repertoire'
+        }
+
+        return {docSelectionne, header, tuuidSelectionne}
+    }, [workers, show, selection, fichiers])
+
+    return (
+        <Modal show={!!show} onHide={fermer} size="lg">
+            <Modal.Header closeButton={true}>Conversion video</Modal.Header>
+
+            <Modal.Body>
+                <ConversionVideo 
+                    workers={workers}
+                    fichier={docSelectionne} 
+                    support={support}
+                    downloadAction={downloadAction}
+                    etatConnexion={etatConnexion}
+                    etatAuthentifie={etatAuthentifie}
+                    usager={usager}
+                />
+            </Modal.Body>
+
+        </Modal>
+    )
+}
+
 export function RenommerModal(props) {
     const { workers, show, fermer, fichiers, selection } = props
     const { connexion, chiffrage } = workers
