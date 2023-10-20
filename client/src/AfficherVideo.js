@@ -122,13 +122,13 @@ export function WrapperPlayer(props) {
     }, [abLoop, setTimeStamp, setJumpToTimeStamp])
 
     const majChargement = useCallback(info=>{
-        console.debug("Maj chargement ", info)
+        // console.debug("Maj chargement ", info)
         if(info.status === 200) {
             // Complete
             setProgresChargement(100)
         } else if(HTTP_STATUS_ATTENTE.includes(info.status)) {
             const headers = info.headers
-            console.debug("headers ", headers)
+            // console.debug("headers ", headers)
 
             const position = Number.parseInt(headers['x-file-position']),
                   taille = Number.parseInt(headers['x-file-size'])
@@ -174,7 +174,7 @@ export function WrapperPlayer(props) {
 
         fichier.videoLoader.load({selecteur})
             .then(async src => {
-                console.debug("videoLoader.load resultat : ", src)
+                // console.debug("videoLoader.load resultat : ", src)
                 return attendreChargement(src, majChargement, setSrcVideo, setErrVideoCb)
             })
             .catch(err=>{

@@ -296,7 +296,7 @@ function FormConversionVideo(props) {
               </Row>
               <Row>
                 <Col>
-                  <Button variant="secondary" disabled={!estPret} onClick={convertir}>Convertir</Button>
+                  <Button variant="primary" disabled={!estPret} onClick={convertir}>Convertir</Button>
                 </Col>
               </Row>
             </Form>
@@ -401,9 +401,11 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
 }
 
 function Videos(props) {
+
   const { workers, fichier, support, downloadAction } = props
   const versionCourante = fichier.version_courante || {}
   const videos = versionCourante.video || {}
+  const fuuid = versionCourante.fuuid
 
   const supprimerVideo = useCallback(fuuidVideo=>{
     // console.debug("Supprimer video : %s", fuuidVideo)
@@ -440,7 +442,7 @@ function Videos(props) {
         )
       })}
 
-      <AfficherListeJobs fuuid={fichier.fuuid_v_courante} />
+      <AfficherListeJobs fuuid={fuuid} />
     </>
   )
 }

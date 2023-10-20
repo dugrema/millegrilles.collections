@@ -181,6 +181,7 @@ function PreviewMediaMobile(props) {
 
     const [ estImage, estVideo, estAudio, estDocument ] = useMemo(()=>{
         const mimetype = fichier.mimetype
+        if(!mimetype) return [null, null, null, null]
         let image = false, audio = false, estDocument = false
         const video = estMimetypeVideo(mimetype)
         if(mimetype.startsWith('image/')) image = true

@@ -62,8 +62,11 @@ function NavigationCollections(props) {
     
     const naviguerCollection = useCallback( (cuuid, opts) => {
         opts = opts || {}
-        setAfficherVideo('')  // Reset affichage
-        setAfficherAudio('')  // Reset affichage
+
+        // Reset affichage
+        setAfficherVideo('')
+        setAfficherAudio('')
+        setShowPreview('')      
 
         if(opts.retourFichier) return   // Plus rien a faire
 
@@ -85,7 +88,7 @@ function NavigationCollections(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, erreurCb, setAfficherVideo, setAfficherAudio])
+    }, [dispatch, workers, setShowPreview, erreurCb, setAfficherVideo, setAfficherAudio])
 
     const signalAnnuler = useMemo(()=>{
         let valeur = false

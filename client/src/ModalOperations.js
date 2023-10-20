@@ -789,8 +789,6 @@ function InfoCollection(props) {
 
 export function ConversionVideoModal(props) {
 
-    console.debug("ConversionVideoModal proppies ", props)
-
     const { 
         show, fermer, cuuid, fichiers, selection, support, downloadAction, 
         usager, downloadRepertoire, erreurCb
