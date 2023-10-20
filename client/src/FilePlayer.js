@@ -32,9 +32,10 @@ function PreviewFichiers(props) {
         return preparerPreviews(workers, tuuidSelectionne, listeMappee, support)
     },[workers, tuuidSelectionne, fichiers, showPreview, support])
 
+    if(!showPreview) return ''
+
     if(support.touch) {
         // Mode mobile
-        if(!showPreview) return ''
         return (
             <AfficherMobile 
                 fermer={ () => setShowPreview(false) } 
@@ -45,9 +46,8 @@ function PreviewFichiers(props) {
     }
 
     return (
-        <ModalViewer 
-            show={ showPreview } 
-            handleClose={ () => setShowPreview(false) } 
+        <AfficherDesktop 
+            fermer={ () => setShowPreview(false) } 
             fichiers={liste} 
             tuuidSelectionne={ tuuidSelectionne }
         />
@@ -123,6 +123,27 @@ function filtrerTypesPreview(item) {
         if(mimetypeBase === 'image') return true
     }
     return false
+}
+
+function AfficherDesktop(props) {
+    const { fermer, fichiers, tuuidSelectionne } = props
+
+    const fichier = useMemo(()=>{
+        const vals = fichiers.filter(item=>item && item.tuuid === tuuidSelectionne)
+        let fichier = {}
+        if(vals.length === 1) fichier = vals[0]
+        return fichier
+    }, [fichiers, tuuidSelectionne])
+
+    return (
+        <div>
+            <Row className="player-contenu player-header">
+                <Col xs={2}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
+                <Col>{fichier.nom}</Col>
+            </Row>
+            <PreviewMediaMobile fichier={fichier} />
+        </div>
+    )
 }
 
 function AfficherMobile(props) {

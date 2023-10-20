@@ -741,12 +741,13 @@ export function AffichagePrincipal(props) {
             return naviguerCollection(value)
         }
         
-        if(isMobile) showPreviewAction(value)  // Utiliser un ecran de navigation pour mobile
-        else if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
-        else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
-        else if(mimetype.startsWith('image/')) showPreviewAction(value)
-        else if(mimetype === 'application/pdf') showPreviewAction(value)
-        else showInfoModalOuvrir()
+        showPreviewAction(value)
+        // if(isMobile) showPreviewAction(value)  // Utiliser un ecran de navigation pour mobile
+        // else if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
+        // else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
+        // else if(mimetype.startsWith('image/')) showPreviewAction(value)
+        // else if(mimetype === 'application/pdf') showPreviewAction(value)
+        // else showInfoModalOuvrir()
 
     }, [naviguerCollection, showPreviewAction, liste])
 
