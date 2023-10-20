@@ -23,7 +23,7 @@ import { AudioPlayer } from './AfficherAudio'
 function PreviewFichiers(props) {
     const support = useDetecterSupport()
 
-    const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview } = props
+    const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview, showConversionVideo } = props
 
     const liste = useMemo(()=>{
         if(!showPreview || !fichiers || !tuuidSelectionne) return []  // Rien a faire
@@ -41,6 +41,7 @@ function PreviewFichiers(props) {
                 fermer={ () => setShowPreview(false) } 
                 fichiers={liste} 
                 tuuidSelectionne={ tuuidSelectionne }
+                showConversionVideo={showConversionVideo}
                 />
         )
     }
@@ -50,6 +51,7 @@ function PreviewFichiers(props) {
             fermer={ () => setShowPreview(false) } 
             fichiers={liste} 
             tuuidSelectionne={ tuuidSelectionne }
+            showConversionVideo={showConversionVideo}
         />
     )
 }
@@ -126,7 +128,7 @@ function filtrerTypesPreview(item) {
 }
 
 function AfficherDesktop(props) {
-    const { fermer, fichiers, tuuidSelectionne } = props
+    const { fermer, fichiers, tuuidSelectionne, showConversionVideo } = props
 
     const fichier = useMemo(()=>{
         const vals = fichiers.filter(item=>item && item.tuuid === tuuidSelectionne)
@@ -141,13 +143,13 @@ function AfficherDesktop(props) {
                 <Col xs={2}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
                 <Col>{fichier.nom}</Col>
             </Row>
-            <PreviewMediaMobile fichier={fichier} />
+            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} />
         </div>
     )
 }
 
 function AfficherMobile(props) {
-    const { fermer, fichiers, tuuidSelectionne } = props
+    const { fermer, fichiers, tuuidSelectionne, showConversionVideo } = props
 
     const fichier = useMemo(()=>{
         const vals = fichiers.filter(item=>item && item.tuuid === tuuidSelectionne)
@@ -162,7 +164,7 @@ function AfficherMobile(props) {
                 <Col xs={2}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
                 <Col>{fichier.nom}</Col>
             </Row>
-            <PreviewMediaMobile fichier={fichier} />
+            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} />
         </div>
     )
 }
@@ -188,17 +190,19 @@ function PreviewMediaMobile(props) {
     }, [fichier])
 
     if(!fichier) return ''
-    if(estVideo) return PreviewVideoMobile(props)
-    if(estImage) return PreviewImageMobile(props)
-    if(estAudio) return PreviewAudioMobile(props)
-    if(estDocument) return PreviewDocumentMobile(props)
+    let ClassePreview = PreviewFichierGeneriqueMobile
 
-    return PreviewFichierGeneriqueMobile(props)
+    if(estVideo) ClassePreview = PreviewVideoMobile
+    if(estImage) ClassePreview = PreviewImageMobile
+    if(estAudio) ClassePreview = PreviewAudioMobile
+    if(estDocument) ClassePreview = PreviewDocumentMobile
+
+    return <ClassePreview {...props} />
 }
 
 function PreviewVideoMobile(props) {
 
-    const { fichier } = props
+    const { fichier, showConversionVideo } = props
 
     const videoLoader = fichier.videoLoader,
           version_courante = fichier.version_courante
@@ -219,6 +223,11 @@ function PreviewVideoMobile(props) {
         else return [{xs: 12}, {}]
     }, [orientation])
 
+    const showConversionHandler = useCallback(()=>{
+        console.debug("Show modal conversion")
+        showConversionVideo()
+    }, [showConversionVideo])
+
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
     }, [])
@@ -237,13 +246,20 @@ function PreviewVideoMobile(props) {
                 </Ratio>
             </Col>
             <Col {...cols[1]}>
-                <SelecteurResolution 
-                    listeVideos={videos} 
-                    support={support}
-                    selecteurs={selecteurs} 
-                    selecteur={selecteur} 
-                    setSelecteur={setSelecteur} 
-                    videoLoader={videoLoader} />
+                <Row>
+                    <Col>
+                        <SelecteurResolution 
+                            listeVideos={videos} 
+                            support={support}
+                            selecteurs={selecteurs} 
+                            selecteur={selecteur} 
+                            setSelecteur={setSelecteur} 
+                            videoLoader={videoLoader} />
+                    </Col>
+                    <Col>
+                        <Button variant="secondary" onClick={showConversionHandler}>Conversion</Button>
+                    </Col>
+                </Row>
                 <InformationFichier {...props} />                    
             </Col>
         </Row>

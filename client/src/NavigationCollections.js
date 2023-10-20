@@ -365,6 +365,7 @@ function Modals(props) {
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
+                showConversionVideo={showInfoModalOuvrir}
               />
 
             <ModalCreerRepertoire 
