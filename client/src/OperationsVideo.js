@@ -9,6 +9,7 @@ import Row from 'react-bootstrap/Row'
 
 import { AfficherListeJobs } from './MediaJobsModal'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
+import { useCapabilities } from './WorkerContext'
 
 const VIDEO_CODEC = [
   {label: 'HEVC (mp4)', value: "hevc"},
@@ -276,9 +277,9 @@ function FormConversionVideo(props) {
   
     return (
       <>
-        <Row>
-          <Col xs={12} lg={6}>
-            <Form>
+        <Form>
+          <Row>
+            <Col xs={12} md={6}>
               <SelectGroup formLabel={'Codec Video'} name={'codecVideo'} value={codecVideo} onChange={changerCodecVideo} options={VIDEO_CODEC} />
               <SelectGroup 
                 formLabel={'Resolution Video'} 
@@ -289,28 +290,21 @@ function FormConversionVideo(props) {
                 maxValueFilter={maxValueFilterResolution} 
                 maxValue={resolutionOriginal} />
               <SelectGroup formLabel={'Qualite Video'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
+            </Col>
+            <Col xs={12} md={6}>
               <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
               <SelectGroup formLabel={'Bitrate Audio'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
-              <Row>
-                <p>Preset : {preset}</p>
-              </Row>
-              <Row>
-                <Col>
-                  <Button variant="primary" disabled={!estPret} onClick={convertir}>Convertir</Button>
-                </Col>
-              </Row>
-            </Form>
-          </Col>
-
-          <Col>
-            <p>Notes :</p>
-            <ul>
-              <li>VP9 avec Opus donne une meilleure qualite mais n'est pas supporte par iOS (Apple)</li>
-            </ul>
-          </Col>
-
-        </Row>
-
+            </Col>
+          </Row>
+          <Row>
+            <p>Preset : {preset}</p>
+          </Row>
+          <Row>
+            <Col>
+              <Button variant="primary" disabled={!estPret} onClick={convertir}>Convertir</Button>
+            </Col>
+          </Row>
+        </Form>
       </>
     )
 }
@@ -422,11 +416,13 @@ function Videos(props) {
     <>
       <h3>Formats disponibles</h3>
       <Row>
-        <Col xs={1}>Format</Col>
-        <Col xs={1}>Codec</Col>
-        <Col xs={2}>Qualite</Col>
-        <Col xs={3}>Resolution</Col>
-        <Col xs={2}>Taille</Col>
+        <Col xs={2} lg={1}>Format</Col>
+        <Col xs={2} lg={1}>Codec</Col>
+        <Col md={1} className='d-none d-md-block'>Qualite</Col>
+        <Col xs={1} className='d-md-none'>Qual</Col>
+        <Col xs={6} sm={3} lg={2}>Resolution</Col>
+        <Col sm={2} className='d-none d-sm-block'>Taille</Col>
+        <Col sm={2} lg={5} className='d-none d-sm-block'>Actions</Col>
       </Row>
       {videosTries.map(video=>{
         return (
@@ -525,6 +521,9 @@ function triCleTranscodage(a,b) {
 function AfficherLigneFormatVideo(props) {
   const { fichier, video, /*support,*/ downloadAction, supprimerVideo } = props
 
+  const capabilities = useCapabilities()
+  const mobile = capabilities.mobile || false
+
   const download = useCallback(event => {
     // console.debug("Downloader fichier %O", fichier)
 
@@ -560,15 +559,17 @@ function AfficherLigneFormatVideo(props) {
 
   return (
     <Row>
-      <Col xs={1}>{packageFormat}</Col>
-      <Col xs={1}>{codec}</Col>
-      <Col xs={2}>{bitrate_quality}</Col>
-      <Col xs={3}>{video.width} x {video.height}</Col>
-      <Col xs={2}><FormatteurTaille value={video.taille_fichier} /></Col>
-      <Col>
-        <Button variant="secondary" onClick={download}>
-          <i className="fa fa-download" />
-        </Button>
+      <Col xs={2} lg={1}>{packageFormat}</Col>
+      <Col xs={2} lg={1}>{codec}</Col>
+      <Col xs={1}>{bitrate_quality}</Col>
+      <Col xs={6} sm={3} lg={2}>{video.width} x {video.height}</Col>
+      <Col xs={4} sm={2}><FormatteurTaille value={video.taille_fichier} /></Col>
+      <Col xs={8} sm={2} lg={5}>
+        {mobile?'':
+          <Button variant="secondary" onClick={download}>
+            <i className="fa fa-download" />
+          </Button>
+        }
         <Button variant="danger" onClick={supprimerVideoCb}>
           <i className="fa fa-trash" />
         </Button>
@@ -577,4 +578,3 @@ function AfficherLigneFormatVideo(props) {
   )
 
 }
-  
