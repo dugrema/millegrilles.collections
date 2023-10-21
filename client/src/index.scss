@@ -84,6 +84,10 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     padding-right: 0.15rem;
 }
 
+.fixed.d-block {
+    width: 1.9rem;
+}
+
 .fichiers-header-buttonbar-mobile button.fixed {
     width: 1.9rem;
 }

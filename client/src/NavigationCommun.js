@@ -347,10 +347,14 @@ export function BoutonsAction(props) {
 
     const { setShowCreerRepertoire, setPreparationUploadEnCours, signalAnnuler } = props
 
+    const capabilities = useCapabilities()
+    const estMobile = useMemo(()=>capabilities.mobile, [capabilities])
+
     return (
         <>
             <BoutonUpload setPreparationUploadEnCours={setPreparationUploadEnCours} signalAnnuler={signalAnnuler}>
-                <i className="fa fa-plus"/> Fichier
+                <div className="d-none d-sm-block"><i className="fa fa-plus"/> Fichier</div>
+                <div className="fixed d-block d-sm-none"><i className="fa fa-plus"/></div>
             </BoutonUpload>
             &nbsp;
             <Button 
@@ -358,7 +362,8 @@ export function BoutonsAction(props) {
                 className="individuel"
                 onClick={setShowCreerRepertoire}
             >
-                <i className="fa fa-folder"/> Collection
+                <div className="d-none d-sm-block"><i className="fa fa-folder"/> Collection</div>
+                <div className="fixed d-block d-sm-none"><i className="fa fa-folder"/></div>
             </Button>
         </>
     )
