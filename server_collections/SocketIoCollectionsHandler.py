@@ -212,7 +212,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
 
     async def supprimer_video(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideo')
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerVideo')
 
     async def creer_token_stream(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,

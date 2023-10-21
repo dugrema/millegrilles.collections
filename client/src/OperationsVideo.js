@@ -198,6 +198,8 @@ export function ConversionVideo(props) {
                 erreurCb={erreurCb}
             />
 
+            <hr />
+
             <Videos 
               workers={workers}
               fichier={fichier}
@@ -280,20 +282,22 @@ function FormConversionVideo(props) {
         <Form>
           <Row>
             <Col xs={12} md={6}>
-              <SelectGroup formLabel={'Codec Video'} name={'codecVideo'} value={codecVideo} onChange={changerCodecVideo} options={VIDEO_CODEC} />
+              <h3>Video</h3>
+              <SelectGroup formLabel={'Codec'} name={'codecVideo'} value={codecVideo} onChange={changerCodecVideo} options={VIDEO_CODEC} />
               <SelectGroup 
-                formLabel={'Resolution Video'} 
+                formLabel={'Resolution'} 
                 name={'resolutionVideo'} 
                 value={resolutionVideo} 
                 onChange={changerResolutionVideo} 
                 options={VIDEO_RESOLUTIONS} 
                 maxValueFilter={maxValueFilterResolution} 
                 maxValue={resolutionOriginal} />
-              <SelectGroup formLabel={'Qualite Video'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
+              <SelectGroup formLabel={'Qualite'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
             </Col>
             <Col xs={12} md={6}>
-              <SelectGroup formLabel={'Codec Audio'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
-              <SelectGroup formLabel={'Bitrate Audio'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
+              <h3>Audio</h3>
+              <SelectGroup formLabel={'Codec'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
+              <SelectGroup formLabel={'Bitrate'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
             </Col>
           </Row>
           <Row>
@@ -402,7 +406,7 @@ function Videos(props) {
   const fuuid = versionCourante.fuuid
 
   const supprimerVideo = useCallback(fuuidVideo=>{
-    // console.debug("Supprimer video : %s", fuuidVideo)
+    console.debug("Supprimer video : %s", fuuidVideo)
     workers.connexion.supprimerVideo(fuuidVideo)
   }, [workers])
 
@@ -412,9 +416,16 @@ function Videos(props) {
 
   // console.debug("Videos tries : %O", videosTries)
 
+  const conversionEnCours = (
+    <>
+      <hr />
+      <h3>Conversions en cours</h3>
+    </>
+  )
+
   return (
     <>
-      <h3>Formats disponibles</h3>
+      <h3>Videos disponibles</h3>
       <Row>
         <Col xs={2} lg={1}>Format</Col>
         <Col xs={2} lg={1}>Codec</Col>
@@ -438,7 +449,7 @@ function Videos(props) {
         )
       })}
 
-      <AfficherListeJobs fuuid={fuuid} />
+      <AfficherListeJobs fuuid={fuuid} titre={conversionEnCours}/>
     </>
   )
 }
@@ -570,7 +581,7 @@ function AfficherLigneFormatVideo(props) {
             <i className="fa fa-download" />
           </Button>
         }
-        <Button variant="danger" onClick={supprimerVideoCb}>
+        <Button variant="danger" onClick={supprimerVideoCb} className="supprimer">
           <i className="fa fa-trash" />
         </Button>
       </Col>

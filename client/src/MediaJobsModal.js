@@ -102,7 +102,7 @@ function traiterMessageTranscodage(dispatch, eventMessage) {
 
 export function AfficherListeJobs(props) {
 
-    const { fuuid } = props
+    const { fuuid, titre } = props
 
     let listeJobs = useSelector(state=>state.mediaJobs.liste)
     if(fuuid) listeJobs = listeJobs.filter(item=>{
@@ -110,12 +110,22 @@ export function AfficherListeJobs(props) {
         return item.fuuid === fuuid
     })
 
-    return listeJobs.map(item=>(
+    const jobs = listeJobs.map(item=>(
         <AfficherLigneFormatVideo 
             key={`${item.fuuid}/${item.cle_conversion}`} 
             showNomFichier={true}
             job={item} />
     ))
+
+    if(jobs.length === 0) return ''
+
+    return (
+        <div>
+            {titre?titre:''}
+            {jobs}
+        </div>
+    )
+
 }
 
 export function AfficherLigneFormatVideo(props) {
