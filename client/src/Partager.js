@@ -183,6 +183,7 @@ function NavigationPartageTiers(props) {
         opts = opts || {}
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
+        setShowPreview(false)
 
         if(opts.retourFichier) return   // Plus rien a faire
 
@@ -220,15 +221,16 @@ function NavigationPartageTiers(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, userInfo, erreurCb, contactInfo, setAfficherVideo, setAfficherAudio])
+    }, [dispatch, workers, userInfo, erreurCb, contactInfo, setShowPreview, setAfficherVideo, setAfficherAudio])
 
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 
     useEffect(()=>{
         if(!userId) return  // Il faut au moins avoir une selection d'usager
         // Reset navigation en mode partage, top-level
-        setAfficherVideo('')  // Reset affichage
-        setAfficherAudio('')  // Reset affichage
+        setAfficherVideo('')
+        setAfficherAudio('')
+        setShowPreview(false)
         try {
             // Set tri par date modification desc
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
@@ -237,7 +239,7 @@ function NavigationPartageTiers(props) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
 
-    }, [dispatch, userId, contactId, setAfficherVideo, setAfficherAudio])
+    }, [dispatch, userId, contactId, setAfficherVideo, setAfficherAudio, setShowPreview])
 
     return (
         <div>
@@ -247,7 +249,10 @@ function NavigationPartageTiers(props) {
 
             <Row className='fichiers-header-buttonbar'>
                 <Col xs={12} lg={5}>
-                    <SectionBreadcrumb naviguerCollection={naviguerCollection} prependItems={itemRootBreadcrumb} fichier={fichierBreadcrumb} />
+                    <SectionBreadcrumb 
+                        naviguerCollection={naviguerCollection} 
+                        prependItems={itemRootBreadcrumb} 
+                        fichier={fichierBreadcrumb} />
                 </Col>
 
                 <Col xs={12} sm={3} md={4} lg={2}>
@@ -261,6 +266,7 @@ function NavigationPartageTiers(props) {
 
             <Suspense fallback={<p>Loading ...</p>}>
                 <AffichagePrincipal 
+                    hide={!!showPreview}
                     preparerColonnes={preparerColonnesCb}
                     modeView={modeView}
                     naviguerCollection={naviguerCollection}
@@ -278,7 +284,7 @@ function NavigationPartageTiers(props) {
             </Suspense>
 
             <Modals 
-                showPreview={showPreview}
+                showPreview={!!showPreview}
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 showPreviewAction={showPreviewAction}

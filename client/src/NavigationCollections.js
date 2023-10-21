@@ -66,7 +66,7 @@ function NavigationCollections(props) {
         // Reset affichage
         setAfficherVideo('')
         setAfficherAudio('')
-        setShowPreview('')      
+        setShowPreview(false)      
 
         if(opts.retourFichier) return   // Plus rien a faire
 
