@@ -10,7 +10,7 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 import Fade from 'react-bootstrap/Fade'
 
-import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
+import { ListeFichiers, FormatteurTaille, FormatterDate, ImageCarousel } from '@dugrema/millegrilles.reactjs'
 import { formatterDateString } from '@dugrema/millegrilles.reactjs/src/formatterUtils'
 
 import AfficherVideo from './AfficherVideo'
@@ -213,12 +213,17 @@ export function BarreInformationMobile(props) {
     return (
         <Row className='fichiers-header-buttonbar-mobile'>
             <Row>
-                <Col xs={7}>
+                <Col xs={1}>
+                    <Button variant="secondary" className="fixed" disabled={!cuuidCourant} onClick={naviguerCollectionUpHandler}>
+                        <i className="fa fa-arrow-up"/>
+                    </Button>
+                </Col>
+                <Col xs={8}>
                     <Fade in={!!nomRepertoireCourant} appear={true}>
                         <span>{nomRepertoireCourant}</span>
                     </Fade>
                 </Col>
-                <Col xs={5}>
+                <Col xs={3}>
                     <span>
                         <FormCheck 
                             id="switch-mode-selection" 
@@ -318,22 +323,22 @@ function BoutonsNavigation(props) {
 }
 
 export function BoutonsFormat(props) {
-
     const { modeView, setModeView } = props
 
     const setModeListe = useCallback(()=>{ setModeView('liste') }, [setModeView])
     const setModeThumbnails = useCallback(()=>{ setModeView('thumbnails') }, [setModeView])
+    const setModeCarousel = useCallback(()=>{ setModeView('carousel') }, [setModeView])
 
-    let variantListe = 'secondary', variantThumbnail = 'outline-secondary'
-    if( modeView === 'thumbnails' ) {
-        variantListe = 'outline-secondary'
-        variantThumbnail = 'secondary'
-    }
+    let variantListe = 'outline-secondary', variantThumbnail = 'outline-secondary', variantCarousel = 'outline-secondary'
+    if( !modeView || modeView === 'liste' ) variantListe = 'secondary'
+    else if( modeView === 'thumbnails' ) variantThumbnail = 'secondary'
+    else if( modeView === 'carousel' ) variantCarousel = 'secondary'
 
     return (
         <ButtonGroup>
             <Button variant={variantListe} onClick={setModeListe} className="fixed"><i className="fa fa-list" /></Button>
             <Button variant={variantThumbnail} onClick={setModeThumbnails} className="fixed"><i className="fa fa-th-large" /></Button>
+            <Button variant={variantCarousel} onClick={setModeCarousel} className="fixed"><i className="fa fa-file-picture-o" /></Button>
         </ButtonGroup>
     )
 }
@@ -680,7 +685,7 @@ export function AffichagePrincipal(props) {
     const {
         hide,
         preparerColonnes,
-        modeView, 
+        modeView, setModeView,
         naviguerCollection,
         showPreviewAction,
         afficherVideo, setAfficherVideo,
@@ -734,6 +739,7 @@ export function AffichagePrincipal(props) {
     const onContextMenuClick = useCallback((event, value)=>{
         onContextMenu(event, value, setContextuel)
     }, [setContextuel])
+    const fermerCarousel = useCallback(()=>setModeView('liste'), ['setModeview'])
 
     const onOpenHandler = useCallback( item => {
         window.getSelection().removeAllRanges()
@@ -773,24 +779,28 @@ export function AffichagePrincipal(props) {
 
     if(hide) return ''  // Cacher la page
 
-    if(afficherVideo) {
-        return (
-            <AfficherVideoView
-                liste={liste}
-                tuuid={afficherVideo}
-                fermer={fermerAfficherVideo} 
-                showInfoModalOuvrir={showInfoModalOuvrir} 
-                erreurCb={erreurCb} />
-        )
-    } else if(afficherAudio) {
-        return (
-            <AfficherAudioView
-                liste={liste}
-                tuuid={afficherAudio}
-                fermer={fermerAfficherAudio} 
-                showInfoModalOuvrir={showInfoModalOuvrir} 
-                erreurCb={erreurCb} />
-        )
+    // if(afficherVideo) {
+    //     return (
+    //         <AfficherVideoView
+    //             liste={liste}
+    //             tuuid={afficherVideo}
+    //             fermer={fermerAfficherVideo} 
+    //             showInfoModalOuvrir={showInfoModalOuvrir} 
+    //             erreurCb={erreurCb} />
+    //     )
+    // } else if(afficherAudio) {
+    //     return (
+    //         <AfficherAudioView
+    //             liste={liste}
+    //             tuuid={afficherAudio}
+    //             fermer={fermerAfficherAudio} 
+    //             showInfoModalOuvrir={showInfoModalOuvrir} 
+    //             erreurCb={erreurCb} />
+    //     )
+    // }
+
+    if(modeView === 'carousel') {
+        return <AfficherCarousel fichiers={liste} fermer={fermerCarousel} />
     }
 
     // Default - liste fichiers
@@ -915,4 +925,92 @@ export function InformationListe(_props) {
     }
 
     return ''
+}
+
+
+function AfficherCarousel(props) {
+    const { fichiers, fermer } = props
+
+    const workers = useWorkers()
+    const dispatch = useDispatch()
+    const selection = useSelector(state=>state.fichiers.selection)
+
+    const [item, setItem] = useState('')
+    const [images, setImages] = useState('')
+    const [loaded, setLoaded] = useState(false)
+
+    // const { images, item, onSelect, onClick, setDownloadSrc, showButtons, DEBUG } = props
+
+    const onSelectCb = useCallback(idx=>{
+        const fichier = images[idx]
+        setItem(fichier)
+        dispatch(fichiersActions.selectionTuuids([fichier.tuuid]))
+    }, [dispatch, images])
+
+    const setDownloadSrc = useCallback(()=>{}, [])
+
+    useEffect(()=>{
+        return () => {
+            setLoaded(false)  // Unlock
+            setImages('')
+            setItem('')
+        }
+    }, [setLoaded])
+
+    useEffect(()=>{
+        // console.debug("AfficherCarousel selection %O, images %O, item %O", selection, images, item)
+        if(!images) return
+        if(item || item === false) return  // Locked
+
+        let tuuidSelectionne = ''
+        console.debug("AfficherCarousel selection ", selection)
+        if(selection && selection.length === 1) {
+            tuuidSelectionne = selection[0]
+        }
+
+        // Calculer l'index de l'item a afficher dans le carousel
+        for(var idx=0; idx<images.length; idx++) {
+            const image = images[idx]
+            if(image && image.tuuid === tuuidSelectionne) {
+                console.debug("AfficherCarousel image selectionnee ", image)
+                setItem(image)
+                return
+            }
+        }
+
+        // No match, prendre la premiere image si disponible
+        if(images && images.length > 0) {
+            const image = images[0]
+            console.debug("AfficherCarousel default premiere image ", image)
+            setItem(image)
+            return
+        }
+        
+        // Aucunes images
+        setItem(false)
+    }, [item, images, selection, setItem])
+    
+    // Load et lock les images (pour eviter flicker si maj externe)
+    useEffect(()=>{
+        if(loaded) return  // Locked
+        if(!fichiers) return setImages('')
+        const images = fichiers.filter(item=>{
+            const mimetype = item.mimetype || ''
+            if(mimetype.startsWith('image/')) return true
+        }).map(item=>mapDocumentComplet(workers, item))
+
+        // console.debug("AfficherCarousel Images : %O", images)
+        setImages(images)
+        setLoaded(true)
+    }, [workers, fichiers, setImages, loaded, setLoaded])
+
+    return (
+        <div>
+            <ImageCarousel 
+                images={images} 
+                item={item} 
+                onSelect={onSelectCb} 
+                setDownloadSrc={setDownloadSrc} />
+        </div>
+    )
 }

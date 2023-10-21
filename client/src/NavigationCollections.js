@@ -98,6 +98,12 @@ function NavigationCollections(props) {
         }
     }, [])
 
+    const cacherAffichage = useMemo(()=>{
+        if(!!showPreview) return true
+        //if(modeView === 'carousel') return true
+        return false
+    }, [showPreview, modeView])
+
     const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
     const annulerPreparationUpload = useCallback(()=>{
         console.debug("Annuler preparation upload")
@@ -143,7 +149,7 @@ function NavigationCollections(props) {
         <>
             <div>
                 <BarreInformation 
-                    hide={!!showPreview}
+                    hide={cacherAffichage}
                     naviguerCollection={naviguerCollection}
                     modeView={modeView}
                     setModeView={setModeView} 
@@ -165,9 +171,10 @@ function NavigationCollections(props) {
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
-                        hide={!!showPreview}
+                        hide={cacherAffichage}
                         preparerColonnes={preparerColonnesCb}
                         modeView={modeView}
+                        setModeView={setModeView}
                         naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
