@@ -16,31 +16,61 @@ import {loadFichierChiffre, fileResourceLoader} from '@dugrema/millegrilles.reac
 import { mapDocumentComplet } from './mapperFichier'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
 import { InfoGenerique, InfoMedia } from './ModalOperations'
-import useWorkers from './WorkerContext'
+import useWorkers, { useCapabilities } from './WorkerContext'
 import { SelecteurResolution, WrapperPlayer } from './AfficherVideo'
 import { AudioPlayer } from './AfficherAudio'
 
 function PreviewFichiers(props) {
-    const support = useDetecterSupport()
+    const { tuuidSelectionne, fichiers, showPreview } = props
 
-    const { workers, tuuidSelectionne, fichiers, showPreview, setShowPreview, showConversionVideo } = props
+    if(!showPreview || !fichiers) return ''
 
-    const liste = useMemo(()=>{
-        if(!showPreview || !fichiers || !tuuidSelectionne) return []  // Rien a faire
-        const mapper = (item, idx) => mapDocumentComplet(workers, item, idx)
-        const listeMappee = fichiers.map(mapper)
-        return preparerPreviews(workers, tuuidSelectionne, listeMappee, support)
-    },[workers, tuuidSelectionne, fichiers, showPreview, support])
+    const fichiersSelectionnes = fichiers.filter(item=>item.tuuid===tuuidSelectionne)
+    if(fichiersSelectionnes.length !== 1) return ''
 
-    if(!showPreview) return ''
+    return <DebounceFichiers fichier={fichiersSelectionnes[0]} {...props} />
+}
 
-    if(support.touch) {
+export default PreviewFichiers
+
+function DebounceFichiers(props) {
+
+    const { tuuidSelectionne, fichier: fichierSelectionne, showPreview, setShowPreview, showConversionVideo } = props
+
+    const workers = useWorkers()
+    const capabilities = useCapabilities()
+
+    const [fichier, setFichier] = useState('')
+
+    // Utilises pour debounce
+    const [tuuid, setTuuid] = useState('')
+    const [derniereModification, setDerniereModification] = useState(0)
+
+    useEffect(()=>{
+        if(!showPreview || !fichierSelectionne) return // Rien a faire
+
+        // TODO : Comparer tuuid courant au tuuid du fichier selectionne
+        if(fichierSelectionne.tuuid === tuuid && 
+            fichierSelectionne.derniere_modification === derniereModification) return  // Aucune modification
+        setTuuid(fichierSelectionne.tuuid)
+        setDerniereModification(fichierSelectionne.derniere_modification)
+        
+        const fichier = mapDocumentComplet(workers, fichierSelectionne, 0)
+
+        console.debug("DebounceFichiers Fichier mappe ", fichier)
+
+        const fichierPreview = preparerPreviews(workers, tuuidSelectionne, [fichier], capabilities).pop()
+        setFichier(fichierPreview)
+    },[workers, fichierSelectionne, showPreview, capabilities, tuuid, setTuuid, derniereModification, setDerniereModification])
+
+    if(!fichier) return ''
+
+    if(capabilities.device !== 'desktop') {
         // Mode mobile
         return (
             <AfficherMobile 
                 fermer={ () => setShowPreview(false) } 
-                fichiers={liste} 
-                tuuidSelectionne={ tuuidSelectionne }
+                fichier={fichier}
                 showConversionVideo={showConversionVideo}
                 />
         )
@@ -49,14 +79,13 @@ function PreviewFichiers(props) {
     return (
         <AfficherDesktop 
             fermer={ () => setShowPreview(false) } 
-            fichiers={liste} 
+            fichier={fichier}
             tuuidSelectionne={ tuuidSelectionne }
             showConversionVideo={showConversionVideo}
         />
     )
-}
 
-export default PreviewFichiers
+}
 
 function preparerPreviews(workers, tuuidSelectionne, liste, support) {
 
@@ -128,19 +157,14 @@ function filtrerTypesPreview(item) {
 }
 
 function AfficherDesktop(props) {
-    const { fermer, fichiers, tuuidSelectionne, showConversionVideo } = props
+    const { fermer, fichier, showConversionVideo } = props
 
-    const fichier = useMemo(()=>{
-        const vals = fichiers.filter(item=>item && item.tuuid === tuuidSelectionne)
-        let fichier = {}
-        if(vals.length === 1) fichier = vals[0]
-        return fichier
-    }, [fichiers, tuuidSelectionne])
+    if(!fichier) return ''
 
     return (
         <div>
             <Row className="player-contenu player-header">
-                <Col xs={2}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
+                <Col xs={2} md={1}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
                 <Col>{fichier.nom}</Col>
             </Row>
             <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} />
@@ -149,14 +173,9 @@ function AfficherDesktop(props) {
 }
 
 function AfficherMobile(props) {
-    const { fermer, fichiers, tuuidSelectionne, showConversionVideo } = props
+    const { fermer, fichier, showConversionVideo } = props
 
-    const fichier = useMemo(()=>{
-        const vals = fichiers.filter(item=>item && item.tuuid === tuuidSelectionne)
-        let fichier = {}
-        if(vals.length === 1) fichier = vals[0]
-        return fichier
-    }, [fichiers, tuuidSelectionne])
+    if(!fichier) return ''
 
     return (
         <div>
