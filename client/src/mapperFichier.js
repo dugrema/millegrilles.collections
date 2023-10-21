@@ -32,7 +32,7 @@ export function mapDocumentComplet(workers, doc) {
     // Instance mediaLoader pour contenu (fichier, images, videos)
     const creerTokenStreamInst = commande => {
         if(doc.contactId) commande = {...commande, contact_id: doc.contactId}
-        console.debug("creerTokenStreamInst Commande %O, doc: %O", commande, doc)
+        // console.debug("creerTokenStreamInst Commande %O, doc: %O", commande, doc)
 
         const fuuid = commande.fuuids[0]
         const commandeV2 = { fuuid }
@@ -42,7 +42,7 @@ export function mapDocumentComplet(workers, doc) {
             commandeV2.fuuid_ref = fuuid
         }
         if(doc.contactId) commandeV2.contact_id = doc.contactId
-        console.debug("creerTokenStreamInst Commande V2 %O", commandeV2)
+        // console.debug("creerTokenStreamInst Commande V2 %O", commandeV2)
 
         return connexion.creerTokenStream(commandeV2)
     }

@@ -178,7 +178,7 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
 
     const version_courante = docDownload.version_courante || {}
     const fuuid = docDownload.fuuidDownload || docDownload.fuuid || version_courante.fuuid
-    const fuuidCle = docDownload.fuuid_v_courante || fuuid
+    const fuuidCle = version_courante.fuuid || fuuid
     const taille = version_courante.taille
 
     // Verifier s'il y a assez d'espace pour downloader le fichier
@@ -200,7 +200,7 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
     // }
 
     const infoDownload = getState()[SLICE_NAME].liste.filter(item=>item.fuuid === fuuid).pop()
-    console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
+    // console.debug("ajouterDownloadAction fuuid %s info existante %O", fuuid, infoDownload)
     if(!infoDownload) {
         // Ajouter l'upload, un middleware va charger le reste de l'information
         // console.debug("Ajout upload %O", correlation)

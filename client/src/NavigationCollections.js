@@ -339,6 +339,7 @@ function Modals(props) {
                 infoDechiffrage: infoVideo,
                 fuuidDownload: params.fuuid
             }
+            console.debug("!!! Modals.downloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         }
@@ -449,6 +450,7 @@ function Modals(props) {
                 fermer={showConversionVideoFermer} 
                 fichiers={liste}
                 selection={selection}
+                downloadAction={downloadAction}
                 />
         </>
     )

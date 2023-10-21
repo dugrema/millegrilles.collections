@@ -339,7 +339,7 @@ function SelectGroup(props) {
         <Col xs={12} lg={6}>
           <Form.Select name={name} onChange={onChange} value={value} disabled={disabled}>
             {optionsFiltrees.map(reso=>(
-              <option key={reso.value} value={''+reso.value}>
+              <option key={reso.label+reso.value} value={''+reso.value}>
                 {reso.label}
               </option>
             ))}
@@ -547,7 +547,7 @@ function AfficherLigneFormatVideo(props) {
     }
     // const fuuid = video.fuuid_video
 
-    // console.debug("Downloader %O", infoDownload)
+    console.debug("Downloader %O", infoDownload)
     downloadAction(infoDownload)
 
   }, [fichier, video, downloadAction])

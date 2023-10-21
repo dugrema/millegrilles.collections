@@ -155,7 +155,7 @@ export function WrapperPlayer(props) {
             .catch(err=>console.error("Erreur chargement poster : %O", err))
 
         return () => {
-            console.debug("Revoking blob %O", imageChargee)
+            // console.debug("Revoking blob %O", imageChargee)
             loaderImage.unload().catch(err=>console.error("AfficherVideo erreur unload poster video ", err))
         }
     }, [fichier, setPosterObj])

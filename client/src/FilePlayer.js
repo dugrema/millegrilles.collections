@@ -57,7 +57,7 @@ function DebounceFichiers(props) {
         
         const fichier = mapDocumentComplet(workers, fichierSelectionne, 0)
 
-        console.debug("DebounceFichiers Fichier mappe ", fichier)
+        // console.debug("DebounceFichiers Fichier mappe ", fichier)
 
         const fichierPreview = preparerPreviews(workers, tuuidSelectionne, [fichier], capabilities).pop()
         setFichier(fichierPreview)
@@ -243,10 +243,7 @@ function PreviewVideoMobile(props) {
         else return [{xs: 12}, {}]
     }, [orientation])
 
-    const showConversionHandler = useCallback(()=>{
-        console.debug("Show modal conversion")
-        showConversionVideo()
-    }, [showConversionVideo])
+    const showConversionHandler = useCallback(()=>showConversionVideo(), [showConversionVideo])
 
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
