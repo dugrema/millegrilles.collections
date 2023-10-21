@@ -273,9 +273,11 @@ function PreviewVideoMobile(props) {
                             setSelecteur={setSelecteur} 
                             videoLoader={videoLoader} />
                     </Col>
-                    <Col>
-                        <Button variant="secondary" onClick={showConversionHandler}>Conversion</Button>
-                    </Col>
+                    {!showConversionVideo?'':
+                        <Col>
+                            <Button variant="secondary" onClick={showConversionHandler}>Conversion</Button>
+                        </Col>
+                    }
                 </Row>
                 <InformationFichier {...props} />                    
             </Col>
