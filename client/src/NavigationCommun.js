@@ -858,7 +858,7 @@ function AfficherVideoView(props) {
     )
 
     return (
-        <AfficherVideo
+    <AfficherVideo
             fichier={fichier}
             tuuidSelectionne={tuuid}
             fermer={fermer} 

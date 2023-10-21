@@ -17,7 +17,7 @@ const HTTP_STATUS_ATTENTE = [202, 204]
 
 function AfficherVideo(props) {
 
-    const { support, showInfoModalOuvrir } = props
+    const { support, showInfoModalOuvrir, onLoad } = props
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const nomFichier = fichier.nom || '',
@@ -57,6 +57,7 @@ function AfficherVideo(props) {
                         fichier={fichier}
                         selecteur={selecteur} abLoop={abLoop} 
                         timeStamp={timeStamp} setTimeStamp={setTimeStamp}
+                        onLoad={onLoad}
                         />
                 </Col>
             </Row>
@@ -86,7 +87,7 @@ function AfficherVideo(props) {
 export default AfficherVideo
 
 export function WrapperPlayer(props) {
-    const { selecteur, abLoop, timeStamp, setTimeStamp } = props
+    const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad } = props
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
 
@@ -214,6 +215,10 @@ export function WrapperPlayer(props) {
     }, [setVideoChargePret, setErrVideo])
     const onAbort = useCallback(param => console.debug("onAbort ", param), [])
     const onEmptied = useCallback(param => console.debug("onEmptied ", param), [])
+
+    useEffect(()=>{
+        if(onLoad && srcVideo) onLoad(srcVideo.src)
+    }, [onLoad, srcVideo])
 
     return (
         <div>

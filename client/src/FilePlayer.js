@@ -234,16 +234,21 @@ function PreviewVideoMobile(props) {
     const [selecteur, setSelecteur] = useState('')
     const [timeStamp, setTimeStamp] = useState(-1)
     const [abLoop, setAbLoop] = useState(null)
+    const [srcVideo, setSrcVideo] = useState('')
 
     const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
     const videos = useMemo(()=>version_courante.video || {}, [version_courante])
 
     const cols = useMemo(()=>{
-        if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
+        if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}, {xs: 12, sm: 12}]
         else return [{xs: 12}, {}]
     }, [orientation])
 
     const showConversionHandler = useCallback(()=>showConversionVideo(), [showConversionVideo])
+
+    const copierSrcVideo = useCallback(()=>{
+        navigator.clipboard.writeText(srcVideo)
+    }, [srcVideo])
 
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
@@ -258,6 +263,7 @@ function PreviewVideoMobile(props) {
                             fichier={fichier}
                             selecteur={selecteur} abLoop={abLoop} 
                             timeStamp={timeStamp} setTimeStamp={setTimeStamp}
+                            onLoad={setSrcVideo}
                             />
                     </div>
                 </Ratio>
@@ -280,6 +286,21 @@ function PreviewVideoMobile(props) {
                     }
                 </Row>
                 <InformationFichier {...props} />                    
+                {srcVideo?
+                    <Row>
+                        <Col>
+                            <div>
+                                <br/>
+                                <Button variant="secondary" onClick={copierSrcVideo}>Copier</Button>
+                            </div>
+                            <div>
+                                {''+srcVideo}
+                                <br/>
+                                <br/>
+                            </div>
+                        </Col>
+                    </Row>
+                :''}
             </Col>
         </Row>
 
