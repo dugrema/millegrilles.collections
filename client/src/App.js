@@ -100,6 +100,7 @@ function LayoutMain() {
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [showMediaJobs, setShowMediaJobs] = useState(false)
   const [page, setPage] = useState('')
+  const [hideMenu, setHideMenu] = useState(false)
   
   const [erreur, setErreur] = useState('')
   const erreurCb = useCallback((err, message)=>{
@@ -110,6 +111,11 @@ function LayoutMain() {
 
   const showMediaJobsOuvrir = useCallback(()=>{ setShowMediaJobs(true) }, [setShowMediaJobs])
   const showMediaJobsFermer = useCallback(()=>{ setShowMediaJobs(false) }, [setShowMediaJobs])
+
+  const classNameTop = useMemo(()=>{
+    if(hideMenu) return 'fullscreen'
+    return ''
+  }, [hideMenu])
 
   // Modal transfert et actions
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
@@ -143,46 +149,56 @@ function LayoutMain() {
     }
   }, [setPage])
 
-  const menu = (
-    <Menu 
-        workers={workers}
-        etatConnexion={etatConnexion}
-        i18n={i18n} 
-        manifest={manifest} 
-        showTransfertModal={showTransfertModalOuvrir}
-        showMediaJobs={showMediaJobsOuvrir}
-        onSelect={handlerSelect} />
-  )
+  let menu = null
+  if(!hideMenu) {
+    menu = (
+      <Menu 
+          workers={workers}
+          etatConnexion={etatConnexion}
+          i18n={i18n} 
+          manifest={manifest} 
+          showTransfertModal={showTransfertModalOuvrir}
+          showMediaJobs={showMediaJobsOuvrir}
+          onSelect={handlerSelect} />
+    )
+  }
 
   return (
-    <LayoutMillegrilles menu={menu} fluid='md'>
+    <div className={classNameTop}>
+      <LayoutMillegrilles menu={menu} fluid='md'>
 
-      <div className='top-contenu'>
-        <Suspense fallback={<Attente />}>
-          <Contenu 
-              page={page}
-              erreurCb={erreurCb}
-            />
-        </Suspense>
-      </div>
+        {hideMenu?'':
+          <div className='top-spacer-menu'></div>
+        }
 
-      <Modals 
-          showTransfertModal={showTransfertModal}
-          showTransfertModalFermer={showTransfertModalFermer}
-          erreur={erreur}
-          handlerCloseErreur={handlerCloseErreur}
-          supprimerUploads={handlerSupprimerUploads}
-          continuerUploads={handlerContinuerUploads}
-          supprimerDownloads={handlerSupprimerDownloads}
-          continuerDownloads={handlerContinuerDownloads}
-          showMediaJobs={showMediaJobs}
-          showMediaJobsFermer={showMediaJobsFermer}
-        />
+        <div className='top-contenu'>
+          <Suspense fallback={<Attente />}>
+            <Contenu 
+                page={page}
+                setHideMenu={setHideMenu}
+                erreurCb={erreurCb}
+              />
+          </Suspense>
+        </div>
 
-      <InitialisationDownload />
-      <InitialisationUpload />
+        <Modals 
+            showTransfertModal={showTransfertModal}
+            showTransfertModalFermer={showTransfertModalFermer}
+            erreur={erreur}
+            handlerCloseErreur={handlerCloseErreur}
+            supprimerUploads={handlerSupprimerUploads}
+            continuerUploads={handlerContinuerUploads}
+            supprimerDownloads={handlerSupprimerDownloads}
+            continuerDownloads={handlerContinuerDownloads}
+            showMediaJobs={showMediaJobs}
+            showMediaJobsFermer={showMediaJobsFermer}
+          />
 
-    </LayoutMillegrilles>
+        <InitialisationDownload />
+        <InitialisationUpload />
+
+      </LayoutMillegrilles>
+    </div>
   )
 }
 
@@ -200,9 +216,6 @@ function Contenu(props) {
   return (
       <ErrorBoundary erreurCb={props.erreurCb}>
           <Page {...props}/>
-
-          <br/><br/>
-          
       </ErrorBoundary>
   )
 }

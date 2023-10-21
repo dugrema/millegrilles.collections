@@ -16,7 +16,7 @@ import PreviewFichiers from './FilePlayer'
 import { ArchiverModal, SupprimerModal, CopierModal, DeplacerModal, InfoModal, RenommerModal, PartagerModal, ConversionVideoModal } from './ModalOperations'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelFichier, MenuContextuelRepertoire, MenuContextuelMultiselect } from './MenuContextuel'
-import useWorkers, { useEtatPret, useUsager } from './WorkerContext'
+import useWorkers, { useCapabilities, useEtatPret, useUsager } from './WorkerContext'
 
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload, ajouterZipDownload } from './redux/downloaderSlice'
@@ -25,10 +25,12 @@ import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './Na
 
 function NavigationCollections(props) {
 
-    const { erreurCb } = props
+    const { setHideMenu, erreurCb } = props
     const dispatch = useDispatch()
     const workers = useWorkers()
     const etatPret = useEtatPret()
+    const capabilities = useCapabilities()
+
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
@@ -66,7 +68,7 @@ function NavigationCollections(props) {
         // Reset affichage
         setAfficherVideo('')
         setAfficherAudio('')
-        setShowPreview(false)      
+        setShowPreview(false)
 
         if(opts.retourFichier) return   // Plus rien a faire
 
@@ -144,6 +146,11 @@ function NavigationCollections(props) {
     useEffect(()=>{
         if(!modeSelection) dispatch(fichiersActions.selectionTuuids(''))  // Vider selection
     }, [dispatch, modeSelection])
+
+    useEffect(()=>{
+        if(modeView === 'carousel' && capabilities.mobile) setHideMenu(true)
+        else setHideMenu(false)
+    }, [capabilities, modeView])
 
     return (
         <>

@@ -208,17 +208,17 @@ export function BarreInformationMobile(props) {
         return () => setModeSelection(false)  // Re-initialiser a false
     }, [setModeSelection])
 
-    if(afficherMedia || hide) return ''
+    if(afficherMedia || hide || modeView === 'carousel') return ''
 
     return (
         <Row className='fichiers-header-buttonbar-mobile'>
             <Row>
-                <Col xs={1}>
+                <Col xs={2}>
                     <Button variant="secondary" className="fixed" disabled={!cuuidCourant} onClick={naviguerCollectionUpHandler}>
                         <i className="fa fa-arrow-up"/>
                     </Button>
                 </Col>
-                <Col xs={8}>
+                <Col xs={7} className='nom-repertoire'>
                     <Fade in={!!nomRepertoireCourant} appear={true}>
                         <span>{nomRepertoireCourant}</span>
                     </Fade>
@@ -303,10 +303,6 @@ function BoutonsNavigation(props) {
 
     return (
         <div>
-            <Button variant="secondary" className="fixed" disabled={!cuuid} onClick={naviguerCollectionUpHandler}>
-                <i className="fa fa-arrow-up"/>
-            </Button>
-            {' '}
             <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal} className="fixed">
                 <i className="fa fa-info"/>
             </Button>
@@ -946,6 +942,10 @@ function AfficherCarousel(props) {
 
     // const { images, item, onSelect, onClick, setDownloadSrc, showButtons, DEBUG } = props
 
+    const onClick = useCallback(()=>{
+        fermer()
+    }, [fermer])
+
     const onSelectCb = useCallback(idx=>{
         const fichier = images[idx]
         setItem(fichier)
@@ -1009,11 +1009,21 @@ function AfficherCarousel(props) {
         setLoaded(true)
     }, [workers, fichiers, setImages, loaded, setLoaded])
 
+    if(images.length === 0) {
+        return (
+            <div>
+                <p>Aucunes images.</p>
+                <Button onClick={fermer}>Fermer</Button>
+            </div>
+        )
+    }
+
     return (
         <div>
             <ImageCarousel 
                 images={images} 
                 item={item} 
+                onClick={onClick}
                 onSelect={onSelectCb} 
                 setDownloadSrc={setDownloadSrc} />
         </div>

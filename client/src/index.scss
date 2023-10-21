@@ -46,7 +46,7 @@ $xsmall-width: map.get($grid-breakpoints, xs);
 
     /* sticky */
     position: sticky;
-    top: 3.7rem;
+    top: 1rem;
     width: 105%;  /* Les lignes fichiers table utilisent un gutter */
 }
 
@@ -54,8 +54,8 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     margin-left: 0.25rem;
 }
 
-.top-contenu {
-    padding-top: 2rem;
+.top-spacer-menu {
+    padding-top: 2.7rem;
 }
 
 // .fichiers-contenu { padding-top: 1rem; }
@@ -68,7 +68,7 @@ $xsmall-width: map.get($grid-breakpoints, xs);
 
     /* sticky */
     position: sticky;
-    top: 3.7rem;
+    top: 1rem;
     width: 107%; /* Les lignes fichiers table utilisent un gutter */
 }
 
