@@ -27,17 +27,20 @@ import { getDocuments } from './fonctionsFichiers'
 const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
 export function BarreInformation(props) {
+    const { hide } = props
     const capabilities = useCapabilities()
+
     if(capabilities.device === 'desktop') {
         return <BarreInformationDesktop {...props} />
     }
+
     return <BarreInformationMobile {...props}/>
 }
 
 export function BarreInformationDesktop(props) {
 
     const { 
-        afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
+        hide, afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
         signalAnnuler, setShowInfoModal,
     } = props
@@ -107,23 +110,25 @@ export function BarreInformationDesktop(props) {
                     <SectionBreadcrumb naviguerCollection={naviguerCollection} fichier={afficherVideo||afficherAudio} />
                 </Col>
             </Row>
-            <Row>
-                <Col xs={12} md={8} className="buttonbars fichiers-headers-boutons">
-                    <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal}>
-                        <i className="fa fa-info"/>
-                    </Button>
-                    <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                    <BoutonsAction 
-                        cuuid={cuuidCourant}
-                        setShowCreerRepertoire={setShowCreerRepertoire}
-                        setPreparationUploadEnCours={setPreparationUploadEnCours}
-                        signalAnnuler={signalAnnuler}
-                    />
-                </Col>
-                <Col xs={12} md={4}>
-                    {nombreFichiersRendered}
-                </Col>
-            </Row>            
+            {hide?'':
+                <Row>
+                    <Col xs={12} md={8} className="buttonbars fichiers-headers-boutons">
+                        <Button variant="secondary" onClick={showInformationRepertoireHandler} disabled={!setShowInfoModal}>
+                            <i className="fa fa-info"/>
+                        </Button>
+                        <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                        <BoutonsAction 
+                            cuuid={cuuidCourant}
+                            setShowCreerRepertoire={setShowCreerRepertoire}
+                            setPreparationUploadEnCours={setPreparationUploadEnCours}
+                            signalAnnuler={signalAnnuler}
+                        />
+                    </Col>
+                    <Col xs={12} md={4}>
+                        {nombreFichiersRendered}
+                    </Col>
+                </Row>            
+            }
         </Row>
     )
 }

@@ -112,7 +112,7 @@ export function WrapperPlayer(props) {
         const currentTime = event.target.currentTime
         if(abLoop) {
             if(abLoop.b <= currentTime) {
-                console.debug("Loop to ", abLoop.a)
+                // console.debug("Loop to ", abLoop.a)
                 setTimeStamp(abLoop.a)
                 setJumpToTimeStamp(abLoop.a)
                 setTimeout(()=>setJumpToTimeStamp(-1), 100)
@@ -190,7 +190,9 @@ export function WrapperPlayer(props) {
         // Le video n'est pas necessairement pret, mais onCanPlay n'est pas lance sur mobiles (iOS)
         setVideoChargePret(true)
     }, [setVideoChargePret])
-    const onPlay = useCallback(param => console.debug("onPlay ", param), [])
+    const onPlay = useCallback(param => {
+        // console.debug("onPlay ", param)
+    }, [])
     const onError = useCallback(event => {
         const target = event.target
         // console.debug("Erreur load video ", event)
@@ -202,7 +204,9 @@ export function WrapperPlayer(props) {
             }
         }
     }, [setVideoChargePret, setErrVideoCb])
-    const onWaiting = useCallback(param => console.debug("onWaiting ", param), [])
+    const onWaiting = useCallback(param => {
+        // console.debug("onWaiting ", param)
+    }, [])
     const onCanPlay = useCallback(param => {
         // console.debug("onCanPlay ", param)
         setVideoChargePret(true)
