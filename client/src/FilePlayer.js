@@ -343,8 +343,8 @@ function PreviewImageMobile(props) {
         console.error("Erreur chargement image : %O", e)
     }, [])
 
-    const viewSrcClick = useCallback( event => {
-        if(!srcImage) return setErrCb("Le document source n'est pas pret")
+    const viewImageClick = useCallback( event => {
+        if(!srcImage) return setErrCb("L'image n'est pas prete")
 
         console.debug("PreviewDocumentMobile %O", srcImage)
         const link = document.createElement('a')
@@ -354,6 +354,18 @@ function PreviewImageMobile(props) {
         link.click()
         document.body.removeChild(link)
     }, [srcImage, setErrCb])
+
+    const viewOriginalClick = useCallback( event => {
+        if(!srcImage) return setErrCb("L'image originale n'est pas prete")
+
+        console.debug("PreviewDocumentMobile %O", srcLocal)
+        const link = document.createElement('a')
+        link.href = srcLocal
+        link.setAttribute('target', '_blank')
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }, [srcLocal, setErrCb])
 
     // Load / unload
     useEffect(()=>{
@@ -374,6 +386,7 @@ function PreviewImageMobile(props) {
 
         return () => {
             setSrcImage('')
+            setSrcLocal('')
             setComplet(false)
             imageLoader.unload()
                 .catch(err=>console.warn("Erreur unload image : %O", err))
@@ -386,26 +399,18 @@ function PreviewImageMobile(props) {
                 <Ratio aspectRatio='4x3'>
                     <div className={"player-media-image mobile " + orientation}>
                         {srcImage?
-                            <img src={srcImage} onClick={viewSrcClick} />
+                            <img src={srcImage} onClick={viewImageClick} />
                             :''
                         }
                     </div>
                 </Ratio>
             </Col>
             <Col {...cols[1]} className={'player-media-information ' + orientation}>
-                {capabilities.mobile?
-                    <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
-                        <i className='fa fa-file-image-o'/> Ouvrir
-                    </Button>
-                :
-                    <div>
-                        <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
-                            <i className='fa fa-file-image-o'/> Ouvrir
-                        </Button>
-                        {' '}
-                        <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
-                    </div>
-                }
+                <Button onClick={viewImageClick} variant="primary" disabled={!srcImage} className="player-media-ouvrir">
+                    <i className='fa fa-file-image-o'/> Ouvrir
+                </Button>
+                {' '}
+                <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
                 <InformationFichier {...props} />
             </Col>
         </Row>
