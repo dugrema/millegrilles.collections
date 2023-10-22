@@ -12,6 +12,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 import { VideoViewer } from '@dugrema/millegrilles.reactjs'
 
 import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
+import { useCapabilities } from './WorkerContext'
 
 const HTTP_STATUS_ATTENTE = [202, 204]
 
@@ -389,7 +390,7 @@ function PlayerEtatPassthrough(props) {
 
 function PanneauInformation(props) {
 
-    const { fichier, nomFichier, fermer, showInfoModalOuvrir, videos, support, selecteurs, selecteur, setSelecteur, abLoop, toggleAbLoop } = props
+    const { fichier, showInfoModalOuvrir, selecteur, setSelecteur, abLoop, toggleAbLoop } = props
 
     const variantBoutonLoop = useMemo(()=>{
         if(abLoop) {
@@ -413,12 +414,9 @@ function PanneauInformation(props) {
 
                 <Col>
                     <SelecteurResolution 
-                        listeVideos={videos} 
-                        support={support}
-                        selecteurs={selecteurs} 
+                        fichier={fichier} 
                         selecteur={selecteur} 
-                        setSelecteur={setSelecteur} 
-                        videoLoader={fichier.videoLoader} />
+                        setSelecteur={setSelecteur} />
                 </Col>
             </Row>
         </div>
@@ -427,6 +425,89 @@ function PanneauInformation(props) {
 
 
 export function SelecteurResolution(props) {
+    const { fichier, selecteur, setSelecteur } = props
+
+    const capabilities = useCapabilities()
+
+    const changerSelecteur = useCallback(value=>setSelecteur(value), [setSelecteur])
+
+    const selecteurs = useMemo(()=>{
+        console.debug("SelecteurResolution fichier ", fichier)
+        if(!fichier) return
+        const version_courante = fichier.version_courante
+        if(!version_courante || !version_courante.video) return 
+        const videos = version_courante.video
+        const paramsOpts = {
+            fuuid: fichier.fuuid, mimetype: fichier.mimetype, 
+            height: version_courante.height, width: version_courante.width,
+            codec: version_courante.videoCodec,
+            supportMedia: capabilities.video
+        }
+        console.debug("SelecteurResolution videos: %O params %O", videos, paramsOpts)
+        const selecteurs = determinerSelecteursVideos(videos, paramsOpts)
+        console.debug("SelecteurVideoContenu selecteurs generes : ", selecteurs)
+        return selecteurs
+    }, [fichier, capabilities])
+
+    // Identifier un selecteur initial pour declencher le chargement automatique
+    useEffect(()=>{
+        if(selecteur || !selecteurs) return  // Deja initialise
+        const selecteursKeys = Object.keys(selecteurs)
+
+        if(!selecteursKeys) {
+            // Aucunes options (probablement nouveau video) - utiliser original
+            return setSelecteur('original')
+        } else if(selecteursKeys.includes('fallback')) {
+            // Selectionner le format fallback (la plus faible resolution)
+            return setSelecteur('fallback')
+        } else {
+            console.error("Aucuns format video n'est disponible dans le selecteur")
+        }
+    }, [selecteurs, selecteur, setSelecteur])
+
+    return (
+        <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
+            <SelecteurVideoContenu fichier={fichier} selecteurs={selecteurs} selecteur={selecteur} setSelecteur={changerSelecteur} />
+        </DropdownButton>
+    )
+}
+
+function SelecteurVideoContenu(props) {
+    const { fichier, selecteurs, selecteur, setSelecteur } = props
+    return <SelecteurVideoResolution {...props} />
+}
+
+function SelecteurVideoResolution(props) {
+    const { selecteurs, selecteur } = props
+
+    const listeOptions = useMemo(()=>{
+        if(!selecteurs) return []
+        const resolutions = selecteurs.resolutions
+        const optionKeys = Object.keys(resolutions)
+        optionKeys.sort()
+        optionKeys.reverse()
+        const options = optionKeys.map(key=>{ 
+            const label = '' + Number.parseInt(key) + 'p'
+            return {key, label} 
+        })
+        if(selecteurs.fallback) options.push({key: 'fallback', label: 'fallback'})
+        return options
+    }, [selecteurs])
+
+    return listeOptions.map(item=>{
+        if(item.key === selecteur) {
+            return <Dropdown.Item key={item.key} eventKey={item.key} active>{item.label}</Dropdown.Item>
+        } else {
+            return <Dropdown.Item key={item.key} eventKey={item.key}>{item.label}</Dropdown.Item>
+        }
+    })
+}
+
+function SelecteurVideoDetail(props) {
+    return 'SelecteurVideoDetail'
+}
+
+function SelecteurResolutionOld(props) {
     const { listeVideos, /*support,*/ selecteur, setSelecteur, /*videoLoader,*/ selecteurs } = props
 
     const [listeOptions, setListeOptions] = useState([])
@@ -504,3 +585,81 @@ export function SelecteurResolution(props) {
 //         </Row>
 //     )
 // }
+
+export function determinerSelecteursVideos(videos, opts) {
+    opts = opts || {}
+
+    // Information original (optionnel)
+    const { fuuid, mimetype, height, width, codec, supportMedia } = opts
+
+    const bucketResolution = {}
+    const bucketDetail = []
+    const buckets = { resolutions: bucketResolution, detail: bucketDetail }
+    if(fuuid && mimetype) {
+        buckets.original = [{fuuid, fuuid_video: fuuid, width, height, codec}]
+    }
+
+    for(const key of Object.keys(videos)) {
+        const video = videos[key]
+        const { codec, fuuid_video, width, height, mimetype, quality } = video
+        let resolution = video.resolution || Math.min(width, height)
+
+        const infoVideo = {
+            fuuid,
+            fuuid_video,
+            width,
+            height,
+            mimetype,
+            resolution,
+            codec,
+            header: video.header,
+            format: video.format,
+        }
+        // console.debug("InfoVideo %O (video elem %O)", infoVideo, key)
+
+        // Ajouter key original pour selection individuelle
+        // const cle = `${resolution};${mimetype};${codec};${quality}`
+        bucketDetail.push(infoVideo)
+
+        if(codec === 'h264' && resolution <= 360) {
+            buckets.fallback = infoVideo
+        }
+
+        // Calculer bucket resolution
+        let resolutionTag = null
+        if(resolution >= 1080) resolutionTag = '1080'
+        else if(resolution < 1080 && resolution >= 720) resolutionTag = '0720'
+        else if(resolution < 720 && resolution >= 480) resolutionTag = '0480'
+        else if(resolution < 480 && resolution >= 360) resolutionTag = '0360'
+        else if(resolution < 360) resolutionTag = '0270'
+        
+        // Inserer label (selecteur) pour le tag
+        if(resolutionTag) {
+            let liste = bucketResolution[resolutionTag]
+            if(!liste) {
+                liste = []
+                bucketResolution[resolutionTag] = liste
+            }
+            liste.push(infoVideo)
+        }
+    }
+
+    // Cleanup des buckets de resolution si aucun codec n'est supporte
+    const resolutions = buckets.resolutions
+    const keysResolution = Object.keys(resolutions)
+    for(const key of keysResolution) {
+        const listeVideos = resolutions[key]
+        let supporte = false
+        for(const video of listeVideos) {
+            const mimetype = video.mimetype
+            if(supportMedia[video.codec]) {
+                supporte = true
+                break
+            }
+        }
+        // Retirer cette resolution
+        if(!supporte) delete resolutions[key]
+    }
+
+    return buckets
+}

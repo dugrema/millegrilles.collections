@@ -4,7 +4,7 @@ import { useMediaQuery } from '@react-hooks-hub/use-media-query'
 import { setupWorkers, cleanupWorkers } from './workers/workerLoader'
 import { init as initCollectionsIdb } from './redux/collectionsIdbDao'
 import { 
-    supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled,
+    supporteFormatWebp, supporteFormatWebm, supporteFileStream, isTouchEnabled, detecterFormatsVideos,
 } from '@dugrema/millegrilles.reactjs'
 
 const CONST_INTERVAL_VERIF_SESSION = 600_000
@@ -187,7 +187,8 @@ function redirigerPortail(err) {
 async function loadCapabilities() {
     const touchEnabled = isTouchEnabled()
     const webp = await supporteFormatWebp()
-    const webm = supporteFormatWebm()
+    // const webm = supporteFormatWebm()
     const stream = supporteFileStream()
-    return { touchEnabled, webp, webm, stream }
+    const video = detecterFormatsVideos()
+    return { touchEnabled, webp, stream, video }
 }

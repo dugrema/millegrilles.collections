@@ -226,10 +226,10 @@ function PreviewVideoMobile(props) {
 
     const { fichier, showConversionVideo, downloadAction } = props
 
-    const videoLoader = fichier.videoLoader,
-          version_courante = fichier.version_courante
+    // const videoLoader = fichier.videoLoader,
+    //       version_courante = fichier.version_courante
 
-    const support = useDetecterSupport()
+    // const support = useDetecterSupport()
 
     const { device, orientation } = useMediaQuery()
     const capabilities = useCapabilities()
@@ -239,8 +239,8 @@ function PreviewVideoMobile(props) {
     const [abLoop, setAbLoop] = useState(null)
     const [srcVideo, setSrcVideo] = useState('')
 
-    const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
-    const videos = useMemo(()=>version_courante.video || {}, [version_courante])
+    // const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
+    // const videos = useMemo(()=>version_courante.video || {}, [version_courante])
 
     const cols = useMemo(()=>{
         if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}, {xs: 12, sm: 12}]
@@ -280,12 +280,9 @@ function PreviewVideoMobile(props) {
                 <Row>
                     <Col>
                         <SelecteurResolution 
-                            listeVideos={videos} 
-                            support={support}
-                            selecteurs={selecteurs} 
+                            fichier={fichier}
                             selecteur={selecteur} 
-                            setSelecteur={setSelecteur} 
-                            videoLoader={videoLoader} />
+                            setSelecteur={setSelecteur} />
                     </Col>
                     {!showConversionVideo?'':
                         <Col>
