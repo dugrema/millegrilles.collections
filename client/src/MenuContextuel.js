@@ -9,7 +9,8 @@ export function MenuContextuelFichier(props) {
     const { 
         fichier, contextuel, fermerContextuel, showPreview, cuuid, 
         showArchiverModalOuvrir, showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
-        showInfoModalOuvrir, showRenommerModalOuvrir, downloadAction, 
+        showRenommerModalOuvrir, downloadAction, 
+        // showInfoModalOuvrir,
     } = props
 
     // Determiner si preview est disponible
@@ -54,13 +55,13 @@ export function MenuContextuelFichier(props) {
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
     const renommerAction = useCallback( () => renommer(fermerContextuel, showRenommerModalOuvrir), [fermerContextuel, showRenommerModalOuvrir] )
-    const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
+    // const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
 
     return (
         <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={downloadEvent}><i className="fa fa-download"/> Download</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
+            {/* <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row> */}
             <hr/>
             <Row><Col><Button variant="link" onClick={renommerAction}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={deplacerAction} disabled={!cuuid}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>

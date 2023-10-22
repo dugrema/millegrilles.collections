@@ -106,7 +106,7 @@ function NavigationCollections(props) {
         return false
     }, [showPreview, modeView])
 
-    const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
+    // const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
     const annulerPreparationUpload = useCallback(()=>{
         console.debug("Annuler preparation upload")
         signalAnnuler.setValeur(true)
@@ -190,7 +190,7 @@ function NavigationCollections(props) {
                         setAfficherVideo={setAfficherVideo}
                         setAfficherAudio={setAfficherAudio}
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
-                        showInfoModalOuvrir={showInfoModalOuvrir}
+                        // showInfoModalOuvrir={showInfoModalOuvrir}
                         setShowConversionVideo={setShowConversionVideo}
                         scrollValue={scrollValue}
                         onScroll={onScrollHandler}
@@ -327,7 +327,7 @@ function Modals(props) {
     const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
     const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
     const showRenommerModalFermer = useCallback(()=>setShowRenommerModal(false), [setShowRenommerModal])
-    const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
+    // const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
     const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
     const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
     const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
@@ -375,7 +375,7 @@ function Modals(props) {
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 showCopierModalOuvrir={showCopierModalOuvrir}
                 showDeplacerModalOuvrir={showDeplacerModalOuvrir}
-                showInfoModalOuvrir={showInfoModalOuvrir}
+                // showInfoModalOuvrir={showInfoModalOuvrir}
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
                 showPartagerModalOuvrir={showPartagerModalOuvrir}
                 cuuid={cuuid}

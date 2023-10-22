@@ -292,7 +292,7 @@ function PreviewVideoMobile(props) {
                 {srcVideo?
                     <Row>
                         <Col xs={3}>
-                            URL
+                            Action
                         </Col>
                         <Col>
                             <Button disabled={!!copierNotif} variant={copierNotif?'outline-secondary':'secondary'} onClick={copierSrcVideo}>Copier</Button>
