@@ -676,7 +676,6 @@ export function determinerSelecteursVideos(videos, opts) {
         const listeVideos = resolutions[key]
         let supporte = false
         for(const video of listeVideos) {
-            const mimetype = video.mimetype
             if(supportMedia[video.codec]) {
                 supporte = true
                 break
