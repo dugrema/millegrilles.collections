@@ -38,6 +38,7 @@ function NavigationCollections(props) {
     const [modeView, setModeView] = useState('')
     const [scrollValue, setScrollValue] = useState(0)
     const [modeSelection, setModeSelection] = useState(false)
+    const [toggleOffCarousel, setToggleOffCarousel] = useState(false)
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
@@ -69,6 +70,7 @@ function NavigationCollections(props) {
         setAfficherVideo('')
         setAfficherAudio('')
         setShowPreview(false)
+        setToggleOffCarousel(true)
 
         if(opts.retourFichier) return   // Plus rien a faire
 
@@ -90,7 +92,7 @@ function NavigationCollections(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, setShowPreview, erreurCb, setAfficherVideo, setAfficherAudio])
+    }, [dispatch, workers, setShowPreview, erreurCb, setAfficherVideo, setAfficherAudio, setToggleOffCarousel])
 
     const signalAnnuler = useMemo(()=>{
         let valeur = false
@@ -151,6 +153,12 @@ function NavigationCollections(props) {
         if(modeView === 'carousel' && capabilities.mobile) setHideMenu(true)
         else setHideMenu(false)
     }, [capabilities, modeView])
+
+    useEffect(()=>{
+        if(!toggleOffCarousel) return
+        setToggleOffCarousel(false)
+        if(modeView === 'carousel') setModeView('liste')
+    }, [modeView, setModeView, toggleOffCarousel, setToggleOffCarousel])
 
     return (
         <>
