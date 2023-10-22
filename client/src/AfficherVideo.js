@@ -174,6 +174,8 @@ export function WrapperPlayer(props) {
         setErrVideoCb('')
         setProgresChargement(0)
 
+        // console.debug("AfficherVideo selecteur ", selecteur)
+
         fichier.videoLoader.load({selecteur})
             .then(async src => {
                 // console.debug("videoLoader.load resultat : ", src)
@@ -435,10 +437,10 @@ export function SelecteurResolution(props) {
     }, [setSelecteur])
 
     const selecteurs = useMemo(()=>{
-        if(!fichier) return
+        if(!fichier || !fichier.version_courante) return
         const version_courante = fichier.version_courante
-        if(!version_courante || !version_courante.video) return 
-        const videos = version_courante.video
+        const videos = version_courante.video || {}
+        // if(!version_courante || !version_courante.video) return 
         const paramsOpts = {
             fuuid: fichier.fuuid, mimetype: fichier.mimetype, 
             height: version_courante.height, width: version_courante.width,
@@ -451,15 +453,19 @@ export function SelecteurResolution(props) {
 
     // Identifier un selecteur initial pour declencher le chargement automatique
     useEffect(()=>{
+        // console.debug("SelecteurResolution selecteur %O, selecteurs %O", selecteur, selecteurs)
         if(selecteur || !selecteurs) return  // Deja initialise
         const selecteursKeys = Object.keys(selecteurs)
 
         const defaultSelecteur = window.localStorage.getItem('videoResolution')
 
-        if(!selecteursKeys) {
-            // Aucunes options (probablement nouveau video) - utiliser original
+        if(!selecteurs.resolutions || Object.keys(selecteurs.resolutions).length === 0) {
+            // Choisir fallback, sinon original
+            if(selecteurs.fallback) return setSelecteur('fallback')
             return setSelecteur('original')
-        } else if(defaultSelecteur && defaultSelecteur !== 'fallback' && selecteurs.resolutions) {
+        }
+
+        if(defaultSelecteur && defaultSelecteur !== 'fallback' && selecteurs.resolutions) {
             const resolutions = selecteurs.resolutions
             // Tenter de trouver une resolution qui correspond au selecteur
             if(resolutions[defaultSelecteur]) return setSelecteur(defaultSelecteur)
@@ -505,7 +511,7 @@ function SelecteurVideoResolution(props) {
     const { selecteurs, selecteur } = props
 
     const listeOptions = useMemo(()=>{
-        if(!selecteurs) return []
+        if(!selecteurs) return [{key: 'original', label: 'Original'}]
         const resolutions = selecteurs.resolutions
         const optionKeys = Object.keys(resolutions)
         optionKeys.sort()
