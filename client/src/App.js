@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux'
 
 import Button from 'react-bootstrap/Button'
-import Container from 'react-bootstrap/Container'
 
 import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'
 
@@ -117,6 +116,11 @@ function LayoutMain() {
     return ''
   }, [hideMenu])
 
+  const fluid = useMemo(()=>{
+    if(hideMenu) return true
+    return 'md'
+  }, [hideMenu])
+
   // Modal transfert et actions
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
@@ -165,7 +169,7 @@ function LayoutMain() {
 
   return (
     <div className={classNameTop}>
-      <LayoutMillegrilles menu={menu} fluid='md'>
+      <LayoutMillegrilles menu={menu} fluid={fluid}>
 
         {hideMenu?'':
           <div className='top-spacer-menu'></div>
