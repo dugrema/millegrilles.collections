@@ -239,8 +239,30 @@ function PreviewVideoMobile(props) {
     const [abLoop, setAbLoop] = useState(null)
     const [srcVideo, setSrcVideo] = useState('')
 
-    // const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
-    // const videos = useMemo(()=>version_courante.video || {}, [version_courante])
+    const abLoopToggleHandler = useCallback(()=>{
+        let ts = timeStamp
+        if(ts === -1 || !ts) ts = 0
+        if(!abLoop) {
+            // console.debug("AB Loop - set valeur A ", ts)
+            setAbLoop({a: ts})
+        } else {
+            if(!(abLoop.b >= 0)) {
+                // console.debug("AB Loop - set valeur B ", ts)
+                setAbLoop({...abLoop, b: ts})
+            } else {
+                // console.debug("AB Loop - reset")
+                setAbLoop(null)
+            }
+        }
+    }, [abLoop, setAbLoop, timeStamp])
+
+    const variantBoutonLoop = useMemo(()=>{
+        if(abLoop) {
+            if(abLoop.b >= 0) return 'success'
+            else if(abLoop.a >= 0) return 'primary'
+        }
+        return 'secondary'
+    }, [abLoop])
 
     const cols = useMemo(()=>{
         if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}, {xs: 12, sm: 12}]
@@ -304,6 +326,8 @@ function PreviewVideoMobile(props) {
                             <Button disabled={!!copierNotif} variant={copierNotif?'outline-secondary':'secondary'} onClick={copierSrcVideo}>
                                 <i className='fa fa-copy' /> Copier
                             </Button>
+                            {' '}
+                            <Button variant={variantBoutonLoop} onClick={abLoopToggleHandler}>Boucle</Button>
                         </Col>
                     </Row>
                 :''}
