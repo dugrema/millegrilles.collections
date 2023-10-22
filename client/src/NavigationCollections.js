@@ -559,13 +559,13 @@ function preparerColonnes(workers) {
     const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
 
     const params = {
-        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
+        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier'],
         paramsColonnes: {
-            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
+            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 7},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
             'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
             // 'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
-            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 3},
+            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 2},
             // 'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
         ordreColonnesMobile: ['nom', 'taille', 'dateFichier', 'mimetype'],
