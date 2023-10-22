@@ -95,12 +95,12 @@ function Menu(props) {
           <i className="fa fa-trash-o" /> {estMobile?' ' + t('menu.corbeille'):''}
         </Nav.Link>
 
-        <Nav.Link eventKey="partager" title={t('menu.partager')}>
-          <i className="fa fa-share-alt" /> {estMobile?' ' + t('menu.partager'):''}
-        </Nav.Link>
-
         <Nav.Link eventKey="mediaJobs" title={t('menu.mediaJobs')}>
           <i className="fa fa-film" /> {estMobile?' ' + t('menu.mediaJobs'):''}
+        </Nav.Link>
+
+        <Nav.Link eventKey="partager" title={t('menu.partager')}>
+          <i className="fa fa-share-alt" /> {t('menu.partager')}
         </Nav.Link>
 
         <Nav.Link eventKey="information" title="Afficher l'information systeme">

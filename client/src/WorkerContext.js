@@ -143,7 +143,7 @@ export function WorkerProvider(props) {
             .then(capabilities => {
                 let dev = device
                 if(device === 'desktop' && capabilities.touchEnabled) dev = 'tablet'
-                const mobile = dev !== 'desktop'
+                const mobile = dev !== 'desktop' && capabilities.touchEnabled
                 const caps = {...capabilities, device: dev, orientation, mobile}
                 console.info("Browser capabilities : %O", caps)
                 setCapabilities(caps)

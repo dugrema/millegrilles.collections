@@ -215,7 +215,7 @@ export function BarreInformationMobile(props) {
             <Row>
                 <Col xs={2}>
                     <Button variant="secondary" className="fixed" disabled={!cuuidCourant} onClick={naviguerCollectionUpHandler}>
-                        <i className="fa fa-arrow-up"/>
+                        <i className="fa fa-level-up"/>
                     </Button>
                 </Col>
                 <Col xs={7} className='nom-repertoire'>
@@ -344,7 +344,6 @@ export function BoutonsAction(props) {
     const { setShowCreerRepertoire, setPreparationUploadEnCours, signalAnnuler } = props
 
     const capabilities = useCapabilities()
-    const estMobile = useMemo(()=>capabilities.mobile, [capabilities])
 
     return (
         <>
@@ -707,7 +706,7 @@ export function AffichagePrincipal(props) {
     const selection = useSelector(state => state.fichiers.selection)
     const colonnes = useMemo(()=>preparerColonnes(), [preparerColonnes])
 
-    const isMobile = useMemo(()=>capabilities.device!=='desktop', [capabilities])
+    const isMobile = capabilities.mobile
 
     const classnameContenu = useMemo(()=>{
         if(isMobile) return 'fichiers-contenu-mobile'
