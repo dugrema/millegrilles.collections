@@ -406,11 +406,16 @@ function PreviewImageMobile(props) {
                 </Ratio>
             </Col>
             <Col {...cols[1]} className={'player-media-information ' + orientation}>
-                <Button onClick={viewImageClick} variant="primary" disabled={!srcImage} className="player-media-ouvrir">
-                    <i className='fa fa-file-image-o'/> Ouvrir
-                </Button>
-                {' '}
-                <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
+                <Row>
+                    <Col>
+                        <Button onClick={viewImageClick} variant="primary" disabled={!srcImage} className="player-bouton-full">
+                            <i className='fa fa-file-image-o'/> Ouvrir
+                        </Button>
+                    </Col>
+                    <Col>
+                        <Button variant="secondary" onClick={downloadHandler} className="player-bouton-full"><i className='fa fa-download'/> Download</Button>
+                    </Col>
+                </Row>
                 <InformationFichier {...props} />
             </Col>
         </Row>
