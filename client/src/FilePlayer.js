@@ -246,9 +246,12 @@ function PreviewVideoMobile(props) {
 
     const showConversionHandler = useCallback(()=>showConversionVideo(), [showConversionVideo])
 
+    const [copierNotif, setCopierNotif] = useState(false)
     const copierSrcVideo = useCallback(()=>{
         navigator.clipboard.writeText(srcVideo)
-    }, [srcVideo])
+        setCopierNotif(true)
+        setTimeout(()=>setCopierNotif(false), 2_000)
+    }, [srcVideo, setCopierNotif])
 
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
@@ -288,16 +291,11 @@ function PreviewVideoMobile(props) {
                 <InformationFichier {...props} />                    
                 {srcVideo?
                     <Row>
+                        <Col xs={3}>
+                            URL
+                        </Col>
                         <Col>
-                            <div>
-                                <br/>
-                                <Button variant="secondary" onClick={copierSrcVideo}>Copier</Button>
-                            </div>
-                            <div>
-                                {''+srcVideo}
-                                <br/>
-                                <br/>
-                            </div>
+                            <Button disabled={!!copierNotif} variant={copierNotif?'outline-secondary':'secondary'} onClick={copierSrcVideo}>Copier</Button>
                         </Col>
                     </Row>
                 :''}
