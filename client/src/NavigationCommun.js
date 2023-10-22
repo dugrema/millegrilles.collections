@@ -40,7 +40,7 @@ export function BarreInformation(props) {
 export function BarreInformationDesktop(props) {
 
     const { 
-        hide, afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
+        hide, hideMenu, afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
         signalAnnuler, setShowInfoModal,
     } = props
@@ -68,6 +68,8 @@ export function BarreInformationDesktop(props) {
         if(cuuidCourant === '') setShowInfoModal(1)
         else setShowInfoModal(cuuidCourant)
     }, [cuuidCourant, setShowInfoModal])
+
+    if(afficherMedia || (hideMenu && modeView === 'carousel')) return ''
 
     let nombreFichiersRendered = ''
     if(liste) {
@@ -684,6 +686,7 @@ export function AffichagePrincipal(props) {
 
     const {
         hide,
+        hideMenu, setHideMenu,
         preparerColonnes,
         modeView, setModeView,
         naviguerCollection,
@@ -800,7 +803,7 @@ export function AffichagePrincipal(props) {
     // }
 
     if(modeView === 'carousel') {
-        return <AfficherCarousel fichiers={liste} fermer={fermerCarousel} />
+        return <AfficherCarousel fichiers={liste} fermer={fermerCarousel} hideMenu={hideMenu} setHideMenu={setHideMenu} />
     }
 
     // Default - liste fichiers
@@ -929,11 +932,12 @@ export function InformationListe(_props) {
 
 
 function AfficherCarousel(props) {
-    const { fichiers, fermer } = props
+    const { fichiers, fermer, hideMenu, setHideMenu } = props
 
     const workers = useWorkers()
     const dispatch = useDispatch()
     const selection = useSelector(state=>state.fichiers.selection)
+    const capabilities = useCapabilities()
 
     const [item, setItem] = useState('')
     const [images, setImages] = useState('')
@@ -942,8 +946,14 @@ function AfficherCarousel(props) {
     // const { images, item, onSelect, onClick, setDownloadSrc, showButtons, DEBUG } = props
 
     const onClick = useCallback(()=>{
-        fermer()
-    }, [fermer])
+        if(capabilities.mobile) {
+            fermer()
+        } else {
+            // Toggle afficher menu
+            console.debug("Toggle afficher menu (courant %O)", hideMenu)
+            setHideMenu(!hideMenu)
+        }
+    }, [fermer, capabilities, hideMenu, setHideMenu])
 
     const onSelectCb = useCallback(idx=>{
         const fichier = images[idx]

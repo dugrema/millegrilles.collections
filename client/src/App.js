@@ -175,6 +175,7 @@ function LayoutMain() {
           <Suspense fallback={<Attente />}>
             <Contenu 
                 page={page}
+                hideMenu={hideMenu}
                 setHideMenu={setHideMenu}
                 erreurCb={erreurCb}
               />

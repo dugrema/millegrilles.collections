@@ -25,7 +25,7 @@ import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './Na
 
 function NavigationCollections(props) {
 
-    const { setHideMenu, erreurCb } = props
+    const { hideMenu, setHideMenu, erreurCb } = props
     const dispatch = useDispatch()
     const workers = useWorkers()
     const etatPret = useEtatPret()
@@ -157,6 +157,7 @@ function NavigationCollections(props) {
             <div>
                 <BarreInformation 
                     hide={cacherAffichage}
+                    hideMenu={hideMenu}
                     naviguerCollection={naviguerCollection}
                     modeView={modeView}
                     setModeView={setModeView} 
@@ -182,6 +183,8 @@ function NavigationCollections(props) {
                         preparerColonnes={preparerColonnesCb}
                         modeView={modeView}
                         setModeView={setModeView}
+                        hideMenu={hideMenu}
+                        setHideMenu={setHideMenu}
                         naviguerCollection={naviguerCollection}
                         showPreviewAction={showPreviewAction}
                         setContextuel={setContextuel}
