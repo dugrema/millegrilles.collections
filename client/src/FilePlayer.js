@@ -35,7 +35,7 @@ export default PreviewFichiers
 
 function DebounceFichiers(props) {
 
-    const { tuuidSelectionne, fichier: fichierSelectionne, showPreview, setShowPreview, showConversionVideo } = props
+    const { tuuidSelectionne, fichier: fichierSelectionne, showPreview, setShowPreview, showConversionVideo, downloadAction } = props
 
     const workers = useWorkers()
     const capabilities = useCapabilities()
@@ -72,6 +72,7 @@ function DebounceFichiers(props) {
                 fermer={ () => setShowPreview(false) } 
                 fichier={fichier}
                 showConversionVideo={showConversionVideo}
+                downloadAction={downloadAction}
                 />
         )
     }
@@ -82,6 +83,7 @@ function DebounceFichiers(props) {
             fichier={fichier}
             tuuidSelectionne={ tuuidSelectionne }
             showConversionVideo={showConversionVideo}
+            downloadAction={downloadAction}
         />
     )
 
@@ -157,7 +159,7 @@ function filtrerTypesPreview(item) {
 }
 
 function AfficherDesktop(props) {
-    const { fermer, fichier, showConversionVideo } = props
+    const { fermer, fichier, showConversionVideo, downloadAction } = props
 
     if(!fichier) return ''
 
@@ -167,13 +169,13 @@ function AfficherDesktop(props) {
                 <Col xs={2} md={1}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
                 <Col>{fichier.nom}</Col>
             </Row>
-            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} />
+            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} downloadAction={downloadAction} />
         </div>
     )
 }
 
 function AfficherMobile(props) {
-    const { fermer, fichier, showConversionVideo } = props
+    const { fermer, fichier, showConversionVideo, downloadAction } = props
 
     if(!fichier) return ''
 
@@ -183,7 +185,7 @@ function AfficherMobile(props) {
                 <Col xs={2}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
                 <Col>{fichier.nom}</Col>
             </Row>
-            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} />
+            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} downloadAction={downloadAction} />
         </div>
     )
 }
@@ -222,7 +224,7 @@ function PreviewMediaMobile(props) {
 
 function PreviewVideoMobile(props) {
 
-    const { fichier, showConversionVideo } = props
+    const { fichier, showConversionVideo, downloadAction } = props
 
     const videoLoader = fichier.videoLoader,
           version_courante = fichier.version_courante
@@ -230,6 +232,7 @@ function PreviewVideoMobile(props) {
     const support = useDetecterSupport()
 
     const { device, orientation } = useMediaQuery()
+    const capabilities = useCapabilities()
 
     const [selecteur, setSelecteur] = useState('')
     const [timeStamp, setTimeStamp] = useState(-1)
@@ -252,6 +255,8 @@ function PreviewVideoMobile(props) {
         setCopierNotif(true)
         setTimeout(()=>setCopierNotif(false), 2_000)
     }, [srcVideo, setCopierNotif])
+
+    const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
 
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
@@ -295,7 +300,13 @@ function PreviewVideoMobile(props) {
                             Action
                         </Col>
                         <Col>
-                            <Button disabled={!!copierNotif} variant={copierNotif?'outline-secondary':'secondary'} onClick={copierSrcVideo}>Copier</Button>
+                            {capabilities.mobile?'':
+                                <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
+                            }
+                            {' '}
+                            <Button disabled={!!copierNotif} variant={copierNotif?'outline-secondary':'secondary'} onClick={copierSrcVideo}>
+                                <i className='fa fa-copy' /> Copier
+                            </Button>
                         </Col>
                     </Row>
                 :''}
@@ -307,9 +318,10 @@ function PreviewVideoMobile(props) {
 
 function PreviewImageMobile(props) {
 
-    const { fichier } = props
+    const { fichier, downloadAction } = props
 
     const { device, orientation } = useMediaQuery()
+    const capabilities = useCapabilities()
 
     const [srcImage, setSrcImage] = useState('')
     const [complet, setComplet] = useState(false)
@@ -324,6 +336,8 @@ function PreviewImageMobile(props) {
         if(!fichier) return [false, null]
         return [fichier.anime, fichier.imageLoader]
     }, [fichier])
+    
+    const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
 
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
@@ -379,9 +393,19 @@ function PreviewImageMobile(props) {
                 </Ratio>
             </Col>
             <Col {...cols[1]} className={'player-media-information ' + orientation}>
-                <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
-                    <i className='fa fa-file-image-o'/> Ouvrir
-                </Button>
+                {capabilities.mobile?
+                    <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
+                        <i className='fa fa-file-image-o'/> Ouvrir
+                    </Button>
+                :
+                    <div>
+                        <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
+                            <i className='fa fa-file-image-o'/> Ouvrir
+                        </Button>
+                        {' '}
+                        <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
+                    </div>
+                }
                 <InformationFichier {...props} />
             </Col>
         </Row>
@@ -390,9 +414,10 @@ function PreviewImageMobile(props) {
 
 function PreviewDocumentMobile(props) {
     // Preview d'un document qui peut etre ouvert par le navigateur (e.g. PDF)
-    const { fichier, erreurCb } = props
+    const { fichier, downloadAction, erreurCb } = props
 
     const { orientation } = useMediaQuery()
+    const capabilities = useCapabilities()
 
     const [srcImage, setSrcImage] = useState('')
     const [complet, setComplet] = useState(false)
@@ -408,6 +433,8 @@ function PreviewDocumentMobile(props) {
         const { loader, imageLoader } = fichier
         return [loader, imageLoader]
     }, [fichier])
+
+    const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
 
     const setErrCb = useCallback(e => {
         console.error("PreviewDocumentMobile Erreur chargement document : %O", e)
@@ -470,9 +497,15 @@ function PreviewDocumentMobile(props) {
                 </Ratio>
             </Col>
             <Col {...cols[1]} className={'player-media-information ' + orientation}>
-                <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
-                    <i className='fa fa-file-pdf-o'/> Ouvrir
-                </Button>
+                <div>
+                    <Button onClick={viewSrcClick} variant="primary" disabled={!srcLocal} className="player-media-ouvrir">
+                        <i className='fa fa-file-pdf-o'/> Ouvrir
+                    </Button>
+                    {' '}
+                    {capabilities.mobile?'':
+                        <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
+                    }
+                </div>
                 <InformationFichier {...props} />
             </Col>
         </Row>
@@ -480,15 +513,19 @@ function PreviewDocumentMobile(props) {
 }
 
 function PreviewAudioMobile(props) {
-    const { fichier, erreurCb } = props
+    const { fichier, erreurCb, downloadAction } = props
 
     console.debug("PreviewDocumentMobile proppies ", props)
 
     const { orientation } = useMediaQuery()
+    const capabilities = useCapabilities()
+
     const cols = useMemo(()=>{
         if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
         else return [{xs: 12}, {}]
     }, [orientation])
+
+    const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
 
     const setErrCb = useCallback(e => {
         console.error("PreviewDocumentMobile Erreur chargement document : %O", e)
@@ -500,6 +537,9 @@ function PreviewAudioMobile(props) {
                 <AudioPlayer fichier={fichier} />
             </Col>
             <Col {...cols[1]} className={'player-media-information ' + orientation}>
+                {capabilities.mobile?'':
+                    <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
+                }
                 <InformationFichier {...props} />
             </Col>
         </Row>

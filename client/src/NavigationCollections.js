@@ -343,7 +343,9 @@ function Modals(props) {
 
     const downloadAction = useCallback((params) => {
         let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
-        if(fichier) {
+        if(!fichier) return  // Pas de fichier
+        const version_courante = fichier.version_courante || {}
+        if(params.fuuid && version_courante.video) {
             const videos = fichier.version_courante.video
             const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
             // console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
@@ -354,6 +356,9 @@ function Modals(props) {
                 fuuidDownload: params.fuuid
             }
             console.debug("!!! Modals.downloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
+            dispatch(ajouterDownload(workers, fichier))
+                .catch(err=>erreurCb(err, 'Erreur ajout download'))
+        } else {
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         }
@@ -390,6 +395,7 @@ function Modals(props) {
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
                 showConversionVideo={showConversionVideoOuvrir}
+                downloadAction={downloadAction}
               />
 
             <ModalCreerRepertoire 
