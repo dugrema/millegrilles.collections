@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { proxy as comlinkProxy } from 'comlink'
 
@@ -483,6 +483,7 @@ function ModalCreerRepertoire(props) {
     const workers = useWorkers()
     const usager = useUsager()
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
+    const refInput = useRef()
 
     const { connexion, chiffrage } = workers
     const userId = usager?usager.extensions.userId:''
@@ -493,7 +494,7 @@ function ModalCreerRepertoire(props) {
         const value = event.currentTarget.value
         setNomCollection(value)
     }, [setNomCollection])
-
+    
     const creerCollection = useCallback(event=>{
         event.preventDefault()
         event.stopPropagation()
@@ -522,6 +523,10 @@ function ModalCreerRepertoire(props) {
               })
     }, [connexion, userId, nomCollection, cuuidCourant, setNomCollection, fermer])
 
+    useEffect(()=>{
+        if(show && refInput.current) refInput.current.focus()
+    }, [show, refInput])
+
     return (
         <Modal show={show} onHide={fermer}>
 
@@ -532,6 +537,7 @@ function ModalCreerRepertoire(props) {
                     <Form.Group className="mb-3" controlId="formNomCollection">
                         <Form.Label>Nom de la collection</Form.Label>
                         <Form.Control 
+                            ref={refInput}
                             type="text" 
                             placeholder="Saisir le nom ..." 
                             onChange={changerNomCollection}

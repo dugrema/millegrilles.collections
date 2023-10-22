@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import Button from 'react-bootstrap/Button'
@@ -860,6 +860,8 @@ export function RenommerModal(props) {
     const { workers, show, fermer, fichiers, selection } = props
     const { connexion, chiffrage } = workers
 
+    const refInput = useRef()
+
     const { docSelectionne } = useMemo(()=>{
         if(!fichiers || !selection) return {}
         const tuuidSelectionne = selection[0]
@@ -909,6 +911,10 @@ export function RenommerModal(props) {
         setMimetype(value)
     }, [setMimetype])
 
+    useEffect(()=>{
+        if(show && refInput.current) refInput.current.focus()
+    }, [show, refInput])
+
     if(!docSelectionne) return ''
 
     const estFichier = docSelectionne.mimetype?true:false
@@ -926,6 +932,7 @@ export function RenommerModal(props) {
                     <Form.Group controlId="formNom">
                         <Form.Label>Nom</Form.Label>
                         <Form.Control 
+                            ref={refInput}
                             type="text"
                             placeholder="Saisir le nom ..."
                             value={nom}
