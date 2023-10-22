@@ -429,10 +429,12 @@ export function SelecteurResolution(props) {
 
     const capabilities = useCapabilities()
 
-    const changerSelecteur = useCallback(value=>setSelecteur(value), [setSelecteur])
+    const changerSelecteur = useCallback(value=>{
+        if(Number.parseInt(value)) window.localStorage.setItem('videoResolution', value)
+        setSelecteur(value)
+    }, [setSelecteur])
 
     const selecteurs = useMemo(()=>{
-        console.debug("SelecteurResolution fichier ", fichier)
         if(!fichier) return
         const version_courante = fichier.version_courante
         if(!version_courante || !version_courante.video) return 
@@ -443,9 +445,7 @@ export function SelecteurResolution(props) {
             codec: version_courante.videoCodec,
             supportMedia: capabilities.video
         }
-        console.debug("SelecteurResolution videos: %O params %O", videos, paramsOpts)
         const selecteurs = determinerSelecteursVideos(videos, paramsOpts)
-        console.debug("SelecteurVideoContenu selecteurs generes : ", selecteurs)
         return selecteurs
     }, [fichier, capabilities])
 
@@ -454,9 +454,33 @@ export function SelecteurResolution(props) {
         if(selecteur || !selecteurs) return  // Deja initialise
         const selecteursKeys = Object.keys(selecteurs)
 
+        const defaultSelecteur = window.localStorage.getItem('videoResolution')
+
         if(!selecteursKeys) {
             // Aucunes options (probablement nouveau video) - utiliser original
             return setSelecteur('original')
+        } else if(defaultSelecteur && defaultSelecteur !== 'fallback' && selecteurs.resolutions) {
+            const resolutions = selecteurs.resolutions
+            // Tenter de trouver une resolution qui correspond au selecteur
+            if(resolutions[defaultSelecteur]) return setSelecteur(defaultSelecteur)
+
+            // Hacky, trouver resolution la plus elevee disponible par rapport au selecteur
+            const resolutionDefault = Number.parseInt(defaultSelecteur)
+            const resolutionListe = Object.keys(resolutions).map(item=>Number.parseInt(item))
+            resolutionListe.sort()
+            resolutionListe.reverse()
+            for(const resolutionInt of resolutionListe) {
+                if(resolutionInt <= resolutionDefault) {
+                    if(resolutionInt < 1000) {
+                        return setSelecteur('0'+resolutionInt)
+                    } else {
+                        return setSelecteur(''+resolutionInt)
+                    }
+                }
+            }
+
+            // Fallback
+            return setSelecteur('fallback')
         } else if(selecteursKeys.includes('fallback')) {
             // Selectionner le format fallback (la plus faible resolution)
             return setSelecteur('fallback')
@@ -491,6 +515,7 @@ function SelecteurVideoResolution(props) {
             return {key, label} 
         })
         if(selecteurs.fallback) options.push({key: 'fallback', label: 'fallback'})
+        options.push({key: 'original', label: 'Original'})
         return options
     }, [selecteurs])
 
