@@ -13,21 +13,22 @@ self.addEventListener('install', e => {
             }
             
             response.json()
-                .then(manifest => {
+                .then(async manifest => {
                     console.debug("Asset manifest : ", manifest)
                     const fileKeys = Object.keys(manifest.files).filter(item=>{
                         return ! ['index.html'].includes(item)
                     })
                     const files = fileKeys.map(key=>manifest.files[key])
 
+                    // Cleanup du cache precedent
+                    await caches.delete(CACHE_NAME)
+
                     console.debug("Cache all files ", files)
-                    return caches.open(CACHE_NAME).then( async cache => {
-                        await cache.addAll(files)
-                        console.debug("Caching de %d fichiers reussi", files.length)
-                    })
-                    .catch(err=>console.error("Erreur pre-caching application : ", err))
+                    const cache = await caches.open(CACHE_NAME)
+                    await cache.addAll(files)
+                    console.debug("Caching de %d fichiers reussi", files.length)
                 })
-                .catch(err=>console.error("Erreur lecture asset-manifest.json ", err))
+                .catch(err=>console.error("Erreur lecture asset-manifest.json ou caching assets ", err))
 
         })
 
