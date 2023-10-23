@@ -1,0 +1,112 @@
+console.info('sw.js Self : ', self)
+
+const CACHE_NAME = 'collections-cache'
+
+self.addEventListener('install', e => {
+    console.log('installing service worker')
+
+    fetch('/collections/asset-manifest.json')
+        .then(response => {
+            if(response.status !== 200) {
+                console.warn("Erreur installation assets : http status ", response.status)
+                return
+            }
+            
+            response.json()
+                .then(manifest => {
+                    console.debug("Asset manifest : ", manifest)
+                    const fileKeys = Object.keys(manifest.files).filter(item=>{
+                        return ! ['index.html'].includes(item)
+                    })
+                    const files = fileKeys.map(key=>manifest.files[key])
+
+                    console.debug("Cache all files ", files)
+                    return caches.open(CACHE_NAME).then( async cache => {
+                        await cache.addAll(files)
+                        console.debug("Caching de %d fichiers reussi", files.length)
+                    })
+                    .catch(err=>console.error("Erreur pre-caching application : ", err))
+                })
+                .catch(err=>console.error("Erreur lecture asset-manifest.json ", err))
+
+        })
+
+    // e.waitUntil(
+    //     caches.open(CACHE_NAME).then( cache => {
+    //         return cache.addAll([
+    //             '/collections',
+    //             '/collections/index.html',
+    //             '/collections/static/js/bundle.js'
+    //         ])
+    //     })
+    //     .then(() => self.skipWaiting())
+    // )
+})
+
+self.addEventListener('activate', e => {
+    console.log('activating service worker')
+    e.waitUntil(self.clients.claim())
+})
+
+self.addEventListener('fetch', e => {
+    const url = new URL(e.request.url)
+
+    if( ! url.pathname.startsWith('/collections/static/')) {
+        // Pas de caching, on applique juste sur le repertoire static
+        console.log(`fetching ${e.request.url}`)
+        return fetch(e.request)
+    }
+
+    console.log(`fetching/caching ${e.request.url}`)
+
+    const reponse = caches.match(e.request)
+        .then( response => {
+            if(response) {
+                console.debug("fetch utilise cache ", response)
+                return response
+            }
+
+            if( navigator.onLine ) {
+                const fetchRequest = e.request.clone()
+                return fetch(fetchRequest).then( response => {
+                    if (!response || response.status !== 200 || response.type !== 'basic' ) {
+                        return response
+                    }
+        
+                    const responseToCache = response.clone()
+        
+                    caches.open(CACHE_NAME)
+                        .then( cache => {
+                            cache.put(e.request, responseToCache)
+                        })
+        
+                    return response
+                })
+            }
+        })
+    e.respondWith(reponse)
+
+    // if( navigator.onLine ) {
+    //     const fetchRequest = e.request.clone()
+    //     return fetch(fetchRequest).then( response => {
+    //         if (!response || response.status !== 200 || response.type !== 'basic' ) {
+    //             return response
+    //         }
+
+    //         const responseToCache = response.clone()
+
+    //         caches.open(CACHE_NAME)
+    //             .then( cache => {
+    //                 cache.put(e.request, responseToCache)
+    //             })
+
+    //         return response
+    //     })
+    // } else {
+    //     const reponse = caches.match(e.request)
+    //         .then( response => {
+    //             if(response) return response
+    //         })
+    //     e.respondWith(reponse)
+    // }
+})
