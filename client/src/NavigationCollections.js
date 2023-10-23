@@ -774,7 +774,7 @@ function PartagesUsager(props) {
     return (
         <Collapse in={show}>
             <div>
-                <h3>Collections partagees par vos contacts</h3>
+                <h3>Collections partagees</h3>
                 <PartagesUsagersTiers onSelect={userIdPartageTiersHandler} />
             </div>
         </Collapse>

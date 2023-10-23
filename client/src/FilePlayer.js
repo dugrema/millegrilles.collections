@@ -578,8 +578,15 @@ function PreviewAudioMobile(props) {
 }
 
 function PreviewFichierGeneriqueMobile(props) {
+    const { fichier, downloadAction } = props
+    
+    const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
+
     return (
         <div>
+            <div>
+                <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
+            </div>
             <InformationFichier {...props} />
         </div>
     )
