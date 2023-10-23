@@ -23,7 +23,7 @@ import { CopierModal, InfoModal } from './ModalOperations'
 
 function Partager(props) {
 
-    const { erreurCb } = props
+    const { erreurCb, userIdPartageTransfere: userIdTransfere, ouvrirPartageUserId } = props
 
     const workers = useWorkers(), 
           dispatch = useDispatch(),
@@ -31,6 +31,13 @@ function Partager(props) {
 
     const [contactId, setContactId] = useState('')
     const [userIdPartage, setUserIdPartage] = useState('')
+
+    // Reset userId transfere (e.g. via NavigationCollections)
+    useEffect(()=>{
+        if(!userIdTransfere) return
+        ouvrirPartageUserId('')
+        setUserIdPartage(userIdTransfere)
+    }, [userIdTransfere, ouvrirPartageUserId, setUserIdPartage])
 
     useEffect(()=>{
         if(!etatPret) return
@@ -311,7 +318,7 @@ function UsagerPartage(props) {
     )
 }
 
-function PartagesUsagersTiers(props) {
+export function PartagesUsagersTiers(props) {
 
     const { onSelect } = props
 

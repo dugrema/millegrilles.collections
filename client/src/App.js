@@ -100,6 +100,7 @@ function LayoutMain() {
   const [showMediaJobs, setShowMediaJobs] = useState(false)
   const [page, setPage] = useState('')
   const [hideMenu, setHideMenu] = useState(false)
+  const [userIdPartageTransfere, setUserIdPartageTransfere] = useState('')
   
   const [erreur, setErreur] = useState('')
   const erreurCb = useCallback((err, message)=>{
@@ -153,9 +154,15 @@ function LayoutMain() {
     }
   }, [setPage])
 
-  let menu = null
-  if(!hideMenu) {
-    menu = (
+  const handlerOuvrirPartageUserId = useCallback(userId => {
+    console.debug("LayoutMain Ouvrir partage avec userId ", userId)
+    setUserIdPartageTransfere(userId)
+    if(userId) setPage('partager')
+  }, [setPage, setUserIdPartageTransfere])
+
+  const menu = useMemo(()=>{
+    if(hideMenu) return ''
+    return (
       <Menu 
           workers={workers}
           etatConnexion={etatConnexion}
@@ -165,7 +172,7 @@ function LayoutMain() {
           showMediaJobs={showMediaJobsOuvrir}
           onSelect={handlerSelect} />
     )
-  }
+  }, [hideMenu, workers, etatConnexion, i18n, showTransfertModalOuvrir, showMediaJobsOuvrir, handlerSelect])
 
   return (
     <div className={classNameTop}>
@@ -181,6 +188,8 @@ function LayoutMain() {
                 page={page}
                 hideMenu={hideMenu}
                 setHideMenu={setHideMenu}
+                userIdPartageTransfere={userIdPartageTransfere}
+                ouvrirPartageUserId={handlerOuvrirPartageUserId}
                 erreurCb={erreurCb}
               />
           </Suspense>

@@ -9,6 +9,7 @@ import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
 import ProgressBar from 'react-bootstrap/ProgressBar'
+import Collapse from 'react-bootstrap/Collapse'
 
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
@@ -20,12 +21,14 @@ import useWorkers, { useCapabilities, useEtatPret, useUsager } from './WorkerCon
 
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload, ajouterZipDownload } from './redux/downloaderSlice'
+import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } from './redux/partagerSlice'
 
 import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
+import { PartagesUsagersTiers } from './Partager'
 
 function NavigationCollections(props) {
 
-    const { hideMenu, setHideMenu, erreurCb } = props
+    const { hideMenu, setHideMenu, erreurCb, ouvrirPartageUserId } = props
     const dispatch = useDispatch()
     const workers = useWorkers()
     const etatPret = useEtatPret()
@@ -208,6 +211,8 @@ function NavigationCollections(props) {
                         modeSelection={modeSelection}
                         erreurCb={erreurCb}
                     />
+
+                    <PartagesUsager hide={!!cuuidCourant} onSelect={ouvrirPartageUserId} />
                 </Suspense>
             </div>
 
@@ -732,6 +737,48 @@ async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
         // console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
         return dispatch(fichiersThunks.chargerTuuids(workers, tuuids))
     }
+
+}
+
+function PartagesUsager(props) {
+
+    const { hide, onSelect } = props
+
+    const dispatch = useDispatch()
+    const workers = useWorkers()
+    const etatPret = useEtatPret()
+
+    const listePartagesAutres = useSelector(state=>state.partager.listePartagesAutres)
+
+    // Partage
+    const userIdPartageTiersHandler = useCallback(onSelect, [onSelect])
+    
+    useEffect(()=>{
+        if(!etatPret) return
+        // Charger les contacts
+        dispatch(chargerInfoContacts(workers))
+            .catch(err=>console.error("Erreur chargement contacts : ", err))
+
+        // Charger tous les partages (paires contacts/cuuid)
+        dispatch(chargerPartagesDeTiers(workers))
+            .catch(err=>console.error("Erreur chargement des partages contacts (tiers avec usager local) : ", err))
+    }, [dispatch, workers, etatPret])
+
+    const show = useMemo(()=>{
+        if(hide || !listePartagesAutres || listePartagesAutres.length === 0) return false
+        return true
+    }, [hide, listePartagesAutres])
+    
+    if(!onSelect) return ''
+
+    return (
+        <Collapse in={show}>
+            <div>
+                <h3>Collections partagees par vos contacts</h3>
+                <PartagesUsagersTiers onSelect={userIdPartageTiersHandler} />
+            </div>
+        </Collapse>
+    )
 
 }
 
