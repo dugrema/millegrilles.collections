@@ -11,7 +11,7 @@ import Form from 'react-bootstrap/Form'
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
 import { mapDocumentComplet } from './mapperFichier'
-import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret} from './WorkerContext'
+import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret, useCapabilities} from './WorkerContext'
 import { ajouterDownload } from './redux/downloaderSlice'
 import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } from './redux/partagerSlice'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
@@ -23,7 +23,7 @@ import { CopierModal, InfoModal } from './ModalOperations'
 
 function Partager(props) {
 
-    const { erreurCb, userIdPartageTransfere: userIdTransfere, ouvrirPartageUserId } = props
+    const { erreurCb, userIdPartageTransfere: userIdTransfere, ouvrirPartageUserId, hideMenu, setHideMenu } = props
 
     const workers = useWorkers(), 
           dispatch = useDispatch(),
@@ -58,8 +58,8 @@ function Partager(props) {
         setContactId(contactId)
         dispatch(fichiersActions.setUserContactId({userId: userIdPartage, contactId}))
     }, [dispatch, userIdPartage, setContactId])
-    const fermerPageContact = useCallback(()=>setContactId(''), setContactId)
-    const fermerPagePartageUsager = useCallback(()=>setUserIdPartage(''), setUserIdPartage)
+    const fermerPageContact = useCallback(()=>setContactId(''), [setContactId])
+    const fermerPagePartageUsager = useCallback(()=>setUserIdPartage(''), [setUserIdPartage])
 
     // const naviguerCollection = useCallback( cuuid => {
     //     setAfficherVideo('')  // Reset affichage
@@ -98,6 +98,8 @@ function Partager(props) {
         return <NavigationPartageTiers 
             userId={userIdPartage} 
             fermer={fermerPagePartageUsager} 
+            hideMenu={hideMenu}
+            setHideMenu={setHideMenu}
             erreurCb={erreurCb} />
     }
 
@@ -123,10 +125,11 @@ export default Partager
 
 function NavigationPartageTiers(props) {
 
-    const { userId, fermer, erreurCb } = props
+    const { userId, fermer, hideMenu, setHideMenu, erreurCb } = props
 
     const workers = useWorkers(),
           dispatch = useDispatch()
+    const capabilities = useCapabilities()
 
     const userPartages = useSelector(state=>state.partager.userPartages),
           listePartagesAutres = useSelector(state=>state.partager.listePartagesAutres),
@@ -147,12 +150,12 @@ function NavigationPartageTiers(props) {
     }, [userPartages, userId])
 
     const contactInfo = useMemo(()=>{
-        console.debug("NavigationPartageTiers breadcrumb %O", breadcrumb)
+        // console.debug("NavigationPartageTiers breadcrumb %O", breadcrumb)
         if(!breadcrumb) return ''
         const tuuidPartage = breadcrumb[0]
         if(!tuuidPartage) return ''
         const contactInfo = listePartagesAutres.filter(item=>item.tuuid === tuuidPartage.tuuid).pop()
-        console.debug("NavigationPartageTiers contactInfo %O", contactInfo)
+        // console.debug("NavigationPartageTiers contactInfo %O", contactInfo)
         return contactInfo
     }, [breadcrumb, listePartagesAutres])
 
@@ -233,6 +236,11 @@ function NavigationPartageTiers(props) {
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 
     useEffect(()=>{
+        if(modeView === 'carousel' && capabilities.mobile) setHideMenu(true)
+        else setHideMenu(false)
+    }, [capabilities, modeView])
+
+    useEffect(()=>{
         if(!userId) return  // Il faut au moins avoir une selection d'usager
         // Reset navigation en mode partage, top-level
         setAfficherVideo('')
@@ -250,32 +258,35 @@ function NavigationPartageTiers(props) {
 
     return (
         <div>
-            <Row>
-                <Col xs={11}><h3>Partage {userInfo.nom_usager}</h3></Col>
-            </Row>
+            {((capabilities.mobile && !!showPreview) || hideMenu)?'':
+                <Row className='partage-header'>
+                    <Row>
+                        <Col xs={11}><h3>Partage {userInfo.nom_usager}</h3></Col>
+                    </Row>
 
-            <Row className='fichiers-header-buttonbar'>
-                <Col xs={12} lg={5}>
-                    <SectionBreadcrumb 
-                        naviguerCollection={naviguerCollection} 
-                        prependItems={itemRootBreadcrumb} 
-                        fichier={fichierBreadcrumb} />
-                </Col>
+                    <Row className='fichiers-header-buttonbar'>
+                        <Col xs={12} lg={5}>
+                            <SectionBreadcrumb 
+                                naviguerCollection={naviguerCollection} 
+                                prependItems={itemRootBreadcrumb} 
+                                fichier={fichierBreadcrumb} />
+                        </Col>
 
-                <Col xs={12} sm={3} md={4} lg={2}>
-                    {'nombreFichiers'}
-                </Col>
-
-                <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
-                    <BoutonsFormat modeView={modeView} setModeView={setModeView} />
-                </Col>
-            </Row>
+                        <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
+                            <BoutonsFormat modeView={modeView} setModeView={setModeView} />
+                        </Col>
+                    </Row>
+                </Row>
+            }
 
             <Suspense fallback={<p>Loading ...</p>}>
                 <AffichagePrincipal 
                     hide={!!showPreview}
+                    hideMenu={hideMenu}
+                    setHideMenu={setHideMenu}
                     preparerColonnes={preparerColonnesCb}
                     modeView={modeView}
+                    setModeView={setModeView}
                     naviguerCollection={naviguerCollection}
                     showPreviewAction={showPreviewAction}
                     setContextuel={setContextuel}
@@ -370,7 +381,7 @@ function ContactsPartage(props) {
             }, 0)
 
             return (
-                <Row>
+                <Row key={item.contact_id}>
                     <Col>
                         <Button variant="link" onClick={choisirContactId} value={item.contact_id}>
                             {item.nom_usager}
@@ -498,9 +509,9 @@ function PageContact(props) {
     //     }
     // }, [workers, etatPret, userId, contactId, modePartage])
 
-    useEffect(()=>{
-        console.debug("Collections partagees : %O", collections)
-    }, [collections])
+    // useEffect(()=>{
+    //     console.debug("Collections partagees : %O", collections)
+    // }, [collections])
 
     if(!contact) return 'Aucune information sur le contact'
 
@@ -578,9 +589,9 @@ function ListePartagesUsager(props) {
             .catch(err=>console.error('Partager Erreur chargement partages ', err))
     }, [workers, etatPret, userId, contactId])
 
-    useEffect(()=>{
-        console.debug("Collections partagees : %O", collections)
-    }, [collections])
+    // useEffect(()=>{
+    //     console.debug("Collections partagees : %O", collections)
+    // }, [collections])
 
     if(!contact) return 'Aucune information sur le contact'
 

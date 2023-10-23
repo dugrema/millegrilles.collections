@@ -924,7 +924,7 @@ export function creerThunks(actions, nomSlice) {
     
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.getPartagesUsager(contactId)
-        console.debug("Resultat getPartagesUsager : ", resultat)
+        // console.debug("Resultat getPartagesUsager : ", resultat)
         const partages = resultat.partages
         const partagesDict = partages.reduce((acc, item)=>{
             acc[item.tuuid] = item
@@ -972,7 +972,7 @@ export function creerThunks(actions, nomSlice) {
         const stateInitial = getState()[nomSlice]
         const { parametresRecherche } = stateInitial
 
-        console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
+        // console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
     
         // Changer source, nettoyer la liste
         dispatch(setSource(SOURCE_PARTAGES_CONTACTS))
@@ -983,7 +983,7 @@ export function creerThunks(actions, nomSlice) {
     
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.getPartagesContact(userIdTiers, contactId)
-        console.debug("Resultat getPartagesContact : ", resultat)
+        // console.debug("Resultat getPartagesContact : ", resultat)
         const partages = resultat.partages.filter(item=>{
             if(contactId) return item.contact_id === contactId
             return item.user_id === userIdTiers
@@ -1013,7 +1013,7 @@ export function creerThunks(actions, nomSlice) {
 
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
         if(contenuIdb) {
-            console.debug("Push documents provenance idb : %O", contenuIdb)
+            // console.debug("Push documents provenance idb : %O", contenuIdb)
             dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
             dispatch(chargerTuuids(workers, tuuids, {partage: true, contactId}))

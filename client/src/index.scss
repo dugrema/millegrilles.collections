@@ -194,3 +194,12 @@ div.upload {
 BUTTON.supprimer {
     margin-left: 1rem;
 }
+
+.partage-header {
+   position: sticky;
+   top: 3.7rem;
+   left: -0.5rem;
+   /* width: 105%;  /* Les lignes fichiers table utilisent un gutter */
+   z-index: 100;
+   background-color: $first-color;
+}

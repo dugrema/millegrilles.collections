@@ -141,7 +141,7 @@ function LayoutMain() {
   }, [workers])
 
   const handlerSelect = useCallback(eventKey => {
-    console.debug("handlerSelect %O", eventKey)
+    // console.debug("handlerSelect %O", eventKey)
     switch(eventKey) {
       case 'recherche': 
       case 'recents': 
@@ -155,7 +155,7 @@ function LayoutMain() {
   }, [setPage])
 
   const handlerOuvrirPartageUserId = useCallback(userId => {
-    console.debug("LayoutMain Ouvrir partage avec userId ", userId)
+    // console.debug("LayoutMain Ouvrir partage avec userId ", userId)
     setUserIdPartageTransfere(userId)
     if(userId) setPage('partager')
   }, [setPage, setUserIdPartageTransfere])

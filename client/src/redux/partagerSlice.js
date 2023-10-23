@@ -75,10 +75,8 @@ export function chargerInfoContacts(workers) {
 async function traiterChargerInfoContacts(workers, dispatch, getState) {
     const { contactsDao } = workers
     
-    console.debug("traiterChargerInfoContacts")
-
     const reponse = await contactsDao.getContacts()
-    console.debug("Contacts recus : ", reponse)
+    // console.debug("Contacts recus : ", reponse)
     dispatch(setContacts(reponse.contacts))
 }
 
@@ -89,10 +87,8 @@ export function chargerPartagesUsager(workers) {
 async function traiterChargerPartagesUsagers(workers, dispatch, getState) {
     const { contactsDao } = workers
     
-    console.debug("traiterChargerPartages")
-
     const reponse = await contactsDao.getPartagesUsager()
-    console.debug("Partages recus : ", reponse)
+    // console.debug("Partages recus : ", reponse)
     dispatch(setPartagesUsager(reponse.partages))
 }
 
@@ -103,10 +99,8 @@ export function chargerPartagesDeTiers(workers) {
 async function traiterChargerPartagesDeTiers(workers, dispatch, getState) {
     const { contactsDao } = workers
     
-    console.debug("traiterChargerPartagesDeTiers")
-
     const reponse = await contactsDao.getPartagesContact()
-    console.debug("Partages tiers recus : ", reponse)
+    // console.debug("Partages tiers recus : ", reponse)
     dispatch(setListePartagesAutres(reponse.partages))
 
     // Charger liste des usagers
