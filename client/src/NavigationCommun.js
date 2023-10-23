@@ -890,7 +890,7 @@ function AfficherCarousel(props) {
             fermer()
         } else {
             // Toggle afficher menu
-            console.debug("Toggle afficher menu (courant %O)", hideMenu)
+            // console.debug("Toggle afficher menu (courant %O)", hideMenu)
             setHideMenu(!hideMenu)
         }
     }, [fermer, capabilities, hideMenu, setHideMenu])
@@ -917,7 +917,7 @@ function AfficherCarousel(props) {
         if(item || item === false) return  // Locked
 
         let tuuidSelectionne = ''
-        console.debug("AfficherCarousel selection ", selection)
+        // console.debug("AfficherCarousel selection ", selection)
         if(selection && selection.length === 1) {
             tuuidSelectionne = selection[0]
         }
@@ -935,7 +935,7 @@ function AfficherCarousel(props) {
         // No match, prendre la premiere image si disponible
         if(images && images.length > 0) {
             const image = images[0]
-            console.debug("AfficherCarousel default premiere image ", image)
+            // console.debug("AfficherCarousel default premiere image ", image)
             setItem(image)
             return
         }

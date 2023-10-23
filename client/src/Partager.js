@@ -135,7 +135,7 @@ function NavigationPartageTiers(props) {
             setAfficherVideo('')
             setAfficherAudio('')
             setToggleOffCarousel(true)
-            
+
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         }
@@ -161,7 +161,6 @@ function NavigationPartageTiers(props) {
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
     
     const naviguerCollection = useCallback( (cuuid, opts) => {
-        console.debug("Naviguer collection %O, %O", cuuid, opts)
         opts = opts || {}
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
@@ -181,18 +180,18 @@ function NavigationPartageTiers(props) {
             console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
         }
         try {
-            console.debug("naviguerCollection contactinfo initial : %O", contactInfo)
+            // console.debug("naviguerCollection contactinfo initial : %O", contactInfo)
             let contactInfoEffectif = contactInfo
             if(!contactInfo && cuuid) {
                 // On n'a pas deja de contactInfo
                 contactInfoEffectif = listePartagesAutres.filter(item=>item.tuuid === cuuid).pop()
             }
-            console.debug("naviguerCollection contactinfo initial : %O, effectif : %O", contactInfo, contactInfoEffectif)
+            // console.debug("naviguerCollection contactinfo initial : %O, effectif : %O", contactInfo, contactInfoEffectif)
             if(!contactInfoEffectif) {
                 console.error("contactInfoEffectif pour %s introuvable (listePartagesAutres: %O)", cuuid, listePartagesAutres)
                 throw new Error(`contactInfoEffectif pour ${cuuid} introuvable`)
             }
-            console.debug("Changer collection pour contact %O, cuuid %O", contactInfoEffectif, cuuid)
+            // console.debug("Changer collection pour contact %O, cuuid %O", contactInfoEffectif, cuuid)
             dispatch(fichiersActions.setUserContactId({userId: userInfo.user_id, contactId: contactInfoEffectif.contact_id}))
             if(cuuid) {
                 dispatch(fichiersThunks.changerCollection(workers, cuuid))
@@ -231,7 +230,7 @@ function NavigationPartageTiers(props) {
     }, [dispatch, userId, contactId, setAfficherVideo, setAfficherAudio, setShowPreview, setToggleOffCarousel])
 
     useEffect(()=>{
-        console.debug("modeview %O, toggle %O", modeView, toggleOffCarousel)
+        // console.debug("modeview %O, toggle %O", modeView, toggleOffCarousel)
         if(!toggleOffCarousel) return
         setToggleOffCarousel(false)
         if(modeView === 'carousel') setModeView('liste')

@@ -344,7 +344,7 @@ export function onContextMenu(event, value, setContextuel) {
 export function MenuContextuelPartageFichier(props) {
     const { 
         fichier, contextuel, fermerContextuel, showPreview, cuuid, 
-        showCopierModalOuvrir, showInfoModalOuvrir, downloadAction, 
+        showCopierModalOuvrir, downloadAction, 
     } = props
 
     // Determiner si preview est disponible
@@ -384,15 +384,13 @@ export function MenuContextuelPartageFichier(props) {
         fermerContextuel()
     }, [fichier, downloadAction, fermerContextuel])
 
-    const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
-    const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
+    // const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
 
     return (
         <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={downloadEvent}><i className="fa fa-download"/> Download</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
+            {/* <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row> */}
         </MenuContextuel>
     )
 }
