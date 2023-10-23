@@ -61,39 +61,6 @@ function Partager(props) {
     const fermerPageContact = useCallback(()=>setContactId(''), [setContactId])
     const fermerPagePartageUsager = useCallback(()=>setUserIdPartage(''), [setUserIdPartage])
 
-    // const naviguerCollection = useCallback( cuuid => {
-    //     setAfficherVideo('')  // Reset affichage
-    //     if(!cuuid) cuuid = ''
-    //     try {
-    //         if(cuuid) {
-    //             dispatch(fichiersActions.breadcrumbPush({tuuid: cuuid}))
-    //         } else {
-    //             dispatch(fichiersActions.breadcrumbSlice())
-    //         }
-    //     } catch(err) {
-    //         console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
-    //     }
-    //     try {
-    //         if(cuuid) {
-    //             dispatch(fichiersThunks.changerCollection(workers, cuuid))
-    //                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
-    //         } else {
-    //             dispatch(fichiersThunks.afficherPlusrecents(workers))
-    //                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
-    //         }
-    //     } catch(err) {
-    //         console.error("naviguerCollection Erreur dispatch changerCollection", err)
-    //     }
-    // }, [dispatch, workers, erreurCb, setAfficherVideo])
-
-    // Declencher chargement initial des favoris
-    // useEffect(()=>{
-    //     if(!etatPret || !userId) return  // Rien a faire
-    //     dispatch(fichiersThunks.afficherPartagesUsager(workers))
-    //         .catch(err=>console.error('Partager Erreur chargement partages ', err))
-
-    // }, [etatPret, userId])
-
     if(userIdPartage) {
         return <NavigationPartageTiers 
             userId={userIdPartage} 
@@ -144,6 +111,7 @@ function NavigationPartageTiers(props) {
     const [ afficherAudio, setAfficherAudio ] = useState('')
     const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ contextuel, setContextuel ] = useState({show: false, x: 0, y: 0})
+    const [toggleOffCarousel, setToggleOffCarousel] = useState(false)
 
     const userInfo = useMemo(()=>{
         return userPartages.filter(item=>item.user_id === userId).pop()
@@ -163,14 +131,17 @@ function NavigationPartageTiers(props) {
         if(!userInfo) return {label: 'Partages', onClick: fermer}
 
         const afficherPartageUser = () => {
-            setAfficherVideo('')  // Reset affichage
-            setAfficherAudio('')  // Reset affichage
+            // Reset affichage
+            setAfficherVideo('')
+            setAfficherAudio('')
+            setToggleOffCarousel(true)
+            
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         }
 
         return [{label: 'Partages', onClick: fermer}, {label: userInfo.nom_usager, onClick: afficherPartageUser}]
-    }, [userInfo, fermer, setAfficherVideo, setAfficherAudio])
+    }, [userInfo, fermer, setAfficherVideo, setAfficherAudio, setToggleOffCarousel])
 
     const fichierBreadcrumb = useMemo(()=>{
         if( !afficherAudio && !afficherVideo) return ''
@@ -190,10 +161,12 @@ function NavigationPartageTiers(props) {
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
     
     const naviguerCollection = useCallback( (cuuid, opts) => {
+        console.debug("Naviguer collection %O, %O", cuuid, opts)
         opts = opts || {}
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
         setShowPreview(false)
+        setToggleOffCarousel(true)
 
         if(opts.retourFichier) return   // Plus rien a faire
 
@@ -231,7 +204,7 @@ function NavigationPartageTiers(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, userInfo, erreurCb, contactInfo, setShowPreview, setAfficherVideo, setAfficherAudio])
+    }, [dispatch, workers, userInfo, erreurCb, contactInfo, setShowPreview, setAfficherVideo, setAfficherAudio, setToggleOffCarousel])
 
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 
@@ -246,6 +219,7 @@ function NavigationPartageTiers(props) {
         setAfficherVideo('')
         setAfficherAudio('')
         setShowPreview(false)
+        setToggleOffCarousel(true)
         try {
             // Set tri par date modification desc
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
@@ -254,7 +228,14 @@ function NavigationPartageTiers(props) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
 
-    }, [dispatch, userId, contactId, setAfficherVideo, setAfficherAudio, setShowPreview])
+    }, [dispatch, userId, contactId, setAfficherVideo, setAfficherAudio, setShowPreview, setToggleOffCarousel])
+
+    useEffect(()=>{
+        console.debug("modeview %O, toggle %O", modeView, toggleOffCarousel)
+        if(!toggleOffCarousel) return
+        setToggleOffCarousel(false)
+        if(modeView === 'carousel') setModeView('liste')
+    }, [modeView, setModeView, toggleOffCarousel, setToggleOffCarousel])
 
     return (
         <div>

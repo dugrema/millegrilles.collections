@@ -838,66 +838,6 @@ export function AffichagePrincipal(props) {
     )
 }
 
-function AfficherVideoView(props) {
-
-    const { tuuid, liste, fermer, showInfoModalOuvrir } = props
-
-    const workers = useWorkers()
-
-    const fichier = useMemo(()=>{
-        if(!tuuid || !liste) return
-        let fichier = liste.filter(item=>item.tuuid===tuuid).pop()
-        if(fichier) fichier = mapDocumentComplet(workers, fichier)
-        return fichier
-    }, [tuuid, liste])
-
-    if(!fichier) return (
-        <>
-            <p>Erreur chargement de video</p>
-            <p>Error loading video</p>
-            <Button onClick={fermer}>Retour/Back</Button>
-        </>
-    )
-
-    return (
-    <AfficherVideo
-            fichier={fichier}
-            tuuidSelectionne={tuuid}
-            fermer={fermer} 
-            showInfoModalOuvrir={showInfoModalOuvrir} />
-    )
-}
-
-function AfficherAudioView(props) {
-
-    const { tuuid, liste, fermer, showInfoModalOuvrir } = props
-
-    const workers = useWorkers()
-
-    const fichier = useMemo(()=>{
-        if(!tuuid || !liste) return
-        let fichier = liste.filter(item=>item.tuuid===tuuid).pop()
-        if(fichier) fichier = mapDocumentComplet(workers, fichier)
-        return fichier
-    }, [tuuid, liste])
-
-    if(!fichier) return (
-        <>
-            <p>Erreur chargement de fichier audio</p>
-            <p>Error loading audio file</p>
-            <Button onClick={fermer}>Retour/Back</Button>
-        </>
-    )
-
-    return (
-        <AfficherAudio
-            fichier={fichier}
-            tuuidSelectionne={tuuid}
-            fermer={fermer} 
-            showInfoModalOuvrir={showInfoModalOuvrir} />
-    )
-}
-
 export function InformationListe(_props) {
 
     const liste = useSelector(state => state.fichiers.liste)
