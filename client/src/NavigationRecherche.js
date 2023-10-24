@@ -115,6 +115,7 @@ function NavigationRecherche(props) {
         <>
             <div>
                 <BarreInformation 
+                    hide={!!showPreview}
                     onSearch={rechercherCb}
                     onSearchChange={rechercheChangeHandler}
                     modeView={modeView}
@@ -128,7 +129,7 @@ function NavigationRecherche(props) {
 
                 <Suspense fallback={<p>Loading ...</p>}>
                     <AffichagePrincipal 
-                        hide={(!liste || liste.length === 0)}
+                        hide={(!!showPreview || !liste || liste.length === 0)}
                         preparerColonnes={preparerColonnesCb}
                         modeView={modeView}
                         showPreviewAction={showPreviewAction}
@@ -175,7 +176,7 @@ export default NavigationRecherche
 export function BarreInformation(props) {
 
     const { 
-        afficherVideo, afficherAudio, modeView, setModeView, 
+        hide, afficherVideo, afficherAudio, modeView, setModeView, 
         onSearch, onSearchChange,
     } = props
 
@@ -186,6 +187,9 @@ export function BarreInformation(props) {
     const nombreFichiersTotal = useSelector(state => state.fichiers.nombreFichiersTotal )
 
     const afficherMedia = afficherVideo || afficherAudio
+
+
+    if(hide) return ''
 
     let nombreFichiers = ''
     if(liste) {
@@ -343,15 +347,17 @@ function Modals(props) {
 
     const downloadAction = useCallback((params) => {
         let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
-        if(fichier) {
+        if(fichier && fichier.version_courante) {
             const videos = fichier.version_courante.video
-            const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
-            // console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
-            // Set le fuuid de video a downloader, params dechiffrage
-            fichier = {
-                ...fichier, 
-                infoDechiffrage: infoVideo,
-                fuuidDownload: params.fuuid
+            if(videos) {
+                const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
+                // console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
+                // Set le fuuid de video a downloader, params dechiffrage
+                fichier = {
+                    ...fichier, 
+                    infoDechiffrage: infoVideo,
+                    fuuidDownload: params.fuuid
+                }
             }
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
@@ -387,6 +393,7 @@ function Modals(props) {
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
+                downloadAction={downloadAction}
               />
 
             <ModalCreerRepertoire 
