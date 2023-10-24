@@ -387,10 +387,11 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         const opts = {
             hachagePart: part.hachagePart,
         }
-        const resultatUpload = transfertFichiers.partUploader(token, correlation, position, partContent, opts)
+        console.debug("uploadFichier Debut upload %s", correlation)
+        const resultatUploadPromise = transfertFichiers.partUploader(token, correlation, position, partContent, opts)
         // await Promise.race([resultatUpload, cancelToken])
-        await resultatUpload
-        // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
+        const resultatUpload = await resultatUploadPromise
+        console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
 
         if(cancelToken && cancelToken.cancelled) {
             console.warn("Upload cancelled")
@@ -418,9 +419,15 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     
     transaction.attachements = {cle}
 
-    // console.debug("Confirmer upload de transactions signees : %O", transaction)
-    await transfertFichiers.confirmerUpload(token, correlation, {transaction})
-    // console.debug("uploadFichier Upload confirme")
+    console.debug("Confirmer upload de transactions signees : %O", transaction)
+    try {
+        await transfertFichiers.confirmerUpload(token, correlation, {transaction})
+        // console.debug("uploadFichier Upload confirme")
+    } catch(err) {
+        // console.error("uploadFichier Erreur durant POST ", err)
+        await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_ECHEC})
+        throw err
+    }
 
     // Emettre submit pour la batch
     // await traitementFichiers.submitBatchUpload(fichier)
