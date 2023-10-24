@@ -147,6 +147,7 @@ function NavigationCollections(props) {
         // if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
         if(!etatPret || !userId || navInitDone) return  // Rien a faire
         dispatch(fichiersActions.setSource('collection'))
+        dispatch(fichiersActions.setSortKeys({key: 'nom', ordre: 1}))
         setNavInitDone(true)
         if(cuuidTransfere) {
             // Navigation vers une collection a partir d'un lien externe
