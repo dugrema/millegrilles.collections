@@ -101,6 +101,7 @@ function LayoutMain() {
   const [page, setPage] = useState('')
   const [hideMenu, setHideMenu] = useState(false)
   const [userIdPartageTransfere, setUserIdPartageTransfere] = useState('')
+  const [cuuidTransfere, setCuuidTransfere] = useState('')
   
   const [erreur, setErreur] = useState('')
   const erreurCb = useCallback((err, message)=>{
@@ -160,6 +161,13 @@ function LayoutMain() {
     if(userId) setPage('partager')
   }, [setPage, setUserIdPartageTransfere])
 
+  // Charger un repertoire a partir de n'importe quelle page
+  useEffect(()=>{
+    if(!cuuidTransfere) return
+    setPage('')  // Reset a page NavigationCollections
+    console.debug("Afficher NavigationCollections pour cuuid ", cuuidTransfere)
+  }, [cuuidTransfere, setPage])
+
   const menu = useMemo(()=>{
     if(hideMenu) return ''
     return (
@@ -190,6 +198,8 @@ function LayoutMain() {
                 setHideMenu={setHideMenu}
                 userIdPartageTransfere={userIdPartageTransfere}
                 ouvrirPartageUserId={handlerOuvrirPartageUserId}
+                cuuidTransfere={cuuidTransfere}
+                setCuuidTransfere={setCuuidTransfere}
                 erreurCb={erreurCb}
               />
           </Suspense>

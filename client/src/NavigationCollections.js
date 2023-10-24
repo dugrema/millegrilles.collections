@@ -28,7 +28,7 @@ import { PartagesUsagersTiers } from './Partager'
 
 function NavigationCollections(props) {
 
-    const { hideMenu, setHideMenu, erreurCb, ouvrirPartageUserId } = props
+    const { hideMenu, setHideMenu, erreurCb, ouvrirPartageUserId, cuuidTransfere, setCuuidTransfere } = props
     const dispatch = useDispatch()
     const workers = useWorkers()
     const etatPret = useEtatPret()
@@ -42,6 +42,7 @@ function NavigationCollections(props) {
     const [scrollValue, setScrollValue] = useState(0)
     const [modeSelection, setModeSelection] = useState(false)
     const [toggleOffCarousel, setToggleOffCarousel] = useState(false)
+    const [navInitDone, setNavInitDone] = useState(false)
 
     // Modals
     const [ showCreerRepertoire, setShowCreerRepertoire ] = useState(false)
@@ -82,6 +83,7 @@ function NavigationCollections(props) {
         }
         try {
             if(cuuid) {
+                // Ajouter le repertoire a la fin du breadcrumb
                 dispatch(fichiersActions.breadcrumbPush({tuuid: cuuid}))
             } else {
                 dispatch(fichiersActions.breadcrumbSlice())
@@ -90,7 +92,7 @@ function NavigationCollections(props) {
             console.error("naviguerCollection Erreur dispatch breadcrumb : ", err)
         }
         try {
-            dispatch(fichiersThunks.changerCollection(workers, cuuid))
+            dispatch(fichiersThunks.changerCollection(workers, cuuid, opts))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
@@ -143,10 +145,17 @@ function NavigationCollections(props) {
     // Declencher chargement initial des favoris
     useEffect(()=>{
         // if(!etatPret || !userId || cuuidCourant) return  // Rien a faire
-        if(!etatPret || !userId) return  // Rien a faire
+        if(!etatPret || !userId || navInitDone) return  // Rien a faire
         dispatch(fichiersActions.setSource('collection'))
-        naviguerCollection('')
-    }, [dispatch, naviguerCollection, etatPret, userId])
+        setNavInitDone(true)
+        if(cuuidTransfere) {
+            // Navigation vers une collection a partir d'un lien externe
+            setCuuidTransfere('')
+            naviguerCollection(cuuidTransfere)
+        } else {
+            naviguerCollection('')
+        }
+    }, [dispatch, naviguerCollection, etatPret, userId, navInitDone, cuuidTransfere, setCuuidTransfere, setNavInitDone])
 
     useEffect(()=>{
         if(!modeSelection) dispatch(fichiersActions.selectionTuuids(''))  // Vider selection
@@ -162,6 +171,16 @@ function NavigationCollections(props) {
         setToggleOffCarousel(false)
         if(modeView === 'carousel') setModeView('liste')
     }, [modeView, setModeView, toggleOffCarousel, setToggleOffCarousel])
+
+    // useEffect(()=>{
+    //     if(!navInitDone || !cuuidTransfere) return
+    //     console.debug("NavigationCollections naviguer vers cuuid transfere (page externe) ", cuuidTransfere)
+        
+    //     // Naviguer vers collection visee
+    //     naviguerCollection(cuuidTransfere)
+
+    //     setCuuidTransfere('')  // Reset
+    // }, [cuuidTransfere, setCuuidTransfere, naviguerCollection, navInitDone])
 
     return (
         <>

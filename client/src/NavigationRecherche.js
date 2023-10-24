@@ -26,7 +26,7 @@ import { FormatterColonneDate, AffichagePrincipal, BoutonsFormat } from './Navig
 
 function NavigationRecherche(props) {
 
-    const { erreurCb } = props
+    const { setCuuidTransfere, erreurCb } = props
     const dispatch = useDispatch()
     const workers = useWorkers()
     const etatPret = useEtatPret()
@@ -165,6 +165,7 @@ function NavigationRecherche(props) {
                 showInfoModal={showInfoModal}
                 setShowInfoModal={setShowInfoModal}
                 annulerPreparationCb={annulerPreparationUpload}
+                setCuuidTransfere={setCuuidTransfere}
                 erreurCb={erreurCb} />
         </>
     )
@@ -312,6 +313,7 @@ function Modals(props) {
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, preparationUploadEnCours,
         showInfoModal, setShowInfoModal, annulerPreparationCb,
+        setCuuidTransfere,
         erreurCb,
     } = props
     
@@ -341,6 +343,7 @@ function Modals(props) {
     const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
     const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
     const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
+    const cuuidTransfereHandler = useCallback(e=>setCuuidTransfere(e.currentTarget.value), [setCuuidTransfere])
 
     const dispatch = useDispatch()
     const workers = useWorkers()
@@ -394,6 +397,7 @@ function Modals(props) {
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
                 downloadAction={downloadAction}
+                cuuidTransfereAction={cuuidTransfereHandler}
               />
 
             <ModalCreerRepertoire 

@@ -35,7 +35,9 @@ export default PreviewFichiers
 
 function DebounceFichiers(props) {
 
-    const { tuuidSelectionne, fichier: fichierSelectionne, showPreview, setShowPreview, showConversionVideo, downloadAction } = props
+    const { tuuidSelectionne, fichier: fichierSelectionne, 
+        showPreview, setShowPreview, showConversionVideo, downloadAction, cuuidTransfereAction,
+    } = props
 
     const workers = useWorkers()
     const capabilities = useCapabilities()
@@ -73,6 +75,7 @@ function DebounceFichiers(props) {
                 fichier={fichier}
                 showConversionVideo={showConversionVideo}
                 downloadAction={downloadAction}
+                cuuidTransfereAction={cuuidTransfereAction}
                 />
         )
     }
@@ -84,6 +87,7 @@ function DebounceFichiers(props) {
             tuuidSelectionne={ tuuidSelectionne }
             showConversionVideo={showConversionVideo}
             downloadAction={downloadAction}
+            cuuidTransfereAction={cuuidTransfereAction}
         />
     )
 
@@ -159,7 +163,7 @@ function filtrerTypesPreview(item) {
 }
 
 function AfficherDesktop(props) {
-    const { fermer, fichier, showConversionVideo, downloadAction } = props
+    const { fermer, fichier, showConversionVideo, downloadAction, cuuidTransfereAction } = props
 
     if(!fichier) return ''
 
@@ -169,13 +173,17 @@ function AfficherDesktop(props) {
                 <Col xs={2} md={1}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
                 <Col>{fichier.nom}</Col>
             </Row>
-            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} downloadAction={downloadAction} />
+            <PreviewMediaMobile 
+                fichier={fichier} 
+                showConversionVideo={showConversionVideo} 
+                downloadAction={downloadAction} 
+                cuuidTransfereAction={cuuidTransfereAction} />
         </div>
     )
 }
 
 function AfficherMobile(props) {
-    const { fermer, fichier, showConversionVideo, downloadAction } = props
+    const { fermer, fichier, showConversionVideo, downloadAction, cuuidTransfereAction } = props
 
     if(!fichier) return ''
 
@@ -185,7 +193,11 @@ function AfficherMobile(props) {
                 <Col xs={2}><Button variant="secondary" onClick={fermer}><i className="fa fa-arrow-left"/></Button></Col>                
                 <Col>{fichier.nom}</Col>
             </Row>
-            <PreviewMediaMobile fichier={fichier} showConversionVideo={showConversionVideo} downloadAction={downloadAction} />
+            <PreviewMediaMobile 
+                fichier={fichier} 
+                showConversionVideo={showConversionVideo} 
+                downloadAction={downloadAction} 
+                cuuidTransfereAction={cuuidTransfereAction} />
         </div>
     )
 }
@@ -594,7 +606,7 @@ function PreviewFichierGeneriqueMobile(props) {
 
 function InformationFichier(props) {
 
-    const { fichier, erreurCb } = props
+    const { fichier, cuuidTransfereAction, erreurCb } = props
 
     const workers = useWorkers()
 
@@ -606,7 +618,7 @@ function InformationFichier(props) {
     return (
         <div>
             <InfoMedia workers={workers} fichier={fichier} erreurCb={erreurCb} />
-            <InfoGenerique value={fichier} valueItem={fichier} detail={detail} />
+            <InfoGenerique value={fichier} valueItem={fichier} detail={detail} cuuidTransfereAction={cuuidTransfereAction} />
             <Form.Check id="toggle-switch-detail" type="switch" checked={detail} onChange={toggleDetailHandler} label='Afficher detail' />
         </div>
     )

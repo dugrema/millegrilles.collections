@@ -500,7 +500,7 @@ function InfoFichier(props) {
 
 export function InfoGenerique(props) {
 
-    const { detail } = props
+    const { detail, cuuidTransfereAction } = props
 
     const valueItem = props.valueItem || {}
     const fichier = props.value || {}
@@ -567,6 +567,15 @@ export function InfoGenerique(props) {
                         <Col xs={5} md={3}>Path</Col>
                         <Col xs={7} md={9}>
                             <PathFichier pathCuuids={fichier.path_cuuids} />
+                            {' '}
+                            {cuuidTransfereAction?
+                                <Button variant="secondary" 
+                                        onClick={cuuidTransfereAction} 
+                                        value={fichier.path_cuuids[0]}>
+                                    Ouvrir
+                                </Button>
+                            :''}
+                            
                         </Col>
                     </Row>
 

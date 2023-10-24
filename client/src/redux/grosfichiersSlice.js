@@ -1,5 +1,6 @@
 import { base64 } from 'multiformats/bases/base64'
 import { createSlice, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit'
+import { getDocuments } from '../fonctionsFichiers'
 
 const SOURCE_COLLECTION = 'collection',
       SOURCE_PLUS_RECENT = 'plusrecent',
@@ -85,19 +86,22 @@ function setCollectionInfoAction(state, action) {
     // state.source = SOURCE_COLLECTION
     // state.sortKeys = {}
 
-    // Transferer le nom vers le breadcrumb
-    // console.debug("setCollectionInfoAction ", collection)
-    if(collection && collection.nom) {
-        const len = state.breadcrumb.length
-        if(len > 0) {
-            const courant = state.breadcrumb[len-1]
-            // console.debug("Breadcrumb courant %s (nom %s)", courant.tuuid, courant.nom)
-            if(courant.tuuid === collection.tuuid) {
-                // console.debug("Changer nom courant pour %s", collection.nom)
-                courant.label = collection.nom
-            }
-        }
-    }
+    // // Transferer le nom vers le breadcrumb
+    // for(const bc of state.breadcrumb) {
+    //     console.debug("setCollectionInfoAction Breadcrumb ", {...bc})
+    // }
+    // console.debug("setCollectionInfoAction %O", collection)
+    // if(collection && collection.nom) {
+    //     const len = state.breadcrumb.length
+    //     if(len > 0) {
+    //         const courant = state.breadcrumb[len-1]
+    //         // console.debug("Breadcrumb courant %s (nom %s)", courant.tuuid, courant.nom)
+    //         if(courant.tuuid === collection.tuuid) {
+    //             // console.debug("Changer nom courant pour %s", collection.nom)
+    //             courant.label = collection.nom
+    //         }
+    //     }
+    // }
 }
 
 function pushAction(state, action) {
@@ -158,16 +162,23 @@ function breadcrumbPushAction(state, action) {
 
     if(!tuuid) return  // Rien a faire, on ne push pas le favoris
 
+    const label = opts.nom || tuuid
+    const val = {tuuid, label}
+
     const len = state.breadcrumb.length
     if(len > 0) {
         const courant = state.breadcrumb[len-1]
-        if(courant.tuuid === tuuid) return  // Erreur, on push le meme cuuid a nouveau
+        if(courant.tuuid === tuuid) {
+            // on push le meme cuuid a nouveau, remplacer
+            const liste = [...state.breadcrumb]
+            liste[len-1] = val
+            // console.debug("breadcrumbPushAction Mise a jour breadcrumb ", liste)
+            state.breadcrumb = liste
+            return
+        }
     }
-
-    const label = opts.nom || tuuid
-    const val = {tuuid, label}
     state.breadcrumb.push(val)
-    // console.debug("Breadcrumb etat : ", [...state.breadcrumb])
+    // console.debug("breadcrumbPushAction Breadcrumb etat : ", [...state.breadcrumb])
 }
 
 function breadcrumbSliceAction(state, action) {
@@ -435,7 +446,7 @@ export function creerThunks(actions, nomSlice) {
     const { 
         setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
         setSortKeys, setSource, setIntervalle, pushFichiersChiffres, setDechiffrageComplete,
-        setUserContactId,
+        setUserContactId, breadcrumbPush, breadcrumbSlice,
     } = actions
 
     // Async thunks
@@ -539,13 +550,16 @@ export function creerThunks(actions, nomSlice) {
     
         const state = getState()[nomSlice]
         const cuuidPrecedent = state.cuuid
-        // console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
+        console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
     
         if(cuuidPrecedent === cuuid) return  // Rien a faire, meme collection
     
         dispatch(setCuuid(cuuid))
     
-        return traiterRafraichirCollection(workers, dispatch, getState)
+        return Promise.all([
+            traiterRafraichirCollection(workers, dispatch, getState),
+            traiterRafraichirBreadcrumb(workers, dispatch, getState)
+        ])
     }
     
     function rafraichirCollection(workers) {
@@ -620,6 +634,74 @@ export function creerThunks(actions, nomSlice) {
         dispatch(push({liste: []}))
     }
     
+    async function traiterRafraichirBreadcrumb(workers, dispatch, getState) {
+        const { collectionsDao } = workers
+    
+        const state = getState()[nomSlice]
+        const { userId, cuuid, partageContactId: contactId } = state
+
+        // console.debug('traiterRafraichirBreadcrumb cuuid ', cuuid)
+
+        if(cuuid) {
+            // console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
+
+            const dictRepertoires = {}
+
+            // Charger le contenu de la collection deja connu
+            let cuuidInfo = (await collectionsDao.getParTuuids([cuuid])).pop()
+            // console.debug("traiterRafraichirBreadcrumb cuuidInfo ", cuuidInfo)
+            if(!cuuidInfo) {
+                // Charger a partir de la connexion
+                const resultat = await getDocuments(workers, [cuuid])
+                for(const rep of resultat) {
+                    dictRepertoires[rep.tuuid] = rep
+                }
+                cuuidInfo = dictRepertoires[cuuid]
+            } else {
+                dictRepertoires[cuuid] = cuuidInfo
+            }
+
+            if(!cuuidInfo) throw new Error(`cuuid ${cuuid} introuvable`)
+
+            const pathCuuids = [...(cuuidInfo.path_cuuids || [])]
+            pathCuuids.reverse()
+
+            if(pathCuuids.length > 0) {
+                const pathCuuidsIdb = await workers.collectionsDao.getParTuuids(pathCuuids)
+                // console.debug("Repertoires charges localement : ", repertoires)
+                for(const item of pathCuuidsIdb) {
+                    dictRepertoires[item.tuuid] = item
+                }
+                // Trouver repertoires manquants
+                const cuuidsManquants = []
+                for(const cuuid of pathCuuids) {
+                    if(!dictRepertoires[cuuid]) cuuidsManquants.push(cuuid)
+                }
+                // Charger repertoires manquants
+                if(cuuidsManquants.length > 0) {
+                    const resultat = await getDocuments(workers, cuuidsManquants)
+                    for(const rep of resultat) {
+                        dictRepertoires[rep.tuuid] = rep
+                    }
+                }
+
+                // console.debug("traiterRafraichirBreadcrumb PathFichier Dict repertoires ", dictRepertoires)
+                dispatch(breadcrumbSlice(''))
+                for(const bc of pathCuuids) {
+                    const bcInfo = dictRepertoires[bc]
+                    // console.debug("traiterRafraichirBreadcrumb Parent breadcrumb %s : %O", bc, bcInfo)
+                    dispatch(breadcrumbPush({tuuid: bcInfo.tuuid, opts: {nom: bcInfo.nom}}))
+                }
+            }
+
+            // console.debug("traiterRafraichirBreadcrumb Leaf breadcrumb %O", cuuidInfo)
+            dispatch(breadcrumbPush({tuuid: cuuidInfo.tuuid, opts: {nom: cuuidInfo.nom}}))
+
+        } else {
+            dispatch(breadcrumbSlice(''))  // Favoris
+        }
+    }
+
     // DEBUT SOURCES AFFICHAGE
 
     async function syncCollection(dispatch, workers, cuuid, limit, skip, opts) {
