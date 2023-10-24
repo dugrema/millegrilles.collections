@@ -134,6 +134,7 @@ function NavigationPartageTiers(props) {
             // Reset affichage
             setAfficherVideo('')
             setAfficherAudio('')
+            setShowPreview(false)
             setToggleOffCarousel(true)
 
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
@@ -141,7 +142,7 @@ function NavigationPartageTiers(props) {
         }
 
         return [{label: 'Partages', onClick: fermer}, {label: userInfo.nom_usager, onClick: afficherPartageUser}]
-    }, [userInfo, fermer, setAfficherVideo, setAfficherAudio, setToggleOffCarousel])
+    }, [userInfo, fermer, setAfficherVideo, setAfficherAudio, setToggleOffCarousel, setShowPreview])
 
     const fichierBreadcrumb = useMemo(()=>{
         if( !afficherAudio && !afficherVideo) return ''
@@ -166,6 +167,7 @@ function NavigationPartageTiers(props) {
         setAfficherAudio('')  // Reset affichage
         setShowPreview(false)
         setToggleOffCarousel(true)
+        setHideMenu(false)
 
         if(opts.retourFichier) return   // Plus rien a faire
 
@@ -203,7 +205,7 @@ function NavigationPartageTiers(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, userInfo, erreurCb, contactInfo, setShowPreview, setAfficherVideo, setAfficherAudio, setToggleOffCarousel])
+    }, [dispatch, workers, userInfo, erreurCb, contactInfo, setShowPreview, setAfficherVideo, setAfficherAudio, setToggleOffCarousel, setHideMenu])
 
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 

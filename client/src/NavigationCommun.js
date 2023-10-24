@@ -503,7 +503,7 @@ export function SectionBreadcrumb(props) {
         event.stopPropagation()
 
         const value = event.currentTarget.dataset.idx
-        // console.debug("handlerSliceBreadcrumb retour a idx %s, liste : %O", value, breadcrumb)
+        console.debug("handlerSliceBreadcrumb retour a idx %s, liste : %O", value, breadcrumb)
 
         let tuuid = ''
         if(value) {
