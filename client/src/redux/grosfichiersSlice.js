@@ -199,6 +199,17 @@ function mergeTuuidDataAction(state, action) {
         payload = [payload]
     }
 
+    const cuuidCourant = state.cuuid
+    if(!cuuidCourant) {
+        // S'assurer que tous les fichiers sont sans path_cuuids
+        payload = payload.filter(item=>!item.data.path_cuuids)
+    } else {
+        // S'assurer que tous les fichiers sont du meme cuuid
+        payload = payload.filter(item=>{
+            return item.data.path_cuuids && item.data.path_cuuids[0] === cuuidCourant
+        })
+    }
+
     const contactId = state.partageContactId
 
     for (const payloadFichier of payload) {
@@ -550,7 +561,7 @@ export function creerThunks(actions, nomSlice) {
     
         const state = getState()[nomSlice]
         const cuuidPrecedent = state.cuuid
-        console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
+        // console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
     
         if(cuuidPrecedent === cuuid) return  // Rien a faire, meme collection
     
@@ -1239,8 +1250,8 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             // Trier et slicer une batch de fichiers a dechiffrer
             // const sortKeys = getState().sortKeys
             // fichiersChiffres.sort(genererTriListe(sortKeys))
-            const batchTuuids = tuuidsChiffres.slice(0, 20)  // Batch de 20 fichiers a la fois
-            tuuidsChiffres = tuuidsChiffres.slice(20)  // Clip
+            const batchTuuids = tuuidsChiffres.slice(0, 50)  // Batch de 20 fichiers a la fois
+            tuuidsChiffres = tuuidsChiffres.slice(50)  // Clip
 
             // Recuperer valeurs a dechiffrer. Si la liste est longue, elle peut etre mise a jour
             // pendant qu'on dechiffre d'autres fichiers.
@@ -1320,11 +1331,28 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
                 collectionsDao.updateDocument(docCourant, {dirty: false, dechiffre})
                     .catch(err=>console.error("Erreur maj document %O dans idb : %O", docCourant, err))
 
-                // Mettre a jour a l'ecran
+                // Mettre a jour a l'ecran si on affiche le meme cuuid
                 fichiersDechiffres.push({tuuid, data: docCourant})
             }
 
-            listenerApi.dispatch(actions.mergeTuuidData(fichiersDechiffres))
+            // console.debug("Mettre a jour l'ecran pour batch dechiffree, state %O, batch %O", getState(), fichiersDechiffres)            
+            // const cuuidCourant = getState().cuuid
+            // Filtrer fichiers pour s'assurer qu'ils sont inclus dans le cuuid courant (si changement de repertoire)
+            // const fichiersDechiffreesAfficher = []
+            // for(const item of fichiersDechiffres) {
+            //     const fichier = item.data
+            //     if(!cuuidCourant && !fichier.path_cuuids) {
+            //         // Inclure, collection top level (favoris)
+            //         fichiersDechiffreesAfficher.push(item)
+            //     } else if(cuuidCourant && fichier.path_cuuids && fichier.path_cuuids[0] === cuuidCourant) {
+            //         // Inclure, meme repertoire
+            //         fichiersDechiffreesAfficher.push(item)
+            //     }
+            // }
+
+            if(fichiersDechiffres.length > 0) {
+                listenerApi.dispatch(actions.mergeTuuidData(fichiersDechiffres))
+            }
 
             // Continuer tant qu'il reste des fichiers chiffres
             // tuuidsChiffres = [...getState().listeDechiffrage]
