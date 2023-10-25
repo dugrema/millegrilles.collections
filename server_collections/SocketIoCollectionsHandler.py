@@ -38,6 +38,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
         self._sio.on('getStructureRepertoire', handler=self.requete_structure_repertoire)
         self._sio.on('getBatchUpload', handler=self.requete_batch_upload)
         self._sio.on('getPermissionCles', handler=self.requete_permission_cles)
+        self._sio.on('getSousRepertoires', handler=self.get_sous_repertoires)
 
         # Commandes
         self._sio.on('creerCollection', handler=self.creer_collection)
@@ -217,6 +218,10 @@ class SocketIoCollectionsHandler(SocketIoHandler):
     async def creer_token_stream(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
                                            ConstantesCollections.NOM_DOMAINE, 'getJwtStreaming')
+
+    async def get_sous_repertoires(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getSousRepertoires')
 
     async def completer_previews(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,

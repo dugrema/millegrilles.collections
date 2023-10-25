@@ -838,7 +838,7 @@ function UploadBatchZip(props) {
         Promise.resolve()
             .then(async () => {
                 for await (const fichier of fichiers) {
-                    await workers.transfertFichiers.parseZipFile(userId, fichier, cuuid, updateFichierProxy, ajouterPartProxy)
+                    await workers.transfertFichiers.parseZipFile(workers, userId, fichier, cuuid, updateFichierProxy, ajouterPartProxy)
                 }
             })
             .catch(err=>console.error("UploadBatchZip Erreur traitement zip ", err))

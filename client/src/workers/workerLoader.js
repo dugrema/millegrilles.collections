@@ -39,7 +39,7 @@ export function setupWorkers() {
     // Wiring
     const ready = wireWorkers(workers)
 
-    return { workerInstances, workers, ready }
+    return { workerInstances, workers: proxy(workers), ready }
 }
 
 async function wireWorkers(workers) {

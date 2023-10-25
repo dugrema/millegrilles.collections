@@ -328,6 +328,15 @@ async function regenererPreviews(fuuids) {
   )
 }
 
+async function getSousRepertoires(cuuid) {
+  const requete = { cuuid }
+  return ConnexionClient.emitBlocking(
+    'getSousRepertoires',
+    requete,
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getSousRepertoires', ajouterCertificat: true}
+  )
+}
+
 // Listeners
 
 function enregistrerCallbackMajCollection(cuuid, cb) { 
@@ -378,7 +387,7 @@ expose({
     getMediaJobs, supprimerJobVideo,
     getBatchUpload, submitBatchUpload,
 
-    getInfoStatistiques, getStructureRepertoire,
+    getInfoStatistiques, getStructureRepertoire, getSousRepertoires,
 
     // Event listeners prives
     enregistrerCallbackMajCollection, retirerCallbackMajCollection,
