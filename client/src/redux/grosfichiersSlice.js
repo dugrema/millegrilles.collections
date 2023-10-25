@@ -200,14 +200,18 @@ function mergeTuuidDataAction(state, action) {
     }
 
     const cuuidCourant = state.cuuid
-    if(!cuuidCourant) {
-        // S'assurer que tous les fichiers sont sans path_cuuids
-        payload = payload.filter(item=>!item.data.path_cuuids)
+    if(state.source === SOURCE_RECHERCHE) {
+        // Pas de filtre, les fichiers proviennent de tous les cuuids
     } else {
-        // S'assurer que tous les fichiers sont du meme cuuid
-        payload = payload.filter(item=>{
-            return item.data.path_cuuids && item.data.path_cuuids[0] === cuuidCourant
-        })
+        if(!cuuidCourant) {
+            // S'assurer que tous les fichiers sont sans path_cuuids
+            payload = payload.filter(item=>!item.data.path_cuuids)
+        } else {
+            // S'assurer que tous les fichiers sont du meme cuuid
+            payload = payload.filter(item=>{
+                return item.data.path_cuuids && item.data.path_cuuids[0] === cuuidCourant
+            })
+        }
     }
 
     const contactId = state.partageContactId
