@@ -822,6 +822,9 @@ function UploadBatchZip(props) {
     const batchId = 'batchzip-TODO-FIXME'
     const token = 'FAKETOKEN-TODO-FIXME'
 
+    const [traitementEnCours, setTraitementEnCours] = useState(false)
+    const [erreurTraitement, setErreurTraitement] = useState('')
+
     const ajouterPartProxy = comlinkProxy((correlation, compteurPosition, chunk) => {
         return workers.traitementFichiers.ajouterPart(batchId, correlation, compteurPosition, chunk)
     })
@@ -835,14 +838,22 @@ function UploadBatchZip(props) {
     const uploadHandler = useCallback(e=>{
         const fichiers = e.currentTarget.files
         console.debug("UploadBatchZip fichiers %O dans cuuid %O", fichiers, cuuid)
+        setTraitementEnCours(true)
+        setErreurTraitement('')
         Promise.resolve()
             .then(async () => {
                 for await (const fichier of fichiers) {
                     await workers.transfertFichiers.parseZipFile(workers, userId, fichier, cuuid, updateFichierProxy, ajouterPartProxy)
                 }
             })
-            .catch(err=>console.error("UploadBatchZip Erreur traitement zip ", err))
-    }, [workers, userId, cuuid])
+            .catch(err=>{
+                console.error("UploadBatchZip Erreur traitement zip ", err)
+                setErreurTraitement(''+err)
+            })
+            .finally(()=>{
+                setTraitementEnCours(false)
+            })
+    }, [workers, userId, cuuid, setTraitementEnCours, setErreurTraitement])
 
     if(!!hide) return ''
 
@@ -854,6 +865,15 @@ function UploadBatchZip(props) {
             <Form>
                 <Form.Control type='file' onChange={uploadHandler} />
             </Form>
+
+            <Alert show={!!traitementEnCours} variant='info'>
+                Traitement du fichier ZIP en cours.
+            </Alert>
+
+            <Alert show={!!erreurTraitement} variant='danger'>
+                <p>Erreur de traitement du fichier ZIP.</p>
+                <pre>{erreurTraitement}</pre>
+            </Alert>
         </div>
     )
 }
