@@ -674,8 +674,15 @@ export function creerThunks(actions, nomSlice) {
 
             if(!cuuidInfo) throw new Error(`cuuid ${cuuid} introuvable`)
 
-            const pathCuuids = [...(cuuidInfo.path_cuuids || [])]
-            pathCuuids.reverse()
+            let pathCuuids = [...(cuuidInfo.path_cuuids || [])]
+
+            if(contactId) {
+                // On est en mode partage, ne pas modifier la breadcrumb
+                pathCuuids = getState().fichiers.breadcrumb.map(item=>item.tuuid)
+            } else {
+                // Le path_cuuids est en ordre inverse (idx:0 est le parent immediat)
+                pathCuuids.reverse()
+            }
 
             if(pathCuuids.length > 0) {
                 const pathCuuidsIdb = await workers.collectionsDao.getParTuuids(pathCuuids)
