@@ -26,6 +26,12 @@ function setup(workers) {
             opts = opts || {}
             return getCleSecrete(workers, cle_id, opts)
         },
+        ajouterPart(batchId, correlation, compteurPosition, chunk) {
+            ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
+        },
+        updateFichier(dispatch, doc, opts) {
+            updateFichier(workers, dispatch, doc, opts)
+        },
     }
 }
 
@@ -283,7 +289,7 @@ async function ajouterPart(workers, batchId, correlation, compteurPosition, chun
     await uploadFichiersDao.ajouterFichierUploadFile(batchId, correlation, compteurPosition, chunk)
 }
 
-async function updateFichier(workers, dispatch, doc, opts) {
+export async function updateFichier(workers, dispatch, doc, opts) {
     opts = opts || {}
     const correlation = doc.correlation
     const demarrer = opts.demarrer || false,

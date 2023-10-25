@@ -42,7 +42,7 @@ export function BarreInformationDesktop(props) {
     const { 
         hide, hideMenu, afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
-        signalAnnuler, setShowInfoModal,
+        signalAnnuler, setShowInfoModal, setShowUploadBatch,
     } = props
 
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -124,6 +124,7 @@ export function BarreInformationDesktop(props) {
                             setShowCreerRepertoire={setShowCreerRepertoire}
                             setPreparationUploadEnCours={setPreparationUploadEnCours}
                             signalAnnuler={signalAnnuler}
+                            setShowUploadBatch={setShowUploadBatch}
                         />
                     </Col>
                     <Col xs={12} md={4}>
@@ -271,7 +272,7 @@ function BoutonsNavigation(props) {
         showSupprimerModal, setShowSupprimerModal,
         showCopierModal, setShowCopierModal,
         showDeplacerModal, setShowDeplacerModal,
-        signalAnnuler,
+        signalAnnuler, setShowUploadBatch,
     } = props
 
     const showCopierHandler = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
@@ -315,6 +316,7 @@ function BoutonsNavigation(props) {
                 setShowCreerRepertoire={setShowCreerRepertoire}
                 setPreparationUploadEnCours={setPreparationUploadEnCours}
                 signalAnnuler={signalAnnuler}
+                setShowUploadBatch={setShowUploadBatch}
             />
         </div>
     )
@@ -343,9 +345,11 @@ export function BoutonsFormat(props) {
 
 export function BoutonsAction(props) {
 
-    const { setShowCreerRepertoire, setPreparationUploadEnCours, signalAnnuler } = props
+    const { setShowCreerRepertoire, setPreparationUploadEnCours, signalAnnuler, setShowUploadBatch } = props
 
-    const capabilities = useCapabilities()
+    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
+
+    const onUploadBatch = useCallback(()=>setShowUploadBatch(true), [setShowUploadBatch])
 
     return (
         <>
@@ -362,6 +366,12 @@ export function BoutonsAction(props) {
                 <div className="d-none d-sm-block"><i className="fa fa-folder"/> Collection</div>
                 <div className="fixed d-block d-sm-none"><i className="fa fa-folder"/></div>
             </Button>
+            &nbsp;
+            {setShowUploadBatch?
+                <Button disabled={!cuuidCourant} variant='secondary' className='d-none d-sm-inline-block' onClick={onUploadBatch}>
+                    <i className="fa fa-plus"/> ZIP
+                </Button>
+            :''}
         </>
     )
 }

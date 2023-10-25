@@ -56,6 +56,7 @@ function NavigationCollections(props) {
     const [ showCopierModal, setShowCopierModal ] = useState(false)
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     const [ showConversionVideo, setShowConversionVideo ] = useState(false)
+    const [ showUploadBatch, setShowUploadBatch ] = useState(false)
 
     // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
@@ -75,6 +76,7 @@ function NavigationCollections(props) {
         setAfficherAudio('')
         setShowPreview(false)
         setToggleOffCarousel(true)
+        setShowUploadBatch(false)
 
         if(opts.retourFichier) return   // Plus rien a faire
 
@@ -97,7 +99,7 @@ function NavigationCollections(props) {
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
-    }, [dispatch, workers, setShowPreview, erreurCb, setAfficherVideo, setAfficherAudio, setToggleOffCarousel])
+    }, [dispatch, workers, setShowPreview, erreurCb, setAfficherVideo, setAfficherAudio, setToggleOffCarousel, setShowUploadBatch])
 
     const signalAnnuler = useMemo(()=>{
         let valeur = false
@@ -108,10 +110,10 @@ function NavigationCollections(props) {
     }, [])
 
     const cacherAffichage = useMemo(()=>{
-        if(!!showPreview) return true
+        if(!!showPreview || showUploadBatch) return true
         //if(modeView === 'carousel') return true
         return false
-    }, [showPreview, modeView])
+    }, [showPreview, modeView, showUploadBatch])
 
     // const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
     const annulerPreparationUpload = useCallback(()=>{
@@ -122,6 +124,8 @@ function NavigationCollections(props) {
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
 
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
+
+    const fermerUploadBatchHandler = useCallback(()=>setShowUploadBatch(false), [setShowUploadBatch])
 
     const downloadRepertoireCb = useCallback(e=>{
         const { value } = e.currentTarget
@@ -206,6 +210,7 @@ function NavigationCollections(props) {
                     setShowDeplacerModal={setShowDeplacerModal}
                     modeSelection={modeSelection}
                     setModeSelection={setModeSelection}
+                    setShowUploadBatch={setShowUploadBatch}
                     />
 
                 <Suspense fallback={<p>Loading ...</p>}>
@@ -233,6 +238,8 @@ function NavigationCollections(props) {
                     />
 
                     <PartagesUsager hide={!!cuuidCourant} onSelect={ouvrirPartageUserId} />
+
+                    <UploadBatchZip hide={!showUploadBatch} fermer={fermerUploadBatchHandler} />
                 </Suspense>
             </div>
 
@@ -800,4 +807,53 @@ function PartagesUsager(props) {
         </Collapse>
     )
 
+}
+
+function UploadBatchZip(props) {
+
+    const { hide, fermer } = props
+
+    const dispatch = useDispatch()
+    const workers = useWorkers()
+
+    const cuuid = useSelector(state=>state.fichiers.cuuid)
+    const userId = useSelector(state=>state.fichiers.userId)
+
+    const batchId = 'batchzip-TODO-FIXME'
+    const token = 'FAKETOKEN-TODO-FIXME'
+
+    const ajouterPartProxy = comlinkProxy((correlation, compteurPosition, chunk) => {
+        return workers.traitementFichiers.ajouterPart(batchId, correlation, compteurPosition, chunk)
+    })
+
+    const updateFichierProxy = comlinkProxy((doc, opts) => {
+        const docWithIds = {...doc, userId, batchId, token}
+        // console.debug("updateFichierProxy docWithIds ", docWithIds)
+        return workers.traitementFichiers.updateFichier(dispatch, docWithIds, opts)
+    })
+
+    const uploadHandler = useCallback(e=>{
+        const fichiers = e.currentTarget.files
+        console.debug("UploadBatchZip fichiers %O dans cuuid %O", fichiers, cuuid)
+        Promise.resolve()
+            .then(async () => {
+                for await (const fichier of fichiers) {
+                    await workers.transfertFichiers.parseZipFile(userId, fichier, cuuid, updateFichierProxy, ajouterPartProxy)
+                }
+            })
+            .catch(err=>console.error("UploadBatchZip Erreur traitement zip ", err))
+    }, [workers, userId, cuuid])
+
+    if(!!hide) return ''
+
+    return (
+        <div>
+            <h3>Upload batch de fichiers via .zip</h3>
+            <Button onClick={fermer}>Fermer</Button>
+
+            <Form>
+                <Form.Control type='file' onChange={uploadHandler} />
+            </Form>
+        </div>
+    )
 }
