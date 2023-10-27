@@ -304,27 +304,29 @@ function HandlerEvenements(_props) {
         if(!connexion || !etatPret) return  // Pas de connexion, rien a faire
 
         // Enregistrer listeners
-        // console.debug("HandlerEvenements Enregistrer listeners collection ", cuuid)
         if(cuuid) {
+            // console.debug("HandlerEvenements Enregistrer listeners collection ", cuuid)
             connexion.enregistrerCallbackMajCollection(cuuid, evenementCollectionCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
             connexion.enregistrerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
-        } else {
+        } else if(userId) {
             // Favoris
+            // console.debug("HandlerEvenements Enregistrer listeners collection pour userId ", userId)
             connexion.enregistrerCallbackMajContenuCollection(userId, evenementContenuCollectionCb)
                 .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
         }
 
         // Cleanup listeners
         return () => {
-            // console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
             if(cuuid) {
+                // console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
                 connexion.retirerCallbackMajCollection(cuuid, evenementCollectionCb)
                     .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
                 connexion.retirerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb)
                     .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
-            } else {
+            } else if(userId) {
+                // console.debug("HandlerEvenements Retirer listeners collections pour userId ", userId)
                 connexion.retirerCallbackMajContenuCollection(userId, evenementContenuCollectionCb)
                     .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
             }

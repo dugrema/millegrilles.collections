@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import json
+import logging
 import uuid
 
 import pytz
@@ -14,6 +15,7 @@ from server_collections import Constantes as ConstantesCollections
 class SocketIoCollectionsHandler(SocketIoHandler):
 
     def __init__(self, app, stop_event: asyncio.Event):
+        self.__logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
         super().__init__(app, stop_event)
 
     async def _preparer_socketio_events(self):
@@ -265,6 +267,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
 
         exchanges = [Constantes.SECURITE_PRIVE]
         routing_keys = [f'evenement.GrosFichiers.{cuuid}.majCollection']
+        self.__logger.debug("ecouter_maj_collection sur %s" % routing_keys)
         reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
         reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
 
@@ -282,6 +285,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
 
         exchanges = [Constantes.SECURITE_PRIVE]
         routing_keys = [f'evenement.GrosFichiers.{cuuid}.majCollection']
+        self.__logger.debug("retirer_maj_collection sur %s" % routing_keys)
         reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
         reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
 
