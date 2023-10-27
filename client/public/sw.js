@@ -51,11 +51,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
     const url = new URL(e.request.url)
+    const method = e.request.method
 
-    if( ! url.pathname.startsWith('/collections/static/')) {
-        // Pas de caching, on applique juste sur le repertoire static
-        console.log(`fetching ${e.request.url}`)
-        return fetch(e.request)
+    if( method !== 'GET' || ! url.pathname.startsWith('/collections/static/') ) {
+        // Pas de caching
+        // console.log(`${method} ${e.request.url}`)
+        return
     }
 
     console.log(`fetching/caching ${e.request.url}`)
@@ -86,28 +87,4 @@ self.addEventListener('fetch', e => {
             }
         })
     e.respondWith(reponse)
-
-    // if( navigator.onLine ) {
-    //     const fetchRequest = e.request.clone()
-    //     return fetch(fetchRequest).then( response => {
-    //         if (!response || response.status !== 200 || response.type !== 'basic' ) {
-    //             return response
-    //         }
-
-    //         const responseToCache = response.clone()
-
-    //         caches.open(CACHE_NAME)
-    //             .then( cache => {
-    //                 cache.put(e.request, responseToCache)
-    //             })
-
-    //         return response
-    //     })
-    // } else {
-    //     const reponse = caches.match(e.request)
-    //         .then( response => {
-    //             if(response) return response
-    //         })
-    //     e.respondWith(reponse)
-    // }
 })
