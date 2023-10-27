@@ -15,7 +15,7 @@ LOGGING_NAMES = ['server_collections']
 LOGGING_NAMES.extend(LOGGING_NAMES_WEB)
 
 
-class CoupdoeilAppMain(WebAppMain):
+class CollectionsAppMain(WebAppMain):
 
     def __init__(self):
         self.__logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
@@ -46,7 +46,7 @@ class CoupdoeilAppMain(WebAppMain):
 
 
 async def demarrer():
-    main_inst = CoupdoeilAppMain()
+    main_inst = CollectionsAppMain()
 
     signal.signal(signal.SIGINT, main_inst.exit_gracefully)
     signal.signal(signal.SIGTERM, main_inst.exit_gracefully)
