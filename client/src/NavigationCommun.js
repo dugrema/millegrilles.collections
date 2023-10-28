@@ -755,8 +755,9 @@ export function AffichagePrincipal(props) {
     const fermerAfficherVideo = useCallback(()=>setAfficherVideo(false), [setAfficherVideo])
     const fermerAfficherAudio = useCallback(()=>setAfficherAudio(false), [setAfficherAudio])
     const onContextMenuClick = useCallback((event, value)=>{
+        if(isMobile) return  // Le menu contextuel est desactive en mode mobile
         onContextMenu(event, value, setContextuel)
-    }, [setContextuel])
+    }, [setContextuel, isMobile])
     const fermerCarousel = useCallback(()=>setModeView('liste'), ['setModeview'])
 
     const onOpenHandler = useCallback( item => {
