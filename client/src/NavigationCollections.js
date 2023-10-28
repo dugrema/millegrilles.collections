@@ -164,7 +164,9 @@ function NavigationCollections(props) {
     }, [dispatch, naviguerCollection, etatPret, userId, navInitDone, cuuidTransfere, setCuuidTransfere, setNavInitDone])
 
     useEffect(()=>{
-        if(!modeSelection) dispatch(fichiersActions.selectionTuuids(''))  // Vider selection
+        // if(!modeSelection) 
+        // Vider selection sur chaque toggle de modeSelection
+        dispatch(fichiersActions.selectionTuuids(''))
     }, [dispatch, modeSelection])
 
     useEffect(()=>{
