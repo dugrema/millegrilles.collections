@@ -146,6 +146,7 @@ export function BarreInformationMobile(props) {
         showSupprimerModal, setShowSupprimerModal,
         showCopierModal, setShowCopierModal,
         showDeplacerModal, setShowDeplacerModal,
+        setShowRenommerModal,
         modeSelection, setModeSelection,
     } = props
 
@@ -244,15 +245,12 @@ export function BarreInformationMobile(props) {
                         modeSelection={modeSelection}
                         setModeView={setModeView}
                         cuuid={cuuidCourant} 
-                        naviguerCollectionUpHandler={naviguerCollectionUpHandler} 
                         showInformationRepertoireHandler={showInformationRepertoireHandler}
                         setShowInfoModal={setShowInfoModal} 
-                        showSupprimerModal={showSupprimerModal}
                         setShowSupprimerModal={setShowSupprimerModal}
-                        showCopierModal={showCopierModal}
                         setShowCopierModal={setShowCopierModal}
-                        showDeplacerModal={showDeplacerModal}
                         setShowDeplacerModal={setShowDeplacerModal}
+                        setShowRenommerModal={setShowRenommerModal}
                         setShowCreerRepertoire={setShowCreerRepertoire} 
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
                         signalAnnuler={signalAnnuler} />
@@ -266,23 +264,26 @@ function BoutonsNavigation(props) {
 
     const {
         modeView, setModeView, modeSelection,
-        cuuid, naviguerCollectionUpHandler, showInformationRepertoireHandler,
+        cuuid, showInformationRepertoireHandler,
         setShowCreerRepertoire, setPreparationUploadEnCours, 
         setShowInfoModal,
-        showSupprimerModal, setShowSupprimerModal,
-        showCopierModal, setShowCopierModal,
-        showDeplacerModal, setShowDeplacerModal,
+        setShowSupprimerModal,
+        setShowCopierModal,
+        setShowDeplacerModal,
+        setShowRenommerModal,
         signalAnnuler, setShowUploadBatch,
     } = props
 
     const showCopierHandler = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
     const showDeplacerHandler = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
     const showSupprimerHandler = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
+    const showRenommerHandler = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
 
     const selection = useSelector(state => state.fichiers.selection)
 
-    const selectionPresente = useMemo(()=>{
-        return selection && selection.length > 0
+    const [selectionPresente, selectionUn] = useMemo(()=>{
+        if(!selection) return [false, 0]
+        return [selection.length > 0, selection.length === 1]
     }, [selection])
 
     if(modeSelection === true) {
@@ -298,6 +299,10 @@ function BoutonsNavigation(props) {
                 {' '}
                 <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showSupprimerHandler}>
                     <i className="fa fa-trash-o"/>
+                </Button>
+                {' '}
+                <Button variant="secondary" disabled={!selectionUn} onClick={showRenommerHandler}>
+                    Renommer
                 </Button>
             </div>
         )

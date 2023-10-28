@@ -55,6 +55,7 @@ function NavigationCollections(props) {
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
     const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
+    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ showConversionVideo, setShowConversionVideo ] = useState(false)
     const [ showUploadBatch, setShowUploadBatch ] = useState(false)
 
@@ -208,6 +209,7 @@ function NavigationCollections(props) {
                     setShowCopierModal={setShowCopierModal}
                     showDeplacerModal={showDeplacerModal}
                     setShowDeplacerModal={setShowDeplacerModal}
+                    setShowRenommerModal={setShowRenommerModal}
                     modeSelection={modeSelection}
                     setModeSelection={setModeSelection}
                     setShowUploadBatch={setShowUploadBatch}
@@ -263,6 +265,8 @@ function NavigationCollections(props) {
                 showDeplacerModal={showDeplacerModal}
                 setShowDeplacerModal={setShowDeplacerModal}
                 setShowSupprimerModal={setShowSupprimerModal}
+                showRenommerModal={showRenommerModal}
+                setShowRenommerModal={setShowRenommerModal}
                 showConversionVideo={showConversionVideo}
                 setShowConversionVideo={setShowConversionVideo}
                 annulerPreparationCb={annulerPreparationUpload}
@@ -347,6 +351,7 @@ function Modals(props) {
         showCopierModal, setShowCopierModal,
         showDeplacerModal, setShowDeplacerModal,
         showConversionVideo, setShowConversionVideo,
+        showRenommerModal, setShowRenommerModal,
         downloadRepertoire,
         erreurCb,
     } = props
@@ -362,7 +367,7 @@ function Modals(props) {
     // const [ showCopierModal, setShowCopierModal ] = useState(false)
     // const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     // const [ showInfoModal, setShowInfoModal ] = useState(false)
-    const [ showRenommerModal, setShowRenommerModal ] = useState(false)
+    // const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ showPartagerModal, setShowPartagerModal ] = useState(false)
 
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
