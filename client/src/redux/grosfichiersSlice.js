@@ -422,6 +422,15 @@ function setParametresRechercheAction(state, action) {
     state.parametresRecherche = action.payload
 }
 
+function retirerTuuidsListeAction(state, action) {
+    const {cuuid, tuuids} = action.payload
+    console.debug("retirerTuuidsListeAction Retirer de %s tuuids %O", cuuid, tuuids)
+    if(cuuid === state.cuuid) {
+        const listeMaj = state.liste.filter(item=>!tuuids.includes(item.tuuid))
+        state.liste = listeMaj
+    }
+}
+
 // Slice collection
 
 export function creerSlice(name) {
@@ -450,6 +459,7 @@ export function creerSlice(name) {
             incrementerNombreAffiches: incrementerNombreAffichesAction,
             setDechiffrageComplete: setDechiffrageCompleteAction,
             setParametresRecherche: setParametresRechercheAction,
+            retirerTuuidsListe: retirerTuuidsListeAction,
         }
     })
 
@@ -461,7 +471,7 @@ export function creerThunks(actions, nomSlice) {
     const { 
         setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
         setSortKeys, setSource, setIntervalle, pushFichiersChiffres, setDechiffrageComplete,
-        setUserContactId, breadcrumbPush, breadcrumbSlice,
+        setUserContactId, breadcrumbPush, breadcrumbSlice, retirerTuuidsListe,
     } = actions
 
     // Async thunks
@@ -1218,6 +1228,21 @@ export function creerThunks(actions, nomSlice) {
             return dispatch(mergeTuuidData({tuuid, data: doc}))
         }
     }
+
+    function retirerTuuidsCollection(workers, cuuid, tuuids) {
+        return (dispatch, getState) => traiterRetirerTuuidsCollection(workers, cuuid, tuuids, dispatch, getState)
+    }
+
+    async function traiterRetirerTuuidsCollection(workers, cuuid, tuuids, dispatch, getState) {
+        const { collectionsDao } = workers
+        const docs = (await collectionsDao.getParTuuids(tuuids))
+        console.debug("traiterRetirerTuuidsCollection Retirer cuuid %s des docs suivants : ", cuuid, docs)
+        const cuuidCourant = getState()[nomSlice].cuuid
+        if(cuuid === cuuidCourant) {
+            // Retirer les tuuids de l'affichage courante
+            dispatch(retirerTuuidsListe({cuuid, tuuids}))
+        }
+    }
     
     // Async actions
     const thunks = { 
@@ -1227,6 +1252,7 @@ export function creerThunks(actions, nomSlice) {
         afficherPartagesContact,
         chargerTuuids,
         ajouterFichierVolatil, rafraichirCollection, supprimerFichier, restaurerFichier,
+        retirerTuuidsCollection,
     }
 
     return thunks

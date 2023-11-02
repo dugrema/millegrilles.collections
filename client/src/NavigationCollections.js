@@ -752,28 +752,38 @@ function InformationListe(_props) {
 }
 
 function traiterCollectionEvenement(workers, dispatch, evenement) {
-    // console.debug("traiterCollectionEvenement ", evenement)
+    // console.trace("traiterCollectionEvenement ", evenement)
 }
 
 async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
-    // console.debug("traiterContenuCollectionEvenement ", evenement)
+    // console.trace("traiterContenuCollectionEvenement ", evenement)
 
     const message = evenement.message || {}
     
     // Conserver liste tuuids (et dedupe)
     const dirtyTuuids = {}
-    const champs = ['fichiers_ajoutes', 'fichiers_modifies', 'collections_ajoutees', 'collections_modifiees', 'retires']
+    const cuuid = message.cuuid
+    const retires = message.retires
+    const champs = ['fichiers_ajoutes', 'fichiers_modifies', 'collections_ajoutees', 'collections_modifiees']
     for (const champ of champs) {
         const value = message[champ]
         if(value) value.forEach(item=>{dirtyTuuids[item] = true})
     }
     const tuuids = Object.keys(dirtyTuuids)
 
+    const promises = []
+
     if(tuuids.length > 0) {
         // console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
-        return dispatch(fichiersThunks.chargerTuuids(workers, tuuids))
+        promises.push(dispatch(fichiersThunks.chargerTuuids(workers, tuuids)))
     }
 
+    if(retires) {
+        // console.debug("traiterCollectionEvenement Retirer tuuids de la collection courante (%s) %O", cuuid, retires)
+        promises.push(dispatch(fichiersThunks.retirerTuuidsCollection(workers, cuuid, retires)))
+    }
+
+    if(promises.length > 0) return Promise.all(promises)
 }
 
 function PartagesUsager(props) {
