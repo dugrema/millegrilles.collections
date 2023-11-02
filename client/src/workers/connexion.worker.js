@@ -2,6 +2,7 @@ import { expose } from 'comlink'
 import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 
+const DEBUG = false
 
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
       CONST_DOMAINE_FICHIERS = 'fichiers'
@@ -340,19 +341,19 @@ async function getSousRepertoires(cuuid) {
 // Listeners
 
 function enregistrerCallbackMajCollection(cuuid, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajCollection', cb, {cuuid})
+  return ConnexionClient.subscribe('enregistrerCallbackMajCollection', cb, {cuuid, DEBUG})
 }
 
 function retirerCallbackMajCollection(cuuid, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajCollection', cb, {cuuid}) 
+  return ConnexionClient.unsubscribe('retirerCallbackMajCollection', cb, {cuuid, DEBUG}) 
 }
 
 function enregistrerCallbackMajContenuCollection(cuuid, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, {cuuid})
+  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, {cuuid, DEBUG})
 }
 
 function retirerCallbackMajContenuCollection(cuuid, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, {cuuid}) 
+  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, {cuuid, DEBUG}) 
 }
 
 function enregistrerCallbackTranscodageProgres(params, cb) { 
