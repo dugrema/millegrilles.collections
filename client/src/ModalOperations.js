@@ -197,7 +197,7 @@ export function DeplacerModal(props) {
 
     const deplacer = useCallback( cuuidDestination => {
         if(cuuidDestination) {
-            console.debug("Deplacer de cuuid %s vers cuuid %s", cuuidOrigine, cuuidDestination)
+            // console.debug("Deplacer de cuuid %s vers cuuid %s", cuuidOrigine, cuuidDestination)
             connexion.deplacerFichiersCollection(cuuidOrigine, cuuidDestination, selection)
                 .then(reponse=>{
                     // console.debug("Reponse copierVersCollection : %O", reponse)
@@ -268,7 +268,9 @@ export function ModalNavigationCollections(props) {
         }
         try {
             dispatch(thunksNavigationSecondaire.changerCollection(workers, cuuid))
-                .then(()=>console.debug("Succes changerCollection : ", cuuid))
+                .then(()=>{
+                    // console.debug("Succes changerCollection : ", cuuid)
+                })
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
@@ -300,7 +302,7 @@ export function ModalNavigationCollections(props) {
     useEffect(()=>{
         if(!show || initComplete) return
         // Charger position initiale (favoris)
-        console.debug("ModalCopier Set collection favoris")
+        // console.debug("ModalCopier Set collection favoris")
         Promise.resolve(naviguerCollection())
           .then(()=>setInitComplete(true))
           .catch(err=>console.error("CopierModal Erreur navigation ", err))

@@ -424,7 +424,7 @@ function setParametresRechercheAction(state, action) {
 
 function retirerTuuidsListeAction(state, action) {
     const {cuuid, tuuids} = action.payload
-    console.debug("retirerTuuidsListeAction Retirer de %s tuuids %O", cuuid, tuuids)
+    // console.debug("retirerTuuidsListeAction Retirer de %s tuuids %O", cuuid, tuuids)
     if(cuuid === state.cuuid) {
         const listeMaj = state.liste.filter(item=>!tuuids.includes(item.tuuid))
         state.liste = listeMaj
@@ -1235,8 +1235,12 @@ export function creerThunks(actions, nomSlice) {
 
     async function traiterRetirerTuuidsCollection(workers, cuuid, tuuids, dispatch, getState) {
         const { collectionsDao } = workers
-        const docs = (await collectionsDao.getParTuuids(tuuids))
-        console.debug("traiterRetirerTuuidsCollection Retirer cuuid %s des docs suivants : ", cuuid, docs)
+
+        // console.debug("traiterRetirerTuuidsCollection Retirer cuuid %s des docs suivants : %O", cuuid, tuuids)
+        // Retirer les documents, laisser redownloader la version la plus a jour
+        collectionsDao.deleteDocuments(tuuids)
+            .catch(err=>console.error("Erreur suppression documents deplaces %s : ", tuuids, err))
+
         const cuuidCourant = getState()[nomSlice].cuuid
         if(cuuid === cuuidCourant) {
             // Retirer les tuuids de l'affichage courante
