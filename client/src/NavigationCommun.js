@@ -42,7 +42,7 @@ export function BarreInformationDesktop(props) {
     const { 
         hide, hideMenu, afficherVideo, afficherAudio, naviguerCollection, modeView, setModeView, 
         setShowCreerRepertoire, setPreparationUploadEnCours,
-        signalAnnuler, setShowInfoModal, setShowUploadBatch,
+        signalAnnuler, setShowInfoModal, setShowUploadBatch, setShowPartagerModal,
     } = props
 
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
@@ -146,7 +146,7 @@ export function BarreInformationMobile(props) {
         showSupprimerModal, setShowSupprimerModal,
         showCopierModal, setShowCopierModal,
         showDeplacerModal, setShowDeplacerModal,
-        setShowRenommerModal,
+        setShowRenommerModal, setShowPartagerModal,
         modeSelection, setModeSelection,
     } = props
 
@@ -253,6 +253,7 @@ export function BarreInformationMobile(props) {
                         setShowRenommerModal={setShowRenommerModal}
                         setShowCreerRepertoire={setShowCreerRepertoire} 
                         setPreparationUploadEnCours={setPreparationUploadEnCours}
+                        setShowPartagerModal={setShowPartagerModal}
                         signalAnnuler={signalAnnuler} />
                 </Col>
             </Row>
@@ -271,6 +272,7 @@ function BoutonsNavigation(props) {
         setShowCopierModal,
         setShowDeplacerModal,
         setShowRenommerModal,
+        setShowPartagerModal,
         signalAnnuler, setShowUploadBatch,
     } = props
 
@@ -278,6 +280,7 @@ function BoutonsNavigation(props) {
     const showDeplacerHandler = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
     const showSupprimerHandler = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
     const showRenommerHandler = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
+    const showPartagerHandler = useCallback(()=>setShowPartagerModal(true), [setShowPartagerModal])
 
     const selection = useSelector(state => state.fichiers.selection)
 
@@ -292,16 +295,16 @@ function BoutonsNavigation(props) {
                 <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showCopierHandler}>
                     <i className="fa fa-copy"/>
                 </Button>
-                {' '}
                 <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showDeplacerHandler}>
                     <i className="fa fa-cut"/>
                 </Button>
-                {' '}
                 <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showSupprimerHandler}>
                     <i className="fa fa-trash-o"/>
                 </Button>
-                {' '}
-                <Button variant="secondary" disabled={!selectionUn} onClick={showRenommerHandler}>
+                <Button variant="secondary" className="fixed-lg" disabled={!selectionPresente} onClick={showPartagerHandler}>
+                    <i className="fa fa-share-alt"/>
+                </Button>
+                <Button variant="secondary" className="smalltext" disabled={!selectionUn} onClick={showRenommerHandler}>
                     Renommer
                 </Button>
             </div>

@@ -58,6 +58,7 @@ function NavigationCollections(props) {
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
     const [ showConversionVideo, setShowConversionVideo ] = useState(false)
     const [ showUploadBatch, setShowUploadBatch ] = useState(false)
+    const [ showPartagerModal, setShowPartagerModal ] = useState(false)
 
     // Preview
     const [ tuuidSelectionne, setTuuidSelectionne ] = useState(false)
@@ -215,6 +216,7 @@ function NavigationCollections(props) {
                     modeSelection={modeSelection}
                     setModeSelection={setModeSelection}
                     setShowUploadBatch={setShowUploadBatch}
+                    setShowPartagerModal={setShowPartagerModal}
                     />
 
                 <Suspense fallback={<p>Loading ...</p>}>
@@ -273,6 +275,8 @@ function NavigationCollections(props) {
                 setShowConversionVideo={setShowConversionVideo}
                 annulerPreparationCb={annulerPreparationUpload}
                 downloadRepertoire={downloadRepertoireCb}
+                showPartagerModal={showPartagerModal}
+                setShowPartagerModal={setShowPartagerModal}
                 erreurCb={erreurCb} />
         </>
     )
@@ -354,6 +358,7 @@ function Modals(props) {
         showDeplacerModal, setShowDeplacerModal,
         showConversionVideo, setShowConversionVideo,
         showRenommerModal, setShowRenommerModal,
+        showPartagerModal, setShowPartagerModal,
         downloadRepertoire,
         erreurCb,
     } = props
@@ -370,7 +375,7 @@ function Modals(props) {
     // const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     // const [ showInfoModal, setShowInfoModal ] = useState(false)
     // const [ showRenommerModal, setShowRenommerModal ] = useState(false)
-    const [ showPartagerModal, setShowPartagerModal ] = useState(false)
+    // const [ showPartagerModal, setShowPartagerModal ] = useState(false)
 
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
     const showArchiverModalOuvrir = useCallback(()=>setShowArchiverModal(true), [setShowArchiverModal])

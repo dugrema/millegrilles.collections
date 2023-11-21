@@ -54,6 +54,15 @@ $xsmall-width: map.get($grid-breakpoints, xs);
     margin-left: 0.25rem;
 }
 
+.fichiers-header-buttonbar-mobile button {
+    margin-left: 0.2rem;
+    height: 2.5rem;
+}
+
+.fichiers-header-buttonbar-mobile button.smalltext {
+    font-size: small;
+}
+
 .top-spacer-menu {
     position: sticky;
     top: 1rem;
