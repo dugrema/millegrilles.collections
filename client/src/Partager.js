@@ -337,6 +337,7 @@ function ContactsPartage(props) {
     const { choisirContactId } = props
 
     const workers = useWorkers()
+    const dispatch = useDispatch()
 
     const contacts = useSelector(state=>state.partager.listeContacts),
           partagesUsager = useSelector(state=>state.partager.listePartagesUsager)
@@ -344,13 +345,22 @@ function ContactsPartage(props) {
     const [showContacts, setShowContacts] = useState(false)
 
     const showAjouterCb = useCallback( e => setShowContacts(true), [])
-    const hideAjouterCb = useCallback( e => setShowContacts(false), [])
+    const hideAjouterCb = useCallback( e => {
+        setShowContacts(false)
+        // Recharger la liste de contacts
+        dispatch(chargerInfoContacts(workers))
+            .catch(err=>console.error("ContactsPartage Erreur chargement contacts : ", err))
+    }, [dispatch])
 
     const supprimerCb = useCallback( e => {
         const contactId = e.currentTarget.value
         workers.contactsDao.supprimerContacts(contactId)
+            .then(()=>{
+                // Recharger la liste de contacts
+                return dispatch(chargerInfoContacts(workers))
+            })
             .catch(err=>console.error("ContactsPartage Erreur supprimer %s : %O", contactId, err))
-    }, [workers])
+    }, [workers, dispatch])
 
     const contactsRender = useMemo(()=>{
         if(!contacts) return ''
@@ -408,9 +418,13 @@ function ModalAjouterUsager(props) {
 
     const workers = useWorkers()
 
+    const [erreur, setErreur] = useState(false)
     const [nomUsager, setNomUsager] = useState('')
 
-    const nomUsagerChangeHandler = useCallback(e=>setNomUsager(e.currentTarget.value), [setNomUsager])
+    const nomUsagerChangeHandler = useCallback(e=>{
+        setNomUsager(e.currentTarget.value)
+        setErreur(false)
+    }, [setNomUsager, setErreur])
 
     const ajouterCb = useCallback( () => {
         if(!nomUsager) return
@@ -421,10 +435,11 @@ function ModalAjouterUsager(props) {
                     hide()
                 } else {
                     console.error("ModalAjouterUsager Erreur ajout contact : %O", reponse)
+                    setErreur(reponse.err || true)
                 }
             })
             .catch(err=>console.error("ModalAjouterUsager Erreur ajout contact : ", err))
-    }, [nomUsager, hide])
+    }, [nomUsager, hide, setErreur])
 
     return (
         <Modal show={show} onHide={hide}>
@@ -443,6 +458,12 @@ function ModalAjouterUsager(props) {
                         />
                     </Form.Group>
                 </Form>
+
+                <Alert variant='danger' show={!!erreur}>
+                    <Alert.Heading>Erreur</Alert.Heading>
+                    <p>Usager {} inconnu.</p>
+                    {(erreur !== true)?<p>Detail : {''+erreur}</p>:''}
+                </Alert>
             </Modal.Body>
 
 
