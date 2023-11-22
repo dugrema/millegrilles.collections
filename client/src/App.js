@@ -7,7 +7,7 @@ import Button from 'react-bootstrap/Button'
 import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'
 
 import ErrorBoundary from './ErrorBoundary'
-import useWorkers, {useEtatConnexion, WorkerProvider, useUsager} from './WorkerContext'
+import useWorkers, {useCapabilities, useEtatConnexion, WorkerProvider, useUsager, useOverrideAffichage, useSetOverrideAffichage} from './WorkerContext'
 import storeSetup from './redux/store'
 
 import fichiersActions from './redux/fichiersSlice'
@@ -95,6 +95,11 @@ function LayoutMain() {
 
   const etatConnexion = useEtatConnexion()
   const dispatch = useDispatch()
+  const overrideAffichage = useOverrideAffichage()
+  const setOverrideAffichage = useSetOverrideAffichage()
+
+  const capabilities = useCapabilities()
+  const estMobile = capabilities.device !== 'desktop'
 
   const [showTransfertModal, setShowTransfertModal] = useState(false)
   const [showMediaJobs, setShowMediaJobs] = useState(false)
@@ -141,6 +146,19 @@ function LayoutMain() {
       .catch(err=>erreurCb(err, "Erreur continuer uploads"))
   }, [workers])
 
+  const toggleModeAffichage = useCallback(()=>{
+    // console.debug("Toggle override affichage, etait : %s", overrideAffichage)
+    let nouveauMode = 'desktop'
+    if(overrideAffichage === 'desktop') {
+      nouveauMode = 'mobile'
+    } else if(estMobile !== true) {
+      nouveauMode = 'mobile'
+    }
+    // console.debug("Force mode %s", nouveauMode)
+    setOverrideAffichage(nouveauMode)
+    localStorage.setItem('overrideAffichage', nouveauMode)
+  }, [overrideAffichage, setOverrideAffichage, estMobile])
+
   const handlerSelect = useCallback(eventKey => {
     // console.debug("handlerSelect %O", eventKey)
     switch(eventKey) {
@@ -178,9 +196,10 @@ function LayoutMain() {
           manifest={manifest} 
           showTransfertModal={showTransfertModalOuvrir}
           showMediaJobs={showMediaJobsOuvrir}
-          onSelect={handlerSelect} />
+          onSelect={handlerSelect}
+          toggleModeAffichage={toggleModeAffichage} />
     )
-  }, [hideMenu, workers, etatConnexion, i18n, showTransfertModalOuvrir, showMediaJobsOuvrir, handlerSelect])
+  }, [hideMenu, workers, etatConnexion, i18n, showTransfertModalOuvrir, showMediaJobsOuvrir, handlerSelect, toggleModeAffichage])
 
   return (
     <div className={classNameTop}>

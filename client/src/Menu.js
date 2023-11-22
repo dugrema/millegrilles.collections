@@ -32,6 +32,7 @@ function Menu(props) {
   const { 
     i18n, etatConnexion, manifest, onSelect, etatTransfert, 
     showTransfertModal, showMediaJobs,
+    toggleModeAffichage,
   } = props
 
   const capabilities = useCapabilities()
@@ -49,16 +50,22 @@ function Menu(props) {
 
   const handlerChangerLangue = eventKey => {i18n.changeLanguage(eventKey)}
 
-  const handlerSelect = eventKey => {
+  const labelModeToggle = useMemo(()=>{
+    if(estMobile) return 'menu.modeDesktop'
+    return 'menu.modeMobile'
+  }, [estMobile])
+
+  const handlerSelect = useCallback(eventKey => {
     switch(eventKey) {
       case 'information': setShowModalInfo(true); break
       case 'mediaJobs': showMediaJobs(); break
       case 'portail': window.location = '/millegrilles'; break
       case 'deconnecter': window.location = '/auth/deconnecter_usager'; break
+      case 'toggleModeAffichage': toggleModeAffichage(); break
       default:
         onSelect(eventKey)
     }
-  }
+  }, [setShowModalInfo, showMediaJobs, toggleModeAffichage, onSelect])
 
   const brand = (
     <Navbar.Brand>
@@ -114,6 +121,10 @@ function Menu(props) {
 
         <Nav.Link eventKey="portail" title={t('menu.portail')}>
             {t('menu.portail')}
+        </Nav.Link>
+
+        <Nav.Link eventKey="toggleModeAffichage" title={t(labelModeToggle)}>
+            {t(labelModeToggle)}
         </Nav.Link>
 
         <Nav.Link eventKey="deconnecter" title={t('menu.deconnecter')}>

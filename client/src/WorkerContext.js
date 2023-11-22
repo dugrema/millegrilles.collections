@@ -48,6 +48,14 @@ export function useCapabilities() {
     return useContext(Context).capabilities
 }
 
+export function useOverrideAffichage() {
+    return useContext(Context).overrideAffichage
+}
+
+export function useSetOverrideAffichage() {
+    return useContext(Context).setOverrideAffichage
+}
+
 // Provider
 export function WorkerProvider(props) {
 
@@ -60,6 +68,7 @@ export function WorkerProvider(props) {
     const [formatteurPret, setFormatteurPret] = useState('')
     const [infoConnexion, setInfoConnexion] = useState('')
     const [capabilities, setCapabilities] = useState('')
+    const [overrideAffichage, setOverrideAffichage] = useState(localStorage.getItem('overrideAffichage') || '')
 
     const etatAuthentifie = useMemo(()=>usager && formatteurPret, [usager, formatteurPret])
     const etatPret = useMemo(()=>{
@@ -67,8 +76,15 @@ export function WorkerProvider(props) {
     }, [etatConnexion, usager, formatteurPret])
 
     const value = useMemo(()=>{
-        if(workersPrets) return { usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret, capabilities }
-    }, [workersPrets, usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret, capabilities])
+        if(workersPrets) return { 
+            usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret, 
+            capabilities, overrideAffichage, setOverrideAffichage,
+        }
+    }, [
+        workersPrets, 
+        usager, etatConnexion, formatteurPret, etatAuthentifie, infoConnexion, etatPret, 
+        capabilities, overrideAffichage, setOverrideAffichage,
+    ])
 
     useEffect(()=>{
         // console.info("Initialiser web workers (ready : %O, workers : %O)", ready, _workers)
@@ -145,11 +161,21 @@ export function WorkerProvider(props) {
                 if(device === 'desktop' && capabilities.touchEnabled) dev = 'tablet'
                 const mobile = dev !== 'desktop' && capabilities.touchEnabled
                 const caps = {...capabilities, device: dev, orientation, mobile}
+                if(overrideAffichage && caps.device !== overrideAffichage) {
+                    caps.device = overrideAffichage
+                    if(overrideAffichage === 'desktop') {
+                        // Desactiver mode touch
+                        caps.touchEnabled = false
+                        caps.mobile = false
+                    } else {
+                        caps.mobile = true
+                    }
+                }
                 console.info("Browser capabilities : %O", caps)
                 setCapabilities(caps)
             })
             .catch(err=>console.error("Erreur chargement capabilities ", err))
-    }, [setCapabilities, device, orientation])
+    }, [setCapabilities, device, orientation, overrideAffichage])
   
     if(!workersPrets) return props.attente
 

@@ -13,7 +13,9 @@
         "information": "Information",
         "language": "Language",
         "portail": "Portail",
-        "deconnecter": "Déconnecter"
+        "deconnecter": "Déconnecter",
+        "modeMobile": "Mode mobile",
+        "modeDesktop": "Mode desktop"
     },
     "layout-millegrilles": {
         "modal-info-titre": "Information MilleGrille",
