@@ -368,6 +368,7 @@ function Modals(props) {
     const liste = useSelector(state => state.fichiers.liste)
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
+    const breadcrumb = useSelector(state => state.fichiers.breadcrumb)
 
     const [ showArchiverModal, setShowArchiverModal ] = useState(false)
     // const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
@@ -402,6 +403,9 @@ function Modals(props) {
         let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
         if(!fichier) return  // Pas de fichier
         const version_courante = fichier.version_courante || {}
+        const breadcrumbPath = breadcrumb.map(item=>item.label).join('/')
+        // console.debug("!!! breadcrumb download %O, %s", breadcrumb, breadcrumbPath)
+        fichier.breadcrumbPath = breadcrumbPath
         if(params.fuuid && version_courante.video) {
             const videos = fichier.version_courante.video
             const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
@@ -410,16 +414,16 @@ function Modals(props) {
             fichier = {
                 ...fichier, 
                 infoDechiffrage: infoVideo,
-                fuuidDownload: params.fuuid
+                fuuidDownload: params.fuuid,
             }
-            console.debug("!!! Modals.downloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
+            // console.debug("!!! Modals.downloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         } else {
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         }
-    }, [workers, dispatch, liste])
+    }, [workers, dispatch, liste, breadcrumb])
 
     return (
         <>
@@ -645,14 +649,19 @@ function MenuContextuel(props) {
     const workers = useWorkers()
     const dispatch = useDispatch()
     const fichiers = useSelector(state => state.fichiers.liste)
+    const breadcrumb = useSelector(state => state.fichiers.breadcrumb)
     
     const downloadAction = useCallback(tuuid => {
+        const breadcrumbPath = breadcrumb.map(item=>item.label).join('/')
+        // console.debug("MenuContextuel.downloadAction breadcrumb %O, path %s", breadcrumb, breadcrumbPath)
+
         const fichier = fichiers.filter(item=>item.tuuid === tuuid).pop()
         if(fichier) {
-            dispatch(ajouterDownload(workers, fichier))
+            const fichierCopy = {...fichier, breadcrumbPath}
+            dispatch(ajouterDownload(workers, fichierCopy))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         }
-    }, [workers, dispatch, fichiers])
+    }, [workers, dispatch, fichiers, breadcrumb])
 
     if(!contextuel.show) return ''
 
