@@ -146,82 +146,104 @@ function Menu(props) {
 export default Menu
 
 function LabelTransfert(props) {
-  const etatTransfert = props.etatTransfert || {}
+  return (
+    <div className="transfer-labels">
+      <BadgeUpload />
+      <BadgeDownload />
+    </div>
+  )
+}
 
+function BadgeUpload(props) {
   const uploads = useSelector(state=>state.uploader.liste),
-        progresUpload = useSelector(state=>state.uploader.progres),
-        downloads = useSelector(state=>state.downloader.liste),
-        progresDownload = useSelector(state=>state.downloader.progres)
+        progresUpload = useSelector(state=>state.uploader.progres)
 
-  const downloadsResultat = downloads.reduce((nb, item)=>{
-    let {encours, succes, erreur} = nb
-    switch(item.status) {
-      case CONST_ETATS_DOWNLOAD.ETAT_PRET:
-      case CONST_ETATS_DOWNLOAD.ETAT_EN_COURS:
+  const uploadsResultat = useMemo(()=>{
+    const valeur = {encours: 0, succes: 0, erreur: 0}
+    if(!uploads) return valeur
+    const resultat = uploads.reduce((acc, item)=>{
+      let {encours, succes, erreur} = acc
+      switch(item.etat) {
+        case ETAT_PRET:
+        case ETAT_UPLOADING:
           encours++
-        break
-      case CONST_ETATS_DOWNLOAD.ETAT_SUCCES:
-        succes++
-        break
-      case CONST_ETATS_DOWNLOAD.ETAT_ECHEC:
-        erreur++
-        break
-      default:
-    }
-    return {encours, succes, erreur}
-  }, {encours: 0, succes: 0, erreur: 0})
-
-  let variantDownload = 'secondary'
-  if(downloadsResultat.erreur>0) variantDownload = 'danger'
-  else if(downloads.length>0) variantDownload = 'success'
-
-  const uploadsResultat = uploads.reduce((nb, item)=>{
-    let {encours, succes, erreur} = nb
-    switch(item.status) {
-      case ETAT_PRET:
-      case ETAT_UPLOADING:
-        encours++
-        break
-      case ETAT_COMPLETE:
-      case ETAT_CONFIRME:
-        succes++
-        break
-      case ETAT_ECHEC:
-      case ETAT_UPLOAD_INCOMPLET:
-        erreur++
-        break
-      default:
-    }
-    return {encours, succes, erreur}
-  }, {encours: 0, succes: 0, erreur: 0})
+          break
+        case ETAT_COMPLETE:
+        case ETAT_CONFIRME:
+          succes++
+          break
+        case ETAT_ECHEC:
+        case ETAT_UPLOAD_INCOMPLET:
+          erreur++
+          break
+        default:
+      }
+      return {encours, succes, erreur}
+    }, valeur)
+    return resultat
+  }, [uploads])
 
   let variantUpload = 'secondary'
   if(uploadsResultat.erreur>0) variantUpload = 'danger'
   else if(uploadsResultat.succes>0) variantUpload = 'success'
 
-  let labelUpload = <span>---</span>
-  if(!isNaN(progresUpload)) labelUpload = <span>{Math.floor(progresUpload)} %</span>
+  let labelUpload = useMemo(()=>{
+    if(!isNaN(progresUpload)) {
+      let valeur = progresUpload
+      if(progresUpload === 100 && uploadsResultat.encours > 0) {
+        valeur = 99  // Marquer 100% quand tous les uploads sont completes
+      }
+      return <span>{Math.floor(valeur)} %</span>
+    }
+    return <span>---</span>
+  }, [uploadsResultat, progresUpload])
+
+  return <BadgeTransfer className='fa fa-upload' variant={variantUpload} label={labelUpload} />
+}
+
+function BadgeDownload(props) {
+  const downloads = useSelector(state=>state.downloader.liste),
+        progresDownload = useSelector(state=>state.downloader.progres)
+
+  const downloadsResultat = useMemo(()=>{
+    const valeur = {encours: 0, succes: 0, erreur: 0}
+
+    const resultat = downloads.reduce((nb, item)=>{
+      let {encours, succes, erreur} = nb
+      switch(item.etat) {
+        case CONST_ETATS_DOWNLOAD.ETAT_PRET:
+        case CONST_ETATS_DOWNLOAD.ETAT_EN_COURS:
+            encours++
+          break
+        case CONST_ETATS_DOWNLOAD.ETAT_SUCCES:
+          succes++
+          break
+        case CONST_ETATS_DOWNLOAD.ETAT_ECHEC:
+          erreur++
+          break
+        default:
+      }
+      return {encours, succes, erreur}
+    }, valeur)
+    return resultat
+  }, [downloads])
+
+  let variantDownload = 'secondary'
+  if(downloadsResultat.erreur>0) variantDownload = 'danger'
+  else if(downloads.length>0) variantDownload = 'success'
 
   let labelDownload = <span>---</span>
   if(!isNaN(progresDownload)) labelDownload = <span>{Math.floor(progresDownload)} %</span>
 
+  return <BadgeTransfer className='fa fa-download' variant={variantDownload} label={labelDownload} />
+}
+
+function BadgeTransfer(props) {
+  const { className, variant, label } = props
   return (
-    <div className="transfer-labels">
-
-      <span>
-        <i className="fa fa-upload" />
-        {' '}
-        <Badge pill bg={variantUpload}>{labelUpload}</Badge>
-      </span>
-
-      {' '}
-
-      <span>
-        <i className="fa fa-download" />
-        {' '}
-        <Badge pill bg={variantDownload}>{labelDownload}</Badge>
-      </span>
-
-    </div>
+    <span className='badge-transfert'>
+      <i className={className} />
+      <Badge pill bg={variant}>{label}</Badge>
+    </span>
   )
 }

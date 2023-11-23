@@ -212,3 +212,13 @@ BUTTON.supprimer {
    z-index: 100;
    background-color: $first-color;
 }
+
+.badge-transfert {
+    margin-left: 0.2rem;
+    margin-right: 0.2rem;
+}
+
+.badge-transfert span.badge {
+    margin-left: 0.2rem;
+    width: 3rem;
+}
