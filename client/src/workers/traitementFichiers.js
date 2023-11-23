@@ -209,7 +209,7 @@ function promptSaveFichier(blob, opts) {
 
 async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
-    const { acceptedFiles, /*token, batchId, cuuid, */ userId } = params
+    const { acceptedFiles, /*token, batchId, cuuid, */ userId, breadcrumbPath } = params
     const { setProgres, signalAnnuler } = opts
     const { transfertFichiers, usagerDao } = workers
     // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
@@ -246,7 +246,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
         // console.debug("Params batch upload ", paramBatch)
 
         const updateFichierProxy = Comlink.proxy((doc, opts) => {
-            const docWithIds = {...doc, userId, batchId, token}
+            const docWithIds = {...doc, userId, batchId, token, breadcrumbPath}
             // console.debug("updateFichierProxy docWithIds ", docWithIds)
             return updateFichier(workers, dispatch, docWithIds, opts)
         })

@@ -393,6 +393,7 @@ function BoutonUpload(props) {
     const usager = useUsager()
     const dispatch = useDispatch()
     const cuuid = useSelector(state=>state.fichiers.cuuid)
+    const breadcrumb = useSelector(state=>state.fichiers.breadcrumb)
 
     const [className, setClassName] = useState('')
 
@@ -405,6 +406,8 @@ function BoutonUpload(props) {
 
     const upload = useCallback( acceptedFiles => {
         // console.debug("Files : %O pour usager: %O, signalAnnuler: %O", acceptedFiles, usager, signalAnnuler)
+        const breadcrumbPath = breadcrumb.map(item=>item.label).join('/')
+        console.debug("BoutonUpload.uploader breadcrumb %O, path %s", breadcrumb, breadcrumbPath)
 
         for(const file of acceptedFiles) {
             if(!file.type && file.size === 0) {
@@ -423,7 +426,7 @@ function BoutonUpload(props) {
 
         traitementFichiers.traiterAcceptedFiles(
             dispatch, 
-            {userId, usager, cuuid, acceptedFiles},
+            {userId, usager, cuuid, acceptedFiles, breadcrumbPath},
             {signalAnnuler, setProgres: handlerPreparationUploadEnCours}
         )
             .then( () => {
@@ -434,7 +437,7 @@ function BoutonUpload(props) {
             .catch(err=>console.error("Erreur fichiers : %O", err))
             .finally( () => handlerPreparationUploadEnCours(false) )
 
-    }, [handlerPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid])
+    }, [handlerPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid, breadcrumb])
 
     const fileChange = useCallback(event => {
         event.preventDefault()
