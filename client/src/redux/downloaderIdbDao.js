@@ -79,6 +79,17 @@ export async function ajouterFichierDownloadFile(fuuid, position, blob) {
     await store.put(row)
 }
 
+export async function getDownload(fuuid) {
+    const db = await ouvrirDB()
+
+    // Supprimer entree de download
+    const storeDownloads = db.transaction(STORE_DOWNLOADS, 'readonly').store
+    const info = await storeDownloads.get(fuuid)
+    
+    if(!info) return false
+    return info
+}
+
 export async function getDownloadComplet(fuuid) {
     const db = await ouvrirDB()
 

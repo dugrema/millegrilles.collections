@@ -140,10 +140,20 @@ function LayoutMain() {
   }, [workers])
   const handlerSupprimerDownloads = useCallback( params => supprimerDownloads(workers, dispatch, params, erreurCb), [dispatch, workers, erreurCb])
   const handlerContinuerDownloads = useCallback( params => {
-    // console.debug("Continuer upload ", params)
-    const { fuuid } = params
-    dispatch(continuerDownload(workers, {fuuid}))
-      .catch(err=>erreurCb(err, "Erreur continuer uploads"))
+    console.debug("Continuer download ", params)
+    let fuuid = params
+    if(typeof(params) !== 'string') {
+      fuuid = params.fuuid
+    }
+
+    workers.downloadFichiersDao.getDownload(fuuid)
+      .then(info=>{
+        console.debug("Download info a resumer : ", info)
+        info.etat = 1
+        info.complet = false
+        dispatch(continuerDownload(info))
+      })
+      .catch(err=>console.error("Erreur continuer download : ", err))
   }, [workers])
 
   const toggleModeAffichage = useCallback(()=>{

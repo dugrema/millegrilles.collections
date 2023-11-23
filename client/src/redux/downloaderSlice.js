@@ -103,10 +103,10 @@ function continuerDownloadAction(state, action) {
 
         if(!infoDownload) state.liste.push(infoDownload)    // Append
         else Object.assign(infoDownload, docDownload)       // Merge
-    }
 
-    const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
-    state.progres = pourcentage
+        const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
+        state.progres = pourcentage
+    }
 }
 
 function retirerDownloadAction(state, action) {
