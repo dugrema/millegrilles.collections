@@ -387,11 +387,11 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         const opts = {
             hachagePart: part.hachagePart,
         }
-        console.debug("uploadFichier Debut upload %s", correlation)
+        // console.debug("uploadFichier Debut upload %s", correlation)
         const resultatUploadPromise = transfertFichiers.partUploader(token, correlation, position, partContent, opts)
         // await Promise.race([resultatUpload, cancelToken])
         const resultatUpload = await resultatUploadPromise
-        console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
+        // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
 
         if(cancelToken && cancelToken.cancelled) {
             console.warn("Upload cancelled")
@@ -421,11 +421,23 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
 
     console.debug("Confirmer upload de transactions signees : %O", transaction)
     try {
-        await transfertFichiers.confirmerUpload(token, correlation, {transaction})
+        const reponse = await transfertFichiers.confirmerUpload(token, correlation, {transaction})
+        if(reponse.status === 404) {
+            // L'upload a ete resette (DELETE ou supprime par serveur)
+            // Tenter de recommencer l'upload (resetter localement)
+            await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_PRET, tailleCompletee: 0, positionsCompletees: []})
+            throw new Error(`Erreur upload status : ${reponse.status}`)
+        } else if( ! [200, 202].includes(reponse.status)) {
+            console.error("Erreur confirmation upload : ", reponse)
+            await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_ECHEC, status: reponse.status})
+
+            await transfertFichiers.confirmerUpload(token, correlation, {transaction})
+
+            throw new Error(`Erreur upload status : ${reponse.status}`)
+        }
         // console.debug("uploadFichier Upload confirme")
     } catch(err) {
-        // console.error("uploadFichier Erreur durant POST ", err)
-        await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_ECHEC})
+        console.error("uploadFichier Erreur durant POST ", err)
         throw err
     }
 
