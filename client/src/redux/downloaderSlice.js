@@ -234,16 +234,16 @@ export function ajouterZipDownload(workers, cuuid) {
 
 async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     const { connexion, chiffrage, downloadFichiersDao, clesDao } = workers
-    let { cuuid, selection } = params
+    let { cuuid, selection, contactId } = params
     
-    console.debug("traiterAjouterZipDownload cuuid : %s, selection : %O", cuuid, selection)
+    console.debug("traiterAjouterZipDownload cuuid : %s, selection : %O (contactId: %s)", cuuid, selection, contactId)
     
     const userId = getState()[SLICE_NAME].userId
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
 
     // Charger statistiques cuuid, liste de fichiers/dossiers
     if(cuuid === '') cuuid = null
-    const reponseStructure = await connexion.getStructureRepertoire(cuuid)
+    const reponseStructure = await connexion.getStructureRepertoire(cuuid, contactId)
     console.debug("Reponse structure : ", reponseStructure)
     if(reponseStructure.ok === false) {
         throw new Error("Erreur preparation ZIP : ", reponseStructure.err)
@@ -332,7 +332,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     console.debug("Arborescence completee : %O\nDownload %d fichiers\n%O", root, fichiersADownloader.length, fichiersADownloader)
 
     // Preparer toutes les cles (tous les tuuids incluant repertoires)
-    const cles = await clesDao.getCles(fuuidsCles)
+    const cles = await clesDao.getCles(fuuidsCles, {partage: !!contactId})
     console.debug("Cles chargees : ", cles)
 
     // Dechiffrer le contenu des tuuids. On a besoin du nom (fichiers et repertoires)
@@ -688,7 +688,7 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
 }
 
 async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
-    console.debug("Ajouter path %O/%s", parents.join('/'), node.nom)
+    // console.debug("Ajouter path %O/%s", parents.join('/'), node.nom)
 
     // Ajouter le node dans le zip
 
@@ -697,7 +697,7 @@ async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
     if(nodes) {
         console.debug("Sous repertoire ", pathAjoute)
         for await (const fichier of parcourirRepertoireDansZipRecursif(workers, node.nodes, pathAjoute, opts)) {
-            console.debug("ajouterRepertoireDansZip Node ", fichier)
+            // console.debug("ajouterRepertoireDansZip Node ", fichier)
             yield fichier
         }
     }

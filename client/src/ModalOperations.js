@@ -398,11 +398,11 @@ export function InfoModal(props) {
             // if( ! ['Collection', 'Repertoire'].includes(docSelectionne.type_node) ) return
             // cuuid = docSelectionne.tuuid
         }
-        console.debug("InfoModal Charger information statistiques cuuid %s", cuuid)
+        // console.debug("InfoModal Charger information statistiques cuuid %s", cuuid)
         // Recuperer statistiques du repertoire
         workers.connexion.getInfoStatistiques(cuuid, contactId)
             .then(reponse=>{
-                console.debug("InfoModal statistiques cuuids %s : %O", cuuid, reponse)
+                // console.debug("InfoModal statistiques cuuids %s : %O", cuuid, reponse)
                 const infoStatistiques = reponse.info.reduce((acc, item)=>{
                     if(item.type_node === 'Fichier') {
                         acc.nombreFichiers = item.count
@@ -412,7 +412,7 @@ export function InfoModal(props) {
                     }
                     return acc
                 }, {})
-                console.debug("InfoModal Info statistiques combinees : %O", infoStatistiques)
+                // console.debug("InfoModal Info statistiques combinees : %O", infoStatistiques)
                 setInfoStatistiques(infoStatistiques)
             })
             .catch(err=>console.error("Erreur chargement statistiques : ", err))

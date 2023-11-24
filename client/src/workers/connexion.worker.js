@@ -304,8 +304,8 @@ function getInfoStatistiques(cuuid, contactId) {
   return ConnexionClient.emitBlocking('getInfoStatistiques', requete, params)
 }
 
-function getStructureRepertoire(cuuid) {
-  const requete = { cuuid }
+function getStructureRepertoire(cuuid, contactId) {
+  const requete = { cuuid, contact_id: contactId }
   const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getStructureRepertoire', ajouterCertificat: true}
   return ConnexionClient.emitBlocking('getStructureRepertoire', requete, params)
 }

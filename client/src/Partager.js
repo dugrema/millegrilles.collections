@@ -54,7 +54,7 @@ function Partager(props) {
 
     const choisirContactId = useCallback(e=>{
         const contactId = e.currentTarget.value
-        console.debug("choisirContactId contactId")
+        // console.debug("choisirContactId contactId")
         setContactId(contactId)
         dispatch(fichiersActions.setUserContactId({userId: userIdPartage, contactId}))
     }, [dispatch, userIdPartage, setContactId])
@@ -100,7 +100,7 @@ function NavigationPartageTiers(props) {
 
     const userPartages = useSelector(state=>state.partager.userPartages),
           listePartagesAutres = useSelector(state=>state.partager.listePartagesAutres),
-          contactId = useSelector(state=>state.fichiers.contactId),
+          contactId = useSelector(state=>state.fichiers.partageContactId),
           breadcrumb = useSelector(state=>state.fichiers.breadcrumb)
     const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
@@ -211,7 +211,7 @@ function NavigationPartageTiers(props) {
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 
     const showInformationRepertoireHandler = useCallback(()=>{
-        console.debug("Show information repertoire ", cuuidCourant)
+        // console.debug("Show information repertoire ", cuuidCourant)
         if(cuuidCourant === '') setShowInfoModal(1)
         else setShowInfoModal(cuuidCourant)
     }, [cuuidCourant, setShowInfoModal])
@@ -219,8 +219,8 @@ function NavigationPartageTiers(props) {
     const downloadRepertoireCb = useCallback(e=>{
         const { value } = e.currentTarget
         const cuuid = value || cuuidCourant
-        console.debug("Download repertoire tuuid ", cuuid)
-        dispatch(ajouterZipDownload(workers, {cuuid}))
+        // console.debug("Download repertoire tuuid ", cuuid)
+        dispatch(ajouterZipDownload(workers, {cuuid, contactId}))
             .then(()=>{
                 console.debug("Preparation et download pour ZIP %O commence", cuuid)
             })
@@ -228,7 +228,7 @@ function NavigationPartageTiers(props) {
                 console.error("Erreur ajout download ZIP %s : %O", cuuid, err)
                 erreurCb(err, 'Erreur creation download ZIP')
             })
-    }, [workers, dispatch, cuuidCourant, erreurCb])
+    }, [workers, dispatch, cuuidCourant, contactId, erreurCb])
 
     useEffect(()=>{
         if(modeView === 'carousel' && capabilities.mobile) setHideMenu(true)
@@ -607,7 +607,7 @@ function ListePartagesUsager(props) {
     
     const supprimerPartageCb = useCallback(e=>{
         const tuuid = e.currentTarget.value
-        console.debug("ListePartagesUsager Supprimer partage %s avec usager %s", tuuid, contactId)
+        // console.debug("ListePartagesUsager Supprimer partage %s avec usager %s", tuuid, contactId)
         workers.connexion.supprimerPartageUsager(contactId, tuuid)
             .catch(err=>console.error("Erreur suppression partage ", err))
     }, [workers, contactId])
