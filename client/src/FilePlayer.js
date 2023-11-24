@@ -103,8 +103,16 @@ function preparerPreviews(workers, tuuidSelectionne, liste, support) {
           mimetypeBase = mimetypeSelectionne.split('/').shift()
 
     if(mimetypeBase === 'image') {
+        //console.debug("preparePreviews Mapper images ", liste)
         // Mode carousel d'images
-        return liste.filter(filtrerTypesPreview).map(item=>mapImage(workers, item, optionsLoader))
+        const listeFichiers = liste.filter(filtrerTypesPreview).map(item=>mapImage(workers, item, optionsLoader))
+        //console.debug("preparePreviews listefichiers ", listeFichiers)
+        if(listeFichiers === 0 || listeFichiers[0] === null) {
+            // Aucune image disponible pour le fichier. On va mapper comme fichier standard
+            //console.debug("preparePreviews mapper fichier image normalement")
+            return [mapFichier(fichierSelectionne, optionsLoader)]
+        }
+        return listeFichiers
     } else {
         // Mode lecteur fichier / video player - 1 seul fichier
         return [mapFichier(fichierSelectionne, optionsLoader)]

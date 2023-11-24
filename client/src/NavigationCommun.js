@@ -676,7 +676,10 @@ export function FormatterColonneDate(props) {
                 if(item > acc) return item
                 return acc
             }, 0)
-            if(visiteRecente === 0) {
+            if(visites.length === 0) {
+                // Le fichier est nouveau (jamais sauvegarde)
+                symbolesEtat.push(<i key='absent' className="fa fa-spinner fa-spin" title='Fichier en traitement' />)
+            } else if(visiteRecente === 0) {
                 symbolesEtat.push(<i key='absent' className="fa fa-question-circle error" title='Fichier absent' />)
             } else if(visiteRecente < expire) {
                 const dateVisite = new Date(visiteRecente*1000)
