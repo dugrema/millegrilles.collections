@@ -798,7 +798,7 @@ function InfoCollection(props) {
             {estMobile?'':
                 <>
                     <br />
-                    <Alert show={infoStatistiques.nombreFichiers>CONST_LIMITE_FICHIERS_ZIP}>
+                    <Alert variant="warning" show={infoStatistiques.nombreFichiers>CONST_LIMITE_FICHIERS_ZIP}>
                         <AlertHeading>Download .zip non disponible</AlertHeading>
                         <p>
                             Le repertoire et ses sous-repertoires contiennent plus de {CONST_LIMITE_FICHIERS_ZIP} fichiers. 
