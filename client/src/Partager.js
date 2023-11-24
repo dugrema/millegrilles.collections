@@ -12,7 +12,7 @@ import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
 import { mapDocumentComplet } from './mapperFichier'
 import useWorkers, {useEtatConnexion, WorkerProvider, useUsager, useEtatPret, useCapabilities} from './WorkerContext'
-import { ajouterDownload } from './redux/downloaderSlice'
+import { ajouterDownload, ajouterZipDownload } from './redux/downloaderSlice'
 import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } from './redux/partagerSlice'
 import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import PreviewFichiers from './FilePlayer'
@@ -102,6 +102,7 @@ function NavigationPartageTiers(props) {
           listePartagesAutres = useSelector(state=>state.partager.listePartagesAutres),
           contactId = useSelector(state=>state.fichiers.contactId),
           breadcrumb = useSelector(state=>state.fichiers.breadcrumb)
+    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
 
     const [ showPreview, setShowPreview ] = useState(false)
@@ -209,6 +210,26 @@ function NavigationPartageTiers(props) {
 
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 
+    const showInformationRepertoireHandler = useCallback(()=>{
+        console.debug("Show information repertoire ", cuuidCourant)
+        if(cuuidCourant === '') setShowInfoModal(1)
+        else setShowInfoModal(cuuidCourant)
+    }, [cuuidCourant, setShowInfoModal])
+
+    const downloadRepertoireCb = useCallback(e=>{
+        const { value } = e.currentTarget
+        const cuuid = value || cuuidCourant
+        console.debug("Download repertoire tuuid ", cuuid)
+        dispatch(ajouterZipDownload(workers, {cuuid}))
+            .then(()=>{
+                console.debug("Preparation et download pour ZIP %O commence", cuuid)
+            })
+            .catch(err=>{
+                console.error("Erreur ajout download ZIP %s : %O", cuuid, err)
+                erreurCb(err, 'Erreur creation download ZIP')
+            })
+    }, [workers, dispatch, cuuidCourant, erreurCb])
+
     useEffect(()=>{
         if(modeView === 'carousel' && capabilities.mobile) setHideMenu(true)
         else setHideMenu(false)
@@ -255,6 +276,11 @@ function NavigationPartageTiers(props) {
                         </Col>
 
                         <Col xs={12} sm={9} md={8} lg={5} className="buttonbars">
+                            <Button variant="secondary" disabled={!setShowInfoModal || !cuuidCourant} 
+                                onClick={showInformationRepertoireHandler} className="fixed">
+                                <i className="fa fa-info"/>
+                            </Button>
+                            {' '}
                             <BoutonsFormat modeView={modeView} setModeView={setModeView} />
                         </Col>
                     </Row>
@@ -292,6 +318,7 @@ function NavigationPartageTiers(props) {
                 setContextuel={setContextuel} 
                 showInfoModal={showInfoModal}
                 setShowInfoModal={setShowInfoModal}
+                downloadRepertoire={downloadRepertoireCb}
                 erreurCb={erreurCb} />            
 
         </div>
@@ -703,6 +730,7 @@ function Modals(props) {
     const {
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, showInfoModal, setShowInfoModal,
+        downloadRepertoire, 
         erreurCb,
     } = props
     
@@ -710,7 +738,8 @@ function Modals(props) {
     const etatPret = useEtatPret()
     const liste = useSelector(state => state.fichiers.liste)
     const cuuid = useSelector(state => state.fichiers.cuuid)
-    const selection = useSelector(state => state.fichiers.selection )
+    const selection = useSelector(state => state.fichiers.selection)
+    const contactId = useSelector(state => state.fichiers.partageContactId)
 
     const [ showCopierModal, setShowCopierModal ] = useState(false)
 
@@ -784,8 +813,10 @@ function Modals(props) {
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
                 usager={usager}
+                contactId={contactId}
                 erreurCb={erreurCb}
                 downloadAction={downloadAction}
+                downloadRepertoire={downloadRepertoire}
               />
 
         </>

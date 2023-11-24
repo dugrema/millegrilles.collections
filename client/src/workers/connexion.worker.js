@@ -295,8 +295,8 @@ function supprimerPartageUsager(contactId, tuuid) {
   return ConnexionClient.emitBlocking('supprimerPartageUsager', commande, params)
 }
 
-function getInfoStatistiques(cuuid) {
-  const requete = { cuuid }
+function getInfoStatistiques(cuuid, contactId) {
+  const requete = { cuuid, contact_id: contactId }
   const params = {
     kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getInfoStatistiques', 
     timeout: 45_000, ajouterCertificat: true
