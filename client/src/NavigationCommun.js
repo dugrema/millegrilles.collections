@@ -672,11 +672,12 @@ export function FormatterColonneDate(props) {
         if(visites) {
             // Tenter de detecter au moins 1 serveur avec le fichier visite recemment
             const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
-            let visiteRecente = Object.values(visites).reduce((acc, item)=>{
+            const visitesInstances = Object.values(visites)
+            let visiteRecente = visitesInstances.reduce((acc, item)=>{
                 if(item > acc) return item
                 return acc
             }, 0)
-            if(visites.length === 0) {
+            if(visitesInstances.length === 0) {
                 // Le fichier est nouveau (jamais sauvegarde)
                 symbolesEtat.push(<i key='absent' className="fa fa-spinner fa-spin" title='Fichier en traitement' />)
             } else if(visiteRecente === 0) {

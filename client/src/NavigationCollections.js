@@ -622,11 +622,11 @@ function preparerColonnes(workers) {
     const params = {
         ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier'],
         paramsColonnes: {
-            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 7},
-            'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
-            'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2},
+            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 6, xl: 7},
+            'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1, xl: 1},
+            'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2, xl: 2},
             // 'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
-            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 2},
+            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 3, xl: 2},
             // 'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
         ordreColonnesMobile: ['nom', 'taille', 'dateFichier', 'mimetype'],
