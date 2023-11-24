@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
+import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
@@ -18,7 +19,9 @@ import useWorkers, { useCapabilities, useEtatAuthentifie, useEtatConnexion, useE
 import actionsNavigationSecondaire, {thunks as thunksNavigationSecondaire} from './redux/navigationSecondaireSlice'
 import { chargerInfoContacts } from './redux/partagerSlice'
 import { PathFichier } from './NavigationCommun'
+import { AlertHeading } from 'react-bootstrap'
 
+const CONST_LIMITE_FICHIERS_ZIP = 1_000
 const CONST_EXPIRATION_VISITE = 3 * 86_400_000
 
 export function SupprimerModal(props) {
@@ -686,6 +689,8 @@ function InfoCollection(props) {
     const liste = useSelector(state => state.fichiers.liste )
     const bytesTotalDossier = useSelector(state => state.fichiers.bytesTotalDossier)
 
+    const [err, setErr] = useState('')
+
     const [nombreFichiers, nombreRepertoires] = useMemo(()=>{
         let nombreFichiers = 0, nombreRepertoires = 0
         if(liste) {
@@ -700,9 +705,13 @@ function InfoCollection(props) {
     const [repertoire, setRepertoire] = useState({})
 
     const downloadComplet = useCallback(e => {
-        downloadRepertoire(e)
-        fermer()
-    }, [fermer, downloadRepertoire])
+        if(nombreFichiers <= CONST_LIMITE_FICHIERS_ZIP) {
+            downloadRepertoire(e)
+            fermer()
+        } else {
+            setErr(`Plus de ${CONST_LIMITE_FICHIERS_ZIP} fichiers - ZIP non supporte`)
+        }
+    }, [fermer, downloadRepertoire, nombreFichiers, setErr])
 
     useEffect(()=>{
         if(!tuuid) return setRepertoire({nom: 'Favoris'})
@@ -722,6 +731,11 @@ function InfoCollection(props) {
     }, [infoStatistiques, tuuid])
     const nom = repertoire.nom
     const derniereModification = repertoire.derniere_modification || repertoire.dateAjout
+
+    const desactiverZip = useMemo(()=>{
+        if(!infoStatistiques) return true
+        return infoStatistiques.nombreFichiers > CONST_LIMITE_FICHIERS_ZIP 
+    }, [infoStatistiques])
 
     return (
         <div>
@@ -784,10 +798,17 @@ function InfoCollection(props) {
             {estMobile?'':
                 <>
                     <br />
+                    <Alert show={infoStatistiques.nombreFichiers>CONST_LIMITE_FICHIERS_ZIP}>
+                        <AlertHeading>Download .zip non disponible</AlertHeading>
+                        <p>
+                            Le repertoire et ses sous-repertoires contiennent plus de {CONST_LIMITE_FICHIERS_ZIP} fichiers. 
+                            Le download en archive zip n'est pas disponible.
+                        </p>
+                    </Alert>
                     <Row>
                         <Col xs={7} md={3}>Download complet (zip)</Col>
                         <Col xs={5} md={9}>
-                            <Button variant="secondary" onClick={downloadComplet}>
+                            <Button variant="secondary" disabled={desactiverZip} onClick={downloadComplet}>
                                 <i className='fa fa-download' />
                             </Button>
                         </Col>
