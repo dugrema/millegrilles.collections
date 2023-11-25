@@ -28,8 +28,9 @@ function ModalInfoMediaJobs(props) {
 
     const clearCompletesHandler = useCallback(()=>dispatch(clearCompletes()), [clearCompletes])
 
+    // Charger jobs
     useEffect(()=>{
-        if(!etatPret) return
+        if(!etatPret || !show) return
         // console.debug("Initialiser liste media jobs")
         workers.connexion.getMediaJobs()
             .then(reponse=>{
@@ -38,29 +39,31 @@ function ModalInfoMediaJobs(props) {
                 if(jobs && jobs.length > 0) dispatch(merge(jobs))
             })
             .catch(err=>console.error("Erreur chargement jobs media : ", err))
-    }, [workers, dispatch, etatPret])
+    }, [workers, dispatch, etatPret, show])
 
+    // Enregistrer listeners
     useEffect(()=>{
         // console.debug("useEffect etatConnexion %s, etatAuthentifie %s", etatConnexion, etatAuthentifie)
         const {connexion} = workers
         if(etatPret) {
-          connexion.enregistrerCallbackTranscodageProgres({}, messageTranscodageHandler)
-            .catch(err=>console.error("Erreur enregistrement evenements transcodage : %O", err))
-          return () => {
-            connexion.retirerCallbackTranscodageProgres({}, messageTranscodageHandler)
-              .catch(err=>console.error("Erreur retrait evenements transcodage : %O", err))
-          }
-        }
-      }, [workers, etatPret, messageTranscodageHandler])
-  
-    // Timer pour entretien des jobs
-    useEffect(()=>{
-        if(etatPret) {
+            // Creer intervalle de mise a jour
             const interval = setInterval(()=>dispatch(entretien()), 30_000)
-            return () => clearInterval(interval)  // Cleanup timer
-        }
-    }, [dispatch, etatPret])
+        
+            // Charger l'etat initial des jobs
+            connexion.enregistrerCallbackTranscodageProgres({}, messageTranscodageHandler)
+                .catch(err=>console.error("Erreur enregistrement evenements transcodage : %O", err))
 
+            // Cleanup intervalle update et listeners
+            return () => {
+                // Cleanup timer
+                clearInterval(interval)
+                // Retirer listeners
+                connexion.retirerCallbackTranscodageProgres({}, messageTranscodageHandler)
+                .catch(err=>console.error("Erreur retrait evenements transcodage : %O", err))
+            }
+        }
+    }, [workers, show, etatPret, messageTranscodageHandler])
+  
     return (
         <Modal show={show} onHide={fermer} size="lg">
             <Modal.Header closeButton={true}>
@@ -102,7 +105,7 @@ function traiterMessageTranscodage(dispatch, eventMessage) {
 
 export function AfficherListeJobs(props) {
 
-    const { fuuid, titre } = props
+    const { fuuid, titre, showNomFichier } = props
 
     let listeJobs = useSelector(state=>state.mediaJobs.liste)
     if(fuuid) listeJobs = listeJobs.filter(item=>{
@@ -110,10 +113,15 @@ export function AfficherListeJobs(props) {
         return item.fuuid === fuuid
     })
 
+    const showNomFichierEffectif = useMemo(()=>{
+        if(showNomFichier !== undefined) return showNomFichier
+        return true
+    }, [showNomFichier])
+
     const jobs = listeJobs.map(item=>(
         <AfficherLigneFormatVideo 
             key={`${item.fuuid}/${item.cle_conversion}`} 
-            showNomFichier={true}
+            showNomFichier={showNomFichierEffectif}
             job={item} />
     ))
 
@@ -137,16 +145,21 @@ export function AfficherLigneFormatVideo(props) {
     let label = job.nom || job.tuuid || job.fuuid || 'N/D'
     // label = label.substring(0, 50)
 
-    let etat = job.etat || ''
-
-    let progres = null
-    if(!isNaN(job.pct_progres) && job.pct_progres !== null) {
-        progres = <ProgressBar now={job.pct_progres} label={`${job.pct_progres}%`} />
-    } else if(job.etat === 1) {
-        progres = 'Pending'
-    } else {
-        progres = job.etat
-    }
+    let progres = useMemo(()=>{
+        if(!isNaN(job.pct_progres) && job.pct_progres !== null) {
+            if(job.pct_progres < 3) {
+                return <ProgressBar striped animated now={100} label='Traitement en cours' />
+            } else if(job.pct_progres === 100) {
+                return <ProgressBar now={100} variant='success' label='Termine' />
+            } else {
+                return <ProgressBar striped animated now={job.pct_progres} label={`${job.pct_progres}%`} />
+            }
+        } else if(!job.etat || [1, 'transcodage'].includes(job.etat)) {
+            return <ProgressBar striped now={100} label='Pending' />
+        } else {
+            return <ProgressBar variant='danger' now={100} label={`Erreur ${job.etat}`} />
+        }
+    }, [job])
 
     const version_courante = job.version_courante || {}
     const tailleFichier = version_courante.taille
@@ -154,6 +167,7 @@ export function AfficherLigneFormatVideo(props) {
   
     const supprimerJobVideoHandler = useCallback(()=>{
         supprimerJobVideo(workers, fuuid, cle_conversion)
+            .catch(err=>console.error("AfficherLigneFormatVideo Erreur supprimer job video : ", err))
     }, [workers, fuuid, cle_conversion])
 
     return (
@@ -162,12 +176,15 @@ export function AfficherLigneFormatVideo(props) {
             <Button variant="danger" onClick={supprimerJobVideoHandler}>X</Button>
         </Col>
         {showNomFichier?
-            <Col xs={12} lg={5}>{label}</Col>
+            <Col xs={9} lg={5}>{label}</Col>
             :''
         }
         <Col xs={3} lg={1}>{codec}</Col>
         <Col xs={3} lg={1}>{resolution}</Col>
-        <Col xs={6} lg={2}><FormatteurTaille value={tailleFichier} /></Col>
+        {showNomFichier?
+            <Col xs={6} lg={2}><FormatteurTaille value={tailleFichier} /></Col>
+            :''
+        }
         <Col>{progres}</Col>
       </Row>
     )

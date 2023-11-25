@@ -449,7 +449,7 @@ function Videos(props) {
         )
       })}
 
-      <AfficherListeJobs fuuid={fuuid} titre={conversionEnCours}/>
+      <AfficherListeJobs fuuid={fuuid} titre={conversionEnCours} showNomFichier={false}/>
     </>
   )
 }
