@@ -117,7 +117,11 @@ function decrireCollection(tuuid, params) {
 function getDocuments(tuuids, opts) {
   opts = opts || {}
 
-  const { partage, contactId: contact_id } = opts
+  const { contactId: contact_id } = opts
+  let partage = opts.partage
+  if(partage === undefined && contact_id) {
+    partage = true
+  }
 
   return ConnexionClient.emitBlocking(
     'getDocuments',
@@ -348,12 +352,14 @@ function retirerCallbackMajCollection(cuuid, cb) {
   return ConnexionClient.unsubscribe('retirerCallbackMajCollection', cb, {cuuid, DEBUG}) 
 }
 
-function enregistrerCallbackMajContenuCollection(cuuid, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, {cuuid, DEBUG})
+function enregistrerCallbackMajContenuCollection(cuuid, cb, opts) { 
+  opts = opts || {}
+  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, {...opts, cuuid, DEBUG})
 }
 
-function retirerCallbackMajContenuCollection(cuuid, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, {cuuid, DEBUG}) 
+function retirerCallbackMajContenuCollection(cuuid, cb, opts) { 
+  opts = opts || {}
+  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, {...opts, cuuid, DEBUG}) 
 }
 
 function enregistrerCallbackTranscodageProgres(params, cb) { 

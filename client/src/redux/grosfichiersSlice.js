@@ -512,11 +512,12 @@ export function creerThunks(actions, nomSlice) {
     
     async function traiterChargerTuuids(workers, tuuids, opts, dispatch, getState) {
         opts = opts || {}
-        // console.debug("Charger detail fichiers tuuids : %O, opts : %O", tuuids, opts)
     
         const { connexion, collectionsDao } = workers
-        const contactId = opts.contactId || getState().partageContactId
-    
+        const contactId = opts.contactId || getState().fichiers.partageContactId
+
+        // console.debug("Charger detail fichiers tuuids : %O, opts : %O, contactId: %O, state: %O", tuuids, opts, contactId, getState())
+
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
     
         const resultat = await connexion.getDocuments(tuuids, {...opts, contactId})

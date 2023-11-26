@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { proxy as comlinkProxy } from 'comlink'
 
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
@@ -308,6 +309,8 @@ function NavigationPartageTiers(props) {
                     erreurCb={erreurCb}
                 />
             </Suspense>
+
+            <HandlerEvenementsCollectionsPartagees />
 
             <Modals 
                 showPreview={!!showPreview}
@@ -859,4 +862,97 @@ function MenuContextuel(props) {
     }
 
     return ''
+}
+
+async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
+    // console.trace("traiterContenuCollectionEvenement ", evenement)
+
+    const message = evenement.message || {}
+    
+    // Conserver liste tuuids (et dedupe)
+    const dirtyTuuids = {}
+    const cuuid = message.cuuid
+    const retires = message.retires
+    const champs = ['fichiers_ajoutes', 'fichiers_modifies', 'collections_ajoutees', 'collections_modifiees']
+    for (const champ of champs) {
+        const value = message[champ]
+        if(value) value.forEach(item=>{dirtyTuuids[item] = true})
+    }
+    const tuuids = Object.keys(dirtyTuuids)
+
+    const promises = []
+
+    if(tuuids.length > 0) {
+        // console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
+        promises.push(dispatch(fichiersThunks.chargerTuuids(workers, tuuids)))
+    }
+
+    if(retires) {
+        // console.debug("traiterCollectionEvenement Retirer tuuids de la collection courante (%s) %O", cuuid, retires)
+        promises.push(dispatch(fichiersThunks.retirerTuuidsCollection(workers, cuuid, retires)))
+    }
+
+    if(promises.length > 0) return Promise.all(promises)
+}
+
+function HandlerEvenementsCollectionsPartagees(_props) {
+
+    const workers = useWorkers()
+    const etatPret = useEtatPret()
+    const dispatch = useDispatch()
+    const usager = useUsager()
+    const fichiersInfo = useSelector(state => state.fichiers)
+    const contactId = useSelector(state=>state.fichiers.partageContactId)
+    const { cuuid } = fichiersInfo
+    const extensions = usager.extensions || {}
+    const { userId } = extensions
+
+    const { connexion } = workers
+    
+    // const evenementCollectionCb = useMemo(
+    //     () => comlinkProxy( evenement => traiterCollectionEvenement(workers, dispatch, evenement) ),
+    //     [workers, dispatch]
+    // )
+    
+    const evenementContenuCollectionCb = useMemo(
+        () => comlinkProxy( evenement => traiterContenuCollectionEvenement(workers, dispatch, evenement) ), 
+        [workers, dispatch]
+    )
+
+    // Enregistrer changement de collection
+    useEffect(()=>{
+        // console.debug("HandlerEvenements listener collection connexion %O, etatPret %O, userId %O, cuuid %O", connexion, etatPret, userId, cuuid)
+        if(!connexion || !etatPret) return  // Pas de connexion, rien a faire
+
+        // Enregistrer listeners
+        if(cuuid) {
+            // console.debug("HandlerEvenements Enregistrer listeners collection partagee %s (contactId %s)", cuuid, contactId)
+            // connexion.enregistrerCallbackMajCollection(cuuid, evenementCollectionCb)
+            //     .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+            connexion.enregistrerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb, {contact_id: contactId})
+                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+        } else {
+            // TODO : handle changement liste partages, contact ids, repertoires partages (top level)
+        }
+
+        // Cleanup listeners
+        return () => {
+            if(cuuid) {
+                // console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
+                // connexion.retirerCallbackMajCollection(cuuid, evenementCollectionCb)
+                //     .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+                connexion.retirerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb, {contact_id: contactId})
+                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+            } else if(userId) {
+                // console.debug("HandlerEvenements Retirer listeners collections pour userId ", userId)
+                connexion.retirerCallbackMajContenuCollection(userId, evenementContenuCollectionCb)
+                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+            }
+        }
+    }, [
+        connexion, etatPret, userId, contactId, cuuid, evenementContenuCollectionCb,
+        // evenementCollectionCb
+    ])
+
+    return ''  // Aucun affichage
 }

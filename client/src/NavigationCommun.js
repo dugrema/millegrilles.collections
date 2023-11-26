@@ -524,7 +524,7 @@ export function SectionBreadcrumb(props) {
         event.stopPropagation()
 
         const value = event.currentTarget.dataset.idx
-        console.debug("handlerSliceBreadcrumb retour a idx %s, liste : %O", value, breadcrumb)
+        // console.debug("handlerSliceBreadcrumb retour a idx %s, liste : %O", value, breadcrumb)
 
         let tuuid = ''
         if(value) {
@@ -782,13 +782,6 @@ export function AffichagePrincipal(props) {
         }
         
         showPreviewAction(value)
-        // if(isMobile) showPreviewAction(value)  // Utiliser un ecran de navigation pour mobile
-        // else if(estMimetypeVideo(mimetype)) setAfficherVideo(value)
-        // else if(mimetype.startsWith('audio/')) setAfficherAudio(value)
-        // else if(mimetype.startsWith('image/')) showPreviewAction(value)
-        // else if(mimetype === 'application/pdf') showPreviewAction(value)
-        // else showInfoModalOuvrir()
-
     }, [naviguerCollection, showPreviewAction, liste])
 
     const enteteOnClickCb = useCallback(colonne=>{
@@ -807,26 +800,6 @@ export function AffichagePrincipal(props) {
     }, [dispatch])
 
     if(hide) return ''  // Cacher la page
-
-    // if(afficherVideo) {
-    //     return (
-    //         <AfficherVideoView
-    //             liste={liste}
-    //             tuuid={afficherVideo}
-    //             fermer={fermerAfficherVideo} 
-    //             showInfoModalOuvrir={showInfoModalOuvrir} 
-    //             erreurCb={erreurCb} />
-    //     )
-    // } else if(afficherAudio) {
-    //     return (
-    //         <AfficherAudioView
-    //             liste={liste}
-    //             tuuid={afficherAudio}
-    //             fermer={fermerAfficherAudio} 
-    //             showInfoModalOuvrir={showInfoModalOuvrir} 
-    //             erreurCb={erreurCb} />
-    //     )
-    // }
 
     if(modeView === 'carousel') {
         return <AfficherCarousel fichiers={liste} fermer={fermerCarousel} hideMenu={hideMenu} setHideMenu={setHideMenu} />
@@ -895,7 +868,6 @@ export function InformationListe(_props) {
 
     return ''
 }
-
 
 function AfficherCarousel(props) {
     const { fichiers, fermer, hideMenu, setHideMenu } = props
