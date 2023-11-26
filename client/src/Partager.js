@@ -29,29 +29,52 @@ function Partager(props) {
     const workers = useWorkers(), 
           dispatch = useDispatch(),
           etatPret = useEtatPret()
+    const listePartagesAutres = useSelector(state=>state.partager.listePartagesAutres)
 
     const [contactId, setContactId] = useState('')
     const [userIdPartage, setUserIdPartage] = useState('')
 
     // Reset userId transfere (e.g. via NavigationCollections)
     useEffect(()=>{
-        if(!userIdTransfere) return
+        if(!userIdTransfere || !listePartagesAutres) return
+        // console.debug("liste partage autres : ", listePartagesAutres)
         ouvrirPartageUserId('')
         setUserIdPartage(userIdTransfere)
-    }, [userIdTransfere, ouvrirPartageUserId, setUserIdPartage])
+    }, [userIdTransfere, ouvrirPartageUserId, setUserIdPartage, setContactId, listePartagesAutres, erreurCb])
+
+    useEffect(()=>{
+        // Charger la liste de partage du contact
+        dispatch(fichiersThunks.afficherPartagesContact(workers, userIdPartage, null))
+            .catch(err=>erreurCb(err, 'Partager Erreur chargement partages du contact'))
+    }, [userIdPartage])
 
     useEffect(()=>{
         if(!etatPret) return
         // Charger les contacts
         dispatch(chargerInfoContacts(workers))
-            .catch(err=>console.error("Erreur chargement contacts : ", err))
+            .then(async ()=>{
+                // Charger tous les partages (paires contacts/cuuid)
+                await dispatch(chargerPartagesUsager(workers))
+                await dispatch(chargerPartagesDeTiers(workers))
 
-        // Charger tous les partages (paires contacts/cuuid)
-        dispatch(chargerPartagesUsager(workers))
-            .catch(err=>console.error("Erreur chargement des partages usager : ", err))
-        dispatch(chargerPartagesDeTiers(workers))
-            .catch(err=>console.error("Erreur chargement des partages contacts (tiers avec usager local) : ", err))
+                // console.debug("Partager Fin chargemeent contacts, partages")
+            })
+            .catch(err=>console.error("Erreur chargement contacts ou partages : ", err))
+
+        // // Charger tous les partages (paires contacts/cuuid)
+        // dispatch(chargerPartagesUsager(workers))
+        //     .catch(err=>console.error("Erreur chargement des partages usager : ", err))
+        // dispatch(chargerPartagesDeTiers(workers))
+        //     .catch(err=>console.error("Erreur chargement des partages contacts (tiers avec usager local) : ", err))
     }, [dispatch, workers, etatPret])
+
+    // useEffect(()=>{
+    //     if(!etatPret || !listePartagesAutres) return
+    //     const tuuids = listePartagesAutres.map(item=>item.tuuid)
+    //     console.debug("Charger tuuids partages par autres : ", listePartagesAutres)
+    //     dispatch(fichiersThunks.chargerTuuids(workers, tuuids))
+    //         .catch(err=>console.error("Erreur chargement tuuids partages (top level) : %O", err))
+    // }, [workers, etatPret, listePartagesAutres])
 
     const choisirContactId = useCallback(e=>{
         const contactId = e.currentTarget.value
@@ -139,8 +162,8 @@ function NavigationPartageTiers(props) {
             setShowPreview(false)
             setToggleOffCarousel(true)
 
-            dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
-                .catch(err=>erreurCb(err, 'Erreur changer collection'))
+            // dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
+            //     .catch(err=>erreurCb(err, 'Erreur changer collection'))
         }
 
         return [{label: 'Partages', onClick: fermer}, {label: userInfo.nom_usager, onClick: afficherPartageUser}]
