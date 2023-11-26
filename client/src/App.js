@@ -250,6 +250,7 @@ function LayoutMain() {
             showMediaJobsFermer={showMediaJobsFermer}
           />
 
+        <InitialisationConfiguration />
         <InitialisationDownload />
         <InitialisationUpload />
 
@@ -513,4 +514,17 @@ function supprimerDownloads(workers, dispatch, params, erreurCb) {
     Promise.resolve(dispatch(supprimerDownloadsParEtat(workers, CONST_ETATS_DOWNLOAD.ETAT_ECHEC)))
       .catch(err=>erreurCb(err, "Erreur supprimer downloads"))
   }
+}
+
+function InitialisationConfiguration(props) {
+  
+  useEffect(()=>{
+    const resolutionInitiale = window.localStorage.getItem('videoResolution')
+    if(!resolutionInitiale) {
+      console.info("Set resolution video par defaut a 0720")
+      window.localStorage.setItem('videoResolution', '0720')
+    }
+  }, [])
+
+  return ''
 }
