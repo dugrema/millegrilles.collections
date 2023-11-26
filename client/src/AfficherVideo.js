@@ -432,7 +432,7 @@ export function SelecteurResolution(props) {
     const capabilities = useCapabilities()
 
     const changerSelecteur = useCallback(value=>{
-        if(Number.parseInt(value)) window.localStorage.setItem('videoResolution', value)
+        // if(Number.parseInt(value)) window.localStorage.setItem('videoResolution', value)
         setSelecteur(value)
     }, [setSelecteur])
 

@@ -39,6 +39,7 @@ const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
 const NavigationRecherche = lazy( () => import('./NavigationRecherche') )
 const MediaJobsModal = lazy( () => import('./MediaJobsModal') )
 const Partager = lazy( () => import('./Partager') )
+const Parametres = lazy( () => import('./Parametres') )
 
 const CONST_UPLOAD_COMPLET_EXPIRE = 2 * 60 * 60 * 1000,  // Auto-cleanup apres 2 heures (millisecs) de l'upload,
       CONST_DOWNLOAD_COMPLET_EXPIRE = 48 * 60 * 60 * 1000  // Auto-cleanup apres 2 jours (millisecs) du download
@@ -176,6 +177,7 @@ function LayoutMain() {
       case 'recents': 
       case 'corbeille': 
       case 'partager':
+      case 'parametres':
         setPage(eventKey)
         break
       default:
@@ -229,6 +231,7 @@ function LayoutMain() {
                 ouvrirPartageUserId={handlerOuvrirPartageUserId}
                 cuuidTransfere={cuuidTransfere}
                 setCuuidTransfere={setCuuidTransfere}
+                toggleModeAffichage={toggleModeAffichage}
                 erreurCb={erreurCb}
               />
           </Suspense>
@@ -263,6 +266,7 @@ function Contenu(props) {
     case 'recents': Page = NavigationRecents; break
     case 'corbeille': Page = NavigationCorbeille; break
     case 'partager': Page = Partager; break
+    case 'parametres': Page = Parametres; break
     default: Page = NavigationCollections
   }
 

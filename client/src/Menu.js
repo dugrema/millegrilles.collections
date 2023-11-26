@@ -114,6 +114,10 @@ function Menu(props) {
             {t('menu.information')}
         </Nav.Link>
 
+        <NavDropdown title='Configuration' id="basic-nav-dropdown" drop="down" onSelect={onSelect}>
+          <NavDropdown.Item eventKey="parametres">Parametres</NavDropdown.Item>
+        </NavDropdown>
+
         <DropDownLanguage title={t('menu.language')} onSelect={handlerChangerLangue}>
             <NavDropdown.Item eventKey="en-US">English</NavDropdown.Item>
             <NavDropdown.Item eventKey="fr-CA">Francais</NavDropdown.Item>
@@ -123,9 +127,9 @@ function Menu(props) {
             {t('menu.portail')}
         </Nav.Link>
 
-        <Nav.Link eventKey="toggleModeAffichage" title={t(labelModeToggle)}>
+        {/* <Nav.Link eventKey="toggleModeAffichage" title={t(labelModeToggle)}>
             {t(labelModeToggle)}
-        </Nav.Link>
+        </Nav.Link> */}
 
         <Nav.Link eventKey="deconnecter" title={t('menu.deconnecter')}>
             {t('menu.deconnecter')}
