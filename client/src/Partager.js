@@ -162,8 +162,9 @@ function NavigationPartageTiers(props) {
             setShowPreview(false)
             setToggleOffCarousel(true)
 
-            // dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
-            //     .catch(err=>erreurCb(err, 'Erreur changer collection'))
+            // console.debug("NavigationPartageTiers itemRootBreadcrumb afficherPartageUser cb")
+            dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
+                .catch(err=>erreurCb(err, 'Erreur changer collection'))
         }
 
         return [{label: 'Partages', onClick: fermer}, {label: userInfo.nom_usager, onClick: afficherPartageUser}]
@@ -194,6 +195,8 @@ function NavigationPartageTiers(props) {
         setToggleOffCarousel(true)
         setHideMenu(false)
 
+        // console.debug("naviguerCollection cuuid %O, opts %O", cuuid, opts)
+
         if(opts.retourFichier) return   // Plus rien a faire
 
         if(!cuuid) cuuid = ''
@@ -221,11 +224,13 @@ function NavigationPartageTiers(props) {
             // console.debug("Changer collection pour contact %O, cuuid %O", contactInfoEffectif, cuuid)
             dispatch(fichiersActions.setUserContactId({userId: userInfo.user_id, contactId: contactInfoEffectif.contact_id}))
             if(cuuid) {
+                // console.debug("naviguerCollection vers cuuid %s", cuuid)
                 dispatch(fichiersThunks.changerCollection(workers, cuuid))
                     .catch(err=>erreurCb(err, 'Erreur changer collection'))
             } else {
+                // console.debug("naviguerCollection vers contact %s", contactId)
                 dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
-                    .catch(err=>erreurCb(err, 'Erreur changer collection'))
+                    .catch(err=>erreurCb(err, 'Erreur changer collection vers contact'))
             }
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
@@ -268,13 +273,13 @@ function NavigationPartageTiers(props) {
         setToggleOffCarousel(true)
         try {
             // Set tri par date modification desc
-            dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
+            dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
             console.error("naviguerCollection Erreur dispatch changerCollection", err)
         }
 
-    }, [dispatch, userId, contactId, setAfficherVideo, setAfficherAudio, setShowPreview, setToggleOffCarousel])
+    }, [dispatch, userId, setAfficherVideo, setAfficherAudio, setShowPreview, setToggleOffCarousel])
 
     useEffect(()=>{
         // console.debug("modeview %O, toggle %O", modeView, toggleOffCarousel)

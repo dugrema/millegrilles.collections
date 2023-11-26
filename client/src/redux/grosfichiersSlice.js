@@ -576,10 +576,11 @@ export function creerThunks(actions, nomSlice) {
     
         const state = getState()[nomSlice]
         const cuuidPrecedent = state.cuuid
-        // console.debug("Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
+        // console.debug("traiterChangerCollection Cuuid precedent : %O, nouveau : %O", cuuidPrecedent, cuuid)
     
         if(cuuidPrecedent === cuuid) return  // Rien a faire, meme collection
     
+        // console.debug("traiterChangerCollection setCuuid %s", cuuid)
         dispatch(setCuuid(cuuid))
     
         return Promise.all([
@@ -731,6 +732,7 @@ export function creerThunks(actions, nomSlice) {
             dispatch(breadcrumbPush({tuuid: cuuidInfo.tuuid, opts: {nom: cuuidInfo.nom}}))
 
         } else {
+            // console.debug("traiterRafraichirBreadcrumb Slice breadcrumb (favoris)")
             dispatch(breadcrumbSlice(''))  // Favoris
         }
     }
