@@ -139,10 +139,13 @@ function recupererDocuments(items) {
   )
 }
 
-function copierVersCollection(cuuid, tuuids) {
+function copierVersCollection(cuuid, tuuids, opts) {
+  opts = opts || {}
+  const contactId = opts.contactId
+  // console.debug("copierVersCollection cuuid %O, tuuids : %O, opts : %O", cuuid, tuuids, opts)
   return ConnexionClient.emitBlocking(
     'copierVersCollection',
-    {cuuid, inclure_tuuids: tuuids},
+    {cuuid, inclure_tuuids: tuuids, contact_id: contactId},
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterFichiersCollection', attacherCertificat: true}
   )
 }

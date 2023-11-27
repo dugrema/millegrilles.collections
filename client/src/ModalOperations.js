@@ -152,18 +152,24 @@ export function ArchiverModal(props) {
 
 export function CopierModal(props) {
 
-    const { show, fermer, selection, erreurCb } = props
+    const { show, fermer, selection, erreurCb, partage } = props
 
     const { connexion } = useWorkers()
 
+    const contactId = useSelector(state=>state.fichiers.partageContactId)
+
+    // const stateFichiers = useSelector(state=>state.fichiers)
+    // console.debug("StateFichiers ", stateFichiers)
+
     const copier = useCallback( cuuid => {
         if(cuuid) {
-            console.debug("Copier vers cuuid ", cuuid)
-            connexion.copierVersCollection(cuuid, selection)
+            const contactIdEffectif = partage?contactId:null
+            console.debug("Copier selection %O vers cuuid %O (contactId: %O) ", selection, cuuid, contactIdEffectif)
+            connexion.copierVersCollection(cuuid, selection, {contactId: contactIdEffectif})
                 .then(reponse=>{
                     // console.debug("Reponse copierVersCollection : %O", reponse)
                     if(reponse.ok === false) {
-                        erreurCb(reponse.message, "Erreur copierVersCollection")
+                        erreurCb(reponse.err, "Erreur copierVersCollection")
                     } else {
                         fermer()
                     }
@@ -173,11 +179,11 @@ export function CopierModal(props) {
             // Ajouter au favoris?
             erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
         }
-    }, [connexion, selection, fermer])
+    }, [connexion, selection, partage, contactId, fermer])
 
-    const BoutonAction = props => (
-        <Button onClick={()=>copier(props.cuuid)} disabled={props.disabled}>Copier</Button>
-    )
+    const BoutonAction = useMemo(() => {
+        return props => <Button onClick={()=>copier(props.cuuid)} disabled={props.disabled}>Copier</Button>
+    }, [copier])
 
     return (
         <ModalNavigationCollections 

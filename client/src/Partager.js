@@ -778,6 +778,7 @@ function Modals(props) {
     const showInfoModalOuvrir = useCallback(()=>setShowInfoModal(true), [setShowInfoModal])
     const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
     const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
+    const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
 
     const dispatch = useDispatch()
     const workers = useWorkers()
@@ -827,14 +828,15 @@ function Modals(props) {
                 fichiers={liste}
               />
 
-            {/* <CopierModal 
+            <CopierModal 
                 show={showCopierModal} 
                 fermer={showCopierModalFermer}
                 selection={selection}
                 workers={workers}
+                partage={true}
                 erreurCb={erreurCb}
               />
- */}
+ 
             <InfoModal 
                 show={showInfoModal} 
                 fermer={showInfoModalFermer}
