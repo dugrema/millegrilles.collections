@@ -24,7 +24,7 @@ export async function connecter(workers, setUsagerState, setEtatConnexion, setEt
     //     console.error("Erreur init session : %O", err)
     // }
 
-    return connexion.connecter(location.href, {reconnectionDelay: 5_000})
+    return connexion.connecter(location.href, {DEBUG: false, reconnectionDelay: 5_000})
 }
 
 async function setUsager(workers, nomUsager, setUsagerState, opts) {

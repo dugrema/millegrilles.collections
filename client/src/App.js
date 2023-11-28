@@ -4,10 +4,10 @@ import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux
 
 import Button from 'react-bootstrap/Button'
 
-import { LayoutMillegrilles, ModalErreur, TransfertModal } from '@dugrema/millegrilles.reactjs'
+import { LayoutMillegrilles, ModalErreur, TransfertModal, OuvertureSessionModal } from '@dugrema/millegrilles.reactjs'
 
 import ErrorBoundary from './ErrorBoundary'
-import useWorkers, {useCapabilities, useEtatConnexion, WorkerProvider, useUsager, useOverrideAffichage, useSetOverrideAffichage} from './WorkerContext'
+import useWorkers, {useCapabilities, useEtatConnexion, useEtatConnexionOpts, WorkerProvider, useUsager, useOverrideAffichage, useSetOverrideAffichage} from './WorkerContext'
 import storeSetup from './redux/store'
 
 import fichiersActions from './redux/fichiersSlice'
@@ -94,7 +94,9 @@ function LayoutMain() {
   const { i18n } = useTranslation()
   const workers = useWorkers()
 
+  const usager = useUsager()
   const etatConnexion = useEtatConnexion()
+  const etatConnexionOpts = useEtatConnexionOpts()
   const dispatch = useDispatch()
   const overrideAffichage = useOverrideAffichage()
   const setOverrideAffichage = useSetOverrideAffichage()
@@ -253,6 +255,13 @@ function LayoutMain() {
         <InitialisationConfiguration />
         <InitialisationDownload />
         <InitialisationUpload />
+
+        <OuvertureSessionModal 
+              workers={workers}
+              etatConnexion={etatConnexion} 
+              etatConnexionOpts={etatConnexionOpts} 
+              usager={usager}
+            />
 
       </LayoutMillegrilles>
     </div>
