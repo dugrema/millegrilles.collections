@@ -50,6 +50,10 @@ export async function updateDocument(doc, opts) {
 
     const flags = ['dirty', 'dechiffre', 'expiration']
           
+    if(!doc.cuuid && doc.path_cuuids) {
+        doc.cuuid = doc.path_cuuids[0]  // Inserer le parent pour l'index cuuid
+    }
+
     const db = await ouvrirDB()
     const store = db.transaction(STORE_FICHIERS, 'readwrite').store
     const fichierDoc = (await store.get(tuuid)) || {}
@@ -95,8 +99,8 @@ export async function getParCollection(cuuid, userId) {
     const store = db.transaction(STORE_FICHIERS, 'readonly').store        
     //curseur = await store.openCursor()
     if(cuuid) {
-        // const index = store.index('cuuid')
-        const index = store.index('pathCuuids')
+        const index = store.index('cuuid')
+        // const index = store.index('pathCuuids')
         curseur = await index.openCursor(cuuid)
     } else {
         // Favoris
@@ -107,12 +111,15 @@ export async function getParCollection(cuuid, userId) {
 
     // Curseur fichiers et sous-repertoires (cuuid)
     const docs = []
+    // let compteur = 0, compteurSupprimes = 0
     while(curseur) {
+        // compteur++
         const value = curseur.value
-        // console.debug("getParCollection Row %O = %O", curseur, value)
+        console.debug("getParCollection Row %O = %O", curseur, value)
         const { path_cuuids, type_node, user_id, supprime } = value
         if(supprime === true) {
             // Supprime
+            // compteurSupprimes++
         } else if(!cuuid) {
             // Favoris
             if(user_id === userId && type_node === 'Collection') docs.push(value)
@@ -122,6 +129,8 @@ export async function getParCollection(cuuid, userId) {
         }
         curseur = await curseur.continue()
     }
+
+    // console.debug("IDB fichiers Parcours de %d rows (%d supprimes) pour resultat %O", compteur, compteurSupprimes, docs)
 
     // // Curseur repertoires (cuuid)
     // if(cuuid) {
