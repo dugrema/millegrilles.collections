@@ -6,7 +6,7 @@ const DB_NAME = 'collections',
       STORE_UPLOADS = 'uploads',
       STORE_UPLOADS_FICHIERS = 'uploadsFichiers',
       STORE_FICHIERS = 'fichiers',
-      VERSION_COURANTE = 7
+      VERSION_COURANTE = 8
 
 export function ouvrirDB(opts) {
     opts = opts || {}
@@ -56,7 +56,12 @@ function createObjectStores(db, oldVersion, newVersion, transaction) {
                 fichierStore.createIndex('pathCuuids', 'path_cuuids', {unique: false, multiEntry: true})
             case 6:
                 db.createObjectStore(STORE_DOWNLOADS_FICHIERS, {keyPath: ['fuuid', 'position']})
-            case 7: // Plus recent, rien a faire
+            case 7:
+                // L'index cuuid n'etait pas rempli correctement. Reset liste de fichiers.
+                fichierStore = transaction.objectStore(STORE_FICHIERS)
+                fichierStore.clear()
+                break
+            case 8: // Plus recent, rien a faire
                 break
             default:
                 console.warn("createObjectStores Default..., version %O", oldVersion)
