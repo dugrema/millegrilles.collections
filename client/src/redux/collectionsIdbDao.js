@@ -115,7 +115,7 @@ export async function getParCollection(cuuid, userId) {
     while(curseur) {
         // compteur++
         const value = curseur.value
-        console.debug("getParCollection Row %O = %O", curseur, value)
+        // console.debug("getParCollection Row %O = %O", curseur, value)
         const { path_cuuids, type_node, user_id, supprime } = value
         if(supprime === true) {
             // Supprime
