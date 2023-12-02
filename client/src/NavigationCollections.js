@@ -733,8 +733,8 @@ function PreparationModal(props) {
 
         if(progres.valeur !== undefined) setValeur(progres.valeur)
         if(progres.complet !== undefined) setComplet(progres.complet)
-        if(progres.err !== undefined) setComplet(progres.err)
-        if(progres.rejets !== undefined) setComplet(progres.rejets)
+        if(progres.err !== undefined) setErr(progres.err)
+        if(progres.rejets !== undefined) setRejets(progres.rejets)
     }, [show, reset, progres, setValeur, setComplet, setErr, setRejets])
 
     useEffect(()=>{
@@ -759,7 +759,10 @@ function PreparationModal(props) {
                         <Button variant='dark' onClick={nePlusAfficher}>Ne plus afficher</Button>
                     </div>
                     :
-                    <Button variant="dark" onClick={annulerCb}>Annuler</Button>    
+                    complet?
+                        <Button onClick={fermer}>Ok</Button>
+                        :
+                        <Button variant="dark" onClick={annulerCb}>Annuler</Button>
                 }
             </Modal.Footer>
         </Modal>
@@ -769,22 +772,37 @@ function PreparationModal(props) {
 function PreparationModalProgress(opts) {
     const { valeur, err, complet, rejets } = opts
 
-    if(complet && !(err || rejets)) return (
-        <div>
-            <p>Les fichiers sont maintenant chiffres et en cours de transfert.</p>
-            <hr />
-            <h4>Transfert de fichiers</h4>
-            <p>
-                Surveillez l'indicateur de transfert <BadgeUpload/> dans le menu. 
-                Lorsque le nombre atteint 100%, le transfert est termine. Si l'indicateur devient 
-                rouge, le transfert a echoue.
-            </p>
-            <p>
-                La fenetre de transfert de fichiers s'ouvre lorsque vous cliquez sur l'indicateur 
-                d'upload <i className='fa fa-upload'/> ou de download <i className='fa fa-download'/> dans le menu.
-            </p>
-        </div>
-    )
+    if(complet) 
+    {
+        if(!(err || rejets)) {
+            return (
+                <div>
+                    <p>Les fichiers sont maintenant chiffres et en cours de transfert.</p>
+                    <hr />
+                    <h4>Transfert de fichiers</h4>
+                    <p>
+                        Surveillez l'indicateur de transfert <BadgeUpload/> dans le menu. 
+                        Lorsque le nombre atteint 100%, le transfert est termine. Si l'indicateur devient 
+                        rouge, le transfert a echoue.
+                    </p>
+                    <p>
+                        La fenetre de transfert de fichiers s'ouvre lorsque vous cliquez sur l'indicateur 
+                        d'upload <i className='fa fa-upload'/> ou de download <i className='fa fa-download'/> dans le menu.
+                    </p>
+                </div>
+            )
+        } else {
+            return (
+                <div>
+                    <p>
+                        Certains fichiers n'ont pas pu etre traites, les autres sont en cours de transfert.
+                        Voir la liste des erreurs ci-dessous.
+                    </p>
+                    <AfficherRejets rejets={rejets} />
+                </div>
+            )
+        }
+    }
 
     return (
         <div>
@@ -804,6 +822,27 @@ function PreparationModalProgress(opts) {
                     </p>
                 </Col>
             </Row>
+        </div>
+    )
+}
+
+function AfficherRejets(props) {
+    const rejets = props.rejets || []
+    return (
+        <div>
+            <h4>Fichiers rejetes</h4>
+            <Row>
+                <Col>Nom</Col>
+                <Col>Raison</Col>
+            </Row>
+            {rejets.map((item, idx)=>{
+                return (
+                    <Row key={idx}>
+                        <Col>{item.nom}</Col>
+                        <Col>{item.err}</Col>
+                    </Row>
+                )
+            })}
         </div>
     )
 }

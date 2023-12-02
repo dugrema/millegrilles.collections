@@ -429,7 +429,12 @@ function BoutonUpload(props) {
             {userId, usager, cuuid, acceptedFiles, breadcrumbPath},
             {signalAnnuler, setProgres: handlerPreparationUploadEnCours}
         )
-            .then( () => {
+            .then( resultat => {
+                const { rejets } = resultat
+                if(rejets && rejets.length > 0) {
+                    handlerPreparationUploadEnCours({valeur: 100, complet: true, rejets})
+                    return
+                }
                 //console.debug("BoutonUpload traiterAcceptedFiles resultat ", uploads)
                 //const batchIds = uploads.map(item=>item.batchId)
                 //return dispatch(demarrerUploads(workers, batchIds))
