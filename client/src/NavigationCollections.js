@@ -721,7 +721,15 @@ function PreparationModal(props) {
     }, [complet])
 
     useEffect(()=>{
+        console.debug("Progres : ", progres)
         if(show === false) return reset()
+        if(!progres) return reset()
+
+        if(progres.annuler === true) {
+            reset()
+            fermer()
+            return
+        }
 
         if(progres.valeur !== undefined) setValeur(progres.valeur)
         if(progres.complet !== undefined) setComplet(progres.complet)
@@ -731,9 +739,11 @@ function PreparationModal(props) {
 
     useEffect(()=>{
         if(!complet) return
+        console.debug("Err : %O, rejets: %O, valeur: %O", err, rejets, valeur)
         if(err || rejets) return
+        if(isNaN(valeur)) return fermer()
         if(window.localStorage.getItem('uploadHint1') === 'false') return fermer()
-    }, [complet, fermer])
+    }, [complet, valeur, fermer])
 
     return (
         <Modal show={show}>

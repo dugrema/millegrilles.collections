@@ -433,13 +433,18 @@ function BoutonUpload(props) {
                 //console.debug("BoutonUpload traiterAcceptedFiles resultat ", uploads)
                 //const batchIds = uploads.map(item=>item.batchId)
                 //return dispatch(demarrerUploads(workers, batchIds))
-                handlerPreparationUploadEnCours({valeur: 100})
+                handlerPreparationUploadEnCours({valeur: 100, complet: true})
             })
             .catch(err=>{
-                console.error("Erreur fichiers : %O", err)
-                handlerPreparationUploadEnCours({err: ''+err})
+                // console.error("Erreur fichiers : %O (signalAnnuler: %O, %O)", err, signalAnnuler, signalAnnuler())
+                if(signalAnnuler && signalAnnuler()) {
+                    // console.info("BoutonUpload Indiquer que l'upload a ete annule (signal)")
+                    handlerPreparationUploadEnCours({annuler: true, complet: true})
+                } else {
+                    handlerPreparationUploadEnCours({err: ''+err, complet: true})
+                }
             })
-            .finally( () => handlerPreparationUploadEnCours({complet: true}) )
+            //.finally( () => handlerPreparationUploadEnCours({complet: true}) )
 
     }, [handlerPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid, breadcrumb])
 
