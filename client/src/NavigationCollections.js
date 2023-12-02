@@ -776,18 +776,12 @@ function PreparationModalProgress(opts) {
             <h4>Transfert de fichiers</h4>
             <p>
                 Surveillez l'indicateur de transfert <BadgeUpload/> dans le menu. 
-                Lorsque le nombre atteint 100%, le transfert est termine.
-            </p>
-            <p>
-                Si l'indicateur devient rouge, le transfert a echoue.
+                Lorsque le nombre atteint 100%, le transfert est termine. Si l'indicateur devient 
+                rouge, le transfert a echoue.
             </p>
             <p>
                 La fenetre de transfert de fichiers s'ouvre lorsque vous cliquez sur l'indicateur 
                 d'upload <i className='fa fa-upload'/> ou de download <i className='fa fa-download'/> dans le menu.
-            </p>
-            <p>
-                Il est possible de poursuivre un transfert arrete ou en echec (e.g si votre navigateur se ferme 
-                avant la fin du transfert) en ouvrant le menu de transfert de fichiers et en cliquant sur redemarrer.
             </p>
         </div>
     )
