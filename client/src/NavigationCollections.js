@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { proxy as comlinkProxy } from 'comlink'
 
 import Alert from 'react-bootstrap/Alert'
+import Badge from 'react-bootstrap/Badge'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -25,6 +26,7 @@ import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } fr
 
 import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
 import { PartagesUsagersTiers } from './Partager'
+import { BadgeUpload } from './Menu'
 
 function NavigationCollections(props) {
 
@@ -259,6 +261,7 @@ function NavigationCollections(props) {
                 tuuidSelectionne={tuuidSelectionne}
                 showPreviewAction={showPreviewAction}
                 preparationUploadEnCours={preparationUploadEnCours}
+                setPreparationUploadEnCours={setPreparationUploadEnCours}
                 contextuel={contextuel}
                 setContextuel={setContextuel} 
                 showInfoModal={showInfoModal}
@@ -351,7 +354,8 @@ function Modals(props) {
     const {
         showCreerRepertoire, setShowCreerRepertoire,
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
-        contextuel, setContextuel, preparationUploadEnCours,
+        contextuel, setContextuel, 
+        preparationUploadEnCours, setPreparationUploadEnCours,
         showInfoModal, setShowInfoModal, annulerPreparationCb,
         showSupprimerModal, setShowSupprimerModal,
         showCopierModal, setShowCopierModal,
@@ -395,6 +399,7 @@ function Modals(props) {
     const showPartagerModalFermer = useCallback(()=>setShowPartagerModal(false), [setShowPartagerModal])
     const showConversionVideoOuvrir = useCallback(()=>setShowConversionVideo(true), [setShowConversionVideo])
     const showConversionVideoFermer = useCallback(()=>setShowConversionVideo(false), [setShowConversionVideo])
+    const preparationEnCoursFermer = useCallback(()=>setPreparationUploadEnCours(false), [setPreparationUploadEnCours])
 
     const dispatch = useDispatch()
     const workers = useWorkers()
@@ -518,7 +523,8 @@ function Modals(props) {
               />       
 
             <PreparationModal 
-                show={typeof(preparationUploadEnCours)==='number'?true:false} 
+                show={!!preparationUploadEnCours} 
+                fermer={preparationEnCoursFermer}
                 progres={preparationUploadEnCours} 
                 annulerCb={annulerPreparationCb}
               />
@@ -690,34 +696,100 @@ function MenuContextuel(props) {
 }
 
 function PreparationModal(props) {
-    const { show, progres, annulerCb } = props
+    const { show, progres, fermer, annulerCb } = props
+
+    const [valeur, setValeur] = useState('')
+    const [complet, setComplet] = useState(false)
+    const [err, setErr] = useState('')
+    const [rejets, setRejets] = useState('')
+
+    const reset = useCallback(()=>{
+        setValeur('')
+        setComplet(false)
+        setErr('')
+        setRejets('')
+    }, [setValeur, setComplet, setErr, setRejets])
+
+    const nePlusAfficher = useCallback(()=>{
+        window.localStorage.setItem('uploadHint1', 'false')
+        fermer()
+    }, [fermer])
+
+    const afficherHint1 = useMemo(()=>{
+        if(!complet) return false
+        return window.localStorage.getItem('uploadHint1') !== 'false'
+    }, [complet])
+
+    useEffect(()=>{
+        if(show === false) return reset()
+
+        if(progres.valeur !== undefined) setValeur(progres.valeur)
+        if(progres.complet !== undefined) setComplet(progres.complet)
+        if(progres.err !== undefined) setComplet(progres.err)
+        if(progres.rejets !== undefined) setComplet(progres.rejets)
+    }, [show, reset, progres, setValeur, setComplet, setErr, setRejets])
+
+    useEffect(()=>{
+        if(!complet) return
+        if(err || rejets) return
+        if(window.localStorage.getItem('uploadHint1') === 'false') return fermer()
+    }, [complet, fermer])
 
     return (
         <Modal show={show}>
             <Modal.Header>Preparation de fichiers</Modal.Header>
             <Modal.Body>
-                <PreparationModalProgress progres={progres} />
+                <PreparationModalProgress valeur={valeur} err={err} complet={complet} rejets={rejets} />
             </Modal.Body>
             <Modal.Footer>
-                <Button onClick={annulerCb}>Annuler</Button>
+                {afficherHint1?
+                    <div>
+                        <Button onClick={fermer}>Ok</Button>
+                        {' '}
+                        <Button variant='dark' onClick={nePlusAfficher}>Ne plus afficher</Button>
+                    </div>
+                    :
+                    <Button variant="dark" onClick={annulerCb}>Annuler</Button>    
+                }
             </Modal.Footer>
         </Modal>
     )
 }
 
 function PreparationModalProgress(opts) {
-    const { progres } = opts
+    const { valeur, err, complet, rejets } = opts
 
-    if(isNaN(progres)) return <p>Pret</p>
+    if(complet && !(err || rejets)) return (
+        <div>
+            <p>Les fichiers sont maintenant chiffres et en cours de transfert.</p>
+            <hr />
+            <h4>Transfert de fichiers</h4>
+            <p>
+                Surveillez l'indicateur de transfert <BadgeUpload/> dans le menu. 
+                Lorsque le nombre atteint 100%, le transfert est termine.
+            </p>
+            <p>
+                Si l'indicateur devient rouge, le transfert a echoue.
+            </p>
+            <p>
+                La fenetre de transfert de fichiers s'ouvre lorsque vous cliquez sur l'indicateur 
+                d'upload <i className='fa fa-upload'/> ou de download <i className='fa fa-download'/> dans le menu.
+            </p>
+            <p>
+                Il est possible de poursuivre un transfert arrete ou en echec (e.g si votre navigateur se ferme 
+                avant la fin du transfert) en ouvrant le menu de transfert de fichiers et en cliquant sur redemarrer.
+            </p>
+        </div>
+    )
 
     return (
         <div>
             <Row>
                 <Col>
-                    <p><i className='fa fa-key'/> Chiffrage en cours ...</p>
+                    <p>Chiffrage en cours ...</p>
                 </Col>
                 <Col>
-                    <ProgressBar now={progres} label={progres + ' %'} />
+                    <ProgressBar now={valeur} label={valeur + ' %'} />
                 </Col>
             </Row>
             <Row>

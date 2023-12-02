@@ -158,7 +158,7 @@ function LabelTransfert(props) {
   )
 }
 
-function BadgeUpload(props) {
+export function BadgeUpload(props) {
   const uploads = useSelector(state=>state.uploader.liste),
         progresUpload = useSelector(state=>state.uploader.progres)
 

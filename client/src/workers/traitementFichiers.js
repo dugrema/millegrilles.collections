@@ -221,7 +221,18 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     await transfertFichiers.up_setCertificats(certificatsMaitredescles)
     // console.debug("Certificat maitre des cles OK")
 
-    const setProgresProxy = setProgres?Comlink.proxy(setProgres):null
+    const fichiersRejetes = []
+
+    let setProgresProxy = null
+    if(setProgres) {
+        const setProgresCb = progres => {
+            const valeur = {valeur: progres, complet: progres === 100}
+            if(fichiersRejetes.length > 0) valeur.rejets = fichiersRejetes
+            // console.debug("traiterAcceptedFiles Set progres ", valeur)
+            setProgres(valeur)
+        }
+        setProgresProxy = Comlink.proxy(setProgresCb)
+    }
 
     let tailleTotale = 0
     for(let idx=0; idx<acceptedFiles.length; idx++) {
@@ -249,7 +260,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
         const { batchId, token } = infoBatch
         const paramBatch = {...params, acceptedFiles: [file], token, batchId, infoTaille}
 
-        console.debug("Params batch upload ", paramBatch)
+        // console.debug("Params batch upload ", paramBatch)
 
         const updateFichierProxy = Comlink.proxy((doc, opts) => {
             const docWithIds = {...doc, userId, batchId, token, breadcrumbPath}

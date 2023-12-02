@@ -420,7 +420,7 @@ function BoutonUpload(props) {
             }
         }
 
-        handlerPreparationUploadEnCours(0)  // Debut preparation
+        handlerPreparationUploadEnCours({valeur: 0})  // Debut preparation
 
         const userId = usager.extensions.userId
 
@@ -433,9 +433,13 @@ function BoutonUpload(props) {
                 //console.debug("BoutonUpload traiterAcceptedFiles resultat ", uploads)
                 //const batchIds = uploads.map(item=>item.batchId)
                 //return dispatch(demarrerUploads(workers, batchIds))
+                handlerPreparationUploadEnCours({valeur: 100})
             })
-            .catch(err=>console.error("Erreur fichiers : %O", err))
-            .finally( () => handlerPreparationUploadEnCours(false) )
+            .catch(err=>{
+                console.error("Erreur fichiers : %O", err)
+                handlerPreparationUploadEnCours({err: ''+err})
+            })
+            .finally( () => handlerPreparationUploadEnCours({complet: true}) )
 
     }, [handlerPreparationUploadEnCours, traitementFichiers, dispatch, usager, cuuid, breadcrumb])
 
