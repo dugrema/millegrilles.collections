@@ -236,6 +236,11 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
 
     // let debutFichier = new Date().getTime()
     for await (let file of acceptedFiles) {
+        if(file.size === 0) {
+            console.warn("Fichier %s de taille 0 bytes est non supporte - SKIP", file.name)
+            continue
+        }
+
         // Recuperer un token, faire 1 fichier par batch
         // const debutGetBatch = new Date().getTime()
         const infoBatch = await workers.connexion.getBatchUpload()
@@ -243,7 +248,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
         const { batchId, token } = infoBatch
         const paramBatch = {...params, acceptedFiles: [file], token, batchId, infoTaille}
 
-        // console.debug("Params batch upload ", paramBatch)
+        console.debug("Params batch upload ", paramBatch)
 
         const updateFichierProxy = Comlink.proxy((doc, opts) => {
             const docWithIds = {...doc, userId, batchId, token, breadcrumbPath}
