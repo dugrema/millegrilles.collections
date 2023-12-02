@@ -210,7 +210,7 @@ function promptSaveFichier(blob, opts) {
 async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
     const { acceptedFiles, /*token, batchId, cuuid, */ userId, breadcrumbPath } = params
-    const { setProgres, signalAnnuler } = opts
+    const { setProgres, signalAnnuler, rejeterFichier } = opts
     const { transfertFichiers, usagerDao } = workers
     // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
 
@@ -238,6 +238,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     for await (let file of acceptedFiles) {
         if(file.size === 0) {
             console.warn("Fichier %s de taille 0 bytes est non supporte - SKIP", file.name)
+            if(rejeterFichier) rejeterFichier(file, {code: 1, err: 'Fichier vide'})
             continue
         }
 
