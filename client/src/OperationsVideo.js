@@ -24,11 +24,11 @@ const AUDIO_CODEC = [
 ]
 
 const VIDEO_RESOLUTIONS = [
-  {label: "270p", value: 270},
-  {label: "360p", value: 360},
-  {label: "480p", value: 480},
-  {label: "720p", value: 720},
   {label: "1080p", value: 1080},
+  {label: "720p", value: 720},
+  {label: "480p", value: 480},
+  {label: "360p", value: 360},
+  {label: "270p", value: 270},
 ]
 
 const QUALITY_VIDEO = [
@@ -45,8 +45,8 @@ const QUALITY_VIDEO = [
 ]
 
 const BITRATES_AUDIO = [
-  {label: "64 kbps", value: 64000},
   {label: "128 kbps", value: 128000},
+  {label: "64 kbps", value: 64000},
 ]
 
 const PROFILS_VIDEO = {
@@ -58,9 +58,9 @@ const PROFILS_VIDEO = {
       preset: 'fast',
     },
     '360': {
-      qualityVideo: 37,
+      qualityVideo: 36,
       codecAudio: 'libopus',
-      bitrateAudio: 64000,
+      bitrateAudio: 128000,
       preset: 'medium',
     },
     '480': {
@@ -70,10 +70,10 @@ const PROFILS_VIDEO = {
       preset: 'medium',
     },
     '720': {
-      qualityVideo: 32,
+      qualityVideo: 31,
       codecAudio: 'libopus',
       bitrateAudio: 128000,
-      preset: 'medium',
+      preset: 'slow',
     },
     '1080': {
       qualityVideo: 31,
@@ -98,7 +98,7 @@ const PROFILS_VIDEO = {
     '360': {
       qualityVideo: 28,
       codecAudio: 'eac3',
-      bitrateAudio: 64000,
+      bitrateAudio: 128000,
       preset: 'medium',
     },
     '480': {
@@ -134,44 +134,26 @@ const PROFILS_VIDEO = {
       preset: 'fast',
       fallback: true,
     },
-    '480': {
+    '360': {
       qualityVideo: 26,
       codecAudio: 'aac',
       bitrateAudio: 128000,
       preset: 'medium',
     },
-    'default': {
-      qualityVideo: 26,
+    '480': {
+      qualityVideo: 24,
       codecAudio: 'aac',
       bitrateAudio: 128000,
-      preset: 'medium',
+      preset: 'slow',
+    },
+    'default': {
+      qualityVideo: 24,
+      codecAudio: 'aac',
+      bitrateAudio: 128000,
+      preset: 'slow',
     }
   }
 }
-
-// function parseEvenementTranscodage(evenement) {
-//   const message = evenement.message || {}
-//   const codec = evenement.codec || {}
-//   const resolution = message.height
-//   const mimetype = message.mimetype
-//   const bitrate_quality = message.quality || message.videoBitrate
-
-//   const cle = [mimetype, codec, resolution, bitrate_quality].join(';')
-//   const params = {
-//     passe: message.passe, 
-//     pctProgres: message.pctProgres,
-//     fuuid: message.fuuid,
-//     resolution,
-//     mimetype,
-//     codec,
-//     bitrate: message.videoBitrate,
-//     quality: message.quality,
-//   }
-//   delete params['en-tete']
-//   delete params.signature
-
-//   return [cle, params]
-// }
 
 export function ConversionVideo(props) {
 
@@ -216,7 +198,7 @@ function FormConversionVideo(props) {
 
     const [codecVideo, setCodecVideo] = useState('vp9')
     const [codecAudio, setCodecAudio] = useState('libopus')
-    const [resolutionVideo, setResolutionVideo] = useState(360)
+    const [resolutionVideo, setResolutionVideo] = useState('')
     const [qualityVideo, setQualityVideo] = useState(37)
     const [bitrateAudio, setBitrateAudio] = useState(128000)
     const [preset, setPreset] = useState('medium')
@@ -243,16 +225,24 @@ function FormConversionVideo(props) {
     const changerCodecVideo = useCallback(event => { 
       const codec = event.currentTarget.value
       setCodecVideo(codec)
-      // if(codec === 'vp9') setCodecAudio('opus')
-      // else if(codec === 'hevc') setCodecAudio('eac3')
-      // else setCodecAudio('aac')
     }, [setCodecVideo])
 
     const versionCourante = (fichier?fichier.version_courante:{}) || {}
     // console.debug("Version courante : %O", versionCourante)
     const dimensionsFichier = [versionCourante.width, versionCourante.height].filter(item=>!isNaN(item))
     const resolutionOriginal = Math.min(...dimensionsFichier)
-    const maxValueFilterResolution = useCallback(option=>option.value <= resolutionOriginal, [resolutionOriginal])
+    const maxValueFilterResolution = useCallback(option=>{
+      if(option.value <= 360) return true
+      return option.value <= resolutionOriginal
+    }, [resolutionOriginal])
+
+    useEffect(()=>{
+      // Trouver resolution initiale
+      if(resolutionOriginal >= 1080) return setResolutionVideo(1080)
+      if(resolutionOriginal >= 720) return setResolutionVideo(720)
+      if(resolutionOriginal >= 480) return setResolutionVideo(480)
+      setResolutionVideo(360)
+    }, [resolutionOriginal, setResolutionVideo])
 
     if(!fichier) return ''
     const mimetype = fichier.mimetype || versionCourante.mimetype
@@ -261,6 +251,11 @@ function FormConversionVideo(props) {
 
     const estPret = codecVideo && codecAudio && resolutionVideo && qualityVideo && bitrateAudio
   
+    // console.warn(
+    //   "!!! estPret %s, codecVideo %s, codecAudio %s, resolutionVideo %O, qualityVideo %O, bitRateAudio %O",
+    //   estPret, codecVideo, codecAudio, resolutionVideo, qualityVideo, bitrateAudio
+    // )
+
     const changerResolutionVideo = event => { setResolutionVideo(Number(event.currentTarget.value)) }
     const changerQualityVideo = event => { setQualityVideo(Number(event.currentTarget.value)) }
     const changerBitrateAudio = event => { setBitrateAudio(Number(event.currentTarget.value)) }
@@ -480,55 +475,6 @@ function sortVideos(a, b) {
     return 0
 }
 
-// function TranscodageEnCours(props) {
-
-//   const { transcodage } = props
-
-//   if(!transcodage) return ''
-
-//   const transcodageFiltre = Object.values(transcodage).filter(item=>item.pctProgres!==100)
-//   transcodageFiltre.sort(triCleTranscodage)
-
-//   // console.debug("Transcodage filtre : %O", transcodageFiltre)
-
-//   return (
-//     <>
-//       {transcodageFiltre.filter(item=>item&&item.mimetype).map((video, idx)=>{
-//         const mimetype = video.mimetype || ''
-//       return (
-//         <Row key={idx}>
-//           <Col xs={12} md={3}>{mimetype.split('/').pop()}</Col>
-//           <Col xs={12} md={3}>{video.resolution}p</Col>
-//           <Col xs={10} md={5}>
-//             <ProgressBar now={video.pctProgres} />
-//           </Col>
-//           <Col xs={2} md={1}>
-//             {video.pctProgres}%
-//           </Col>
-//         </Row>
-//       )})}
-//     </>
-//   )
-// }
-
-function triCleTranscodage(a,b) {
-  if(a===b) return 0
-  if(!a) return 1
-  if(!b) return -1
-  const mimetypeA = a.mimetype,
-        mimetypeB = b.mimetype
-  if(mimetypeA === mimetypeB) return 0
-  if(!mimetypeA) return 1
-  if(!mimetypeB) return -1
-  const compMimetype = mimetypeA.localeCompare(mimetypeB)
-  if(compMimetype !== 0) return compMimetype
-
-  const compResolution = b.resolution - a.resolution
-  if(compResolution !==0) return compResolution
-
-  return b.bitrate - a.bitrate
-}
-
 function AfficherLigneFormatVideo(props) {
   const { fichier, video, /*support,*/ downloadAction, supprimerVideo } = props
 
@@ -557,7 +503,7 @@ function AfficherLigneFormatVideo(props) {
     }
     // const fuuid = video.fuuid_video
 
-    console.debug("Downloader %O", infoDownload)
+    // console.debug("Downloader %O", infoDownload)
     downloadAction(infoDownload)
 
   }, [fichier, video, downloadAction])

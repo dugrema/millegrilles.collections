@@ -403,9 +403,13 @@ function Modals(props) {
         let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
         if(!fichier) return  // Pas de fichier
         const version_courante = fichier.version_courante || {}
-        const breadcrumbPath = breadcrumb.map(item=>item.label).join('/')
-        // console.debug("!!! breadcrumb download %O, %s", breadcrumb, breadcrumbPath)
-        fichier.breadcrumbPath = breadcrumbPath
+        try {
+            const breadcrumbPath = breadcrumb.map(item=>item.label).join('/')
+            // console.debug("!!! breadcrumb download %O, %s", breadcrumb, breadcrumbPath)
+            fichier.breadcrumbPath = breadcrumbPath
+        } catch (err) {
+            console.info("downloadAction Erreur preparation breadcrumbpath : ", err)
+        }
         if(params.fuuid && version_courante.video) {
             const videos = fichier.version_courante.video
             const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
