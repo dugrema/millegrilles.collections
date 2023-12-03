@@ -11,7 +11,7 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import { merge, clearCompletes, entretien } from './redux/mediaJobsSlice'
+import { merge, clearCompletes, clear, entretien } from './redux/mediaJobsSlice'
 
 import { FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
@@ -31,14 +31,29 @@ function ModalInfoMediaJobs(props) {
     // Charger jobs
     useEffect(()=>{
         if(!etatPret || !show) return
-        // console.debug("Initialiser liste media jobs")
-        workers.connexion.getMediaJobs()
-            .then(reponse=>{
-                // console.debug("Reponse get media jobs ", reponse)
-                const jobs = reponse.jobs
-                if(jobs && jobs.length > 0) dispatch(merge(jobs))
-            })
-            .catch(err=>console.error("Erreur chargement jobs media : ", err))
+
+        const loadJobs = () => {
+            // console.debug("Charger liste media jobs")
+            workers.connexion.getMediaJobs()
+                .then(reponse=>{
+                    // console.debug("Reponse get media jobs ", reponse)
+                    const jobs = reponse.jobs
+                    dispatch(clear())
+                    if(jobs && jobs.length > 0) dispatch(merge(jobs))
+                })
+                .catch(err=>console.error("Erreur chargement jobs media : ", err))
+        }
+
+        loadJobs()
+
+        const intervalRefresh = setInterval(()=>{
+            // Reload jobs videos
+            loadJobs()
+        }, 120_000)
+
+        return () => {
+            clearInterval(intervalRefresh)
+        }
     }, [workers, dispatch, etatPret, show])
 
     // Enregistrer listeners
@@ -146,16 +161,28 @@ export function AfficherLigneFormatVideo(props) {
     // label = label.substring(0, 50)
 
     let progres = useMemo(()=>{
-        if(!isNaN(job.pct_progres) && job.pct_progres !== null) {
-            if(job.pct_progres < 3) {
-                return <ProgressBar striped animated now={100} label='Traitement en cours' />
-            } else if(job.pct_progres === 100) {
-                return <ProgressBar now={100} variant='success' label='Termine' />
-            } else {
-                return <ProgressBar striped animated now={job.pct_progres} label={`${job.pct_progres}%`} />
+        // console.debug("AfficherLigneFormatVideo progres ", job)
+        if(['dechiffrage'].includes(job.etat)) {
+            return <ProgressBar striped animated now={100} label={`Dechiffrage du video en cours`} />
+        } else if(job.etat === 'probe') {
+            return <ProgressBar striped animated now={100} label={`Analyse du video en cours`} />
+        } else if(job.etat === 'termine') {
+            return <ProgressBar now={100} variant='success' label='Termine' />
+        } else if (job.etat === 'transcodage') {
+            if(isNaN(job.pct_progres)) {
+                return <ProgressBar striped animated now={100} label={`Traitement en cours`} />
+            } else if(job.pct_progres < 3) {
+                return <ProgressBar striped animated now={100} label={`Traitement en cours ${job.pct_progres}%`} />
             }
-        } else if(!job.etat || [1, 'transcodage'].includes(job.etat)) {
+            return <ProgressBar striped animated now={job.pct_progres} label={`${job.pct_progres}%`} />
+        } else if(!job.etat || job.etat === 1) {
             return <ProgressBar striped now={100} label='Pending' />
+        } else if(job.etat === 2 && job.pct_progres === 100) {
+            // Chargement de la DB sans reception termine
+            return <ProgressBar now={100} variant='success' label='Termine' />
+        } else if(job.etat === 2) {
+            // Chargement de la DB sans reception etat transcodage
+            return <ProgressBar striped animated now={100} label={`Traitement en cours`} />
         } else {
             return <ProgressBar variant='danger' now={100} label={`Erreur ${job.etat}`} />
         }

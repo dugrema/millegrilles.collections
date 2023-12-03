@@ -76,6 +76,10 @@ function clearCompletesAction(state, action) {
     })
 }
 
+function clearAction(state, action) {
+    state.liste = []
+}
+
 function entretienAction(state, action) {
     // Dummy pour declencher middleware
 }
@@ -87,12 +91,13 @@ const mediaJobsSlice = createSlice({
         setUserId: setUserIdAction,
         merge: mergeAction,
         clearCompletes: clearCompletesAction,
+        clear: clearAction,
         entretien: entretienAction,
     }
 })
 
 export const { 
-    setUserId, merge, clearCompletes, entretien,
+    setUserId, merge, clearCompletes, clear, entretien,
 } = mediaJobsSlice.actions
 export default mediaJobsSlice.reducer
 
