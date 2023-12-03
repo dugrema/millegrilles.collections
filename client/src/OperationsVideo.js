@@ -135,19 +135,19 @@ const PROFILS_VIDEO = {
       fallback: true,
     },
     '360': {
-      qualityVideo: 26,
+      qualityVideo: 22,
       codecAudio: 'aac',
       bitrateAudio: 128000,
-      preset: 'medium',
+      preset: 'slow',
     },
     '480': {
-      qualityVideo: 24,
+      qualityVideo: 22,
       codecAudio: 'aac',
       bitrateAudio: 128000,
       preset: 'slow',
     },
     'default': {
-      qualityVideo: 24,
+      qualityVideo: 22,
       codecAudio: 'aac',
       bitrateAudio: 128000,
       preset: 'slow',
@@ -196,12 +196,12 @@ function FormConversionVideo(props) {
 
     const { workers, fichier, setTranscodage, usager, erreurCb } = props
 
-    const [codecVideo, setCodecVideo] = useState('vp9')
-    const [codecAudio, setCodecAudio] = useState('libopus')
+    const [codecVideo, setCodecVideo] = useState('h264')
+    const [codecAudio, setCodecAudio] = useState('aac')
     const [resolutionVideo, setResolutionVideo] = useState('')
-    const [qualityVideo, setQualityVideo] = useState(37)
+    const [qualityVideo, setQualityVideo] = useState(22)
     const [bitrateAudio, setBitrateAudio] = useState(128000)
-    const [preset, setPreset] = useState('medium')
+    const [preset, setPreset] = useState('slow')
 
     const profilDefault = useMemo(()=>{
       const profilCodec = PROFILS_VIDEO[codecVideo]
@@ -210,7 +210,7 @@ function FormConversionVideo(props) {
         if(profilResolution) return profilResolution
         return profilCodec.default
       }
-      return PROFILS_VIDEO['h264']['270']  // Par defaut, profil h264 en 270p
+      return PROFILS_VIDEO['h264']['360']  // Par defaut, profil h264 en 360
     }, [codecVideo, resolutionVideo])
 
     useEffect(()=>{
@@ -233,7 +233,7 @@ function FormConversionVideo(props) {
     const resolutionOriginal = Math.min(...dimensionsFichier)
     const maxValueFilterResolution = useCallback(option=>{
       if(option.value <= 360) return true
-      return option.value <= resolutionOriginal
+      return !(option.value > resolutionOriginal)
     }, [resolutionOriginal])
 
     useEffect(()=>{

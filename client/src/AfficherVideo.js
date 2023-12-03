@@ -433,6 +433,7 @@ export function SelecteurResolution(props) {
 
     const changerSelecteur = useCallback(value=>{
         // if(Number.parseInt(value)) window.localStorage.setItem('videoResolution', value)
+        // console.debug("changerSelecteur : ", value)
         setSelecteur(value)
     }, [setSelecteur])
 
@@ -442,12 +443,13 @@ export function SelecteurResolution(props) {
         const videos = version_courante.video || {}
         // if(!version_courante || !version_courante.video) return 
         const paramsOpts = {
-            fuuid: fichier.fuuid, mimetype: fichier.mimetype, 
+            fuuid: version_courante.fuuid, mimetype: fichier.mimetype, 
             height: version_courante.height, width: version_courante.width,
             codec: version_courante.videoCodec,
             supportMedia: capabilities.video
         }
         const selecteurs = determinerSelecteursVideos(videos, paramsOpts)
+        // console.debug("SelecteurResolution selecteurs ", selecteurs)
         return selecteurs
     }, [fichier, capabilities])
 
@@ -461,11 +463,12 @@ export function SelecteurResolution(props) {
 
         if(!selecteurs.resolutions || Object.keys(selecteurs.resolutions).length === 0) {
             // Choisir fallback, sinon original
-            if(selecteurs.fallback) return setSelecteur('fallback')
-            return setSelecteur('original')
+            // if(selecteurs.fallback) return setSelecteur('fallback')
+            // return setSelecteur('original')
+            return setSelecteur('')
         }
 
-        if(defaultSelecteur && defaultSelecteur !== 'fallback' && selecteurs.resolutions) {
+        if(defaultSelecteur && selecteurs.resolutions) {
             const resolutions = selecteurs.resolutions
             // Tenter de trouver une resolution qui correspond au selecteur
             if(resolutions[defaultSelecteur]) return setSelecteur(defaultSelecteur)
@@ -486,10 +489,7 @@ export function SelecteurResolution(props) {
             }
 
             // Fallback
-            return setSelecteur('fallback')
-        } else if(selecteursKeys.includes('fallback')) {
-            // Selectionner le format fallback (la plus faible resolution)
-            return setSelecteur('fallback')
+            return setSelecteur('')
         } else {
             console.error("Aucuns format video n'est disponible dans le selecteur")
         }
@@ -511,82 +511,102 @@ function SelecteurVideoResolution(props) {
     const { selecteurs, selecteur } = props
 
     const listeOptions = useMemo(()=>{
-        if(!selecteurs) return [{key: 'original', label: 'Original'}]
+        // if(!selecteurs) return [{key: 'original', label: 'Original'}]
+        if(!selecteurs) return [{key: '', label: 'Aucun format disponible'}]
+
+        // console.debug("SelecteurVideoResolution selecteurs", selecteurs)
+
+        let originalSupporte = false
+
         const resolutions = selecteurs.resolutions
         const optionKeys = Object.keys(resolutions)
         optionKeys.sort()
         optionKeys.reverse()
         const options = optionKeys.map(key=>{ 
+            const valeur = resolutions[key]
             const label = '' + Number.parseInt(key) + 'p'
-            return {key, label} 
+            const original = valeur.reduce((acc, item)=>acc || item.original, false)
+            if(original) originalSupporte = true
+            return {key, label, original} 
         })
-        if(selecteurs.fallback) options.push({key: 'fallback', label: 'fallback'})
-        options.push({key: 'original', label: 'Original'})
+        // if(selecteurs.fallback) options.push({key: 'fallback', label: 'fallback'})
+        if(selecteurs.original) {
+            // Mettre un 'spacer' au debut pour indiquer qu'il n'y a pas de selection automatique
+            options.unshift({key: '', label: 'Selectionner'})
+            // Ajouter option a la fin - quand meme permettre de selectionner l'original si l'option
+            // n'est pas disponible
+            options.push({key: 'original', label: 'Original - non supporte'})
+        } else if(originalSupporte) {
+            // Ajouter l'original a la fin
+            options.push({key: 'original', label: 'Original'})            
+        }
         return options
     }, [selecteurs])
 
     return listeOptions.map(item=>{
+        const key = item.original?'original':item.key
+        const keyReact = item.original?key+'original':item.key
         if(item.key === selecteur) {
-            return <Dropdown.Item key={item.key} eventKey={item.key} active>{item.label}</Dropdown.Item>
+            return <Dropdown.Item key={keyReact} eventKey={key} active>{item.label}</Dropdown.Item>
         } else {
-            return <Dropdown.Item key={item.key} eventKey={item.key}>{item.label}</Dropdown.Item>
+            return <Dropdown.Item key={keyReact} eventKey={key}>{item.label}</Dropdown.Item>
         }
     })
 }
 
-function SelecteurVideoDetail(props) {
-    return 'SelecteurVideoDetail'
-}
+// function SelecteurVideoDetail(props) {
+//     return 'SelecteurVideoDetail'
+// }
 
-function SelecteurResolutionOld(props) {
-    const { listeVideos, /*support,*/ selecteur, setSelecteur, /*videoLoader,*/ selecteurs } = props
+// function SelecteurResolutionOld(props) {
+//     const { listeVideos, /*support,*/ selecteur, setSelecteur, /*videoLoader,*/ selecteurs } = props
 
-    const [listeOptions, setListeOptions] = useState([])
+//     const [listeOptions, setListeOptions] = useState([])
 
-    useEffect(()=>{
-        if(selecteur || !selecteurs) return  // Deja initialise
-        // Identifier un selecteur initial
-        const selecteursKeys = Object.keys(selecteurs)
+//     useEffect(()=>{
+//         if(selecteur || !selecteurs) return  // Deja initialise
+//         // Identifier un selecteur initial
+//         const selecteursKeys = Object.keys(selecteurs)
 
-        if(!selecteursKeys) {
-            // Aucunes options (probablement nouveau video) - utiliser original
-            return setSelecteur('original')
-        } else if(selecteursKeys.includes('fallback')) {
-            // Selectionner le format fallback (la plus faible resolution)
-            return setSelecteur('fallback')
-        } else {
-            console.error("Aucuns format video n'est disponible dans le selecteur")
-        }
-    }, [selecteurs, selecteur, setSelecteur])
+//         if(!selecteursKeys) {
+//             // Aucunes options (probablement nouveau video) - utiliser original
+//             return setSelecteur('original')
+//         } else if(selecteursKeys.includes('fallback')) {
+//             // Selectionner le format fallback (la plus faible resolution)
+//             return setSelecteur('fallback')
+//         } else {
+//             console.error("Aucuns format video n'est disponible dans le selecteur")
+//         }
+//     }, [selecteurs, selecteur, setSelecteur])
 
-    useEffect(()=>{
-        // if(!listeVideos || !videoLoader) return
-        if(!listeVideos || !selecteurs) return
+//     useEffect(()=>{
+//         // if(!listeVideos || !videoLoader) return
+//         if(!listeVideos || !selecteurs) return
 
-        // const options = videoLoader.getSelecteurs()
-        const options = Object.keys(selecteurs)
-        options.sort(trierLabelsVideos)
+//         // const options = videoLoader.getSelecteurs()
+//         const options = Object.keys(selecteurs)
+//         options.sort(trierLabelsVideos)
 
-        setListeOptions(options)
+//         setListeOptions(options)
 
-    }, [listeVideos, setListeOptions, selecteurs, /*, videoLoader*/])
+//     }, [listeVideos, setListeOptions, selecteurs, /*, videoLoader*/])
 
-    const changerSelecteur = useCallback(value=>setSelecteur(value), [setSelecteur])
+//     const changerSelecteur = useCallback(value=>setSelecteur(value), [setSelecteur])
 
-    return (
-        <>
-            <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
-                {listeOptions.map(item=>{
-                    if(item === selecteur) {
-                        return <Dropdown.Item key={item} eventKey={item} active>{item}</Dropdown.Item>
-                    } else {
-                        return <Dropdown.Item key={item} eventKey={item}>{item}</Dropdown.Item>
-                    }
-                })}
-            </DropdownButton>
-        </>
-    )
-}
+//     return (
+//         <>
+//             <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
+//                 {listeOptions.map(item=>{
+//                     if(item === selecteur) {
+//                         return <Dropdown.Item key={item} eventKey={item} active>{item}</Dropdown.Item>
+//                     } else {
+//                         return <Dropdown.Item key={item} eventKey={item}>{item}</Dropdown.Item>
+//                     }
+//                 })}
+//             </DropdownButton>
+//         </>
+//     )
+// }
 
 // function AfficherLiensVideo(props) {
 //     const { show, srcVideo } = props
@@ -617,22 +637,30 @@ function SelecteurResolutionOld(props) {
 //     )
 // }
 
-export function determinerSelecteursVideos(videos, opts) {
-    opts = opts || {}
+export function determinerSelecteursVideos(videos, original) {
+    // console.debug("determinerSelecteursVideos %O, original %O", videos, original)
 
     // Information original (optionnel)
-    const { fuuid, mimetype, height, width, codec, supportMedia } = opts
+    const { fuuid, mimetype, height, width, codec, supportMedia } = original
 
     const bucketResolution = {}
     const bucketDetail = []
     const buckets = { resolutions: bucketResolution, detail: bucketDetail }
+
     if(fuuid && mimetype) {
-        buckets.original = [{fuuid, fuuid_video: fuuid, width, height, codec}]
+        if(codec && height && width) {
+            // Injecter le fichier original comme etat une resolution disponible
+            videos = {...videos, original: {
+                codec, fuuid, fuuid_video: fuuid, width, height, mimetype, quality: 1, original: true
+            }}
+        } else {
+            buckets.original = [{fuuid, fuuid_video: fuuid, width, height, codec}]
+        }
     }
 
     for(const key of Object.keys(videos)) {
         const video = videos[key]
-        const { codec, fuuid_video, width, height, mimetype, quality } = video
+        const { codec, fuuid_video, width, height, mimetype, quality, original } = video
         let resolution = video.resolution || Math.min(width, height)
 
         const infoVideo = {
@@ -645,6 +673,7 @@ export function determinerSelecteursVideos(videos, opts) {
             codec,
             header: video.header,
             format: video.format,
+            original,
         }
         // console.debug("InfoVideo %O (video elem %O)", infoVideo, key)
 
@@ -652,9 +681,9 @@ export function determinerSelecteursVideos(videos, opts) {
         // const cle = `${resolution};${mimetype};${codec};${quality}`
         bucketDetail.push(infoVideo)
 
-        if(codec === 'h264' && resolution <= 360) {
-            buckets.fallback = infoVideo
-        }
+        // if(codec === 'h264' && resolution <= 360) {
+        //     buckets.fallback = infoVideo
+        // }
 
         // Calculer bucket resolution
         let resolutionTag = null
