@@ -182,7 +182,7 @@ export function AfficherLigneFormatVideo(props) {
             return <ProgressBar now={100} variant='success' label='Termine' />
         } else if(job.etat === 2) {
             // Chargement de la DB sans reception etat transcodage
-            return <ProgressBar striped animated now={100} label={`Traitement`} />
+            return <ProgressBar striped now={100} label={`Rafraichissement`} />
         } else {
             return <ProgressBar variant='danger' now={100} label={`Erreur ${job.etat}`} />
         }
