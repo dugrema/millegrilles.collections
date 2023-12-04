@@ -163,26 +163,26 @@ export function AfficherLigneFormatVideo(props) {
     let progres = useMemo(()=>{
         // console.debug("AfficherLigneFormatVideo progres ", job)
         if(['dechiffrage'].includes(job.etat)) {
-            return <ProgressBar striped animated now={100} label={`Dechiffrage du video en cours`} />
+            return <ProgressBar striped animated now={100} label={`Dechiffrage`} />
         } else if(job.etat === 'probe') {
-            return <ProgressBar striped animated now={100} label={`Analyse du video en cours`} />
+            return <ProgressBar striped animated now={100} label={`Analyse`} />
         } else if(job.etat === 'termine') {
             return <ProgressBar now={100} variant='success' label='Termine' />
         } else if (job.etat === 'transcodage') {
-            if(isNaN(job.pct_progres)) {
-                return <ProgressBar striped animated now={100} label={`Traitement en cours`} />
+            if(!job.pct_progres && job.pct_progres !== 0) {
+                return <ProgressBar striped animated now={100} label={`Traitement`} />
             } else if(job.pct_progres < 3) {
-                return <ProgressBar striped animated now={100} label={`Traitement en cours ${job.pct_progres}%`} />
+                return <ProgressBar striped animated now={100} label={`Traitement ${job.pct_progres}%`} />
             }
             return <ProgressBar striped animated now={job.pct_progres} label={`${job.pct_progres}%`} />
         } else if(!job.etat || job.etat === 1) {
-            return <ProgressBar striped now={100} label='Pending' />
+            return <ProgressBar variant='dark' now={100} label='Pending' />
         } else if(job.etat === 2 && job.pct_progres === 100) {
             // Chargement de la DB sans reception termine
             return <ProgressBar now={100} variant='success' label='Termine' />
         } else if(job.etat === 2) {
             // Chargement de la DB sans reception etat transcodage
-            return <ProgressBar striped animated now={100} label={`Traitement en cours`} />
+            return <ProgressBar striped animated now={100} label={`Traitement`} />
         } else {
             return <ProgressBar variant='danger' now={100} label={`Erreur ${job.etat}`} />
         }
