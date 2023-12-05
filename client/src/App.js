@@ -132,6 +132,10 @@ function LayoutMain() {
   }, [hideMenu])
 
   // Modal transfert et actions
+  const setCuuidTransfereCb = useCallback(cuuid => {
+    setCuuidTransfere(cuuid)
+    setPage('')
+  }, [setCuuidTransfere, setPage])
   const showTransfertModalOuvrir = useCallback(()=>{ setShowTransfertModal(true) }, [setShowTransfertModal])
   const showTransfertModalFermer = useCallback(()=>{ setShowTransfertModal(false) }, [setShowTransfertModal])
   const handlerSupprimerUploads = useCallback( params => supprimerUploads(workers, dispatch, params, erreurCb), [dispatch, workers, erreurCb])
@@ -232,7 +236,7 @@ function LayoutMain() {
                 userIdPartageTransfere={userIdPartageTransfere}
                 ouvrirPartageUserId={handlerOuvrirPartageUserId}
                 cuuidTransfere={cuuidTransfere}
-                setCuuidTransfere={setCuuidTransfere}
+                setCuuidTransfere={setCuuidTransfereCb}
                 toggleModeAffichage={toggleModeAffichage}
                 erreurCb={erreurCb}
               />

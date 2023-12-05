@@ -100,6 +100,11 @@ function NavigationRecherche(props) {
 
     const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
 
+    const naviguerCollectionCb = useCallback(cuuid=>{
+        console.debug("Naviguer vers collection tuuid:%s", cuuid)
+        setCuuidTransfere(cuuid)
+    }, [setCuuidTransfere])
+
     // Reset signal annuler
     useEffect(()=>{
         if(preparationUploadEnCours===false) signalAnnuler.setValeur(false)
@@ -133,6 +138,7 @@ function NavigationRecherche(props) {
                         preparerColonnes={preparerColonnesCb}
                         modeView={modeView}
                         showPreviewAction={showPreviewAction}
+                        naviguerCollection={naviguerCollectionCb}
                         setContextuel={setContextuel}
                         afficherVideo={afficherVideo}
                         afficherAudio={afficherAudio}
@@ -323,16 +329,12 @@ function Modals(props) {
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const selection = useSelector(state => state.fichiers.selection )
 
-    const [ showArchiverModal, setShowArchiverModal ] = useState(false)
     const [ showSupprimerModal, setShowSupprimerModal ] = useState(false)
     const [ showCopierModal, setShowCopierModal ] = useState(false)
-    const [ showDeplacerModal, setShowDeplacerModal ] = useState(false)
     // const [ showInfoModal, setShowInfoModal ] = useState(false)
     const [ showRenommerModal, setShowRenommerModal ] = useState(false)
 
     const fermerContextuel = useCallback(()=>setContextuel({show: false, x: 0, y: 0}), [setContextuel])
-    const showArchiverModalOuvrir = useCallback(()=>setShowArchiverModal(true), [setShowArchiverModal])
-    const showArchiverModalFermer = useCallback(()=>setShowArchiverModal(false), [setShowArchiverModal])
     const showSupprimerModalOuvrir = useCallback(()=>setShowSupprimerModal(true), [setShowSupprimerModal])
     const showSupprimerModalFermer = useCallback(()=>setShowSupprimerModal(false), [setShowSupprimerModal])
     const showRenommerModalOuvrir = useCallback(()=>setShowRenommerModal(true), [setShowRenommerModal])
@@ -341,8 +343,6 @@ function Modals(props) {
     const showInfoModalFermer = useCallback(()=>setShowInfoModal(false), [setShowInfoModal])
     const showCopierModalOuvrir = useCallback(()=>setShowCopierModal(true), [setShowCopierModal])
     const showCopierModalFermer = useCallback(()=>setShowCopierModal(false), [setShowCopierModal])
-    const showDeplacerModalOuvrir = useCallback(()=>setShowDeplacerModal(true), [setShowDeplacerModal])
-    const showDeplacerModalFermer = useCallback(()=>setShowDeplacerModal(false), [setShowDeplacerModal])
     const cuuidTransfereHandler = useCallback(e=>setCuuidTransfere(e.currentTarget.value), [setCuuidTransfere])
 
     const dispatch = useDispatch()
@@ -379,10 +379,8 @@ function Modals(props) {
                 selection={selection}
                 showPreview={showPreviewAction}
                 usager={usager}
-                showArchiverModalOuvrir={showArchiverModalOuvrir}
                 showSupprimerModalOuvrir={showSupprimerModalOuvrir}
                 showCopierModalOuvrir={showCopierModalOuvrir}
-                showDeplacerModalOuvrir={showDeplacerModalOuvrir}
                 showInfoModalOuvrir={showInfoModalOuvrir}
                 showRenommerModalOuvrir={showRenommerModalOuvrir}
                 cuuid={cuuid}
@@ -400,13 +398,6 @@ function Modals(props) {
                 cuuidTransfereAction={cuuidTransfereHandler}
               />
 
-            <ModalCreerRepertoire 
-                show={showCreerRepertoire} 
-                fermer={()=>{setShowCreerRepertoire(false)}} 
-              />
-
-            <ArchiverModal show={showArchiverModal} fermer={showArchiverModalFermer} />
-
             <SupprimerModal
                 show={showSupprimerModal}
                 fermer={showSupprimerModalFermer}
@@ -419,14 +410,6 @@ function Modals(props) {
             <CopierModal 
                 show={showCopierModal} 
                 fermer={showCopierModalFermer}
-                selection={selection}
-                workers={workers}
-                erreurCb={erreurCb}
-              />
-
-            <DeplacerModal 
-                show={showDeplacerModal} 
-                fermer={showDeplacerModalFermer}
                 selection={selection}
                 workers={workers}
                 erreurCb={erreurCb}
@@ -459,78 +442,6 @@ function Modals(props) {
                 annulerCb={annulerPreparationCb}
               />
         </>
-    )
-}
-
-function ModalCreerRepertoire(props) {
-
-    const { show, fermer } = props
-
-    const workers = useWorkers()
-    const usager = useUsager()
-    const cuuidCourant = useSelector(state=>state.fichiers.cuuid)
-
-    const { connexion, chiffrage } = workers
-    const userId = usager?usager.extensions.userId:''
-
-    const [ nomCollection, setNomCollection ] = useState('')
-
-    const changerNomCollection = useCallback(event=>{
-        const value = event.currentTarget.value
-        setNomCollection(value)
-    }, [setNomCollection])
-
-    const creerCollection = useCallback(event=>{
-        event.preventDefault()
-        event.stopPropagation()
-        
-        new Promise(async resolve => {
-            const metadataDechiffre = {nom: nomCollection}
-            const identificateurs_document = {type: 'collection'}
-            const certificatsChiffrage = await connexion.getCertificatsMaitredescles()
-            // console.debug("creerCollection certificatChiffrage ", certificatsChiffrage)
-            const {doc: metadataChiffre, commandeMaitrecles} = await chiffrage.chiffrerDocument(
-                metadataDechiffre, 'GrosFichiers', certificatsChiffrage, {identificateurs_document, userId, DEBUG: true})
-            // console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
-
-            const opts = {}
-            if(cuuidCourant) opts.cuuid = cuuidCourant
-            else opts.favoris = true
-
-            resolve(connexion.creerCollection(metadataChiffre, commandeMaitrecles, opts))
-          })
-            .then(()=>{
-                setNomCollection('')  // Reset
-                fermer()
-              })
-            .catch(err=>{
-                console.error("Erreur creation collection : %O", err)
-              })
-    }, [connexion, userId, nomCollection, cuuidCourant, setNomCollection, fermer])
-
-    return (
-        <Modal show={show} onHide={fermer}>
-
-            <Modal.Header closeButton>Creer nouvelle collection</Modal.Header>
-
-            <Modal.Body>
-                <Form onSubmit={creerCollection}>
-                    <Form.Group className="mb-3" controlId="formNomCollection">
-                        <Form.Label>Nom de la collection</Form.Label>
-                        <Form.Control 
-                            type="text" 
-                            placeholder="Saisir le nom ..." 
-                            onChange={changerNomCollection}
-                        />
-                    </Form.Group>
-                </Form>
-            </Modal.Body>
-
-            <Modal.Footer>
-                <Button onClick={creerCollection}>Creer</Button>
-            </Modal.Footer>
-
-        </Modal>
     )
 }
 
