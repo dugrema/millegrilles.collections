@@ -979,10 +979,11 @@ export function creerThunks(actions, nomSlice) {
             return
         }
 
-        const listeHits = resultatRecherche.resultat.docs
+        const listeHits = [...resultatRecherche.resultat.docs]
         const itemsDict = listeHits.reduce((acc, item)=>{
-            acc[item.tuuid] = item
-            item.fuuid = item.id
+            const tuuid = item.id
+            acc[tuuid] = item
+            item.tuuid = tuuid
             delete item.id
             return acc
         }, {})
