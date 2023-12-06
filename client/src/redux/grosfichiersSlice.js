@@ -954,6 +954,7 @@ export function creerThunks(actions, nomSlice) {
         opts = opts || {}
     
         const stateInitial = getState()[nomSlice]
+        const userId = stateInitial.userId
         const {parametresRecherche} = stateInitial
 
         console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
@@ -998,11 +999,21 @@ export function creerThunks(actions, nomSlice) {
             delete itemsDict[item.tuuid]
         })
 
-        // Ajouter tous les resultats manquants
-        const tuuidsManquants = []
+        // Traiter tous les resultats manquants
+        // Les resultats partages non dechiffres vont etre verifies avant de s'afficher
+        const tuuidsManquants = [], tuuidsPartagesManquants = []
         for(const item of Object.values(itemsDict)) {
-            contenuIdb.push(item)
-            tuuidsManquants.push(item.tuuid)
+            if(item.user_id === userId) {
+                contenuIdb.push(item)
+                tuuidsManquants.push(item.tuuid)
+            } else {
+                tuuidsPartagesManquants.push(item)
+            }
+        }
+
+        if(tuuidsPartagesManquants.length > 0) {
+            chargerResultatsPartages(workers, opts, dispatch, getState, tuuidsPartagesManquants)
+                .catch(err=>console.error("Erreur chargement resultat recherche pour tuuids partages : ", err))
         }
 
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
@@ -1137,6 +1148,47 @@ export function creerThunks(actions, nomSlice) {
             dispatch(chargerTuuids(workers, tuuids, {partage: true, contactId}))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
         }
+    }
+
+    async function chargerResultatsPartages(workers, opts, dispatch, getState, tuuidsPartagesManquants) {
+        const { contactsDao } = workers
+
+        console.debug("chargerResultatsPartages ", tuuidsPartagesManquants)
+
+        console.warn("!!! TODO Recuperer cles pour tuuids partages")
+        const partagesContacts = await contactsDao.getPartagesContact()
+        const partages = partagesContacts.partages
+
+        console.debug("ContactsIds usager : ", partagesContacts)
+        
+        // Grouper fichiers par contactId
+        const contactIdsFichiers = {}
+        for (const item of tuuidsPartagesManquants) {
+            const cuuids = item.cuuids || []
+            const contactIdFichier = partages.filter(item=>cuuids.includes(item.tuuid)).map(item=>item.contact_id).pop()
+            let fichiersContactId = null
+            if(contactIdFichier) {
+                item.contactId = contactIdFichier
+                fichiersContactId = contactIdsFichiers[contactIdFichier]
+                if(!fichiersContactId) {
+                    fichiersContactId = []
+                    contactIdsFichiers[contactIdFichier] = fichiersContactId
+                }
+                fichiersContactId.push(item)
+            }
+        }
+
+        console.debug("Fichiers partages avec contacts ids trouves : ", contactIdsFichiers)
+
+        // Charger les cles par contactId
+        for await (const contactId of Object.keys(contactIdsFichiers)) {
+            const fichiers = contactIdsFichiers[contactId]
+            console.debug("Charger %d fichiers pour contactId : %s", fichiers.length, contactId)
+            const tuuids = fichiers.map(item=>item.tuuid)
+            await dispatch(chargerTuuids(workers, tuuids, {contactId}))
+            dispatch(push({liste: fichiers}))
+        }
+        
     }
 
     // FIN SOURCES AFFICHAGE
@@ -1290,7 +1342,9 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
         let tuuidsChiffres = Object.values(getState().dictDechiffrage).map(item=>item.tuuid)
         const source = getState().source
         const contactId = getState().partageContactId
-        const partage = !!(contactId || source === SOURCE_PARTAGES_CONTACTS)
+        const userId = getState().userId
+
+        // const partage = !!(contactId || source === SOURCE_PARTAGES_CONTACTS)
         while(tuuidsChiffres.length > 0) {
             // Trier et slicer une batch de fichiers a dechiffrer
             // const sortKeys = getState().sortKeys
@@ -1309,18 +1363,32 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const listeRestante = Object.values(dictDechiffrageMaj)
             listenerApi.dispatch(actions.setFichiersChiffres(Object.values(listeRestante)))
 
-            // console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", tuuidsValues.length, listeRestante.length)
-            // console.debug("dechiffrageMiddlewareListener Dechiffrer batch ", tuuidsValues)
+            console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", tuuidsValues.length, listeRestante.length)
+            console.debug("dechiffrageMiddlewareListener Dechiffrer batch ", tuuidsValues)
 
             // Extraire toutes les cles a charger
-            const {liste_hachage_bytes} = identifierClesHachages(tuuidsValues)
-            // console.debug("Dechiffrer avec liste_hachage_bytes %s (source: %s, partage: %s) ", liste_hachage_bytes, source, partage)
+            const {liste_hachage_bytes, liste_hachage_bytes_partages} = identifierClesHachages(tuuidsValues, userId)
+            console.debug("Dechiffrer avec liste_hachage_bytes %O, liste_hachages_bytes_partages : %O (source: %s) ", liste_hachage_bytes, liste_hachage_bytes_partages, source)
             let cles = null
-            try {
-                cles = await clesDao.getCles(liste_hachage_bytes, {partage})
-            } catch(err) {
-                console.error("Erreur chargement cles %O : %O", liste_hachage_bytes, err)
-                continue  // Prochaine batch
+            if(liste_hachage_bytes && liste_hachage_bytes.length > 0) {
+                try {
+                    cles = await clesDao.getCles(liste_hachage_bytes, {partage: false})
+                    console.debug("Reponse cles : ", cles)
+                } catch(err) {
+                    console.error("Erreur chargement cles %O : %O", liste_hachage_bytes, err)
+                    continue  // Prochaine batch
+                }
+            }
+            if(liste_hachage_bytes_partages && liste_hachage_bytes_partages.length > 0) {
+                try {
+                    const clesPartages = await clesDao.getCles(liste_hachage_bytes_partages, {partage: true})
+                    console.debug("Reponse cles partage : ", clesPartages)
+                    if(cles) cles = {...cles, ...clesPartages}
+                    else {cles = clesPartages}
+                } catch(err) {
+                    console.error("Erreur chargement cles partages %O : %O", liste_hachage_bytes_partages, err)
+                    continue  // Prochaine batch
+                }
             }
 
             const fichiersDechiffres = []
@@ -1338,7 +1406,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
                 const metadata = docCourant.metadata || version_courante.metadata,
                       images = version_courante.images || {}
 
-                if( metadata ) {
+                if( cles && metadata ) {
                     // Dechiffrer champs de metadata chiffres (e.g. nom, date du fichier)
                     const hachage_bytes = metadata.ref_hachage_bytes || metadata.hachage_bytes || fuuid_v_courante
                     let cleMetadata = cles[hachage_bytes]
@@ -1475,11 +1543,13 @@ function genererTriListe(sortKeys) {
     }
 }
 
-function identifierClesHachages(liste) {
-    const fichiersChiffres = []
+function identifierClesHachages(liste, userId) {
+    const liste_hachage_bytes = new Set(),
+          fichiersChiffres = []
 
-    const liste_hachage_bytes = Object.keys( liste.reduce( (acc, item) => {
+    const liste_hachage_bytes_partages = new Set()
 
+    for (const item of liste) {
         let chiffre = false
 
         // Images inline chiffrees (thumbnail)
@@ -1491,26 +1561,68 @@ function identifierClesHachages(liste) {
 
         if(metadata) {
             // Champs proteges
-            //if(metadata.hachage_bytes) acc[metadata.hachage_bytes] = true
-            //else 
-            if(metadata.ref_hachage_bytes) acc[metadata.ref_hachage_bytes] = true
-            else acc[fuuid_v_courante] = true  // Default, cle du fichier
+            let hachage_bytes
+            if(metadata.ref_hachage_bytes) {
+                hachage_bytes = metadata.ref_hachage_bytes
+            } else {
+                hachage_bytes = fuuid_v_courante
+            }
+            if(!userId || item.user_id === userId) liste_hachage_bytes.add(hachage_bytes)
+            else liste_hachage_bytes_partages.add(hachage_bytes)
 
             chiffre = true
         }
         if(images) Object.values(images).forEach(image=>{
             if(image.data_chiffre) {
-                //acc[fuuid_v_courante] = true  // Le ref_hachage_bytes est le fuuid
                 chiffre = true
             }
         })
 
         // Conserver le fichier dans la liste de fichiers chiffres au besoin
         if(chiffre) fichiersChiffres.push(item)
+    }
 
-        return acc
+    // const liste_hachage_bytes = Object.keys( liste.reduce( (acc, item) => {
 
-    }, {}))
+    //     let chiffre = false
 
-    return {liste_hachage_bytes, fichiersChiffres}
+    //     // Images inline chiffrees (thumbnail)
+    //     const version_courante = item.version_courante || {},
+    //           // { fuuids_versions } = item,
+    //           { images } = version_courante,
+    //           metadata = item.metadata  // version_courante.metadata || item.metadata
+    //     const fuuid_v_courante = version_courante.fuuid
+
+    //     if(metadata) {
+    //         // Champs proteges
+    //         //if(metadata.hachage_bytes) acc[metadata.hachage_bytes] = true
+    //         //else 
+    //         if(metadata.ref_hachage_bytes) acc[metadata.ref_hachage_bytes] = true
+    //         else acc[fuuid_v_courante] = true  // Default, cle du fichier
+
+    //         chiffre = true
+    //     }
+    //     if(images) Object.values(images).forEach(image=>{
+    //         if(image.data_chiffre) {
+    //             //acc[fuuid_v_courante] = true  // Le ref_hachage_bytes est le fuuid
+    //             chiffre = true
+    //         }
+    //     })
+
+    //     // Conserver le fichier dans la liste de fichiers chiffres au besoin
+    //     if(chiffre) fichiersChiffres.push(item)
+
+    //     return acc
+
+    // }, {}))
+
+    const listeItems = [], listeItemsPartages = []
+    for(const item of liste_hachage_bytes) {
+        listeItems.push(item)
+    }
+    for(const item of liste_hachage_bytes_partages) {
+        listeItemsPartages.push(item)
+    }
+
+    return {liste_hachage_bytes: listeItems, liste_hachage_bytes_partages: listeItemsPartages, fichiersChiffres}
 }

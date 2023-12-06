@@ -168,7 +168,7 @@ function rechercheIndex(mots_cles, from_idx, size) {
   // )
   return ConnexionClient.emitBlocking(
     'rechercheIndex',
-    {query: mots_cles, start: from_idx, limit: size, inclure_partages: false},
+    {query: mots_cles, start: from_idx, limit: size, inclure_partages: true},
     {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'GrosFichiers', action: 'rechercheIndex', attacherCertificat: true, timeout: 20_000}
   )
 }
