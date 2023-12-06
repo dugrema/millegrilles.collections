@@ -954,7 +954,7 @@ export function creerThunks(actions, nomSlice) {
         opts = opts || {}
     
         const stateInitial = getState()[nomSlice]
-        const {parametresRecherche } = stateInitial
+        const {parametresRecherche} = stateInitial
 
         console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
     

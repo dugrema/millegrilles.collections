@@ -161,10 +161,15 @@ function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
 function rechercheIndex(mots_cles, from_idx, size) {
   from_idx = from_idx?from_idx:0
   size = size?size:200
+  // return ConnexionClient.emitBlocking(
+  //   'rechercheIndex',
+  //   {query: mots_cles, start: from_idx, limit: size},
+  //   {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'solrrelai', action: CONST_DOMAINE_FICHIERS, attacherCertificat: true}
+  // )
   return ConnexionClient.emitBlocking(
     'rechercheIndex',
-    {query: mots_cles, start: from_idx, limit: size},
-    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'solrrelai', action: CONST_DOMAINE_FICHIERS, attacherCertificat: true}
+    {query: mots_cles, start: from_idx, limit: size, inclure_partages: false},
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'GrosFichiers', action: 'rechercheIndex', attacherCertificat: true, timeout: 20_000}
   )
 }
 

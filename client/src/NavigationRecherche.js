@@ -282,31 +282,31 @@ function HandlerEvenements(_props) {
         if(!connexion || !etatPret) return  // Pas de connexion, rien a faire
 
         // Enregistrer listeners
-        // console.debug("HandlerEvenements Enregistrer listeners collection ", cuuid)
-        if(cuuid) {
-            connexion.enregistrerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
-            connexion.enregistrerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
-        } else {
-            // Favoris
-            connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
-        }
+        console.warn("TODO HandlerEvenements Enregistrer listeners collection ", cuuid)
+        // if(cuuid) {
+        //     connexion.enregistrerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
+        //         .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+        //     connexion.enregistrerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
+        //         .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+        // } else {
+        //     // Favoris
+        //     connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
+        //         .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+        // }
 
-        // Cleanup listeners
-        return () => {
-            // console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
-            if(cuuid) {
-                connexion.retirerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
-                connexion.retirerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
-            } else {
-                connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
-            }
-        }
+        // // Cleanup listeners
+        // return () => {
+        //     // console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
+        //     if(cuuid) {
+        //         connexion.retirerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
+        //             .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+        //         connexion.retirerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
+        //             .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+        //     } else {
+        //         connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
+        //             .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+        //     }
+        // }
     }, [connexion, etatPret, userId, cuuid, evenementCollectionCb, evenementContenuCollectionCb])
 
     return ''  // Aucun affichage
