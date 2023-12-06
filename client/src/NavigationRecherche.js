@@ -69,8 +69,6 @@ function NavigationRecherche(props) {
             e.stopPropagation()
         }
 
-        console.debug("Rechercher")
-
         setAfficherVideo('')  // Reset affichage
         setAfficherAudio('')  // Reset affichage
         try {
@@ -468,8 +466,6 @@ function FormatteurNomFichier(props) {
     const { value } = props
     const data = props.data || {}
     const partage = data.partage || false
-    console.debug("FormatteurNomFichier : ", props)
-
     if(partage) {
         return <span className='partage'><i className='fa fa-share-alt'/> {value}</span>
     } else {

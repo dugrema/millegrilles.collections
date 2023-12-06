@@ -957,14 +957,14 @@ export function creerThunks(actions, nomSlice) {
         const userId = stateInitial.userId
         const {parametresRecherche} = stateInitial
 
-        console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
+        // console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
     
         // Changer source, nettoyer la liste
         dispatch(setSource(SOURCE_RECHERCHE))
         dispatch(clear())
 
         if(!parametresRecherche) {
-            console.debug("Aucun terme - clear ecran")
+            // console.debug("Aucun terme - clear ecran")
             dispatch(push({liste: []}))
             return
         }
@@ -973,7 +973,7 @@ export function creerThunks(actions, nomSlice) {
     
         const { connexion, collectionsDao } = workers
         const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, CONST_RECHERCHE_LIMITE )
-        console.debug("Resultat recherche : ", resultatRecherche)
+        // console.debug("Resultat recherche : ", resultatRecherche)
 
         if(resultatRecherche.ok !== true) {
             console.warn("Erreur recherche : ", resultatRecherche)
@@ -1153,13 +1153,12 @@ export function creerThunks(actions, nomSlice) {
     async function chargerResultatsPartages(workers, opts, dispatch, getState, tuuidsPartagesManquants) {
         const { contactsDao } = workers
 
-        console.debug("chargerResultatsPartages ", tuuidsPartagesManquants)
+        // console.debug("chargerResultatsPartages ", tuuidsPartagesManquants)
 
-        console.warn("!!! TODO Recuperer cles pour tuuids partages")
         const partagesContacts = await contactsDao.getPartagesContact()
         const partages = partagesContacts.partages
 
-        console.debug("ContactsIds usager : ", partagesContacts)
+        // console.debug("ContactsIds usager : ", partagesContacts)
         
         // Grouper fichiers par contactId
         const contactIdsFichiers = {}
@@ -1178,12 +1177,12 @@ export function creerThunks(actions, nomSlice) {
             }
         }
 
-        console.debug("Fichiers partages avec contacts ids trouves : ", contactIdsFichiers)
+        // console.debug("Fichiers partages avec contacts ids trouves : ", contactIdsFichiers)
 
         // Charger les cles par contactId
         for await (const contactId of Object.keys(contactIdsFichiers)) {
             const fichiers = contactIdsFichiers[contactId]
-            console.debug("Charger %d fichiers pour contactId : %s", fichiers.length, contactId)
+            // console.debug("Charger %d fichiers pour contactId : %s", fichiers.length, contactId)
             const tuuids = fichiers.map(item=>item.tuuid)
             await dispatch(chargerTuuids(workers, tuuids, {contactId}))
             dispatch(push({liste: fichiers}))
@@ -1363,17 +1362,17 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             const listeRestante = Object.values(dictDechiffrageMaj)
             listenerApi.dispatch(actions.setFichiersChiffres(Object.values(listeRestante)))
 
-            console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", tuuidsValues.length, listeRestante.length)
-            console.debug("dechiffrageMiddlewareListener Dechiffrer batch ", tuuidsValues)
+            // console.debug("dechiffrageMiddlewareListener Dechiffrer %d, reste %d", tuuidsValues.length, listeRestante.length)
+            // console.debug("dechiffrageMiddlewareListener Dechiffrer batch ", tuuidsValues)
 
             // Extraire toutes les cles a charger
             const {liste_hachage_bytes, liste_hachage_bytes_partages} = identifierClesHachages(tuuidsValues, userId)
-            console.debug("Dechiffrer avec liste_hachage_bytes %O, liste_hachages_bytes_partages : %O (source: %s) ", liste_hachage_bytes, liste_hachage_bytes_partages, source)
+            // console.debug("Dechiffrer avec liste_hachage_bytes %O, liste_hachages_bytes_partages : %O (source: %s) ", liste_hachage_bytes, liste_hachage_bytes_partages, source)
             let cles = null
             if(liste_hachage_bytes && liste_hachage_bytes.length > 0) {
                 try {
                     cles = await clesDao.getCles(liste_hachage_bytes, {partage: false})
-                    console.debug("Reponse cles : ", cles)
+                    // console.debug("Reponse cles : ", cles)
                 } catch(err) {
                     console.error("Erreur chargement cles %O : %O", liste_hachage_bytes, err)
                     continue  // Prochaine batch
@@ -1382,7 +1381,7 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
             if(liste_hachage_bytes_partages && liste_hachage_bytes_partages.length > 0) {
                 try {
                     const clesPartages = await clesDao.getCles(liste_hachage_bytes_partages, {partage: true})
-                    console.debug("Reponse cles partage : ", clesPartages)
+                    // console.debug("Reponse cles partage : ", clesPartages)
                     if(cles) cles = {...cles, ...clesPartages}
                     else {cles = clesPartages}
                 } catch(err) {
