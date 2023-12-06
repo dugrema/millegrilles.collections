@@ -1,6 +1,6 @@
 {
   "name": "millegrilles.collection-client",
-  "version": "2023.11.14",
+  "version": "2023.11.15",
   "private": true,
   "proxy": "https://localhost:4037",
   "homepage": "/collections",
