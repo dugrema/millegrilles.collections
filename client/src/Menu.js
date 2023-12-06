@@ -8,6 +8,7 @@ import Nav from 'react-bootstrap/Nav'
 import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import { Menu as MenuMillegrilles, DropDownLanguage, ModalInfo } from '@dugrema/millegrilles.reactjs'
+import { supprimerContenuIdb } from '@dugrema/millegrilles.reactjs/src/dbNettoyage'
 
 import { useCapabilities, useInfoConnexion, useUsager } from './WorkerContext'
 
@@ -56,16 +57,18 @@ function Menu(props) {
   }, [estMobile])
 
   const handlerSelect = useCallback(eventKey => {
+    const nomUsager = usager.nomUsager
+
     switch(eventKey) {
       case 'information': setShowModalInfo(true); break
       case 'mediaJobs': showMediaJobs(); break
       case 'portail': window.location = '/millegrilles'; break
-      case 'deconnecter': window.location = '/auth/deconnecter_usager'; break
+      case 'deconnecter': deconnecter(nomUsager); break
       case 'toggleModeAffichage': toggleModeAffichage(); break
       default:
         onSelect(eventKey)
     }
-  }, [setShowModalInfo, showMediaJobs, toggleModeAffichage, onSelect])
+  }, [setShowModalInfo, showMediaJobs, toggleModeAffichage, onSelect, usager])
 
   const brand = (
     <Navbar.Brand>
@@ -250,4 +253,14 @@ function BadgeTransfer(props) {
       <Badge pill bg={variant}>{label}</Badge>
     </span>
   )
+}
+
+async function deconnecter(nomUsager) {
+  try {
+    await supprimerContenuIdb({nomUsager})
+  } catch (err) {
+    console.error("deconnecter Erreur nettoyage IDB : ", err)
+  } finally {
+    window.location = '/auth/deconnecter_usager'
+  }
 }
