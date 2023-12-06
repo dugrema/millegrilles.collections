@@ -24,8 +24,10 @@ supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.wa
 
 export { Icones }
 
-export function mapDocumentComplet(workers, doc) {
-    // console.debug("mapDocumentComplet : ", doc)
+export function mapDocumentComplet(workers, doc, opts) {
+    opts = opts || {}
+    // console.debug("mapDocumentComplet : %O (opts: %O)", doc, opts)
+    const userId = opts.userId
 
     const { connexion, traitementFichiers } = workers
 
@@ -48,10 +50,12 @@ export function mapDocumentComplet(workers, doc) {
     }
     const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)
 
-    const { nom, tuuid, date_creation, mimetype, archive } = doc
+    const { nom, tuuid, date_creation, mimetype, archive, user_id } = doc
     const version_courante = doc.version_courante?{...doc.version_courante}:null
     const fuuid_v_courante = version_courante?version_courante.fuuid:null
     const copie = {...doc, version_courante}
+    
+    copie.partage = userId && user_id !== userId
 
     if(tuuid) {
         // Mapper vers fileId ou folderId

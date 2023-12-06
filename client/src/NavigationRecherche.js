@@ -98,7 +98,7 @@ function NavigationRecherche(props) {
 
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
 
-    const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
+    const preparerColonnesCb = useCallback(()=>preparerColonnes(workers, userId), [workers, userId])
 
     const naviguerCollectionCb = useCallback(cuuid=>{
         console.debug("Naviguer vers collection tuuid:%s", cuuid)
@@ -445,14 +445,14 @@ function Modals(props) {
     )
 }
 
-function preparerColonnes(workers) {
+function preparerColonnes(workers, userId) {
 
-    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
+    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, {idx, userId})
 
     const params = {
         ordreColonnes: ['nom', 'score', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],
         paramsColonnes: {
-            'nom': {'label': 'Nom', showThumbnail: true, xs: 12, md:12, lg: 6},
+            'nom': {'label': 'Nom', showThumbnail: true, xs: 12, md:12, lg: 6, formatteur: FormatteurNomFichier},
             'score': {'label': 'Score', formatteur: FormatteurNombre, xs: 3, md: 2, lg: 1},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, md: 2, lg: 1},
             'mimetype': {'label': 'Type', className: 'details', xs: 6, md: 5, lg: 2},
@@ -462,6 +462,19 @@ function preparerColonnes(workers) {
         rowLoader,
     }
     return params
+}
+
+function FormatteurNomFichier(props) {
+    const { value } = props
+    const data = props.data || {}
+    const partage = data.partage || false
+    console.debug("FormatteurNomFichier : ", props)
+
+    if(partage) {
+        return <span className='partage'><i className='fa fa-share-alt'/> {value}</span>
+    } else {
+        return <span>{value}</span>
+    }
 }
 
 function MenuContextuel(props) {
