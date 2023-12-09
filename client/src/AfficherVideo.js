@@ -10,6 +10,7 @@ import DropdownButton from 'react-bootstrap/DropdownButton'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { VideoViewer } from '@dugrema/millegrilles.reactjs'
+import { supporteFormatVideo } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 
 import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { useCapabilities } from './WorkerContext'
@@ -712,7 +713,10 @@ export function determinerSelecteursVideos(videos, original) {
         let supporte = false
         for(const video of listeVideos) {
             if(supportMedia[video.codec]) {
-                supporte = true
+                // Verification incluant le mimetype
+                const verifMimetype = ['probably', 'maybe'].includes(supporteFormatVideo(video.mimetype))
+                // console.debug("Resultat verif mimetype video : ", verifMimetype)
+                supporte = verifMimetype
                 break
             }
         }

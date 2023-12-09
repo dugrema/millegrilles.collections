@@ -51,50 +51,38 @@ const BITRATES_AUDIO = [
 
 const PROFILS_VIDEO = {
   'vp9': {
-    '270': {
-      qualityVideo: 37,
-      codecAudio: 'libopus',
-      bitrateAudio: 64000,
-      preset: 'fast',
-    },
     '360': {
-      qualityVideo: 36,
+      qualityVideo: 28,
       codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'medium',
     },
     '480': {
-      qualityVideo: 34,
+      qualityVideo: 26,
       codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'medium',
     },
     '720': {
-      qualityVideo: 31,
+      qualityVideo: 26,
       codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'slow',
     },
     '1080': {
-      qualityVideo: 31,
+      qualityVideo: 23,
       codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'slow',
     },
     'default': {
-      qualityVideo: 31,
+      qualityVideo: 23,
       codecAudio: 'libopus',
       bitrateAudio: 128000,
       preset: 'slow',
     },
   },
   'hevc': {
-    '270': {
-      qualityVideo: 32,
-      codecAudio: 'eac3',
-      bitrateAudio: 64000,
-      preset: 'fast',
-    },
     '360': {
       qualityVideo: 28,
       codecAudio: 'eac3',
