@@ -13,10 +13,7 @@ import Fade from 'react-bootstrap/Fade'
 import { ListeFichiers, FormatteurTaille, FormatterDate, ImageCarousel } from '@dugrema/millegrilles.reactjs'
 import { formatterDateString } from '@dugrema/millegrilles.reactjs/src/formatterUtils'
 
-import AfficherVideo from './AfficherVideo'
-import AfficherAudio from './AfficherAudio'
-import { estMimetypeMedia, mapDocumentComplet } from './mapperFichier'
-import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes.js'
+import { mapDocumentComplet } from './mapperFichier'
 import { onContextMenu } from './MenuContextuel'
 import useWorkers, { useCapabilities, useUsager } from './WorkerContext'
 

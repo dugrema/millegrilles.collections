@@ -11,16 +11,16 @@ const HTTP_STATUS_ATTENTE = [202, 204]
 
 function AfficherAudio(props) {
 
-    const { support, showInfoModalOuvrir } = props
+    // const { support, showInfoModalOuvrir } = props
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
-    const nomFichier = fichier.nom || '',
-          version_courante = fichier.version_courante || {}
+    const nomFichier = fichier.nom || ''
+          //version_courante = fichier.version_courante || {}
 
-    const timeStamp = 0
+    //const timeStamp = 0
 
     const audioTimeUpdateHandler = useCallback(param => {
-        console.debug("audio update ", param)
+//        console.debug("audio update ", param)
     }, [])
 
     return (
@@ -57,10 +57,6 @@ export function AudioPlayer(props) {
     const [chargementPret, setChargementPret] = useState(false)
     const [errChargement, setErrChargement] = useState('')
 
-    useEffect(()=>{
-        console.debug("AfficherAudio proppies : %O", props)
-    }, [props])
-
     const [audioFile, setAudioFile] = useState('')
 
     const urlAudio = useMemo(()=>{
@@ -87,22 +83,26 @@ export function AudioPlayer(props) {
     // }, [fichier, setAudioFile])
 
     const majChargement = useCallback(info=>{
-        console.debug("Maj chargement ", info)
+        // console.debug("Maj chargement ", info)
         if(info.status === 200) {
             // Complete
             setProgresChargement(100)
         } else if(HTTP_STATUS_ATTENTE.includes(info.status)) {
             const headers = info.headers
-            console.debug("headers ", headers)
+            // console.debug("headers ", headers)
 
             const position = Number.parseInt(headers['x-file-position']),
                   taille = Number.parseInt(headers['x-file-size'])
 
             const progres =  Math.floor(100.0 * position / taille)
-            console.debug("Progres ", progres)
+            // console.debug("Progres ", progres)
             setProgresChargement(progres)
         }
     }, [setProgresChargement])
+
+    useEffect(()=>{
+        // console.debug("AfficherAudio pret")
+    }, [chargementPret])
 
     useEffect(()=>{
         // Reset indicateurs
@@ -118,7 +118,7 @@ export function AudioPlayer(props) {
                 try {
                     const audioFile = fichiers.pop()
 
-                    console.debug("HEAD src : ", audioFile)
+                    // console.debug("HEAD src : ", audioFile)
                     const sourceHead = audioFile.src
                     
                     while(true) {
@@ -188,7 +188,7 @@ function ProgresChargement(props) {
         } else {
             setShow(true)
         }
-    }, [value, setShow])
+    }, [src, value, setShow])
 
     if(!show) return ''
 

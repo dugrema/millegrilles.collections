@@ -566,7 +566,7 @@ function PreviewDocumentMobile(props) {
 function PreviewAudioMobile(props) {
     const { fichier, erreurCb, downloadAction } = props
 
-    console.debug("PreviewDocumentMobile proppies ", props)
+    // console.debug("PreviewDocumentMobile proppies ", props)
 
     const { orientation } = useMediaQuery()
     const capabilities = useCapabilities()

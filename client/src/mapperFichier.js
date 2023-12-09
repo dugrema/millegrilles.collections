@@ -1,4 +1,4 @@
-import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
+// import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes.js'
 
@@ -19,8 +19,8 @@ const Icones = {
 
 // Detection format media
 // const supporteWebm = supporteFormatWebm()
-let supporteWebp = false
-supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.warn("Erreur detection webp : %O", err))
+//let supporteWebp
+//supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.warn("Erreur detection webp : %O", err))
 
 export { Icones }
 
@@ -38,7 +38,7 @@ export function mapDocumentComplet(workers, doc, opts) {
 
         const fuuid = commande.fuuids[0]
         const commandeV2 = { fuuid }
-        if(commande.fuuidStream && commande.fuuidStream != fuuid) {
+        if(commande.fuuidStream && commande.fuuidStream !== fuuid) {
             // Remplacer le fuuid par fuuidStream - le fuuid devient la reference de dechiffrage
             commandeV2.fuuid = commande.fuuidStream
             commandeV2.fuuid_ref = fuuid
@@ -50,7 +50,7 @@ export function mapDocumentComplet(workers, doc, opts) {
     }
     const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)
 
-    const { nom, tuuid, date_creation, mimetype, archive, user_id } = doc
+    const { nom, tuuid, date_creation, mimetype, user_id, /* archive, */ } = doc
     const version_courante = doc.version_courante?{...doc.version_courante}:null
     const fuuid_v_courante = version_courante?version_courante.fuuid:null
     const copie = {...doc, version_courante}
