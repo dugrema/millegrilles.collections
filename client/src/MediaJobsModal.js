@@ -203,7 +203,7 @@ export function AfficherLigneFormatVideo(props) {
             <Button variant="danger" onClick={supprimerJobVideoHandler}>X</Button>
         </Col>
         {showNomFichier?
-            <Col xs={9} lg={5}>{label}</Col>
+            <Col xs={9} lg={5} className='modal-media-nomfichier'>{label}</Col>
             :''
         }
         <Col xs={3} lg={1}>{codec}</Col>
