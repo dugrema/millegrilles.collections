@@ -122,7 +122,6 @@ function NavigationCorbeille(props) {
     // Declencher chargement initial des favoris
     useEffect(()=>{
         if(!etatPret || !userId) return  // Rien a faire
-        console.debug("!!! useEffect naviguerCollection etatPret %O, userId %O, cuuidCourant %O", etatPret, userId)
         naviguerCollection('')
     }, [naviguerCollection, etatPret, userId])
 

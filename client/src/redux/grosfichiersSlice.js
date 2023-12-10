@@ -771,7 +771,7 @@ export function creerThunks(actions, nomSlice) {
 
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.syncCorbeille(intervalle.debut, intervalle.fin, {limit, skip})
-        console.debug("syncCorbeille resultat : %O (existants: %O)", resultat, existants)
+        // console.debug("syncCorbeille resultat : %O (existants: %O)", resultat, existants)
 
         const { liste } = resultat
         if(existants) {
@@ -781,7 +781,7 @@ export function creerThunks(actions, nomSlice) {
         }
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
     
-        console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
             await dispatch(chargerTuuids(workers, listeTuuidsDirty))
                 .catch(err=>console.error("syncCorbeille Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
@@ -843,19 +843,34 @@ export function creerThunks(actions, nomSlice) {
     
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
         const documentsExistants = new Set()
-        console.debug("Contenu idb : %O", contenuIdb)
+        const cuuids = new Set()
+        // console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
             // TODO Retirer les documents partages
 
             // Conserver set docs existants
-            for (const doc of contenuIdb) { documentsExistants.add(doc.tuuid) }
+            for (const doc of contenuIdb) { 
+                documentsExistants.add(doc.tuuid) 
+                if(doc.path_cuuids) {
+                    for(const cuuid of doc.path_cuuids) cuuids.add(cuuid)
+                }
+            }
 
             // console.debug("Push documents provenance idb : %O", contenuIdb)
             dispatch(push({liste: contenuIdb, clear: true}))
     
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+
+            // S'assurer de charger tous les repertoires pour les afficher
+            const cuuidsListe = []
+            for(const cuuid of cuuids) cuuidsListe.push(cuuid)
+            const collectionsConnues = (await collectionsDao.getParTuuids(cuuidsListe)).filter(item=>!!item)
+            // console.debug("idbCollections : ", collectionsConnues)
+            collectionsConnues.forEach(item=>cuuids.delete(item.tuuid))
+            for(const cuuid of cuuids) tuuids.push(cuuid)
+
             if(tuuids.length > 0) {
-                console.debug("traiterChargerCorbeille Tuuids deja dans idb : ", documentsExistants)
+                // console.debug("traiterChargerCorbeille Tuuids deja dans idb : ", documentsExistants)
                 dispatch(chargerTuuids(workers, tuuids))
                     .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
             }
@@ -867,14 +882,14 @@ export function creerThunks(actions, nomSlice) {
                 dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur, 
                 {existants: documentsExistants}
             )
-            console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+            // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
             if( ! resultatSync || ! resultatSync.liste ) break
             compteur += resultatSync.liste.length
             if( resultatSync.complete ) break
         }
         if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCorbeille")
     
-        console.debug("traiterChargerCorbeille Documents existants stale : %O", documentsExistants)
+        // console.debug("traiterChargerCorbeille Documents existants stale : %O", documentsExistants)
         if(documentsExistants.size > 0) {
             // console.debug("Documents retires/deplaces de '%s' : %O", cuuid, documentsExistants)
             const tuuids = []
