@@ -76,6 +76,47 @@ function NavigationCorbeille(props) {
         }
     }, [dispatch, workers, erreurCb, setAfficherVideo])
 
+    const restorerCb = useCallback(selection=>{
+        // const { value } = e.currentTarget
+        console.debug("Restorer tuuid %O (liste : %O)", selection, liste)
+        if(selection && selection.length > 0) {
+            const cuuids = {}
+            for(const item of liste) {
+                const tuuid = item.tuuid
+                if(selection.includes(tuuid) && item.path_cuuids) {
+                    const cuuid = item.path_cuuids[0]
+                    let collection = cuuids[cuuid]
+                    if(!collection) {
+                        collection = []
+                        cuuids[cuuid] = collection
+                    }
+                    collection.push(tuuid)
+                }
+            }
+            console.debug("Recuperer : ", cuuids)
+            workers.connexion.recupererDocuments(cuuids)
+                .then(async r => {
+                    console.debug("Resultat recupererDocuments : ", r)
+                    // Lancer une nouvelle sync corbeille
+                    await dispatch(fichiersThunks.afficherCorbeille(workers, {}))
+                })
+                .catch(err=>console.error("Erreur restoration fichiers : ", err))
+        }
+
+            // let items = {}
+        // if(value === data.tuuid) {
+        //     // C'est une collection
+        //     items[value] = null  // Va recuperer toute la collection
+        // } else {
+        //     items[value] = [data.tuuid]
+        // }
+        // workers.connexion.recupererDocuments(items)
+        //     .then(r=>{
+        //         console.debug("Resultat recupererDocuments : ", r)
+        //     })
+        //     .catch(err=>console.error("Erreur restoration fichiers : ", err))
+    }, [dispatch, workers, liste])
+
     const onScrollHandler = useCallback( pos => setScrollValue(pos), [setScrollValue])
 
     // Declencher chargement initial des favoris
@@ -137,6 +178,7 @@ function NavigationCorbeille(props) {
                 contextuel={contextuel}
                 setContextuel={setContextuel} 
                 naviguerCollection={naviguerCollection}
+                onRestore={restorerCb}
                 erreurCb={erreurCb} />
         </>
     )
@@ -258,27 +300,27 @@ function HandlerEvenements(_props) {
         // Enregistrer listeners
         // console.debug("HandlerEvenements Enregistrer listeners collection ", cuuid)
         if(cuuid) {
-            connexion.enregistrerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
-            connexion.enregistrerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+            // connexion.enregistrerCallbackMajCollections([cuuid], evenementCollectionCb)
+            //     .catch(err=>console.warn("Erreur enregistrement listeners majCollection : %O", err))
+            // connexion.enregistrerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb)
+            //     .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
         } else {
             // Favoris
-            connexion.enregistrerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
-                .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
+            // connexion.enregistrerCallbackMajContenuCollection(userId, evenementContenuCollectionCb)
+            //     .catch(err=>console.warn("Erreur enregistrement listeners maj contenu favoris : %O", err))
         }
 
         // Cleanup listeners
         return () => {
             // console.debug("HandlerEvenements Retirer listeners collection ", cuuid)
             if(cuuid) {
-                connexion.retirerCallbackMajCollections({cuuids: [cuuid]}, evenementCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
-                connexion.retirerCallbackMajContenuCollection({cuuid}, evenementContenuCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+                // connexion.retirerCallbackMajCollections([cuuid], evenementCollectionCb)
+                //     .catch(err=>console.warn("Erreur retirer listeners majCollection : %O", err))
+                // connexion.retirerCallbackMajContenuCollection(cuuid, evenementContenuCollectionCb)
+                //     .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
             } else {
-                connexion.retirerCallbackMajContenuCollection({cuuid: userId}, evenementContenuCollectionCb)
-                    .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
+                // connexion.retirerCallbackMajContenuCollection(userId, evenementContenuCollectionCb)
+                //     .catch(err=>console.warn("Erreur retirer listeners maj contenu favoris : %O", err))
             }
         }
     }, [connexion, etatPret, userId, cuuid, evenementCollectionCb, evenementContenuCollectionCb])
@@ -291,6 +333,7 @@ function Modals(props) {
     const {
         showPreview, tuuidSelectionne, showPreviewAction, setShowPreview,
         contextuel, setContextuel, erreurCb, naviguerCollection,
+        onRestore,
     } = props
     
     const usager = useUsager()
@@ -319,6 +362,7 @@ function Modals(props) {
                 cuuid={cuuid}
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
+                onRestore={onRestore}
                 erreurCb={erreurCb}
               />
 
@@ -498,40 +542,43 @@ function preparerColonnes(workers) {
 }
 
 function FormatterPathSupprimer(props) {
+    const { onRestore } = props
     const data = props.data || {}
 
     // const recupererPaths = data.recupererPaths
 
     const workers = useWorkers()
 
-    const restorerCb = useCallback(e=>{
-        const { value } = e.currentTarget
-        // console.debug("Restorer tuuid %s sous cuuid %s", data.tuuid, value)
-        let items = {}
-        if(value === data.tuuid) {
-            // C'est une collection
-            items[value] = null  // Va recuperer toute la collection
-        } else {
-            items[value] = [data.tuuid]
-        }
-        workers.connexion.recupererDocuments(items)
-            .then(r=>{
-                console.debug("Resultat recupererDocuments : ", r)
-            })
-            .catch(err=>console.error("Erreur restoration fichiers : ", err))
-    }, [workers, data])
+    // const restorerCb = useCallback(e=>{
+    //     const { value } = e.currentTarget
+    //     // console.debug("Restorer tuuid %s sous cuuid %s", data.tuuid, value)
+    //     let items = {}
+    //     if(value === data.tuuid) {
+    //         // C'est une collection
+    //         items[value] = null  // Va recuperer toute la collection
+    //     } else {
+    //         items[value] = [data.tuuid]
+    //     }
+    //     workers.connexion.recupererDocuments(items)
+    //         .then(r=>{
+    //             console.debug("Resultat recupererDocuments : ", r)
+    //         })
+    //         .catch(err=>console.error("Erreur restoration fichiers : ", err))
+    // }, [workers, data])
 
     const liste = useMemo(()=>{
         if(!data.recupererPaths) return ''
         return data.recupererPaths.map((item, idx)=>{
-            return (
-                <Row key={idx}>
-                    <Col xs={8} lg={9}>{item.path}</Col>
-                    <Col xs={4} lg={3}><Button variant="dark" value={item.cuuid} onClick={restorerCb}>Recuperer</Button></Col>
-                </Row>
-            )
+            return item.path
+            // return (
+            //     <Col xs={8} lg={9}>{item.path}</Col>
+            //     <Row key={idx}>
+            //         <Col xs={8} lg={9}>{item.path}</Col>
+            //         <Col xs={4} lg={3}><Button variant="dark" value={item.cuuid} onClick={onRestore}>Recuperer</Button></Col>
+            //     </Row>
+            // )
         })
-    }, [data, restorerCb])
+    }, [data, onRestore])
 
     if(!data.recupererPaths) return ''
 

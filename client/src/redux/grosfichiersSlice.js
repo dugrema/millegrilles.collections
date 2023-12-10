@@ -200,7 +200,7 @@ function mergeTuuidDataAction(state, action) {
     }
 
     const cuuidCourant = state.cuuid
-    if(state.source === SOURCE_RECHERCHE) {
+    if([SOURCE_RECHERCHE, SOURCE_CORBEILLE].includes(state.source)) {
         // Pas de filtre, les fichiers proviennent de tous les cuuids
     } else {
         if(!cuuidCourant) {
@@ -494,14 +494,14 @@ export function creerThunks(actions, nomSlice) {
     
         const tuuidsChiffres = fichiersChiffres.map(item=>item.tuuid)
         for (const fichier of fichiers) {
-            // console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
+            console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
             const dechiffre = ! tuuidsChiffres.includes(fichier.tuuid)
     
             // Mettre a jour dans IDB
             collectionsDao.updateDocument(fichier, {dechiffre})
                 .catch(err=>console.error("Erreur maj document %O dans idb : %O", fichier, err))
     
-            // console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
+            console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
             dispatch(mergeTuuidData({tuuid: fichier.tuuid, data: fichier}))
         }
     }
@@ -756,7 +756,7 @@ export function creerThunks(actions, nomSlice) {
     
         // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-            dispatch(chargerTuuids(workers, listeTuuidsDirty, {partage: !!contactId, contactId}))
+            await dispatch(chargerTuuids(workers, listeTuuidsDirty, {partage: !!contactId, contactId}))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
         } else {
             dispatch(setDechiffrageComplete())
@@ -765,34 +765,25 @@ export function creerThunks(actions, nomSlice) {
         return resultat
     }
     
-    async function syncPlusrecent(dispatch, workers, intervalle, limit, skip) {
-        const { connexion, collectionsDao } = workers
-        const resultat = await connexion.syncRecents(intervalle.debut, intervalle.fin, {limit, skip})
-    
-        const { liste } = resultat
-        const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
-    
-        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
-        if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-            dispatch(chargerTuuids(workers, listeTuuidsDirty))
-                .catch(err=>console.error("syncPlusrecent Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
-        } else {
-            dispatch(setDechiffrageComplete())
-        }
-    
-        return resultat
-    }
-    
-    async function syncCorbeille(dispatch, workers, intervalle, limit, skip) {
+    async function syncCorbeille(dispatch, workers, intervalle, limit, skip, opts) {
+        opts = opts || {}
+        const existants = opts.existants
+
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.syncCorbeille(intervalle.debut, intervalle.fin, {limit, skip})
-    
+        console.debug("syncCorbeille resultat : %O (existants: %O)", resultat, existants)
+
         const { liste } = resultat
+        if(existants) {
+            for (const doc of liste) {
+                existants.delete(doc.tuuid)
+            }
+        }
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
     
-        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+        console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
         if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-            dispatch(chargerTuuids(workers, listeTuuidsDirty))
+            await dispatch(chargerTuuids(workers, listeTuuidsDirty))
                 .catch(err=>console.error("syncCorbeille Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
         } else {
             dispatch(setDechiffrageComplete())
@@ -807,74 +798,6 @@ export function creerThunks(actions, nomSlice) {
             await dispatch(chargerTuuids(workers, listeTuuidsDirty))
         }
         dispatch(setDechiffrageComplete())
-    }
-    
-    // Async plus recent
-    function afficherPlusrecents(workers, opts) {
-        opts = opts || {}
-        let intervalle = opts.intervalle
-        if(!intervalle) {
-            // Utiliser la derniere semaine par defaut
-            let dateDebut = new Date()
-            dateDebut.setDate(dateDebut.getDate() - 7)
-            dateDebut.setHours(0)
-            dateDebut.setMinutes(0)
-            dateDebut.setSeconds(0)
-            intervalle = {debut: Math.floor(dateDebut.getTime() / 1000), fin: null}
-        }
-    
-        return (dispatch, getState) => traiterChargerPlusrecents(workers, {...opts, intervalle}, dispatch, getState)
-    }
-    
-    async function traiterChargerPlusrecents(workers, opts, dispatch, getState) {
-        opts = opts || {}
-
-        const stateInitial = getState()[nomSlice]
-        const { userId } = stateInitial
-    
-        // Changer source, nettoyer la liste
-        dispatch(setSource(SOURCE_PLUS_RECENT))
-        dispatch(clear())
-        
-        let intervalle = opts.intervalle
-        if(!opts.intervalle) {
-            intervalle = stateInitial.intervalle
-        }
-        dispatch(setIntervalle(intervalle))
-        dispatch(setSortKeys({key: 'derniere_modification', ordre: -1}))
-    
-        // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
-        
-        const { collectionsDao } = workers
-    
-        // Charger le contenu de la collection deja connu
-        const contenuIdb = await collectionsDao.getPlusrecent(intervalle, userId)
-    
-        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        // console.debug("Contenu idb : %O", contenuIdb)
-        if(contenuIdb) {
-            // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push({liste: contenuIdb, clear: true}))
-    
-            const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-            if(tuuids.length > 0) {
-                dispatch(chargerTuuids(workers, tuuids))
-                    .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-            }
-        }
-    
-        let compteur = 0
-        for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
-            let resultatSync = await syncPlusrecent(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
-            // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
-            if( ! resultatSync || ! resultatSync.liste ) break
-            compteur += resultatSync.liste.length
-            if( resultatSync.complete ) break
-        }
-        if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncPlusrecent")
-    
-        // On marque la fin du chargement/sync
-        dispatch(push({liste: []}))
     }
     
     // Async corbeille
@@ -919,26 +842,50 @@ export function creerThunks(actions, nomSlice) {
         const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
     
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        // console.debug("Contenu idb : %O", contenuIdb)
+        const documentsExistants = new Set()
+        console.debug("Contenu idb : %O", contenuIdb)
         if(contenuIdb) {
+            // TODO Retirer les documents partages
+
+            // Conserver set docs existants
+            for (const doc of contenuIdb) { documentsExistants.add(doc.tuuid) }
+
             // console.debug("Push documents provenance idb : %O", contenuIdb)
             dispatch(push({liste: contenuIdb, clear: true}))
     
             const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-            dispatch(chargerTuuids(workers, tuuids))
-                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+            if(tuuids.length > 0) {
+                console.debug("traiterChargerCorbeille Tuuids deja dans idb : ", documentsExistants)
+                dispatch(chargerTuuids(workers, tuuids))
+                    .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+            }
         }
     
         let compteur = 0
         for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
-            let resultatSync = await syncCorbeille(dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur)
-            // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+            let resultatSync = await syncCorbeille(
+                dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur, 
+                {existants: documentsExistants}
+            )
+            console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
             if( ! resultatSync || ! resultatSync.liste ) break
             compteur += resultatSync.liste.length
             if( resultatSync.complete ) break
         }
         if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCorbeille")
     
+        console.debug("traiterChargerCorbeille Documents existants stale : %O", documentsExistants)
+        if(documentsExistants.size > 0) {
+            // console.debug("Documents retires/deplaces de '%s' : %O", cuuid, documentsExistants)
+            const tuuids = []
+            for(const tuuid of documentsExistants) {
+                dispatch(mergeTuuidData({tuuid, data: {tuuid, supprime: false, supprime_indirect: false}}))
+                tuuids.push(tuuid)
+            }
+            await collectionsDao.deleteDocuments(tuuids)
+        }
+
+
         // On marque la fin du chargement/sync
         dispatch(push({liste: []}))
     }
@@ -1306,7 +1253,7 @@ export function creerThunks(actions, nomSlice) {
     // Async actions
     const thunks = { 
         changerCollection, 
-        afficherPlusrecents, afficherCorbeille, afficherRecherche, 
+        afficherCorbeille, afficherRecherche, 
         afficherPartagesUsager, 
         afficherPartagesContact,
         chargerTuuids,

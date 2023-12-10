@@ -207,13 +207,12 @@ export function MenuContextuelMultiselect(props) {
 
 export function MenuContextuelCorbeille(props) {
 
-    const { workers, selection, contextuel, fermerContextuel, onRecuperer } = props
+    const { workers, selection, contextuel, fermerContextuel, onRestore } = props
 
     const recupererAction = useCallback( 
         () => {
-            throw new Error('fix me')
-            // recupererMultiple(workers, fermerContextuel, selection, onRecuperer) 
-        }, [workers, fermerContextuel, selection, onRecuperer] 
+            onRestore(selection)
+        }, [workers, fermerContextuel, selection, onRestore] 
     )
 
     const posX = useMemo(()=>{

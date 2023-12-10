@@ -218,10 +218,11 @@ export async function getSupprime(intervalle, userId) {
     while(curseur) {
         const value = curseur.value
         // console.debug("Message %O = %O", key, value)
-        const { supprime } = value
+        const { supprime, supprime_indirect } = value
         let conserver = false
+        const supprimeEffectif = !!(supprime || supprime_indirect)
 
-        if(supprime === true) {
+        if(supprimeEffectif === true) {
             const champsDate = ['derniere_modification', 'date_creation']
             champsDate.forEach(champ=>{
                 const valDate = value[champ]
