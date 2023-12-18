@@ -977,6 +977,7 @@ function UploadBatchZip(props) {
 
     const [traitementEnCours, setTraitementEnCours] = useState(false)
     const [erreurTraitement, setErreurTraitement] = useState('')
+    const [fichiers, setFichiers] = useState('')
 
     const ajouterPartProxy = comlinkProxy((correlation, compteurPosition, chunk) => {
         return workers.traitementFichiers.ajouterPart(batchId, correlation, compteurPosition, chunk)
@@ -988,8 +989,20 @@ function UploadBatchZip(props) {
         return workers.traitementFichiers.updateFichier(dispatch, docWithIds, opts)
     })
 
-    const uploadHandler = useCallback(e=>{
-        const fichiers = e.currentTarget.files
+    const fichiersChangeHandler = useCallback(e=>{
+        const files = e.currentTarget.files
+        if(files.length !== 1) return false
+        const file = files[0]
+        console.debug("File : ", file)
+        const filename = file.name.toLowerCase()
+        if(!filename.endsWith('.zip')) {
+            return false
+        }
+        setFichiers(files)
+    }, [setFichiers])
+
+    const demarrerUpload = useCallback(e=>{
+        // const fichiers = e.currentTarget.files
         console.debug("UploadBatchZip fichiers %O dans cuuid %O", fichiers, cuuid)
         setTraitementEnCours(true)
         setErreurTraitement('')
@@ -998,6 +1011,7 @@ function UploadBatchZip(props) {
                 for await (const fichier of fichiers) {
                     await workers.transfertFichiers.parseZipFile(workers, userId, fichier, cuuid, updateFichierProxy, ajouterPartProxy)
                 }
+                fermer()
             })
             .catch(err=>{
                 console.error("UploadBatchZip Erreur traitement zip ", err)
@@ -1005,22 +1019,43 @@ function UploadBatchZip(props) {
             })
             .finally(()=>{
                 setTraitementEnCours(false)
+                setFichiers('')
             })
-    }, [workers, userId, cuuid, setTraitementEnCours, setErreurTraitement])
+    }, [workers, userId, cuuid, setTraitementEnCours, setErreurTraitement, fichiers, setFichiers])
 
     if(!!hide) return ''
 
     return (
         <div>
-            <h3>Upload batch de fichiers via .zip</h3>
-            <Button onClick={fermer}>Fermer</Button>
+            <h3>Upload zip</h3>
+
+            <p>
+                Cette page permet d'inserer le contenu d'un fichier .zip dans le repertoire courant.
+                Le fichier .zip va etre ouvert, son contenu chiffre et copie en conservant la structure des repertoires.
+            </p>
 
             <Form>
-                <Form.Control type='file' onChange={uploadHandler} />
+                <Form.Control className='btn-upload' type='file' onChange={fichiersChangeHandler} accept='application/zip'/>
+                <p></p>
+                <div className='buttonbar'>
+                    <Button onClick={demarrerUpload} disabled={!fichiers}>Demarrer</Button>
+                    <Button variant='secondary' onClick={fermer}>Fermer</Button>
+                </div>
             </Form>
 
+            <p></p>
+
             <Alert show={!!traitementEnCours} variant='info'>
-                Traitement du fichier ZIP en cours.
+                <Alert.Heading>
+                    Traitement du fichier ZIP en cours.
+                </Alert.Heading>
+                <p>
+                    Cette page va se fermer lorsque l'extraction et le chiffrage des fichiers seront termines.
+                </p>
+                <p>
+                    Noter que le tranfert des fichiers procede de la maniere habituelle. Veuillez surveiller l'indicateur
+                    de transfert de fichier pour savoir quand le transfert sera complete.
+                </p>
             </Alert>
 
             <Alert show={!!erreurTraitement} variant='danger'>

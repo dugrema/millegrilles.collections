@@ -228,3 +228,8 @@ BUTTON.supprimer {
     text-overflow: clip;
     text-wrap: wrap;
 }
+
+.btn-upload::file-selector-button {
+    color: $fourth-color;
+    background-color: $second-color;
+}
