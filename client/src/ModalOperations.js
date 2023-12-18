@@ -158,6 +158,8 @@ export function CopierModal(props) {
 
     const contactId = useSelector(state=>state.fichiers.partageContactId)
 
+    const [enCours, setEnCours] = useState(false)
+
     // const stateFichiers = useSelector(state=>state.fichiers)
     // console.debug("StateFichiers ", stateFichiers)
 
@@ -165,21 +167,24 @@ export function CopierModal(props) {
         if(cuuid) {
             const contactIdEffectif = partage?contactId:null
             console.debug("Copier selection %O vers cuuid %O (contactId: %O) ", selection, cuuid, contactIdEffectif)
+            setEnCours(true)
             connexion.copierVersCollection(cuuid, selection, {contactId: contactIdEffectif})
                 .then(reponse=>{
                     // console.debug("Reponse copierVersCollection : %O", reponse)
                     if(reponse.ok === false) {
                         erreurCb(reponse.err, "Erreur copierVersCollection")
-                    } else {
-                        fermer()
                     }
                   })
                 .catch(err=>erreurCb(err, "Erreur copier vers collection"))
+                .finally(()=>{
+                    setEnCours(false)
+                    fermer()
+                })
         } else {
             // Ajouter au favoris?
             erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
         }
-    }, [connexion, selection, partage, contactId, fermer])
+    }, [connexion, selection, partage, contactId, fermer, setEnCours])
 
     const BoutonAction = useMemo(() => {
         return props => <Button onClick={()=>copier(props.cuuid)} disabled={props.disabled}>Copier</Button>
@@ -191,6 +196,7 @@ export function CopierModal(props) {
             show={show}
             BoutonAction={BoutonAction}
             fermer={fermer}
+            enCours={enCours}
             erreurCb={erreurCb} />
     )
 
@@ -204,24 +210,29 @@ export function DeplacerModal(props) {
 
     const cuuidOrigine = useSelector(state=>state.fichiers.cuuid)  // Cuuid courant
 
+    const [enCours, setEnCours] = useState(false)
+
     const deplacer = useCallback( cuuidDestination => {
         if(cuuidDestination) {
             // console.debug("Deplacer de cuuid %s vers cuuid %s", cuuidOrigine, cuuidDestination)
+            setEnCours(true)
             connexion.deplacerFichiersCollection(cuuidOrigine, cuuidDestination, selection)
                 .then(reponse=>{
                     // console.debug("Reponse copierVersCollection : %O", reponse)
                     if(reponse.ok === false) {
                         erreurCb(reponse.message, "Erreur copierVersCollection")
-                    } else {
-                        fermer()
                     }
                   })
                 .catch(err=>erreurCb(err, "Erreur copier vers collection"))
+                .finally(()=>{
+                    setEnCours(false)
+                    fermer()
+                })
         } else {
             // Ajouter au favoris?
             erreurCb("Erreur copierVersCollection - aucune collection selectionnee")
         }
-    }, [connexion, cuuidOrigine, selection, fermer])
+    }, [connexion, cuuidOrigine, selection, fermer, setEnCours])
 
     const BoutonAction = props => (
         <Button onClick={()=>deplacer(props.cuuid)} disabled={props.disabled}>Deplacer</Button>
@@ -233,6 +244,7 @@ export function DeplacerModal(props) {
             show={show}
             BoutonAction={BoutonAction}
             fermer={fermer}
+            enCours={enCours}
             erreurCb={erreurCb} />
     )
 
@@ -240,7 +252,7 @@ export function DeplacerModal(props) {
 
 export function ModalNavigationCollections(props) {
 
-    const { titre, show, fermer, erreurCb, BoutonAction } = props
+    const { titre, show, fermer, enCours, erreurCb, BoutonAction } = props
     
     const workers = useWorkers()
     const dispatch = useDispatch()
@@ -329,12 +341,16 @@ export function ModalNavigationCollections(props) {
                 {titre}
             </Modal.Header>
 
-            <FilePicker 
-                liste={liste} 
-                breadcrumb={breadcrumb} 
-                toBreadrumbIdx={handlerSliceBreadcrumb}
-                toCollection={naviguerCollection}
-                />
+            {enCours?
+                <p>Traitement en cours <i className="fa fa-spinner fa-spin"/></p>
+                :
+                <FilePicker 
+                    liste={liste} 
+                    breadcrumb={breadcrumb} 
+                    toBreadrumbIdx={handlerSliceBreadcrumb}
+                    toCollection={naviguerCollection}
+                    />
+            }
 
             <Modal.Footer>
                 <BoutonAction cuuid={cuuid} disabled={breadcrumb.length === 0} />

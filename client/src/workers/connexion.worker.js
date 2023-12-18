@@ -86,7 +86,10 @@ function supprimerDocuments(cuuid, tuuids, supprimePath) {
   return ConnexionClient.emitBlocking(
     'supprimerDocuments',
     {cuuid, tuuids, cuuids_path: supprimePath},
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerDocuments', attacherCertificat: true}
+    {
+      kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerDocuments', 
+      timeout: 30_000, attacherCertificat: true,
+    }
   )
 }
 
@@ -126,7 +129,10 @@ function getDocuments(tuuids, opts) {
   return ConnexionClient.emitBlocking(
     'getDocuments',
     {tuuids_documents: tuuids, partage, contact_id},
-    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', attacherCertificat: true}
+    {
+      kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', 
+      timeout: 30_000, attacherCertificat: true
+    }
   )
 }
 
@@ -135,7 +141,10 @@ function recupererDocuments(items) {
   return ConnexionClient.emitBlocking(
     'recupererDocumentsV2',
     {items},
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'recupererDocumentsV2', attacherCertificat: true}
+    {
+      kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'recupererDocumentsV2', 
+      timeout: 30_000, attacherCertificat: true,
+    }
   )
 }
 
@@ -146,7 +155,10 @@ function copierVersCollection(cuuid, tuuids, opts) {
   return ConnexionClient.emitBlocking(
     'copierVersCollection',
     {cuuid, inclure_tuuids: tuuids, contact_id: contactId},
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterFichiersCollection', attacherCertificat: true}
+    {
+      kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterFichiersCollection', 
+      timeout: 45_000, attacherCertificat: true,
+    }
   )
 }
 
@@ -154,7 +166,10 @@ function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
   return ConnexionClient.emitBlocking(
     'deplacerFichiersCollection',
     {cuuid_origine, cuuid_destination, inclure_tuuids: tuuids},
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'deplacerFichiersCollection', attacherCertificat: true}
+    {
+      kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'deplacerFichiersCollection', 
+      timeout: 45_000, attacherCertificat: true,
+    }
   )
 }
 
