@@ -8,7 +8,7 @@ import { MenuContextuel } from '@dugrema/millegrilles.reactjs'
 export function MenuContextuelFichier(props) {
     const { 
         fichier, contextuel, fermerContextuel, showPreview, cuuid, 
-        showArchiverModalOuvrir, showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
+        showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
         showRenommerModalOuvrir, downloadAction, 
         // showInfoModalOuvrir,
     } = props
@@ -50,7 +50,6 @@ export function MenuContextuelFichier(props) {
         fermerContextuel()
     }, [fichier, downloadAction, fermerContextuel])
 
-    const archiverAction = useCallback( () => archiverDocuments(fermerContextuel, showArchiverModalOuvrir), [fermerContextuel, showArchiverModalOuvrir] )
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
@@ -61,12 +60,10 @@ export function MenuContextuelFichier(props) {
         <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={downloadEvent}><i className="fa fa-download"/> Download</Button></Col></Row>
-            {/* <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row> */}
             <hr/>
             <Row><Col><Button variant="link" onClick={renommerAction}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={deplacerAction} disabled={!cuuid}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={archiverAction}><i className="fa fa-snowflake-o" /> Archiver</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={supprimerAction}><i className="fa fa-trash-o" /> Supprimer</Button></Col></Row>
         </MenuContextuel>
     )
@@ -114,13 +111,12 @@ export function MenuContextuelFichierRecherche(props) {
 
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
-    const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
+    // const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
 
     return (
         <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
             <Row><Col><Button variant="link" onClick={showPreviewAction} disabled={!previewDisponible}><i className="fa fa-search"/> Preview</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={downloadEvent}><i className="fa fa-download"/> Download</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
             <hr/>
             <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={supprimerAction}><i className="fa fa-trash-o" /> Supprimer</Button></Col></Row>
@@ -131,9 +127,10 @@ export function MenuContextuelFichierRecherche(props) {
 export function MenuContextuelRepertoire(props) {
 
     const { 
-        workers, repertoire, contextuel, fermerContextuel, cuuid,
+        workers, selection, repertoire, contextuel, fermerContextuel, cuuid,
         showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
         showInfoModalOuvrir, showRenommerModalOuvrir, showPartagerModalOuvrir,
+        downloadRepertoire,
     } = props
 
     // console.debug("MenuContextuelRepertoire Proppies ", props)
@@ -143,8 +140,15 @@ export function MenuContextuelRepertoire(props) {
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
     const renommerAction = useCallback( () => renommer(fermerContextuel, showRenommerModalOuvrir), [fermerContextuel, showRenommerModalOuvrir] )
-    const infoAction = useCallback( () => infoModal(fermerContextuel, showInfoModalOuvrir), [fermerContextuel, showInfoModalOuvrir] )
     const partagerAction = useCallback( () => infoModal(fermerContextuel, showPartagerModalOuvrir), [fermerContextuel, showPartagerModalOuvrir] )
+
+    const downloadRepertoireCb = useCallback(()=>{
+        if(downloadRepertoire && selection && selection.length === 1) {
+            const tuuid = selection[0]
+            console.debug("Downloader repertoire %s", tuuid)
+            downloadRepertoire({currentTarget: {value: tuuid}})
+        }
+    }, [selection, downloadRepertoire])
 
     const posX = useMemo(()=>{
         return contextuel.x
@@ -156,8 +160,8 @@ export function MenuContextuelRepertoire(props) {
 
     return (
         <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
-            <Row><Col><Button variant="link" onClick={infoAction}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={partagerAction}><i className="fa fa-share-alt"/> Partager</Button></Col></Row>
+            <Row><Col><Button variant="link" onClick={downloadRepertoireCb} disabled={!downloadRepertoire}><i className="fa fa-download"/> Download</Button></Col></Row>
             <hr/>
             {/* <Row><Col><Button variant="link" onClick={favorisAction}><i className="fa fa-star"/> Favoris</Button></Col></Row> */}
             <Row><Col><Button variant="link" onClick={renommerAction}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
@@ -172,12 +176,11 @@ export function MenuContextuelMultiselect(props) {
 
     const { 
         workers, fichiers, selection, contextuel, fermerContextuel, cuuid,
-        showSupprimerModalOuvrir, showArchiverModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
+        showSupprimerModalOuvrir, showCopierModalOuvrir, showDeplacerModalOuvrir, 
     } = props
 
     const supprimerAction = useCallback( () => supprimerDocuments(fermerContextuel, showSupprimerModalOuvrir), [fermerContextuel, showSupprimerModalOuvrir] )
-    const archiverAction = useCallback( () => supprimerDocuments(fermerContextuel, showArchiverModalOuvrir), [fermerContextuel, showArchiverModalOuvrir] )
-    const favorisAction = useCallback( () => toggleFavorisMultiples(workers, fermerContextuel, cuuid, fichiers, selection), [workers, fermerContextuel, fichiers, selection, cuuid] )
+    // const favorisAction = useCallback( () => toggleFavorisMultiples(workers, fermerContextuel, cuuid, fichiers, selection), [workers, fermerContextuel, fichiers, selection, cuuid] )
     const copierAction = useCallback( () => copier(fermerContextuel, showCopierModalOuvrir), [fermerContextuel, showCopierModalOuvrir] )
     const deplacerAction = useCallback( () => deplacer(fermerContextuel, showDeplacerModalOuvrir), [fermerContextuel, showDeplacerModalOuvrir] )
 
@@ -193,13 +196,12 @@ export function MenuContextuelMultiselect(props) {
 
     return (
         <MenuContextuel show={contextuel.show} posX={posX} posY={posY} fermer={fermerContextuel}>
-            <Row><Col><Button variant="link" disabled={true}><i className="fa fa-info-circle"/> Info</Button></Col></Row>
+            <Row><Col><Button variant="link" disabled={true}><i className="fa fa-search"/> Preview</Button></Col></Row>
+            <Row><Col><Button variant="link" disabled={true}><i className="fa fa-download"/> Download</Button></Col></Row>
             <hr/>
-            <Row><Col><Button variant="link" onClick={favorisAction} disabled={listeContientFichiers}><i className="fa fa-star"/> Favoris</Button></Col></Row>
             <Row><Col><Button variant="link" disabled={true}><i className="fa fa-edit"/> Renommer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={deplacerAction} disabled={!cuuid}><i className="fa fa-cut"/> Deplacer</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={copierAction}><i className="fa fa-copy"/> Copier</Button></Col></Row>
-            <Row><Col><Button variant="link" onClick={archiverAction}><i className="fa fa-snowflake-o" /> Archiver</Button></Col></Row>
             <Row><Col><Button variant="link" onClick={supprimerAction}><i className="fa fa-trash-o" /> Supprimer</Button></Col></Row>
         </MenuContextuel>
     )
@@ -230,11 +232,6 @@ export function MenuContextuelCorbeille(props) {
     )
 }
 
-function archiverDocuments(fermer, showArchiverModalOuvrir) {
-    showArchiverModalOuvrir()
-    fermer()
-}
-
 function supprimerDocuments(fermer, showSupprimerModalOuvrir) {
     showSupprimerModalOuvrir()
     fermer()
@@ -261,51 +258,51 @@ function recupererMultiple(workers, fermer, selection, onRecuperer) {
     fermer()
 }
 
-function toggleFavoris(workers, fermer, cuuid, collection) {
+// function toggleFavoris(workers, fermer, cuuid, collection) {
 
-    const connexion = workers.connexion
+//     const connexion = workers.connexion
 
-    // if(cuuid) {
-        console.debug("Toggle favoris %O", collection)
-        if(collection.favoris === true) {
-            // Desactiver favoris
-            connexion.toggleFavoris({[collection.folderId]: false})
-        } else {
-            // Activer favoris
-            connexion.toggleFavoris({[collection.folderId]: true})
-        }
-    // } else {
-    //     console.debug("Retirer favoris %O", collection)
-    //     connexion.toggleFavoris({[collection.folderId]: false})
-    // }
+//     // if(cuuid) {
+//         console.debug("Toggle favoris %O", collection)
+//         if(collection.favoris === true) {
+//             // Desactiver favoris
+//             connexion.toggleFavoris({[collection.folderId]: false})
+//         } else {
+//             // Activer favoris
+//             connexion.toggleFavoris({[collection.folderId]: true})
+//         }
+//     // } else {
+//     //     console.debug("Retirer favoris %O", collection)
+//     //     connexion.toggleFavoris({[collection.folderId]: false})
+//     // }
 
-    fermer()
-}
+//     fermer()
+// }
 
-function toggleFavorisMultiples(workers, fermer, cuuid, liste, selection) {
+// function toggleFavorisMultiples(workers, fermer, cuuid, liste, selection) {
  
-    const connexion = workers.connexion
+//     const connexion = workers.connexion
 
-    if(cuuid) {
-        console.debug("Toggle favoris %O (liste complete: %O)", selection, liste)
-        const commande = liste.filter(item=>selection.includes(item.folderId)).reduce((commande, item)=>{
-            commande[item.folderId] = item.favoris?false:true  // Inverser etat favoris
-            return commande
-        }, {})
-        console.debug("Toggle favoris cuuid %s commande : %O", cuuid, commande)
-        connexion.toggleFavoris(commande)
-    } else {
-        console.debug("Retirer favoris %O (liste complete: %O)", selection, liste)
-        const commande = selection.reduce((commande, item)=>{
-            commande[item] = false
-            return commande
-        }, {})
-        console.debug("Toggle favoris commande : %O", commande)
-        connexion.toggleFavoris(commande)
-    }
+//     if(cuuid) {
+//         console.debug("Toggle favoris %O (liste complete: %O)", selection, liste)
+//         const commande = liste.filter(item=>selection.includes(item.folderId)).reduce((commande, item)=>{
+//             commande[item.folderId] = item.favoris?false:true  // Inverser etat favoris
+//             return commande
+//         }, {})
+//         console.debug("Toggle favoris cuuid %s commande : %O", cuuid, commande)
+//         connexion.toggleFavoris(commande)
+//     } else {
+//         console.debug("Retirer favoris %O (liste complete: %O)", selection, liste)
+//         const commande = selection.reduce((commande, item)=>{
+//             commande[item] = false
+//             return commande
+//         }, {})
+//         console.debug("Toggle favoris commande : %O", commande)
+//         connexion.toggleFavoris(commande)
+//     }
 
-    fermer()
-}
+//     fermer()
+// }
 
 function copier(fermer, showSupprimerModalOuvrir) {
     showSupprimerModalOuvrir()

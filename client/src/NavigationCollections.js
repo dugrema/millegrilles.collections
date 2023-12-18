@@ -456,6 +456,7 @@ function Modals(props) {
                 cuuid={cuuid}
                 etatConnexion={etatPret}
                 etatAuthentifie={etatPret}
+                downloadRepertoire={downloadRepertoire}
                 erreurCb={erreurCb}
               />
 
