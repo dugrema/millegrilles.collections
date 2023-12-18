@@ -60,6 +60,14 @@ export function useSetOverrideAffichage() {
     return useContext(Context).setOverrideAffichage
 }
 
+export function useStopUnload() {
+    return [useContext(Context).stopUnload, useContext(Context).setStopUnload]
+}
+
+export function useModalTransfertEnCours() {
+    return [useContext(Context).modalTransfertEnCours, useContext(Context).setModalTransfertEnCours]
+}
+
 // Provider
 export function WorkerProvider(props) {
 
@@ -74,6 +82,8 @@ export function WorkerProvider(props) {
     const [infoConnexion, setInfoConnexion] = useState('')
     const [capabilities, setCapabilities] = useState('')
     const [overrideAffichage, setOverrideAffichage] = useState(localStorage.getItem('overrideAffichage') || '')
+    const [stopUnload, setStopUnload] = useState(true)
+    const [modalTransfertEnCours, setModalTransfertEnCours] = useState(false)
 
     const etatAuthentifie = useMemo(()=>usager && formatteurPret, [usager, formatteurPret])
     const etatPret = useMemo(()=>{
@@ -83,12 +93,14 @@ export function WorkerProvider(props) {
     const value = useMemo(()=>{
         if(workersPrets) return { 
             usager, etatConnexion, etatConnexionOpts, formatteurPret, etatAuthentifie, infoConnexion, etatPret, 
-            capabilities, overrideAffichage, setOverrideAffichage,
+            capabilities, overrideAffichage, setOverrideAffichage, stopUnload, setStopUnload, 
+            modalTransfertEnCours, setModalTransfertEnCours,
         }
     }, [
         workersPrets, 
         usager, etatConnexion, etatConnexionOpts, formatteurPret, etatAuthentifie, infoConnexion, etatPret, 
-        capabilities, overrideAffichage, setOverrideAffichage,
+        capabilities, overrideAffichage, setOverrideAffichage, stopUnload, setStopUnload,
+        modalTransfertEnCours, setModalTransfertEnCours,
     ])
 
     const setEtatConnexionCb = useCallback((etat, opts) => {
@@ -194,6 +206,24 @@ export function WorkerProvider(props) {
             .catch(err=>console.error("Erreur chargement capabilities ", err))
     }, [setCapabilities, device, orientation, overrideAffichage])
   
+    // Evenement pour empecher de changer de page (e.g. si transfert en cours)
+    useEffect(()=>{
+        if(stopUnload) {
+            console.info("Ajout beforeunload")
+            const unloadBlock = e => {
+                e.preventDefault()
+                // console.debug("Unload intercepted, event %O", e)
+                e.returnValue = true
+                setModalTransfertEnCours(true)
+            }
+            window.addEventListener('beforeunload', unloadBlock)
+            return () => {
+                // console.info("Nettoyage beforeunload")
+                window.removeEventListener('beforeunload', unloadBlock)
+            }
+        }
+    }, [stopUnload, setModalTransfertEnCours])
+
     if(!workersPrets) return props.attente
 
     return <Context.Provider value={value}>{props.children}</Context.Provider>

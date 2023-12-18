@@ -23,6 +23,7 @@ const initialState = {
     userId: '',                 // UserId courant, permet de stocker plusieurs users localement
     progres: null,              // Pourcentage de progres en int
     completesCycle: [],         // Conserve la liste des uploads completes qui restent dans le total de progres
+    enCours: false,             // True si download en cours
 }
 
 // Actions
@@ -135,6 +136,10 @@ function clearCycleDownloadAction(state, action) {
     state.completesCycle = []
 }
 
+function setEnCoursAction(state, action) {
+    state.enCours = action.payload
+}
+
 const downloaderSlice = createSlice({
     name: SLICE_NAME,
     initialState,
@@ -150,6 +155,7 @@ const downloaderSlice = createSlice({
         clearCycleDownload: clearCycleDownloadAction,
         updateDownload: updateDownloadAction,
         pushGenererZip: pushGenererZipAction,
+        setEnCours: setEnCoursAction, 
     }
 })
 
@@ -158,7 +164,7 @@ export const {
     pushDownload, continuerDownload, retirerDownload, arretDownload,
     clearDownloads, clearCycleDownload,
     updateDownload, supprimerDownload,
-    pushGenererZip,
+    pushGenererZip, setEnCours,
 } = downloaderSlice.actions
 export default downloaderSlice.reducer
 
@@ -499,6 +505,7 @@ async function downloaderMiddlewareListener(workers, action, listenerApi) {
     // console.debug("Arret upload info : %O", arretUpload)
 
     await listenerApi.unsubscribe()
+    listenerApi.dispatch(setEnCours(true))
     try {
         // Reset liste de fichiers completes utilises pour calculer pourcentage upload
         listenerApi.dispatch(clearCycleDownload())
@@ -518,6 +525,7 @@ async function downloaderMiddlewareListener(workers, action, listenerApi) {
         const resultat = await task.result  // Attendre fin de la tache en cas d'annulation
         // console.debug("downloaderMiddlewareListener Sequence download terminee, resultat %O", resultat)
     } finally {
+        listenerApi.dispatch(setEnCours(false))
         await listenerApi.subscribe()
     }
 }

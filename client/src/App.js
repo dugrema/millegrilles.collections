@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux'
 
 import Button from 'react-bootstrap/Button'
+import Modal from 'react-bootstrap/Modal'
 
 import { LayoutMillegrilles, ModalErreur, TransfertModal, OuvertureSessionModal } from '@dugrema/millegrilles.reactjs'
 
 import ErrorBoundary from './ErrorBoundary'
-import useWorkers, {useCapabilities, useEtatConnexion, useEtatConnexionOpts, WorkerProvider, useUsager, useOverrideAffichage, useSetOverrideAffichage} from './WorkerContext'
+import useWorkers, {useCapabilities, useEtatConnexion, useEtatConnexionOpts, WorkerProvider, 
+  useUsager, useOverrideAffichage, useSetOverrideAffichage, useStopUnload, useModalTransfertEnCours} from './WorkerContext'
 import storeSetup from './redux/store'
 
 import fichiersActions from './redux/fichiersSlice'
@@ -219,6 +221,14 @@ function LayoutMain() {
     )
   }, [hideMenu, workers, etatConnexion, i18n, showTransfertModalOuvrir, showMediaJobsOuvrir, handlerSelect, toggleModeAffichage])
 
+  // Afficher un avertissement pour quitter la page si un upload est en cours.
+  const setStopUnload = useStopUnload()[1]
+  const uploadEnCours = useSelector(state=>state.uploader.enCours)
+  const downloadEnCours = useSelector(state=>state.downloader.enCours)
+  useEffect(()=>{
+    setStopUnload(uploadEnCours || downloadEnCours)
+  }, [uploadEnCours, downloadEnCours, setStopUnload])
+
   return (
     <div className={classNameTop}>
       <LayoutMillegrilles menu={menu} fluid={fluid}>
@@ -306,6 +316,9 @@ function Modals(props) {
   const progresUpload = useSelector(state=>state.uploader.progres)
   const downloads = useSelector(state=>state.downloader.liste)
   const progresDownload = useSelector(state=>state.downloader.progres)
+  const [modalTransfertEnCours, setModalTransfertEnCours] = useModalTransfertEnCours()
+
+  const fermerModalTransfertEnCours = useCallback(()=>setModalTransfertEnCours(false), [setModalTransfertEnCours])
 
   return (
     <div>
@@ -336,6 +349,10 @@ function Modals(props) {
           show={showMediaJobs}
           fermer={showMediaJobsFermer}
         />
+
+      <ModalTransfertEnCours
+        show={!!modalTransfertEnCours}
+        fermer={fermerModalTransfertEnCours} />
     </div>
   )
 }
@@ -540,4 +557,18 @@ function InitialisationConfiguration(props) {
   }, [])
 
   return ''
+}
+
+function ModalTransfertEnCours(props) {
+  const { show, fermer } = props
+  return (
+      <Modal show={show} onHide={fermer}>
+          <Modal.Header closeButton>Attention</Modal.Header>
+          <Modal.Body>
+            <p>Des transferts sont en cours.</p>
+            <p>Veuillez attendre que les transferts soient completes ou allez les annuler dans le menu Transfert de fichiers.</p>
+          </Modal.Body>
+          <Modal.Footer><Button onClick={fermer}>Ok</Button></Modal.Footer>
+      </Modal>
+  )
 }

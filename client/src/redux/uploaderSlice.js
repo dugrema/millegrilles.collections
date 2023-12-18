@@ -14,6 +14,7 @@ const initialState = {
     userId: '',                 // UserId courant, permet de stocker plusieurs users localement
     progres: null,              // Pourcentage de progres en int
     completesCycle: [],         // Conserve la liste des uploads completes qui restent dans le total de progres
+    enCours: false,             // True si un upload est en cours de transfert
 }
 
 function setUserIdAction(state, action) {
@@ -131,6 +132,10 @@ function arretUploadAction(state, action) {
     // Middleware trigger seulement
 }
 
+function setUploadEnCoursAction(state, action) {
+    state.enCours = action.payload
+}
+
 const uploadSlice = createSlice({
     name: 'uploader',
     initialState,
@@ -145,13 +150,14 @@ const uploadSlice = createSlice({
         majContinuerUpload: continuerUploadAction,
         arretUpload: arretUploadAction,
         clearCycleUpload: clearCycleUploadAction,
+        setUploadEnCours: setUploadEnCoursAction,
     }
 })
 
 export const { 
     setUserId, ajouterUpload, updateUpload, retirerUpload, setUploads, 
     clearUploadsState, supprimerUploadsParEtat, majContinuerUpload,
-    arretUpload, clearCycleUpload,
+    arretUpload, clearCycleUpload, setUploadEnCours,
 } = uploadSlice.actions
 export default uploadSlice.reducer
 
@@ -287,6 +293,7 @@ async function uploaderMiddlewareListener(workers, action, listenerApi) {
     // console.debug("Arret upload info : %O", arretUpload)
 
     await listenerApi.unsubscribe()
+    listenerApi.dispatch(setUploadEnCours(true))
     try {
         // Reset liste de fichiers completes utilises pour calculer pourcentage upload
         listenerApi.dispatch(clearCycleUpload())
@@ -306,6 +313,7 @@ async function uploaderMiddlewareListener(workers, action, listenerApi) {
         await task.result  // Attendre fin de la tache en cas d'annulation
         // console.debug("uploaderMiddlewareListener Sequence upload terminee")
     } finally {
+        listenerApi.dispatch(setUploadEnCours(false))
         await listenerApi.subscribe()
     }
 }
