@@ -1034,8 +1034,28 @@ function UploadBatchZip(props) {
                 Le fichier .zip va etre ouvert, son contenu chiffre et copie en conservant la structure des repertoires.
             </p>
 
+            <p>
+                Noter que le tranfert des fichiers procede de la maniere habituelle. 
+                Cette page effectue le chiffrage des fichiers. Elle va se fermer une fois le chiffrage termine.
+            </p>
+
+            <Alert variant='info'>
+                <Alert.Heading>Note</Alert.Heading>
+                <p>
+                    Veuillez surveiller l'indicateur de transfert de fichiers dans la barre de menu 
+                    pour savoir quand le transfert sera complete.
+                </p>
+            </Alert>
+
+            <p>
+                Choississez un fichier .zip et cliquez sur demarrer pour proceder.
+            </p>
+
+            <hr />
+
             <Form>
-                <Form.Control className='btn-upload' type='file' onChange={fichiersChangeHandler} accept='application/zip'/>
+                <Form.Label htmlFor='btn-upload'>Choisir un fichier .zip</Form.Label>
+                <Form.Control id='btn-upload' className='btn-upload' type='file' onChange={fichiersChangeHandler} accept='application/zip'/>
                 <p></p>
                 <div className='buttonbar'>
                     <Button onClick={demarrerUpload} disabled={!fichiers}>Demarrer</Button>
@@ -1051,10 +1071,6 @@ function UploadBatchZip(props) {
                 </Alert.Heading>
                 <p>
                     Cette page va se fermer lorsque l'extraction et le chiffrage des fichiers seront termines.
-                </p>
-                <p>
-                    Noter que le tranfert des fichiers procede de la maniere habituelle. Veuillez surveiller l'indicateur
-                    de transfert de fichier pour savoir quand le transfert sera complete.
                 </p>
             </Alert>
 
