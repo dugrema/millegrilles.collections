@@ -478,12 +478,12 @@ function PreviewImageMobile(props) {
             <Col {...cols[1]} className={'player-media-information ' + orientation}>
                 <Row>
                     <Col>
-                        <Button onClick={viewImageClick} variant="primary" disabled={!srcImage} className="player-bouton-full">
+                        <Button onClick={viewImageClick} variant="primary" disabled={!srcImage||thumbnailSeul} className="player-bouton-full">
                             <i className='fa fa-file-image-o'/> Ouvrir
                         </Button>
                     </Col>
                     <Col>
-                        <Button variant="secondary" onClick={downloadHandler} className="player-bouton-full"><i className='fa fa-download'/> Download</Button>
+                        <Button variant="secondary" onClick={downloadHandler} disabled={thumbnailSeul} className="player-bouton-full"><i className='fa fa-download'/> Download</Button>
                     </Col>
                 </Row>
                 <InformationFichier {...props} />
@@ -502,22 +502,27 @@ function PreviewDocumentMobile(props) {
     const [srcImage, setSrcImage] = useState('')
     const [complet, setComplet] = useState(false)
     const [srcLocal, setSrcLocal] = useState('')
+    const [thumbnailSeul, setThumbnailSeul] = useState(false)  // Flag pour thumbnail
 
     const cols = useMemo(()=>{
         if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
         else return [{xs: 12}, {}]
     }, [orientation])
 
-    const [loader, imageLoader] = useMemo(()=>{
-        if(!fichier) return [null, null]
-        const { loader, imageLoader } = fichier
-        return [loader, imageLoader]
+    const [loader, imageLoader, thumbnailLoader] = useMemo(()=>{
+        if(!fichier) return [null, null, null]
+        const { loader, imageLoader, thumbnailLoader } = fichier
+        return [loader, imageLoader, thumbnailLoader]
     }, [fichier])
 
     const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
 
     const setErrCb = useCallback(e => {
-        console.error("PreviewDocumentMobile Erreur chargement document : %O", e)
+        if(e.response) {
+            console.error("PreviewDocumentMobile Erreur chargement document (HTTP: %s)", e.response.status)
+        } else {
+            console.error("PreviewDocumentMobile Erreur chargement document : %O", e)
+        }
     }, [])
 
     const viewSrcClick = useCallback( event => {
@@ -539,18 +544,40 @@ function PreviewDocumentMobile(props) {
         // Thumbnail / poster video
         if(imageLoader) {
             imageLoader.load(null, {setFirst: setSrcImage})
-                .then(setSrcImage)
-                .catch(err=>{
-                    console.warn("Erreur chargement thumbnail : %O", err)
+                .then(src=>{
+                    if(src) {
+                        setSrcImage(src)
+                    } else {
+                        return thumbnailLoader.load().then(src=>{
+                            setSrcImage(src)
+                            setThumbnailSeul(true)
+                            return src
+                        })
+                    }
                 })
+                .catch(err=>{
+                    if(err.response) {
+                        console.warn("Erreur chargement thumbnail (HTTP : %s)", err.response.status)
+                    } else {
+                        console.warn("Erreur chargement thumbnail : %O", err)
+                    }
+                    return thumbnailLoader.load().then(src=>{
+                        setSrcImage(src)
+                        setThumbnailSeul(true)
+                        return src
+                    })
+            })
         }
 
         // Loader fichier source (original)
-        console.debug("Load src : ", loader)
         loader.load()
             .then(setSrcLocal)
             .catch(err=>{
-                console.error("Erreur load fichier : %O", err)
+                if(err.response) {
+                    console.error("Erreur load fichier (HTTP : %s)", err.response.status)
+                } else {
+                    console.error("Erreur load fichier : %O", err)
+                }
                 setErrCb(err)
             })
             .finally(()=>setComplet(true))
@@ -562,7 +589,7 @@ function PreviewDocumentMobile(props) {
             if(imageLoader) imageLoader.unload().catch(err=>console.debug("Erreur unload thumbnail : %O", err))
             loader.unload().catch(err=>console.warn("Erreur unload fichier : %O", err))
         }
-    }, [loader, imageLoader, setSrcImage, setErrCb, setComplet])
+    }, [loader, imageLoader, thumbnailLoader, setThumbnailSeul, setSrcImage, setErrCb, setComplet])
 
     return (
         <Row>
@@ -573,6 +600,10 @@ function PreviewDocumentMobile(props) {
                             <img src={srcImage} onClick={viewSrcClick} />
                             :''
                         }
+                        <p></p>
+                        <Alert variant='warning' show={!!thumbnailSeul}>
+                            <p>Document non disponible</p>
+                        </Alert>
                     </div>
                 </Ratio>
             </Col>
@@ -583,7 +614,7 @@ function PreviewDocumentMobile(props) {
                     </Button>
                     {' '}
                     {capabilities.mobile?'':
-                        <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
+                        <Button variant="secondary" disabled={!srcLocal} onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
                     }
                 </div>
                 <InformationFichier {...props} />
