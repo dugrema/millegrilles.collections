@@ -382,7 +382,11 @@ function PreviewImageMobile(props) {
     const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
 
     const setErrCb = useCallback(e => {
-        console.error("Erreur chargement image : %O", e)
+        if(e.response) {
+            console.error("Erreur chargement image %O (HTTP: %s)", e.response.config.url, e.response.status)
+        } else {
+            console.error("Erreur chargement image : %O", e)
+        }
     }, [])
 
     const viewImageClick = useCallback( event => {

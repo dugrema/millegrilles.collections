@@ -494,14 +494,14 @@ export function creerThunks(actions, nomSlice) {
     
         const tuuidsChiffres = fichiersChiffres.map(item=>item.tuuid)
         for (const fichier of fichiers) {
-            console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
+            // console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
             const dechiffre = ! tuuidsChiffres.includes(fichier.tuuid)
     
             // Mettre a jour dans IDB
             collectionsDao.updateDocument(fichier, {dechiffre})
                 .catch(err=>console.error("Erreur maj document %O dans idb : %O", fichier, err))
     
-            console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
+            // console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
             dispatch(mergeTuuidData({tuuid: fichier.tuuid, data: fichier}))
         }
     }

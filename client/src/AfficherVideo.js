@@ -239,11 +239,11 @@ export function WrapperPlayer(props) {
         }
     }, [setVideoChargePret, setErrVideoCb])
     const onWaiting = useCallback(param => {
-        console.debug("onWaiting ", param)
+        // console.debug("onWaiting ", param)
         setVideoChargePret(false)
     }, [setVideoChargePret])
     const onCanPlay = useCallback(param => {
-        console.debug("onCanPlay ", param)
+        // console.debug("onCanPlay ", param)
         setVideoChargePret(true)
         setErrVideo('')
     }, [setVideoChargePret, setErrVideo])
@@ -293,7 +293,7 @@ export function WrapperPlayer(props) {
 async function attendreChargement(source, majChargement, setSrcVideo, setErrVideo, abortSignal) {
 
     if(abortSignal.aborted) {
-        console.warn("attendreChargement Video aborted avant debut du chargement : ", abortSignal)
+        // console.warn("attendreChargement Video aborted avant debut du chargement : ", abortSignal)
         return
     }
 
@@ -304,7 +304,7 @@ async function attendreChargement(source, majChargement, setSrcVideo, setErrVide
             attenteCycle = 2_000
             // S'assurer que le video est pret dans le back-end
             try {
-                console.debug("attendreChargement HEAD ", url)
+                // console.debug("attendreChargement HEAD ", url)
                 const reponse = await axios({
                     method: 'HEAD',
                     url,
