@@ -94,6 +94,8 @@ export function WrapperPlayer(props) {
     const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad } = props
 
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
+    const tuuid = fichier.tuuid
+    const videoLoader = fichier.videoLoader
 
     const [selecteurCourant, setSelecteurCourant] = useState('')
     const [srcVideo, setSrcVideo] = useState('')
@@ -103,6 +105,7 @@ export function WrapperPlayer(props) {
     const [videoChargePret, setVideoChargePret] = useState(false)
     const [errVideo, setErrVideo] = useState('')
     const [progresChargement, setProgresChargement] = useState(0)
+    const [abortController, setAbortController] = useState(new AbortController())
 
     const setErrVideoCb = useCallback(err=>{
         console.trace("WrapperPlayer Erreur video ", err)
@@ -169,12 +172,28 @@ export function WrapperPlayer(props) {
         }
     }, [fichier, setPosterObj])
 
+    // Gerer l'annulation d'un download de video
     useEffect(()=>{
-        if(!selecteur || !fichier.videoLoader) return setSrcVideo('')
+        // console.debug("Nouveau abortController ", abortController)
+        return () => {
+            // console.warn("Abort")
+            abortController.abort()
+        }
+    }, [abortController])
 
-        // Debounce : eviter un reload si aucun changement
-        if(selecteur === selecteurCourant) return
-        setSelecteurCourant(selecteur)
+    useEffect(()=>{
+        if(!tuuid || !selecteurCourant) return
+        // console.info("Annuler chargement video du fichier")
+        setAbortController(new AbortController())
+    }, [tuuid, selecteurCourant, setAbortController])
+
+    // Debounce : eviter un reload si aucun changement
+    useEffect(()=>{
+        if(selecteur !== selecteurCourant) setSelecteurCourant(selecteur)
+    }, [selecteur, selecteurCourant, setSelecteurCourant])
+
+    useEffect(()=>{
+        if(!selecteurCourant || !videoLoader || abortController.aborted === true) return setSrcVideo('')
 
         // Reset indicateurs
         setVideoChargePret(false)
@@ -183,11 +202,11 @@ export function WrapperPlayer(props) {
 
         // console.debug("AfficherVideo selecteur ", selecteur)
 
-        fichier.videoLoader.load({selecteur})
+        videoLoader.load({selecteur})
             .then(async src => {
-                // console.debug("videoLoader.load resultat : ", src)
-                await attendreChargement(src, majChargement, setSrcVideo, setErrVideoCb)
-                console.info("WrapperPlayer attendreChargement termine")
+                // console.debug("WrapperPlayer videoLoader.load resultat : ", src)
+                await attendreChargement(src, majChargement, setSrcVideo, setErrVideoCb, abortController.signal)
+                // console.info("WrapperPlayer attendreChargement termine")
             })
             .catch(err=>{
                 console.error("WrapperPlayer AfficherVideo erreur chargement video : %O", err)
@@ -195,7 +214,10 @@ export function WrapperPlayer(props) {
                 setVideoChargePret(true)
                 setProgresChargement('')
             })
-    }, [fichier, selecteur, selecteurCourant, setSelecteurCourant, setSrcVideo, setVideoChargePret, setProgresChargement, setErrVideoCb])
+    }, [
+        videoLoader, selecteurCourant, abortController, 
+        setSrcVideo, setVideoChargePret, setProgresChargement, setErrVideoCb
+    ])
 
     const onProgress = useCallback(event => {
         // console.debug("onProgress ", event)
@@ -268,11 +290,17 @@ export function WrapperPlayer(props) {
     )
 }
 
-async function attendreChargement(source, majChargement, setSrcVideo, setErrVideo) {
+async function attendreChargement(source, majChargement, setSrcVideo, setErrVideo, abortSignal) {
+
+    if(abortSignal.aborted) {
+        console.warn("attendreChargement Video aborted avant debut du chargement : ", abortSignal)
+        return
+    }
+
     try {
         const url = source.src
         let attenteCycle = 2_000
-        while(true) {
+        while(!abortSignal.aborted) {
             attenteCycle = 2_000
             // S'assurer que le video est pret dans le back-end
             try {
@@ -281,6 +309,7 @@ async function attendreChargement(source, majChargement, setSrcVideo, setErrVide
                     method: 'HEAD',
                     url,
                     timeout: 20_000,
+                    signal: abortSignal
                 })
                 majChargement(reponse)
                 if( ! HTTP_STATUS_ATTENTE.includes(reponse.status) ) {

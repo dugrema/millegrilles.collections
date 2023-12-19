@@ -148,7 +148,7 @@ function mapImage(workers, item, optionsLoader) {
     } else if(thumbnail && thumbnail.hachage && thumbnail.data_chiffre) {
         loader = loadFichierChiffre(traitementFichiersWorker.getFichierChiffre, thumbnail.hachage, thumbnail.mimetype, {dataChiffre: thumbnail.data_chiffre})
     } else {
-        console.debug("Aucune information d'image pour %O", item)
+        // console.debug("Aucune information d'image pour %O", item)
         return null
     }
 
@@ -367,15 +367,16 @@ function PreviewImageMobile(props) {
     const [srcImage, setSrcImage] = useState('')
     const [complet, setComplet] = useState(false)
     const [srcLocal, setSrcLocal] = useState('')
+    const [thumbnailSeul, setThumbnailSeul] = useState(false)  // Flag pour thumbnail
 
     const cols = useMemo(()=>{
         if(orientation === 'landscape') return [{xs: 12, sm: 6}, {xs: 12, sm: 6}]
         else return [{xs: 12}, {}]
     }, [orientation])
 
-    const [anime, imageLoader] = useMemo(()=>{
+    const [anime, imageLoader, thumbnailLoader] = useMemo(()=>{
         if(!fichier) return [false, null]
-        return [fichier.anime, fichier.imageLoader]
+        return [fichier.anime, fichier.imageLoader, fichier.thumbnailLoader]
     }, [fichier])
     
     const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
@@ -414,14 +415,32 @@ function PreviewImageMobile(props) {
 
         imageLoader.load({setFirst: setSrcImage, erreurCb: setErrCb})
             .then(src=>{
-                setSrcLocal(src)
-                if(!anime) {
-                    setSrcImage(src)
+                // console.debug("PreviewImageMobile imageLoader.load src", src)
+                if(src) {
+                    setSrcLocal(src)
+                    if(!anime) {
+                        setSrcImage(src)
+                    }
+                } else {
+                    // Fallback
+                    return thumbnailLoader.load().then(src=>{
+                        setSrcImage(src)
+                        setThumbnailSeul(true)
+                        return src
+                    })
                 }
             })
             .catch(err=>{
                 console.error("Erreur load image : %O", err)
                 setErrCb(err)
+                // Fallback
+                return thumbnailLoader.load().then(src=>{
+                    setSrcImage(src)
+                    return src
+                })
+            })
+            .catch(err=>{
+                console.error("Erreur load thumbnail image : %O", err)
             })
             .finally(()=>setComplet(true))
 
@@ -431,8 +450,10 @@ function PreviewImageMobile(props) {
             setComplet(false)
             imageLoader.unload()
                 .catch(err=>console.warn("Erreur unload image : %O", err))
+            thumbnailLoader.unload()
+                .catch(err=>console.warn("Erreur unload thumbnail image : %O", err))
         }
-    }, [anime, imageLoader, setSrcImage, setErrCb, setComplet])
+    }, [anime, imageLoader, thumbnailLoader, setSrcImage, setErrCb, setComplet, setThumbnailSeul])
 
     return (
         <Row>
@@ -443,6 +464,10 @@ function PreviewImageMobile(props) {
                             <img src={srcImage} onClick={viewImageClick} />
                             :''
                         }
+                        <p></p>
+                        <Alert variant='warning' show={!!thumbnailSeul}>
+                            <p>Image complete non disponible</p>
+                        </Alert>
                     </div>
                 </Ratio>
             </Col>
