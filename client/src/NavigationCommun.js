@@ -21,7 +21,8 @@ import fichiersActions from './redux/fichiersSlice'
 import { FormCheck } from 'react-bootstrap'
 import { getDocuments } from './fonctionsFichiers'
 
-const CONST_EXPIRATION_VISITE = 3 * 86_400_000
+const CONST_EXPIRATION_VISITE = 3 * 86_400_000,
+      CONST_EXPIRATION_VISITE_NOUVEAU = 3 * 3_600_000
 
 export function BarreInformation(props) {
     const { hide } = props
@@ -683,12 +684,16 @@ export function FormatterColonneDate(props) {
         if(visites) {
             // Tenter de detecter au moins 1 serveur avec le fichier visite recemment
             const expire = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE) / 1000)
-            const visitesInstances = Object.values(visites)
+            const expireNouveau = Math.floor((new Date().getTime() - CONST_EXPIRATION_VISITE_NOUVEAU) / 1000)
+            const visitesPasNouveau = {...visites}
+            delete visitesPasNouveau.nouveau
+            const visitesInstances = Object.values(visitesPasNouveau)
+            const visiteNouveau = visites.nouveau
             let visiteRecente = visitesInstances.reduce((acc, item)=>{
                 if(item > acc) return item
                 return acc
             }, 0)
-            if(visitesInstances.length === 0) {
+            if(visiteNouveau && visiteNouveau > expireNouveau) {
                 // Le fichier est nouveau (jamais sauvegarde)
                 symbolesEtat.push(<i key='absent' className="fa fa-spinner fa-spin" title='Fichier en traitement' />)
             } else if(visiteRecente === 0) {
