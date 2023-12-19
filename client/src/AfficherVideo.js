@@ -16,6 +16,7 @@ import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessour
 import { useCapabilities } from './WorkerContext'
 
 const HTTP_STATUS_ATTENTE = [202, 204]
+const HTTP_STATUS_ABANDONNER = [401, 403, 404]
 
 function AfficherVideo(props) {
 
@@ -108,7 +109,7 @@ export function WrapperPlayer(props) {
     const [abortController, setAbortController] = useState(new AbortController())
 
     const setErrVideoCb = useCallback(err=>{
-        console.trace("WrapperPlayer Erreur video ", err)
+        // console.trace("WrapperPlayer Erreur video ", err)
         setErrVideo(err)
         if(err) {
             if(err.progres !== undefined) {
@@ -148,6 +149,8 @@ export function WrapperPlayer(props) {
             const progres =  Math.floor(100.0 * position / taille)
             // console.debug("Progres ", progres)
             setProgresChargement(progres)
+        } else if(HTTP_STATUS_ABANDONNER.includes(info.status) ){
+            setProgresChargement(-1)
         }
     }, [setProgresChargement, setErrVideo])
 
@@ -164,7 +167,13 @@ export function WrapperPlayer(props) {
                 // console.debug("Image poster chargee : %O", image)
                 setPosterObj(image)
             })
-            .catch(err=>console.error("WrapperPlayer Erreur chargement poster : %O", err))
+            .catch(err=>{
+                if(err.response) {
+                    console.error("WrapperPlayer Erreur chargement poster (HTTP: %s)", err.response.status)
+                } else {
+                    console.error("WrapperPlayer Erreur chargement poster : %O", err)
+                }
+            })
 
         return () => {
             // console.debug("Revoking blob %O", imageChargee)
@@ -331,6 +340,7 @@ async function attendreChargement(source, majChargement, setSrcVideo, setErrVide
                             status: reponse.status, 
                             message: `Erreur chargement video : video non disponible (code: ${reponse.status})`
                         })
+                        majChargement(reponse)
                         return
                     } else {
                         // Autre erreur, probablement recuperable. Marquer erreur et reessayer.
@@ -378,7 +388,7 @@ function ProgresChargement(props) {
     }, [value, srcVideo, videoChargePret])
 
     useEffect(()=>{
-        if(value === null || value === '') setShow(false)
+        if(value === null || value === -1 || value === '') setShow(false)
         else if(value === 100 && srcVideo && videoChargePret) {
             setTimeout(()=>setShow(false), 1500)
         } else {
@@ -407,9 +417,9 @@ function PlayerEtatPassthrough(props) {
 
     const [delaiSelecteur, setDelaiSelecteur] = useState(false)
 
-    useEffect(()=>{
-        console.debug("PlayerEtatPassthrough Erreur video : ", errVideo)
-    }, [errVideo])
+    // useEffect(()=>{
+    //     console.debug("PlayerEtatPassthrough Erreur video : ", errVideo)
+    // }, [errVideo])
 
     useEffect(()=>{
         // Fait un de-bump sur switch de stream
