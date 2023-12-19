@@ -146,14 +146,27 @@ div.upload {
 }
 
 .progres-chargement {
-    position: relative;
-    top: -6rem;
-    left: 1rem;
+    /*position: relative;*/
+    position: absolute;
+    float: left;
+    /*width: 30rem;*/
+    /*top: -18rem;
+    left: 1rem;*/
+    margin-left: 0.4rem;
+    margin-top: 0.5rem;
     opacity: 0.85;
 }
 
-.progres-chargement .label {
-    background: $second-color;
+.progres-chargement .progres-indicateur {
+    // background: $second-color;
+    padding-top: 0.5rem;
+    padding-bottom: 1rem;
+    margin-left: 0.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.progres-chargement .progres-indicateur .label {
+    margin-bottom: 0.5rem;
 }
 
 .video-window {
@@ -162,6 +175,15 @@ div.upload {
 
 .video-window img {
     object-fit: contain;
+}
+
+.video-empty {
+    height: 20rem;
+}
+
+.video-window .alert {
+    opacity: 0.7;
+    margin-top: -9rem;
 }
 
 .tuuid, .fuuid {

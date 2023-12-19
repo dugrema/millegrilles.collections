@@ -88,6 +88,8 @@ function AfficherVideo(props) {
 
 export default AfficherVideo
 
+const RETRY_DELAY_HTTP_ERROR = 20_000
+
 export function WrapperPlayer(props) {
     const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad } = props
 
@@ -103,9 +105,12 @@ export function WrapperPlayer(props) {
     const [progresChargement, setProgresChargement] = useState(0)
 
     const setErrVideoCb = useCallback(err=>{
+        console.trace("WrapperPlayer Erreur video ", err)
         setErrVideo(err)
         if(err) {
-            setProgresChargement(100)
+            if(err.progres !== undefined) {
+                setProgresChargement(err.progres)
+            }
             //setVideoChargePret(false)
         }
     }, [setErrVideo, setVideoChargePret, setProgresChargement])
@@ -155,11 +160,11 @@ export function WrapperPlayer(props) {
                 // console.debug("Image poster chargee : %O", image)
                 setPosterObj(image)
             })
-            .catch(err=>console.error("Erreur chargement poster : %O", err))
+            .catch(err=>console.error("WrapperPlayer Erreur chargement poster : %O", err))
 
         return () => {
             // console.debug("Revoking blob %O", imageChargee)
-            loaderImage.unload().catch(err=>console.error("AfficherVideo erreur unload poster video ", err))
+            loaderImage.unload().catch(err=>console.error("WrapperPlayer AfficherVideo erreur unload poster video ", err))
         }
     }, [fichier, setPosterObj])
 
@@ -180,11 +185,12 @@ export function WrapperPlayer(props) {
         fichier.videoLoader.load({selecteur})
             .then(async src => {
                 // console.debug("videoLoader.load resultat : ", src)
-                return attendreChargement(src, majChargement, setSrcVideo, setErrVideoCb)
+                await attendreChargement(src, majChargement, setSrcVideo, setErrVideoCb)
+                console.info("WrapperPlayer attendreChargement termine")
             })
             .catch(err=>{
-                console.error("AfficherVideo erreur chargement video : %O", err)
-                setErrVideoCb('Erreur chargement video (general)')
+                console.error("WrapperPlayer AfficherVideo erreur chargement video : %O", err)
+                setErrVideoCb({err, message: 'Erreur chargement video (general)'})
                 setVideoChargePret(true)
                 setProgresChargement('')
             })
@@ -200,11 +206,11 @@ export function WrapperPlayer(props) {
     }, [])
     const onError = useCallback(event => {
         const target = event.target
-        // console.debug("Erreur load video ", event)
+        console.debug("WrapperPlayer Erreur load video ", event)
         if(target && target.nodeName === 'SOURCE') {
             // Iterer les sources (automatique). Declarer erreur juste s'il n'y a pas de source suivante.
             if(!target.nextSibling) {
-                setErrVideoCb('Erreur chargement video')
+                setErrVideoCb({message: 'Erreur chargement video'})
                 setVideoChargePret(false)
             }
         }
@@ -226,6 +232,7 @@ export function WrapperPlayer(props) {
 
     return (
         <div>
+            <ProgresChargement value={progresChargement} srcVideo={srcVideo} errVideo={errVideo} />
             <PlayerEtatPassthrough
                 posterObj={posterObj}
                 srcVideo={srcVideo}
@@ -250,7 +257,6 @@ export function WrapperPlayer(props) {
                         onEmptied={onEmptied}
                         />
             </PlayerEtatPassthrough>
-            <ProgresChargement value={progresChargement} srcVideo={srcVideo} />
         </div>
     )
 }
@@ -258,42 +264,65 @@ export function WrapperPlayer(props) {
 async function attendreChargement(source, majChargement, setSrcVideo, setErrVideo) {
     try {
         const url = source.src
+        let attenteCycle = 2_000
         while(true) {
+            attenteCycle = 2_000
             // S'assurer que le video est pret dans le back-end
             try {
+                console.debug("attendreChargement HEAD ", url)
                 const reponse = await axios({
                     method: 'HEAD',
                     url,
                     timeout: 20_000,
                 })
                 majChargement(reponse)
-                if( ! HTTP_STATUS_ATTENTE.includes(reponse.status) ) break
+                if( ! HTTP_STATUS_ATTENTE.includes(reponse.status) ) {
+                    if(reponse.status !== 200) {
+                        setErrVideo({
+                            status: reponse.status, 
+                            message: `Erreur chargement video : video non disponible (code: ${reponse.status})`
+                        })
+                        return
+                    }
+                    break
+                }
             } catch(err) {
                 const reponse = err.response
                 if(reponse) {
-                    if(reponse.status === 404) {
-                        setErrVideo('Erreur chargement video : video non disponible (code: 404)')
+                    if([401, 403, 404].includes(reponse.status)) {
+                        // Erreur irrecuperable
+                        setErrVideo({
+                            status: reponse.status, 
+                            message: `Erreur chargement video : video non disponible (code: ${reponse.status})`
+                        })
+                        return
                     } else {
-                        setErrVideo(`Erreur chargement video (code: ${reponse.status})`)
+                        // Autre erreur, probablement recuperable. Marquer erreur et reessayer.
+                        setErrVideo({
+                            retry: RETRY_DELAY_HTTP_ERROR,
+                            status: reponse.status, 
+                            message: `Erreur chargement video (code: ${reponse.status})`
+                        })
+                        attenteCycle = RETRY_DELAY_HTTP_ERROR
                     }
                     majChargement(reponse)
                 } else {
-                    setErrVideo(`Erreur generique chargement video : ${''+err}`)
+                    setErrVideo({err, message: `Erreur generique chargement video : ${''+err}`})
+                    return
                 }
-                break
             }
-            await new Promise(resolve=>setTimeout(resolve, 2000))
+            await new Promise(resolve=>setTimeout(resolve, attenteCycle))
         }
         setSrcVideo(source)
     } catch(err) {
         console.error("Erreur HEAD : ", err)
-        setErrVideo('Erreur chargement video (preparation)')
+        setErrVideo({err, message: 'Erreur chargement video (preparation)'})
     }
 }
 
 function ProgresChargement(props) {
 
-    const { value, srcVideo } = props
+    const { value, srcVideo, errVideo } = props
 
     const [show, setShow] = useState(true)
 
@@ -306,7 +335,7 @@ function ProgresChargement(props) {
                 return 'Chargement complete'
             }
         }
-        return <div><i className="fa fa-spinner fa-spin"/>Chargement en cours</div>
+        return <div><i className="fa fa-spinner fa-spin"/>{' '}Chargement en cours :{' '}{value}%</div>
     }, [value, srcVideo])
 
     useEffect(()=>{
@@ -318,16 +347,18 @@ function ProgresChargement(props) {
         }
     }, [value, setShow])
 
-    if(!show) return ''
+    // if(!show) return ''
 
     return (
-        <Row className='progres-chargement'>
-            <Col xs={12} lg={5} className='label'>{label}</Col>
-            <Col xs={10} lg={4}>
-                <ProgressBar now={value} />
-            </Col>
-            <Col xs={2} lg={2}>{value}%</Col>
-        </Row>
+        <div className='progres-chargement'>
+            <Alert show={!!show} variant='dark' className='progres-indicateur'>
+                <Row>
+                    <Col xs={12} className='label'>{label}</Col>
+                    <Col xs={12}><ProgressBar now={value} striped animated /></Col>
+                </Row>
+            </Alert>
+            <ErreurChargement errVideo={errVideo} />
+        </div>
     )
 }
 
@@ -336,6 +367,10 @@ function PlayerEtatPassthrough(props) {
     const {posterObj, srcVideo, selecteur, videoChargePret, posterPresent, errVideo} = props
 
     const [delaiSelecteur, setDelaiSelecteur] = useState(false)
+
+    useEffect(()=>{
+        console.debug("PlayerEtatPassthrough Erreur video : ", errVideo)
+    }, [errVideo])
 
     useEffect(()=>{
         // Fait un de-bump sur switch de stream
@@ -348,7 +383,7 @@ function PlayerEtatPassthrough(props) {
     // Cas special pour video original sans poster (traitement media incomplet)
     if(srcVideo && !posterObj && selecteur === 'original') {
         return (
-            <div className='video-window'>
+            <div className='video-window video-empty'>
                 {props.children}
             </div>
         )
@@ -367,26 +402,37 @@ function PlayerEtatPassthrough(props) {
             )
         } else {
             return (
-                <div>
+                <div className='video-window'>
                     {message}
                 </div>
+
             )
         }
     }
 
-    if(errVideo) {
-        return (
-            <Alert variant="danger">
-                <Alert.Heading>Erreur</Alert.Heading>
-                <p>Erreur durant le chargement du video.</p>
-            </Alert>
-        )
-    }
-
     return (
-        <div className='video-window'>
-            {props.children}
+        <div>
+            <div className='video-window'>
+                {props.children}
+            </div>
         </div>
+    )
+}
+
+function ErreurChargement(props) {
+    const {errVideo} = props
+    return (
+        <Alert show={!!errVideo} variant="danger">
+            <Alert.Heading>Erreur</Alert.Heading>
+            {errVideo.retry?
+                <p>Delai dans le chargement du video.</p>
+            :
+                <p>Erreur durant le chargement du video.</p>
+            }
+            {errVideo.status?
+                <p>Detail : HTTP {errVideo.status}</p>
+            :''}
+        </Alert>
     )
 }
 
