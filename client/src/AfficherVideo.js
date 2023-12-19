@@ -137,6 +137,7 @@ export function WrapperPlayer(props) {
         } else if(HTTP_STATUS_ATTENTE.includes(info.status)) {
             const headers = info.headers
             // console.debug("headers ", headers)
+            setErrVideo('')
 
             const position = Number.parseInt(headers['x-file-position']),
                   taille = Number.parseInt(headers['x-file-size'])
@@ -145,7 +146,7 @@ export function WrapperPlayer(props) {
             // console.debug("Progres ", progres)
             setProgresChargement(progres)
         }
-    }, [setProgresChargement])
+    }, [setProgresChargement, setErrVideo])
 
     useEffect(()=>{
         if(!fichier || !fichier.imageLoader) return // Metadata n'est pas encore genere
