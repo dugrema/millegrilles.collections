@@ -149,9 +149,11 @@ div.upload {
     /*position: relative;*/
     position: absolute;
     float: left;
-    /*width: 30rem;*/
+    /*width: 25rem;*/
     /*top: -18rem;
     left: 1rem;*/
+    width: auto;
+    margin-right: 0rem;
     margin-left: 0.4rem;
     margin-top: 0.5rem;
     opacity: 0.85;
@@ -186,6 +188,10 @@ div.upload {
     margin-top: -9rem;
 }
 
+.player-wrapper {
+    object-fit: contain;
+}
+
 .tuuid, .fuuid {
     font-size: small;
     word-wrap: break-word;
@@ -202,13 +208,18 @@ div.upload {
 
 .player-media-image IMG, .player-media-document IMG {
     max-width: 100%;
+    min-height: 25%;
     max-height: 100%;
     object-fit: contain;
     background-color: white;
 }
 
 .player-media-image .video-window {
-    height: 100%;
+    width: 100%;
+}
+
+.player-media-image .video-window IMG {
+    background-color: $first-color;
 }
 
 .player-audio-container {

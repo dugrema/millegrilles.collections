@@ -199,7 +199,7 @@ export function WrapperPlayer(props) {
 
     const onProgress = useCallback(event => {
         // console.debug("onProgress ", event)
-        // Le video n'est pas necessairement pret, mais onCanPlay n'est pas lance sur mobiles (iOS)
+        // Le video n'est pas necessairement pret, mais onCanPlay *n'est pas* lance sur mobiles (iOS)
         setVideoChargePret(true)
     }, [setVideoChargePret])
     const onPlay = useCallback(param => {
@@ -217,10 +217,11 @@ export function WrapperPlayer(props) {
         }
     }, [setVideoChargePret, setErrVideoCb])
     const onWaiting = useCallback(param => {
-        // console.debug("onWaiting ", param)
-    }, [])
+        console.debug("onWaiting ", param)
+        setVideoChargePret(false)
+    }, [setVideoChargePret])
     const onCanPlay = useCallback(param => {
-        // console.debug("onCanPlay ", param)
+        console.debug("onCanPlay ", param)
         setVideoChargePret(true)
         setErrVideo('')
     }, [setVideoChargePret, setErrVideo])
@@ -232,8 +233,13 @@ export function WrapperPlayer(props) {
     }, [onLoad, srcVideo])
 
     return (
-        <div>
-            <ProgresChargement value={progresChargement} srcVideo={srcVideo} errVideo={errVideo} />
+        <div className='player-wrapper'>
+            <ProgresChargement 
+                value={progresChargement} 
+                srcVideo={srcVideo} 
+                videoChargePret={videoChargePret} 
+                errVideo={errVideo} 
+                />
             <PlayerEtatPassthrough
                 posterObj={posterObj}
                 srcVideo={srcVideo}
@@ -244,7 +250,7 @@ export function WrapperPlayer(props) {
                     <VideoViewer 
                         srcVideo={srcVideo}
                         poster={posterObj} 
-                        height='100%' 
+                        // height='100%' 
                         width='100%' 
                         onTimeUpdate={videoTimeUpdateHandler} 
                         timeStamp={timeStamp} 
@@ -323,30 +329,33 @@ async function attendreChargement(source, majChargement, setSrcVideo, setErrVide
 
 function ProgresChargement(props) {
 
-    const { value, srcVideo, errVideo } = props
+    const { value, srcVideo, errVideo, videoChargePret } = props
 
     const [show, setShow] = useState(true)
 
     const label = useMemo(()=>{
         if(isNaN(value)) return ''
+        if(videoChargePret) {
+            return <div>Chargement complete</div>
+        }
         if(value === 100) {
-            if(srcVideo) {
+            if(!srcVideo) {
                 return <div><i className="fa fa-spinner fa-spin"/>{' '}Preparation sur le serveur</div>
-            } else {
-                return 'Chargement complete'
+            } else if(!videoChargePret) {
+                return <div><i className="fa fa-spinner fa-spin"/>{' '}Ouverture du video</div>
             }
         }
         return <div><i className="fa fa-spinner fa-spin"/>{' '}Chargement en cours :{' '}{value}%</div>
-    }, [value, srcVideo])
+    }, [value, srcVideo, videoChargePret])
 
     useEffect(()=>{
         if(value === null || value === '') setShow(false)
-        else if(value === 100 && srcVideo) {
+        else if(value === 100 && srcVideo && videoChargePret) {
             setTimeout(()=>setShow(false), 1500)
         } else {
             setShow(true)
         }
-    }, [value, setShow])
+    }, [value, setShow, videoChargePret])
 
     // if(!show) return ''
 
@@ -397,7 +406,7 @@ function PlayerEtatPassthrough(props) {
         if(posterObj) {
             return (
                 <div className='video-window'>
-                    <img src={posterObj} width='100%' height='100%' />
+                    <img src={posterObj} width='100%' />
                     {message}
                 </div>
             )
