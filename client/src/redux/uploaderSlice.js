@@ -430,7 +430,11 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     console.debug("Confirmer upload de transactions signees : %O", transaction)
     try {
         const reponse = await transfertFichiers.confirmerUpload(token, correlation, {transaction})
-        if(reponse.status === 404) {
+        if(reponse.errcode === 'ECONNABORTED') {
+            console.warn("uploadFichier Connexion aborted (%s) - marquer complete quand meme", reponse.err)
+        } else if(reponse.err) {
+            throw reponse.err
+        } else if(reponse.status === 404) {
             // L'upload a ete resette (DELETE ou supprime par serveur)
             // Tenter de recommencer l'upload (resetter localement)
             await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_PRET, tailleCompletee: 0, positionsCompletees: []})
@@ -445,7 +449,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         }
         // console.debug("uploadFichier Upload confirme")
     } catch(err) {
-        console.error("uploadFichier Erreur durant POST ", err)
+        console.error("uploadFichier Erreur non geree durant POST ", err)
         throw err
     }
 
