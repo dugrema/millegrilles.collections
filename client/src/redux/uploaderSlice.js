@@ -362,11 +362,11 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
     let tailleCompletee = 0,
         positionsCompletees = fichier.positionsCompletees,
         retryCount = fichier.retryCount
-    parts = parts.filter(item=>{
-        const dejaTraite = positionsCompletees.includes(item.position)
-        if(dejaTraite) tailleCompletee += item.taille
-        return !dejaTraite
-    })
+//    parts = parts.filter(item=>{
+//        const dejaTraite = positionsCompletees.includes(item.position)
+//        if(dejaTraite) tailleCompletee += item.taille
+//        return !dejaTraite
+//    })
     // console.debug("uploadFichier Parts a uploader : ", parts)
 
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_UPLOADING})
