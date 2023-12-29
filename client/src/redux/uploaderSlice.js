@@ -395,16 +395,19 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
               partContent = part.data
         await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
         
-        console.debug("part upload ", part)
-        const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
-        const arrayBuffer = Buffer.from(await partContent.arrayBuffer())
-        console.debug("part upload array buffer ", arrayBuffer)
-        await hachagePartChiffre.update(arrayBuffer)
-        const hachagePart = await hachagePartChiffre.finalize()
-        if(hachagePart === part.hachagePart) {
-            console.debug("part hachage %s (db: %s)", hachagePart, part.hachagePart)
-        } else {
-            console.error("part hachage %s (db: %s)", hachagePart, part.hachagePart)
+        {
+            // Debug
+            // console.debug("part upload ", part)
+            const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
+            const arrayBuffer = Buffer.from(await partContent.arrayBuffer())
+            // console.debug("part upload array buffer ", arrayBuffer)
+            await hachagePartChiffre.update(arrayBuffer)
+            const hachagePart = await hachagePartChiffre.finalize()
+            if(hachagePart === part.hachagePart) {
+                console.debug("part hachage %s (db: %s)", hachagePart, part.hachagePart)
+            } else {
+                console.error("part hachage %s (db: %s)", hachagePart, part.hachagePart)
+            }
         }
 
         // await new Promise(resolve=>setTimeout(resolve, 250))
