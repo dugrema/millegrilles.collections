@@ -396,7 +396,7 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
         await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
         
         {
-            // Debug
+            // TODO: Debug probleme hachage
             // console.debug("part upload ", part)
             const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
             const arrayBuffer = Buffer.from(await partContent.arrayBuffer())
