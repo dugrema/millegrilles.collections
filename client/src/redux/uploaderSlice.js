@@ -1,5 +1,6 @@
 import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit'
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
+import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
 
 const // ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -335,7 +336,7 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 
     // Commencer boucle d'upload
     while(nextUpload) {
-        // console.debug("Next upload : %O", nextUpload)
+        console.debug("Next upload : %O", nextUpload)
         const correlation = nextUpload.correlation
         try {
             await uploadFichier(workers, dispatch, nextUpload, cancelToken)
@@ -351,15 +352,20 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 
         } catch (err) {
             console.error("Erreur tache upload correlation %s: %O", correlation, err)
-            marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_ECHEC})
-                .catch(err=>console.error("Erreur marquer upload echec %s : %O", correlation, err))
-            throw err
+            await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_ECHEC})
+                .catch(err2=>{
+                    console.error("Erreur marquer upload echec %s : %O", correlation, err2)
+                    throw err  // Relancer l'erreur originale pour eviter une boucle sans fin
+                })
+            // Tenter de passer au prochain upload
+            nextUpload = getProchainUpload(listenerApi.getState().uploader.liste)
+            // throw err
         }
     }
 }
 
 async function uploadFichier(workers, dispatch, fichier, cancelToken) {
-    // console.debug("uploadFichier : ", fichier)
+    console.debug("uploadFichier : ", fichier)
     const { uploadFichiersDao, transfertFichiers, chiffrage, traitementFichiers } = workers
     const { correlation, token } = fichier
 
@@ -389,7 +395,17 @@ async function uploadFichier(workers, dispatch, fichier, cancelToken) {
               partContent = part.data
         await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
         
-        // console.debug("part upload ", part)
+        console.debug("part upload ", part)
+        const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
+        const arrayBuffer = Buffer.from(await partContent.arrayBuffer())
+        console.debug("part upload array buffer ", arrayBuffer)
+        await hachagePartChiffre.update(arrayBuffer)
+        const hachagePart = await hachagePartChiffre.finalize()
+        if(hachagePart === part.hachagePart) {
+            console.debug("part hachage %s (db: %s)", hachagePart, part.hachagePart)
+        } else {
+            console.error("part hachage %s (db: %s)", hachagePart, part.hachagePart)
+        }
 
         // await new Promise(resolve=>setTimeout(resolve, 250))
         const opts = {
