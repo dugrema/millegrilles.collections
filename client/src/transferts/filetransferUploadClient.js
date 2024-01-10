@@ -37,6 +37,7 @@ const _hachageDechiffre = new hachage.Hacheur({hashingCode: 'blake2b-512', DEBUG
 _pathServeur.pathname = '/collections/fichiers'
 
 const CONST_1MB = 1024 * 1024
+const THRESHOLD_DECHIFFRAGE_DIRECT = CONST_1MB * 5
 const THRESHOLD_512kb = 10 * CONST_1MB,
       THRESHOLD_1mb = 25 * CONST_1MB,
       THRESHOLD_2mb = 50 * CONST_1MB,
