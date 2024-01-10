@@ -64,9 +64,9 @@ async function wireWorkers(workers) {
     // transfertFichiers.down_setUrlDownload(downloadHref)
     transfertDownloadFichiers.down_setUrlDownload(downloadHref)
     
-    const callbackAjouterChunkIdb = proxy((fuuid, position, blob) => {
+    const callbackAjouterChunkIdb = proxy((fuuid, position, blob, opts) => {
         // console.debug("callbackAjouterChunkIdb proxy fuuid %s, position %d, blob %O", fuuid, position, blob)
-        return downloadFichiersDao.ajouterFichierDownloadFile(fuuid, position, blob)
+        return downloadFichiersDao.ajouterFichierDownloadFile(fuuid, position, blob, opts)
     })
     // transfertFichiers.down_setCallbackAjouterChunkIdb(callbackAjouterChunkIdb)
     transfertDownloadFichiers.down_setCallbackAjouterChunkIdb(callbackAjouterChunkIdb)

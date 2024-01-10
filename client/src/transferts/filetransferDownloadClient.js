@@ -17,7 +17,7 @@ const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       EXPIRATION_CACHE_MS = 24 * 60 * 60 * 1000,
       CONST_PROGRESS_UPDATE_THRESHOLD = 10 * CONST_1MB,
       CONST_PROGRESS_UPDATE_INTERVAL = 1000,
-      CONST_BLOB_DOWNLOAD_CHUNKSIZE = 20 * CONST_1MB,
+      CONST_BLOB_DOWNLOAD_CHUNKSIZE = 100 * CONST_1MB,
       CONST_HIGH_WATERMARK_DECHIFFRAGE = 10
 
 // Globals
@@ -241,122 +241,6 @@ async function fetchAvecProgress(url, opts) {
 
 }
 
-// function _creerDownloadStream(reader, contentLength, opts) {
-//   opts = opts || {}
-
-//   const downloadEnCours = opts.downloadEnCours || {},
-//         dataProcessor = opts.dataProcessor,
-//         DEBUG = opts.DEBUG
-
-//   // const {fuuid, filename} = downloadEnCours
-
-//   const progressCb = opts.progressCb || function(){}  // Default fonction sans effet
-
-//   if(typeof(contentLength) === 'string') contentLength = Number(contentLength)
-
-//   var receivedLength = 0
-//   var done = false
-
-//   return new ReadableStream({
-//     start: controller => {
-//       if(DEBUG) console.debug("start _creerDownloadStream")
-//     },
-//     pull: async controller => {
-//       if(done) {
-//         if(DEBUG) console.debug("_creerDownloadStream - done deja sette, termine")
-//         controller.close()
-//         progressCb(contentLength, contentLength, {})  // Complet
-//         return
-//       }
-
-//       let prochainProgressTs = 0  // Limiter le nombre d'updates pour eviter overflow react
-
-//       while(!done) {
-//         // console.debug("Desired stream Q size : ", controller.desiredSize)
-//         if(controller.desiredSize < 1) return // Back pressure, on arrete
-
-//         if(downloadEnCours && downloadEnCours.annuler) {
-//           throw new Error("Usager a annule le transfert")
-//         }
-//         const nowInit = new Date().getTime()
-//         if(nowInit > prochainProgressTs) {
-//           prochainProgressTs = nowInit + CONST_PROGRESS_UPDATE_INTERVAL
-//           progressCb(receivedLength, contentLength, {flag: 'lecture'})  // Complet
-//         }
-//         let {done: _done, value} = await reader.read(DECHIFFRAGE_TAILLE_BLOCK)
-//         progressCb(receivedLength, contentLength, {flag: '', message: value?`Lu ${value.length}`:'Lecture null'})  // Complet
-
-//         if(DEBUG) console.debug("_creerDownloadStream pull (done: %s) value = %O", _done, value)
-//         if(_done) {
-//           done = true
-//           if(dataProcessor) {
-//             if(DEBUG) console.debug("_creerDownloadProcess termine, on fait dataProcessor.finish()")
-//             const value = await dataProcessor.finish()
-//             const {message} = value
-//             if(message && message.length > 0) {
-//               controller.enqueue(message)
-//             }
-//           } 
-
-//           // Complet
-//           controller.close()
-//           progressCb(contentLength, contentLength, {})
-
-//           return
-//         }
-
-//         if(downloadEnCours) {
-//           // Donner une chance d'intercepter l'evenement
-//           await new Promise(resolve=>setTimeout(resolve, 1))
-//           if(downloadEnCours.annuler) {
-//             throw new Error("Usager a annule le transfert")
-//           }
-//         }
-
-//         // Utiliser des buffers de 64kb, plus rapide pour traitement WASM
-//         if(dataProcessor) {
-//           let positionTraitee = 0, positionOutput = 0
-//           if(DEBUG) console.debug("Dechiffrer")
-//           while(positionTraitee < value.length) {
-//             const positionFin = Math.min(positionTraitee + DECHIFFRAGE_TAILLE_BLOCK, value.length)
-//             try {
-//               const sousBlock = value.slice(positionTraitee, positionFin)
-//               const sousBlockOutput = await dataProcessor.update(sousBlock)
-//               if(sousBlockOutput) {
-//                 // bufferOutput.set(sousBlockOutput, positionOutput)
-//                 controller.enqueue(sousBlockOutput)
-//                 positionOutput += sousBlockOutput.length
-//               }
-//               positionTraitee += sousBlock.length
-//             } catch(err) {
-//               if(DEBUG) console.error("Erreur dechiffrage, %O", err)
-//               throw err
-//             }
-
-//             const now = new Date().getTime()
-//             if(now > prochainProgressTs) {
-//               prochainProgressTs = now + CONST_PROGRESS_UPDATE_INTERVAL
-//               progressCb(receivedLength+positionTraitee, contentLength, {flag: 'dechiffrage'})
-//             }
-//           }
-//           if(DEBUG) console.debug("Value dechiffree : %O", value)
-//         } else {
-//           controller.enqueue(value)
-//         }
-//         receivedLength += value.length
-
-//         if(DEBUG) console.debug(`Recu ${receivedLength} / ${contentLength}`)
-//         const now = new Date().getTime()
-//         if(now > prochainProgressTs) {
-//           prochainProgressTs = now + CONST_PROGRESS_UPDATE_INTERVAL
-//           progressCb(receivedLength, contentLength, {})
-//         }
-//       }
-//     }
-//   })
-
-// }
-
 async function preparerDataProcessor(opts) {
   // console.debug("preparerDataProcessor opts : %O", opts)
   opts = opts || {}
@@ -377,19 +261,20 @@ async function preparerDataProcessor(opts) {
 
   let estActif = false
   const dataProcessor = {
-    start: async response => {
+    start: async params => {
       // On active le blockCipher si le fichier depasse le seuil pour utiliser subtle
       try {
         const cipher = await preparerDecipher(password, {...opts})
         estActif = true
         blockCipher = cipher
       } catch(err) {
+        throw err
         // Stream decipher n'est pas supporte
-        const size = Number(response.headers.get('content-length'))
-        if(size > tailleLimiteSubtle) {
-          throw new Error(`Streaming decipher non disponible, taille fichier > limite (${tailleLimiteSubtle}) : Err : ${''+err}`)
-        }
-        if(DEBUG) console.debug("Fichier taille %d sous seuil, on utilise subtle pour dechiffrer", size)
+        // const size = Number(response.headers.get('content-length'))
+        // if(size > tailleLimiteSubtle) {
+        //   throw new Error(`Streaming decipher non disponible, taille fichier > limite (${tailleLimiteSubtle}) : Err : ${''+err}`)
+        // }
+        // if(DEBUG) console.debug("Fichier taille %d sous seuil, on utilise subtle pour dechiffrer", size)
       }
 
       return estActif
@@ -507,6 +392,8 @@ export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
   opts = opts || {}
   progressCb = progressCb || function() {}  // Par defaut fonction vide
 
+  if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
+
   // console.debug("downloadCacheFichier %O, Options : %O", downloadEnCours, opts)
   const DEBUG = opts.DEBUG || false
 
@@ -550,21 +437,11 @@ export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
 
     const size = Number(headers.get('content-length'))
 
-    let promiseCache = null
-    if(_callbackAjouterChunkIdb) {
-      // Utiliser stockage via callback (generalement pour stocker sous IDB)
-      console.debug("downloadCacheFichier Conserver fichier download via IDB")
-      promiseCache = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb)
-    } else {
-      // Utiliser le cache storage
-      throw new Error('cache storage fix me')
-      // console.debug("downloadCacheFichier Conserver fichier download via Caches")
-      // const cache = await caches.open(CACHE_TEMP_NAME)
-      // if(DEBUG) console.debug("Cache instance : %O", cache)
-      // promiseCache = cache.put(pathname, response)
-    }
+    // Utiliser stockage via callback (generalement pour stocker sous IDB)
+    console.debug("downloadCacheFichier Conserver fichier download via IDB")
+    const promiseTraitement = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb)
 
-    await Promise.all([done, promiseCache])
+    await Promise.all([done, promiseTraitement])
 
     // // Attendre que le download soit termine
     // if(DEBUG) console.debug("Attendre que le download soit termine, response : %O", response)
@@ -575,14 +452,157 @@ export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
   } catch(err) {
     console.error("Erreur download/processing : %O", err)
     if(progressCb) progressCb(-1, -1, {flag: 'Erreur', err: ''+err, stack: err.stack})
-    try {
-      const cache = await caches.open(CACHE_TEMP_NAME)
-      cache.delete(pathname)
-    } catch(err) {console.warn("Erreur suppression cache %s : %O", pathname, err)}
+    // try {
+    //   const cache = await caches.open(CACHE_TEMP_NAME)
+    //   cache.delete(pathname)
+    // } catch(err) {console.warn("Erreur suppression cache %s : %O", pathname, err)}
     throw err
   } finally {
     downloadEnCours.termine = true
     // _downloadEnCours = null
+  }
+}
+
+/** 
+ * Download un fichier en le separant en parts (e.g. 100 mb). 
+ * Ne dechiffre pas le fichier. Supporte le resume en detectant les parts recus dans IDB. */
+export async function downloadFichierParts(downloadEnCours, progressCb, opts) {
+  opts = opts || {}
+  progressCb = progressCb || function() {}  // Par defaut fonction vide
+
+  if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
+
+  console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
+  const DEBUG = opts.DEBUG || false
+
+  const {fuuid, url} = downloadEnCours
+
+  let urlDownload = new URL(_urlDownload)
+  try {
+    // Verifier si URL fourni est valide/global
+    urlDownload = new URL(url)
+  } catch(err) {
+    // Ajouter url au path
+    urlDownload.pathname = path.join(urlDownload.pathname, url)
+  }
+  // console.debug("URL de download de fichier : %O", urlDownload)
+
+  // Detecter la position courante (plus grand chunk deja recu)
+  let positionPartCourant = 0
+  // TODO : trouver les parts completes (position et taille)
+
+  let pathname
+  try {
+    const {
+      reader: stream, 
+      headers, 
+      status,
+      done,
+      abortController
+    } = await fetchAvecProgress(
+      urlDownload,
+      {progressCb, downloadEnCours, DEBUG}
+    )
+
+    if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
+    if(status>299) {
+      const err = new Error(`Erreur download fichier ${url} (code ${status})`)
+      err.status = status
+      throw err
+    }
+
+    const size = Number(headers.get('content-length'))
+
+    // Utiliser stockage via callback (generalement pour stocker sous IDB)
+    console.debug("downloadCacheFichier Conserver fichier download via IDB")
+    const promiseStream = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb, {dechiffre: false})
+
+    await Promise.all([done, promiseStream])
+
+    // // Attendre que le download soit termine
+    // if(DEBUG) console.debug("Attendre que le download soit termine, response : %O", response)
+
+    // await promiseCache
+    progressCb(size, size, {})
+    // if(DEBUG) console.debug("Caching complete")
+  } catch(err) {
+    console.error("Erreur download/processing : %O", err)
+    if(progressCb) progressCb(-1, -1, {flag: 'Erreur', err: ''+err, stack: err.stack})
+    // try {
+    //   const cache = await caches.open(CACHE_TEMP_NAME)
+    //   cache.delete(pathname)
+    // } catch(err) {console.warn("Erreur suppression cache %s : %O", pathname, err)}
+    throw err
+  } finally {
+    downloadEnCours.termine = true
+  }
+}
+
+export async function dechiffrerPartsDownload(workers, params, progressCb, opts) {
+  opts = opts || {}
+  const { downloadFichiersDao } = workers
+  const {fuuid, url, filename, mimetype, password, passwordChiffre} = params
+  if((!password && !passwordChiffre)) { throw new Error('Params dechiffrage absents') }
+
+  const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+
+  const paramsDataProcessor = {...params, password, passwordChiffre}
+  console.debug("Dechifrer avec params : %O", paramsDataProcessor)
+  const dataProcessor = await preparerDataProcessor(paramsDataProcessor)
+
+  if(dataProcessor && dataProcessor.start) {
+    // Initialiser le data processor au besoin
+    const actif = await dataProcessor.start()
+    if(!actif) throw new Error("Echec activation data processor")
+  }
+
+  // Parcourir les parts de fichiers en ordre
+  for await(const part of parts) {
+    console.debug("Dechiffrer part : ", part)
+    const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
+    console.debug("Dechiffrer partObj ", partObj)
+    const blob = partObj.blobChiffre
+    const reader = blob.stream().getReader()
+    const arrayBuffers = []
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        if(value) {
+          const data = await dataProcessor.update(value)
+          arrayBuffers.push(data)          
+        }
+        break
+      }
+      const data = await dataProcessor.update(value)
+      arrayBuffers.push(data)
+    }
+    // console.debug("Part %s buffers %s", part, arrayBuffers)
+    const blobDechiffre = new Blob(arrayBuffers)
+    partObj.blob = blobDechiffre
+    console.debug("Maj part download ", partObj)
+    await downloadFichiersDao.updatePartDownload(partObj)
+  }
+
+  const resultatDechiffrage = await dataProcessor.finish()
+  console.debug("Resultat dechiffrage ", resultatDechiffrage)
+
+  // Ajouter la derniere partie dechiffree
+  if(resultatDechiffrage.message && resultatDechiffrage.message.length > 0) {
+    console.debug("Ajout message final")
+    const partFinalObj = await downloadFichiersDao.getPartDownload(fuuid, parts[parts.length-1].position)
+    const blobDechiffreFinal = partFinalObj.blob
+    const blobFinal = new Blob([await blobDechiffreFinal.arrayBuffer(), resultatDechiffrage.message])
+    partFinalObj.blob = blobFinal
+    await downloadFichiersDao.updatePartDownload(partFinalObj)
+  }
+
+  // Cleanup de tous les parts, retirer blobChiffre et faire un append du message final
+  for await (const part of parts) {
+    console.debug("Cleanup part part")
+    const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
+    delete partObj.blobChiffre
+    partObj.dechiffre = true
+    await downloadFichiersDao.updatePartDownload(partObj)
   }
 }
 
@@ -783,7 +803,8 @@ export async function down_entretienCache() {
   await cleanupCacheOrphelin()
 }
 
-async function streamToDownloadIDB(fuuid, stream, conserverChunkCb) {
+async function streamToDownloadIDB(fuuid, stream, conserverChunkCb, opts) {
+  opts = opts || {}
   // const {downloadFichiersDao} = workers
   let arrayBuffers = [], tailleChunks = 0, position = 0
   const reader = stream.getReader()
@@ -800,14 +821,14 @@ async function streamToDownloadIDB(fuuid, stream, conserverChunkCb) {
       }
 
       if(tailleChunks > CONST_BLOB_DOWNLOAD_CHUNKSIZE) {
-          // Split chunks
+          // Split chunks en parts
           const blob = new Blob(arrayBuffers)
           const positionBlob = position - blob.size
           arrayBuffers = []
           tailleChunks = 0
           // console.debug("Blob cree position %s : ", positionBlob, blob)
           // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
-          await conserverChunkCb(fuuid, positionBlob, blob)
+          await conserverChunkCb(fuuid, positionBlob, blob, opts)
       }
 
       if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
@@ -820,6 +841,6 @@ async function streamToDownloadIDB(fuuid, stream, conserverChunkCb) {
       tailleChunks = 0
       console.debug("Dernier blob position %s : ", positionBlob, blob)
       // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
-      await conserverChunkCb(fuuid, positionBlob, blob)
+      await conserverChunkCb(fuuid, positionBlob, blob, opts)
   }
 }
