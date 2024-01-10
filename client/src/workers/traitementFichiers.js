@@ -211,14 +211,15 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
     const { acceptedFiles, /*token, batchId, cuuid, */ userId, breadcrumbPath } = params
     const { setProgres, signalAnnuler } = opts
-    const { transfertFichiers, usagerDao } = workers
+    const { transfertFichiers, transfertUploadFichiers, usagerDao } = workers
     // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
 
     // const certificatsMaitredescles = await workers.connexion.getClesChiffrage()
     const certificatsMaitredescles = await workers.clesDao.getCertificatsMaitredescles()
     // console.debug("Certificats : %O", certificatsMaitredescles)
 
-    await transfertFichiers.up_setCertificats(certificatsMaitredescles)
+    // await transfertFichiers.up_setCertificats(certificatsMaitredescles)
+    await transfertUploadFichiers.up_setCertificats(certificatsMaitredescles)
     // console.debug("Certificat maitre des cles OK")
 
     const fichiersRejetes = []
@@ -272,7 +273,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
             (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
         )
     
-        const resultat = await transfertFichiers.traiterAcceptedFilesV2(
+        const resultat = await transfertUploadFichiers.traiterAcceptedFilesV2(
             Comlink.transfer(paramBatch),
             ajouterPartProxy, 
             updateFichierProxy,

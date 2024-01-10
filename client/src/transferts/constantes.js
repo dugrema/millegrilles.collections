@@ -1,0 +1,7 @@
+export const // ETAT_PREPARATION = 1,
+      ETAT_PRET = 2,
+      ETAT_UPLOADING = 3,
+      ETAT_COMPLETE = 4,
+      ETAT_ECHEC = 5,
+      ETAT_CONFIRME = 6,
+      ETAT_UPLOAD_INCOMPLET = 7

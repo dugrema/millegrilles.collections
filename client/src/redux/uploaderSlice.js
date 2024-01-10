@@ -1,6 +1,7 @@
 import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit'
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
+import * as Comlink from 'comlink'
 
 const // ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -336,7 +337,7 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 
     // Commencer boucle d'upload
     while(nextUpload) {
-        console.debug("Next upload : %O", nextUpload)
+        // console.debug("Next upload : %O", nextUpload)
         const correlation = nextUpload.correlation
         try {
             await uploadFichier(workers, dispatch, nextUpload, cancelToken)
@@ -365,121 +366,22 @@ async function tacheUpload(workers, listenerApi, forkApi) {
 }
 
 async function uploadFichier(workers, dispatch, fichier, cancelToken) {
-    console.debug("uploadFichier : ", fichier)
-    const { uploadFichiersDao, transfertFichiers, chiffrage, traitementFichiers } = workers
-    const { correlation, token } = fichier
-
-    // Charger la liste des parts a uploader
-    let parts = await uploadFichiersDao.getPartsFichier(correlation)
-    
-    // Retirer les partis qui sont deja uploadees
-    let tailleCompletee = 0,
-        positionsCompletees = fichier.positionsCompletees,
-        retryCount = fichier.retryCount
-//    parts = parts.filter(item=>{
-//        const dejaTraite = positionsCompletees.includes(item.position)
-//        if(dejaTraite) tailleCompletee += item.taille
-//        return !dejaTraite
-//    })
-    // console.debug("uploadFichier Parts a uploader : ", parts)
+//     console.debug("uploadFichier : ", fichier)
+    const { transfertUploadFichiers } = workers
+    const { correlation } = fichier
 
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_UPLOADING})
 
-    // Mettre a jour le retryCount
-    retryCount++
-    await marquerUploadEtat(workers, dispatch, correlation, {retryCount})
+    const marquerUploadEtatProxy = Comlink.proxy((correlation, opts)=>{
+        return marquerUploadEtat(workers, dispatch, correlation, opts)
+    })
 
-    for await (const part of parts) {
-        let tailleCumulative = tailleCompletee
-        const position = part.position,
-              partContent = part.data
-        await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee: tailleCumulative})
-        
-        {
-            // TODO: Debug probleme hachage
-            // console.debug("part upload ", part)
-            const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
-            const arrayBuffer = Buffer.from(await partContent.arrayBuffer())
-            // console.debug("part upload array buffer ", arrayBuffer)
-            await hachagePartChiffre.update(arrayBuffer)
-            const hachagePart = await hachagePartChiffre.finalize()
-            if(hachagePart === part.hachagePart) {
-                console.debug("part hachage %s (db: %s)", hachagePart, part.hachagePart)
-            } else {
-                console.error("part hachage %s (db: %s)", hachagePart, part.hachagePart)
-            }
-        }
-
-        // await new Promise(resolve=>setTimeout(resolve, 250))
-        const opts = {
-            hachagePart: part.hachagePart,
-        }
-        // console.debug("uploadFichier Debut upload %s", correlation)
-        const resultatUploadPromise = transfertFichiers.partUploader(token, correlation, position, partContent, opts)
-        // await Promise.race([resultatUpload, cancelToken])
-        const resultatUpload = await resultatUploadPromise
-        // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
-
-        if(cancelToken && cancelToken.cancelled) {
-            console.warn("Upload cancelled")
-            return
-        }
-
-        tailleCompletee += part.taille
-        positionsCompletees = [...positionsCompletees, position]
-        await marquerUploadEtat(workers, dispatch, correlation, {tailleCompletee, positionsCompletees})
-    }
-
-    // Signer et uploader les transactions
-    const transactionMaitredescles = {...fichier.transactionMaitredescles}
-    const partitionMaitreDesCles = transactionMaitredescles['_partition']
-    delete transactionMaitredescles['_partition']
-
-    const cle = await chiffrage.formatterMessage(
-        transactionMaitredescles, 'MaitreDesCles', 
-        {kind: MESSAGE_KINDS.KIND_COMMANDE, partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false}
-    )
-    cle.attachements = {partition: partitionMaitreDesCles}
-
-    const transaction = await chiffrage.formatterMessage(
-        fichier.transactionGrosfichiers, 'GrosFichiers', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'nouvelleVersion'})
-    
-    transaction.attachements = {cle}
-
-    console.debug("Confirmer upload de transactions signees : %O", transaction)
-    try {
-        const reponse = await transfertFichiers.confirmerUpload(token, correlation, {transaction})
-        if(reponse.errcode === 'ECONNABORTED') {
-            console.warn("uploadFichier Connexion aborted (%s) - marquer complete quand meme", reponse.err)
-        } else if(reponse.err) {
-            throw reponse.err
-        } else if(reponse.status === 404) {
-            // L'upload a ete resette (DELETE ou supprime par serveur)
-            // Tenter de recommencer l'upload (resetter localement)
-            await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_PRET, tailleCompletee: 0, positionsCompletees: []})
-            throw new Error(`Erreur upload status : ${reponse.status}`)
-        } else if( ! [200, 202].includes(reponse.status)) {
-            console.error("Erreur confirmation upload : ", reponse)
-            await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_ECHEC, status: reponse.status})
-
-            await transfertFichiers.confirmerUpload(token, correlation, {transaction})
-
-            throw new Error(`Erreur upload status : ${reponse.status}`)
-        }
-        // console.debug("uploadFichier Upload confirme")
-    } catch(err) {
-        console.error("uploadFichier Erreur non geree durant POST ", err)
-        throw err
-    }
-
-    // Emettre submit pour la batch
-    // await traitementFichiers.submitBatchUpload(fichier)
+    await transfertUploadFichiers.uploadFichier(workers, marquerUploadEtatProxy, fichier, cancelToken)
 
     // Upload complete, dispatch nouvel etat
     await marquerUploadEtat(workers, dispatch, correlation, {etat: ETAT_COMPLETE})
     await dispatch(confirmerUpload(workers, correlation))
         .catch(err=>console.error("Erreur cleanup fichier upload ", err))
-    // console.debug("uploadFichier Fin appel")
 }
 
 async function marquerUploadEtat(workers, dispatch, correlation, etat) {

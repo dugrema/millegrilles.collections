@@ -11,6 +11,8 @@ import { chiffrage }  from '@dugrema/millegrilles.reactjs/src/chiffrage'
 import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
 
 import { getExtMimetypeMap } from '@dugrema/millegrilles.utiljs/src/constantes.js'
+import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
+import { ETAT_ECHEC } from './constantes'
 
 const { preparerCipher, preparerCommandeMaitrecles } = chiffrage
 
@@ -27,8 +29,10 @@ var _callbackEtatUpload = null,
     _publicKeyCa = null,
     _fingerprintCa = null,
     _certificats = null,
-    _domaine = 'GrosFichiers',
-    _pathServeur = new URL(window.location.href)
+    _domaine = 'GrosFichiers'
+
+// eslint-disable-next-line no-restricted-globals
+var _pathServeur = new URL(self.location.href)
 
 // Hacheurs reutilisables
 const _hachageDechiffre = new hachage.Hacheur({hashingCode: 'blake2b-512', DEBUG: false}),
@@ -74,7 +78,8 @@ export function up_setPathServeur(pathServeur) {
     if(pathServeur.startsWith('https://')) {
         _pathServeur = new URL(pathServeur)
     } else {
-        const pathServeurUrl = new URL(window.location.href)
+        // eslint-disable-next-line no-restricted-globals
+        const pathServeurUrl = new URL(self.location.href)
         pathServeurUrl.pathname = pathServeur
         _pathServeur = pathServeurUrl
     }
@@ -217,7 +222,7 @@ export function up_setCertificats(certificats) {
     if( ! Array.isArray(certificats) ) {
         throw new Error(`Certificats de mauvais type (pas Array) : ${certificats}`)
     }
-    console.debug('up_setCertificats Set _certificats : ', certificats)
+    // console.debug('up_setCertificats Set _certificats : ', certificats)
     _certificats = certificats
 }
 
@@ -452,7 +457,7 @@ async function traiterFichier(file, tailleTotale, params, fcts) {
         const paramsConserver = {...params, correlation, tailleTotale}
         const debutConserverFichier = new Date().getTime()
         const etatFinalChiffrage = await conserverFichier(file, fileMappe, paramsConserver, fcts)
-        console.debug("traiterFichier Temps conserver fichier %d ms", new Date().getTime()-debutConserverFichier)
+        // console.debug("traiterFichier Temps conserver fichier %d ms", new Date().getTime()-debutConserverFichier)
 
         const docIdbMaj = await formatterDocIdb(docIdb, etatFinalChiffrage)
 
@@ -643,6 +648,106 @@ export async function supprimerUpload(token, correlation) {
     }
 
     return { status: response.status, data: response.data }
+}
+
+/** Upload un fichier conserve dans IDB avec uploadFichiersDao */
+export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelToken) {
+    // console.debug("uploadFichier : ", fichier)
+    const { uploadFichiersDao, transfertUploadFichiers, chiffrage } = workers
+    const { correlation, token } = fichier
+
+    // Charger la liste des parts a uploader
+    let parts = await uploadFichiersDao.getPartsFichier(correlation)
+    
+    // Retirer les partis qui sont deja uploadees
+    let tailleCompletee = 0,
+        positionsCompletees = fichier.positionsCompletees,
+        retryCount = fichier.retryCount
+
+    // Mettre a jour le retryCount
+    retryCount++
+    await marquerUploadEtat(correlation, {retryCount})
+
+    for await (const part of parts) {
+        let tailleCumulative = tailleCompletee
+        const position = part.position,
+              partContent = part.data
+        await marquerUploadEtat(correlation, {tailleCompletee: tailleCumulative})
+        
+        // {
+        //     // TODO: Debug probleme hachage
+        //     // console.debug("part upload ", part)
+        //     const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
+        //     const arrayBuffer = Buffer.from(await partContent.arrayBuffer())
+        //     // console.debug("part upload array buffer ", arrayBuffer)
+        //     await hachagePartChiffre.update(arrayBuffer)
+        //     const hachagePart = await hachagePartChiffre.finalize()
+        //     if(hachagePart === part.hachagePart) {
+        //         console.debug("part hachage %s (db: %s)", hachagePart, part.hachagePart)
+        //     } else {
+        //         console.error("part hachage %s (db: %s)", hachagePart, part.hachagePart)
+        //     }
+        // }
+
+        // await new Promise(resolve=>setTimeout(resolve, 250))
+        const opts = {
+            hachagePart: part.hachagePart,
+        }
+        // console.debug("uploadFichier Debut upload %s", correlation)
+        const resultatUpload = await transfertUploadFichiers.partUploader(token, correlation, position, partContent, opts)
+        // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
+
+        if(cancelToken && cancelToken.cancelled) {
+            console.warn("Upload cancelled")
+            return
+        }
+
+        tailleCompletee += part.taille
+        positionsCompletees = [...positionsCompletees, position]
+        await marquerUploadEtat(correlation, {tailleCompletee, positionsCompletees})
+    }
+
+    // Signer et uploader les transactions
+    const transactionMaitredescles = {...fichier.transactionMaitredescles}
+    const partitionMaitreDesCles = transactionMaitredescles['_partition']
+    delete transactionMaitredescles['_partition']
+
+    const cle = await chiffrage.formatterMessage(
+        transactionMaitredescles, 'MaitreDesCles', 
+        {kind: MESSAGE_KINDS.KIND_COMMANDE, partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false}
+    )
+    cle.attachements = {partition: partitionMaitreDesCles}
+
+    const transaction = await chiffrage.formatterMessage(
+        fichier.transactionGrosfichiers, 'GrosFichiers', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'nouvelleVersion'})
+    
+    transaction.attachements = {cle}
+
+    // console.debug("Confirmer upload de transactions signees : %O", transaction)
+    try {
+        const reponse = await transfertUploadFichiers.confirmerUpload(token, correlation, {transaction})
+        if(reponse.errcode === 'ECONNABORTED') {
+            console.warn("uploadFichier Connexion aborted (%s) - marquer complete quand meme", reponse.err)
+        } else if(reponse.err) {
+            throw reponse.err
+        } else if(reponse.status === 404) {
+            // L'upload a ete resette (DELETE ou supprime par serveur)
+            // Tenter de recommencer l'upload (resetter localement)
+            await marquerUploadEtat(correlation, {etat: ETAT_PRET, tailleCompletee: 0, positionsCompletees: []})
+            throw new Error(`Erreur upload status : ${reponse.status}`)
+        } else if( ! [200, 202].includes(reponse.status)) {
+            console.error("Erreur confirmation upload : ", reponse)
+            await marquerUploadEtat(correlation, {etat: ETAT_ECHEC, status: reponse.status})
+
+            await transfertUploadFichiers.confirmerUpload(token, correlation, {transaction})
+
+            throw new Error(`Erreur upload status : ${reponse.status}`)
+        }
+        // console.debug("uploadFichier Upload confirme")
+    } catch(err) {
+        console.error("uploadFichier Erreur non geree durant POST ", err)
+        throw err
+    }
 }
 
 export async function parseZipFile(workers, userId, fichier, cuuid, updateFichier, ajouterPart) {

@@ -42,7 +42,10 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
     // console.debug("Usager info : %O", usager)
     
     if(usager && usager.certificat) {
-        const { connexion, chiffrage, transfertFichiers } = workers
+        const { 
+            connexion, chiffrage, 
+            transfertFichiers, transfertUploadFichiers, transfertDownloadFichiers
+        } = workers
         const fullchain = usager.certificat,
               caPem = usager.ca
 
@@ -63,8 +66,10 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         const certForge = pki.certificateFromPem(fullchain[0])
         const extensions = extraireExtensionsMillegrille(certForge)
 
-        await transfertFichiers.up_setCertificatCa(caPem)
+        // await transfertFichiers.up_setCertificatCa(caPem)
+        await transfertUploadFichiers.up_setCertificatCa(caPem)
         await transfertFichiers.down_setCertificatCa(caPem)
+        await transfertDownloadFichiers.down_setCertificatCa(caPem)
 
         const reponseAuthentifier = await workers.connexion.authentifier()
         // console.debug("Reponse authentifier : %O", reponseAuthentifier)
