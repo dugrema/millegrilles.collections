@@ -21,11 +21,10 @@ export function setupWorkers() {
     const transfertFichiers = wrapWorker(new Worker(new URL('./transfert.worker', import.meta.url), {type: 'module'}))
     const transfertUploadFichiers = wrapWorker(new Worker(new URL('./transfert.upload', import.meta.url), {type: 'module'}))
     const transfertDownloadFichiers = wrapWorker(new Worker(new URL('./transfert.download', import.meta.url), {type: 'module'}))
-    const transfertChiffrageFichiers = wrapWorker(new Worker(new URL('./transfert.chiffrage', import.meta.url), {type: 'module'}))
   
     const workerInstances = { 
         chiffrage, connexion, 
-        transfertFichiers, transfertUploadFichiers, transfertDownloadFichiers, transfertChiffrageFichiers
+        transfertFichiers, transfertUploadFichiers, transfertDownloadFichiers
     }
   
     const workers = Object.keys(workerInstances).reduce((acc, item)=>{
