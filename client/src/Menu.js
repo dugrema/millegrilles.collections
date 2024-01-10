@@ -12,21 +12,23 @@ import { supprimerContenuIdb } from '@dugrema/millegrilles.reactjs/src/dbNettoya
 
 import { useCapabilities, useInfoConnexion, useUsager } from './WorkerContext'
 
-const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
-const ETAT_PREPARATION = 1,
-      ETAT_PRET = 2,
-      ETAT_UPLOADING = 3,
-      ETAT_COMPLETE = 4,
-      ETAT_ECHEC = 5,
-      ETAT_CONFIRME = 6,
-      ETAT_UPLOAD_INCOMPLET = 7
+import * as CONST_ETAT_TRANSFERT from './transferts/constantes'
 
-const CONST_ETATS_DOWNLOAD = {
-  ETAT_PRET: 1,
-  ETAT_EN_COURS: 2,
-  ETAT_SUCCES: 3,
-  ETAT_ECHEC: 4
-}
+const CONST_COMPLET_EXPIRE = 2 * 60 * 60 * 1000  // Auto-cleanup apres 2 heures (millisecs) de l'upload
+// const ETAT_PREPARATION = 1,
+//       ETAT_PRET = 2,
+//       ETAT_UPLOADING = 3,
+//       ETAT_COMPLETE = 4,
+//       ETAT_ECHEC = 5,
+//       ETAT_CONFIRME = 6,
+//       ETAT_UPLOAD_INCOMPLET = 7
+
+// const CONST_ETATS_DOWNLOAD = {
+//   ETAT_PRET: 1,
+//   ETAT_EN_COURS: 2,
+//   ETAT_SUCCES: 3,
+//   ETAT_ECHEC: 4
+// }
 
 function Menu(props) {
 
@@ -171,16 +173,16 @@ export function BadgeUpload(props) {
     const resultat = uploads.reduce((acc, item)=>{
       let {encours, succes, erreur} = acc
       switch(item.etat) {
-        case ETAT_PRET:
-        case ETAT_UPLOADING:
+        case CONST_ETAT_TRANSFERT.ETAT_PRET:
+        case CONST_ETAT_TRANSFERT.ETAT_UPLOADING:
           encours++
           break
-        case ETAT_COMPLETE:
-        case ETAT_CONFIRME:
+        case CONST_ETAT_TRANSFERT.ETAT_COMPLETE:
+        case CONST_ETAT_TRANSFERT.ETAT_CONFIRME:
           succes++
           break
-        case ETAT_ECHEC:
-        case ETAT_UPLOAD_INCOMPLET:
+        case CONST_ETAT_TRANSFERT.ETAT_ECHEC:
+        case CONST_ETAT_TRANSFERT.ETAT_UPLOAD_INCOMPLET:
           erreur++
           break
         default:
@@ -218,14 +220,14 @@ function BadgeDownload(props) {
     const resultat = downloads.reduce((nb, item)=>{
       let {encours, succes, erreur} = nb
       switch(item.etat) {
-        case CONST_ETATS_DOWNLOAD.ETAT_PRET:
-        case CONST_ETATS_DOWNLOAD.ETAT_EN_COURS:
+        case CONST_ETAT_TRANSFERT.ETAT_PRET:
+        case CONST_ETAT_TRANSFERT.ETAT_DOWNLOAD_ENCOURS:
             encours++
           break
-        case CONST_ETATS_DOWNLOAD.ETAT_SUCCES:
+        case CONST_ETAT_TRANSFERT.ETAT_COMPLETE:
           succes++
           break
-        case CONST_ETATS_DOWNLOAD.ETAT_ECHEC:
+        case CONST_ETAT_TRANSFERT.ETAT_ECHEC:
           erreur++
           break
         default:

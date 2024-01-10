@@ -5,7 +5,7 @@ import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux
 import Button from 'react-bootstrap/Button'
 import Modal from 'react-bootstrap/Modal'
 
-import { LayoutMillegrilles, ModalErreur, TransfertModal, OuvertureSessionModal } from '@dugrema/millegrilles.reactjs'
+import { LayoutMillegrilles, ModalErreur, OuvertureSessionModal } from '@dugrema/millegrilles.reactjs'
 
 import ErrorBoundary from './ErrorBoundary'
 import useWorkers, {useCapabilities, useEtatConnexion, useEtatConnexionOpts, WorkerProvider, 
@@ -17,6 +17,8 @@ import { setUserId as setUserIdUpload, setUploads, supprimerParEtat, continuerUp
 import { setUserId as setUserIdDownload, supprimerDownloadsParEtat, continuerDownload, arreterDownload, setDownloads } from './redux/downloaderSlice'
 import { setUserId as setUserIdMediaJobs, } from './redux/mediaJobsSlice'
 import { setUserId as setUserIdPartager } from './redux/partagerSlice'
+
+import * as CONST_ETAT_TRANSFERT from './transferts/constantes'
 
 import './i18n'
 
@@ -34,6 +36,7 @@ import './index.scss'
 import './App.css'
 
 import Menu from './Menu'
+import TransfertModal from './TransfertModal'
 
 const NavigationCollections = lazy( () => import('./NavigationCollections') )
 const NavigationRecents = lazy( () => import('./NavigationRecents') )
@@ -46,20 +49,20 @@ const Parametres = lazy( () => import('./Parametres') )
 const CONST_UPLOAD_COMPLET_EXPIRE = 2 * 60 * 60 * 1000,  // Auto-cleanup apres 2 heures (millisecs) de l'upload,
       CONST_DOWNLOAD_COMPLET_EXPIRE = 48 * 60 * 60 * 1000  // Auto-cleanup apres 2 jours (millisecs) du download
 
-const ETAT_PREPARATION = 1,
-      ETAT_PRET = 2,
-      ETAT_UPLOADING = 3,
-      ETAT_COMPLETE = 4,
-      ETAT_ECHEC = 5,
-      ETAT_CONFIRME = 6,
-      ETAT_UPLOAD_INCOMPLET = 7
+// const ETAT_PREPARATION = 1,
+//       ETAT_PRET = 2,
+//       ETAT_UPLOADING = 3,
+//       ETAT_COMPLETE = 4,
+//       ETAT_ECHEC = 5,
+//       ETAT_CONFIRME = 6,
+//       ETAT_UPLOAD_INCOMPLET = 7
 
-const CONST_ETATS_DOWNLOAD = {
-  ETAT_PRET: 1,
-  ETAT_EN_COURS: 2,
-  ETAT_SUCCES: 3,
-  ETAT_ECHEC: 4
-}
+// const CONST_ETATS_DOWNLOAD = {
+//   ETAT_PRET: 1,
+//   ETAT_EN_COURS: 2,
+//   ETAT_SUCCES: 3,
+//   ETAT_ECHEC: 4
+// }
 
 function App() {
   
@@ -403,7 +406,7 @@ function InitialisationDownload(props) {
 
             downloads = downloads.filter(download=>{
                 const { fuuid, etat } = download
-                if([CONST_ETATS_DOWNLOAD.ETAT_SUCCES].includes(etat)) {
+                if([CONST_ETAT_TRANSFERT.ETAT_COMPLETE].includes(etat)) {
                     // Cleanup
                     if(download.derniereModification <= completExpire) {
                         // Complet et expire, on va retirer l'upload
@@ -417,8 +420,8 @@ function InitialisationDownload(props) {
 
             for await (const download of downloads) {
                 const { etat } = download
-                if([CONST_ETATS_DOWNLOAD.ETAT_PRET, CONST_ETATS_DOWNLOAD.ETAT_EN_COURS].includes(etat)) {
-                  download.etat = CONST_ETATS_DOWNLOAD.ETAT_ECHEC
+                if([CONST_ETAT_TRANSFERT.ETAT_PRET, CONST_ETAT_TRANSFERT.ETAT_DOWNLOAD_ENCOURS].includes(etat)) {
+                  download.etat = CONST_ETAT_TRANSFERT.ETAT_ECHEC
                     download.tailleCompletee = 0
                     await downloadFichiersDao.updateFichierDownload(download)
                 }
@@ -465,7 +468,7 @@ function InitialisationUpload(props) {
 
               uploads = uploads.filter(upload=>{
                   const { correlation, etat } = upload
-                  if([ETAT_COMPLETE, ETAT_CONFIRME].includes(etat)) {
+                  if([CONST_ETAT_TRANSFERT.ETAT_COMPLETE, CONST_ETAT_TRANSFERT.ETAT_CONFIRME].includes(etat)) {
                       // Cleanup
                       if(upload.derniereModification <= completExpire) {
                           // Complet et expire, on va retirer l'upload
@@ -474,20 +477,14 @@ function InitialisationUpload(props) {
                               .catch(err=>console.error("Erreur supprimer fichier ", err))
                           return false
                       }
-                  } else if(ETAT_PREPARATION === etat) {
-                      // Cleanup
-                      console.warn("Cleanup upload avec preparation incomplete ", upload)
-                      uploadFichiersDao.supprimerFichier(correlation)
-                          .catch(err=>console.error("Erreur supprimer fichier ", err))
-                      return false
                   }
                   return true
               })
 
               for await (const upload of uploads) {
                   const { correlation, etat } = upload
-                  if([ETAT_PRET, ETAT_UPLOADING].includes(etat)) {
-                      upload.etat = ETAT_UPLOAD_INCOMPLET
+                  if([CONST_ETAT_TRANSFERT.ETAT_PRET, CONST_ETAT_TRANSFERT.ETAT_UPLOADING].includes(etat)) {
+                      upload.etat = CONST_ETAT_TRANSFERT.ETAT_UPLOAD_INCOMPLET
 
                       const parts = await uploadFichiersDao.getPartsFichier(correlation)
                       const positionsCompletees = upload.positionsCompletees
@@ -519,13 +516,13 @@ function supprimerUploads(workers, dispatch, params, erreurCb) {
       .catch(err=>erreurCb(err, "Erreur supprimer upload"))
   }
   if(succes === true) {
-    dispatch(supprimerParEtat(workers, ETAT_CONFIRME))
-      .then(()=>dispatch(supprimerParEtat(workers, ETAT_COMPLETE)))
+    dispatch(supprimerParEtat(workers, CONST_ETAT_TRANSFERT.ETAT_CONFIRME))
+      .then(()=>dispatch(supprimerParEtat(workers, CONST_ETAT_TRANSFERT.ETAT_COMPLETE)))
       .catch(err=>erreurCb(err, "Erreur supprimer uploads"))
   }
   if(echecs === true) {
-    dispatch(supprimerParEtat(workers, ETAT_ECHEC))
-      .then(()=>dispatch(supprimerParEtat(workers, ETAT_UPLOAD_INCOMPLET)))
+    dispatch(supprimerParEtat(workers, CONST_ETAT_TRANSFERT.ETAT_ECHEC))
+      .then(()=>dispatch(supprimerParEtat(workers, CONST_ETAT_TRANSFERT.ETAT_UPLOAD_INCOMPLET)))
       .catch(err=>erreurCb(err, "Erreur supprimer uploads"))
   }
 }
@@ -537,11 +534,11 @@ function supprimerDownloads(workers, dispatch, params, erreurCb) {
       .catch(err=>erreurCb(err, "Erreur supprimer download"))
   }
   if(succes === true) {
-    Promise.resolve(dispatch(supprimerDownloadsParEtat(workers, CONST_ETATS_DOWNLOAD.ETAT_SUCCES)))
+    Promise.resolve(dispatch(supprimerDownloadsParEtat(workers, CONST_ETAT_TRANSFERT.ETAT_COMPLETE)))
       .catch(err=>erreurCb(err, "Erreur supprimer downloads"))
   }
   if(echecs === true) {
-    Promise.resolve(dispatch(supprimerDownloadsParEtat(workers, CONST_ETATS_DOWNLOAD.ETAT_ECHEC)))
+    Promise.resolve(dispatch(supprimerDownloadsParEtat(workers, CONST_ETAT_TRANSFERT.ETAT_ECHEC)))
       .catch(err=>erreurCb(err, "Erreur supprimer downloads"))
   }
 }

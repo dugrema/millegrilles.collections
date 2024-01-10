@@ -3,6 +3,8 @@ import path from 'path'
 import { releaseProxy, proxy } from 'comlink'
 import { makeZip } from 'client-zip'
 
+import {ETAT_PRET, ETAT_COMPLETE, ETAT_DOWNLOAD_ENCOURS, ETAT_DOWNLOAD_SUCCES_CHIFFRE, ETAT_DOWNLOAD_SUCCES_DECHIFFRE, ETAT_ECHEC} from '../transferts/constantes'
+
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       DECHIFFRAGE_TAILLE_BLOCK = 64 * 1024,
       SLICE_NAME = 'downloader',
@@ -12,11 +14,6 @@ const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       CONST_PROGRESS_UPDATE_INTERVAL = 1000,
       CONST_1MB = 1024 * 1024,
       CONST_BLOB_DOWNLOAD_CHUNKSIZE = 100 * CONST_1MB
-
-const ETAT_PRET = 1,
-      ETAT_EN_COURS = 2,
-      ETAT_SUCCES = 3,
-      ETAT_ECHEC = 4
       
 const initialState = {
     liste: [],                  // Liste de fichiers en traitement (tous etats confondus)
@@ -80,8 +77,8 @@ function updateDownloadAction(state, action) {
     // Trouver objet existant
     const infoDownload = state.liste.filter(item=>item.fuuid === fuuid).pop()
 
-    // Detecter changement etat a confirme
-    if(docDownload.etat === ETAT_SUCCES) {
+    // Detecter changement etat a succes
+    if([ETAT_DOWNLOAD_SUCCES_CHIFFRE, ETAT_DOWNLOAD_SUCCES_DECHIFFRE].includes(docDownload.etat)) {
         state.completesCycle.push(fuuid)
     }
 
@@ -440,8 +437,10 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
     const state = getState()[SLICE_NAME]
     const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
     if(download) {
+        console.debug('traiterCompleterDownload ', download)
+
         const downloadCopie = {...download}
-        downloadCopie.etat = ETAT_SUCCES
+        downloadCopie.etat = ETAT_COMPLETE
         downloadCopie.dateConfirmation = new Date().getTime()
         downloadCopie.tailleCompletee = downloadCopie.taille
 
@@ -502,7 +501,6 @@ export function downloaderMiddlewareSetup(workers) {
 
 async function downloaderMiddlewareListener(workers, action, listenerApi) {
     //console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
-    // console.debug("Arret upload info : %O", arretUpload)
 
     await listenerApi.unsubscribe()
     listenerApi.dispatch(setEnCours(true))
@@ -516,14 +514,8 @@ async function downloaderMiddlewareListener(workers, action, listenerApi) {
 
         // console.debug("downloaderMiddlewareListener Task %O\nstopAction %O", task, stopAction)
         task.result.catch(err=>console.error("Erreur task : %O", err))
-        // stopAction
-        //     .then(()=>task.cancel())
-        //     .catch(()=>{
-        //         // Aucun impact
-        //     })
 
-        const resultat = await task.result  // Attendre fin de la tache en cas d'annulation
-        // console.debug("downloaderMiddlewareListener Sequence download terminee, resultat %O", resultat)
+        await task.result  // Attendre fin de la tache en cas d'annulation
     } finally {
         listenerApi.dispatch(setEnCours(false))
         await listenerApi.subscribe()
@@ -581,21 +573,18 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
           fuuidCle = fichier.fuuidCle || fichier.fuuid,
           infoDechiffrage = fichier.infoDechiffrage || {}
 
-    // await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS})
     const cles = await clesDao.getCles([fuuidCle])  // Fetch pour cache (ne pas stocker dans redux)
     const valueCles = Object.values(cles).pop()
     Object.assign(valueCles, infoDechiffrage) // Injecter header custom
     delete valueCles.date
-    // valueCles.cleSecrete = base64.encode(valueCles.cleSecrete)
 
-    // transfertDownloadFichiers.download() ...
     const frequenceUpdate = 500
     let dernierUpdate = 0
     const progressCb = proxy( tailleCompletee => {
         const now = new Date().getTime()
         if(now - frequenceUpdate > dernierUpdate) {
             dernierUpdate = now
-            marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_EN_COURS, tailleCompletee})
+            marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_ENCOURS, tailleCompletee})
                 .catch(err=>console.warn("progressCb Erreur maj download ", err))
         }
     })
@@ -609,7 +598,6 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     }
     // console.debug("Params download : ", paramsDownload)
     const resultat = await transfertDownloadFichiers.downloadCacheFichier(paramsDownload, progressCb)
-    // downloadIdbProxy[releaseProxy]()
     console.debug("Resultat download fichier : ", resultat)
 
     if(cancelToken && cancelToken.cancelled) {
@@ -617,8 +605,8 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
         return
     }
 
-    // Upload complete, dispatch nouvel etat
-    await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_SUCCES})
+    // Download complete, dispatch nouvel etat
+    await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_COMPLETE})
     await dispatch(completerDownload(workers, fuuid))
         .catch(err=>console.error("Erreur cleanup fichier upload ", err))
 }
@@ -690,7 +678,7 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     }
 
     // console.debug("Marquer download %s comme pret / complete", fuuidZip)
-    await marquerDownloadEtat(workers, dispatch, fuuidZip, {etat: ETAT_SUCCES, userId})
+    await marquerDownloadEtat(workers, dispatch, fuuidZip, {etat: ETAT_COMPLETE, userId})
     await dispatch(completerDownload(workers, fuuidZip))
         .catch(err=>console.error("Erreur cleanup download fichier zip ", err))
 }
@@ -780,13 +768,13 @@ function calculerPourcentage(liste, completesCycle) {
     let tailleTotale = 0, 
         tailleCompleteeTotale = 0
 
-    const inclureEtats = [ETAT_PRET, ETAT_ECHEC, ETAT_EN_COURS]
+    const inclureEtats = [ETAT_PRET, ETAT_ECHEC, ETAT_DOWNLOAD_ENCOURS, ETAT_DOWNLOAD_SUCCES_CHIFFRE, ETAT_DOWNLOAD_SUCCES_DECHIFFRE]
     liste.forEach( download => {
         const { fuuid, etat, tailleCompletee, taille } = download
 
         let inclure = false
         if(inclureEtats.includes(etat)) inclure = true
-        else if(ETAT_SUCCES === etat && completesCycle.includes(fuuid)) inclure = true
+        else if(ETAT_COMPLETE === etat && completesCycle.includes(fuuid)) inclure = true
 
         if(inclure) {
             if(tailleCompletee) tailleCompleteeTotale += tailleCompletee
