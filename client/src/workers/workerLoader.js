@@ -18,13 +18,14 @@ export function setupWorkers() {
     // Chiffrage et x509 sont combines, reduit taille de l'application
     const connexion = wrapWorker(new Worker(new URL('./connexion.worker', import.meta.url), {type: 'module'}))
     const chiffrage = wrapWorker(new Worker(new URL('./chiffrage.worker', import.meta.url), {type: 'module'}))
-    const transfertFichiers = wrapWorker(new Worker(new URL('./transfert.worker', import.meta.url), {type: 'module'}))
+    // const transfertFichiers = wrapWorker(new Worker(new URL('./transfert.worker', import.meta.url), {type: 'module'}))
     const transfertUploadFichiers = wrapWorker(new Worker(new URL('./transfert.upload', import.meta.url), {type: 'module'}))
     const transfertDownloadFichiers = wrapWorker(new Worker(new URL('./transfert.download', import.meta.url), {type: 'module'}))
   
     const workerInstances = { 
         chiffrage, connexion, 
-        transfertFichiers, transfertUploadFichiers, transfertDownloadFichiers
+        // transfertFichiers, 
+        transfertUploadFichiers, transfertDownloadFichiers
     }
   
     const workers = Object.keys(workerInstances).reduce((acc, item)=>{
@@ -50,23 +51,24 @@ export function setupWorkers() {
 async function wireWorkers(workers) {
     const { 
         connexion, chiffrage, downloadFichiersDao,
-        transfertFichiers, transfertUploadFichiers, transfertDownloadFichiers, transfertChiffrageFichiers
+        // transfertFichiers, 
+        transfertUploadFichiers, transfertDownloadFichiers
     } = workers
-    transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
+    // transfertFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertFichiers/down worker : %O", err))
     transfertDownloadFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertDownloadFichiers/down worker : %O", err))
 
     const urlLocal = new URL(window.location.href)
     urlLocal.pathname = '/collections/fichiers'
     const downloadHref = urlLocal.href
     console.debug("Download path : %O", downloadHref)
-    transfertFichiers.down_setUrlDownload(downloadHref)
+    // transfertFichiers.down_setUrlDownload(downloadHref)
     transfertDownloadFichiers.down_setUrlDownload(downloadHref)
     
     const callbackAjouterChunkIdb = proxy((fuuid, position, blob) => {
         // console.debug("callbackAjouterChunkIdb proxy fuuid %s, position %d, blob %O", fuuid, position, blob)
         return downloadFichiersDao.ajouterFichierDownloadFile(fuuid, position, blob)
     })
-    transfertFichiers.down_setCallbackAjouterChunkIdb(callbackAjouterChunkIdb)
+    // transfertFichiers.down_setCallbackAjouterChunkIdb(callbackAjouterChunkIdb)
     transfertDownloadFichiers.down_setCallbackAjouterChunkIdb(callbackAjouterChunkIdb)
 
     urlLocal.pathname = '/collections/fichiers/upload'

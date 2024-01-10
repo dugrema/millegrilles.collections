@@ -416,14 +416,14 @@ export function arreterDownload(workers, fuuid) {
 
 async function traiterArreterDownload(workers, fuuid, dispatch, getState) {
     // console.debug("traiterCompleterDownload ", fuuid)
-    const { downloadFichiersDao, transfertFichiers } = workers
+    const { downloadFichiersDao, transfertDownloadFichiers } = workers
     const state = getState()[SLICE_NAME]
     const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
     if(download) {
         // Arreter et retirer download state (interrompt le middleware au besoin)
         dispatch(supprimerDownload(fuuid))
 
-        await transfertFichiers.down_supprimerDownloadsCache(fuuid)
+        await transfertDownloadFichiers.down_supprimerDownloadsCache(fuuid)
 
         // Supprimer le download dans IDB, cache
         await downloadFichiersDao.supprimerDownload(fuuid)
@@ -473,7 +473,7 @@ export function supprimerDownloadsParEtat(workers, etat) {
 }
 
 async function traiterSupprimerDownloadsParEtat(workers, etat, dispatch, getState) {
-    const { downloadFichiersDao, transfertFichiers } = workers
+    const { downloadFichiersDao, transfertDownloadFichiers } = workers
     const downloads = getState()[SLICE_NAME].liste.filter(item=>item.etat === etat)
     for await (const download of downloads) {
         const fuuid = download.fuuid
@@ -481,7 +481,7 @@ async function traiterSupprimerDownloadsParEtat(workers, etat, dispatch, getStat
         // Arreter et retirer download state (interrompt le middleware au besoin)
         dispatch(supprimerDownload(fuuid))
 
-        await transfertFichiers.down_supprimerDownloadsCache(fuuid)
+        await transfertDownloadFichiers.down_supprimerDownloadsCache(fuuid)
 
         // Supprimer le download dans IDB, cache
         await downloadFichiersDao.supprimerDownload(fuuid)
@@ -576,7 +576,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // console.debug("Download fichier params : ", fichier)
-    const { transfertFichiers, clesDao } = workers
+    const { transfertDownloadFichiers, clesDao } = workers
     const fuuid = fichier.fuuid,
           fuuidCle = fichier.fuuidCle || fichier.fuuid,
           infoDechiffrage = fichier.infoDechiffrage || {}
@@ -588,7 +588,7 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     delete valueCles.date
     // valueCles.cleSecrete = base64.encode(valueCles.cleSecrete)
 
-    // transfertFichiers.download() ...
+    // transfertDownloadFichiers.download() ...
     const frequenceUpdate = 500
     let dernierUpdate = 0
     const progressCb = proxy( tailleCompletee => {
@@ -608,7 +608,7 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
         password: valueCles.cleSecrete,
     }
     // console.debug("Params download : ", paramsDownload)
-    const resultat = await transfertFichiers.downloadCacheFichier(paramsDownload, progressCb)
+    const resultat = await transfertDownloadFichiers.downloadCacheFichier(paramsDownload, progressCb)
     // downloadIdbProxy[releaseProxy]()
     console.debug("Resultat download fichier : ", resultat)
 
@@ -660,7 +660,7 @@ async function streamToDownloadIDB(workers, fuuid, reader) {
 
 async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
-    const { transfertFichiers, downloadFichiersDao } = workers
+    // const { transfertDownloadFichiers, downloadFichiersDao } = workers
 
     const fuuidZip = downloadInfo.fuuid, 
           userId = downloadInfo.userId

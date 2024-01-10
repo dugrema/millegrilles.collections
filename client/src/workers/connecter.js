@@ -68,7 +68,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
 
         // await transfertFichiers.up_setCertificatCa(caPem)
         await transfertUploadFichiers.up_setCertificatCa(caPem)
-        await transfertFichiers.down_setCertificatCa(caPem)
+        // await transfertFichiers.down_setCertificatCa(caPem)
         await transfertDownloadFichiers.down_setCertificatCa(caPem)
 
         const reponseAuthentifier = await workers.connexion.authentifier()
