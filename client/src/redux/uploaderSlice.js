@@ -2,6 +2,7 @@ import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
 import * as Comlink from 'comlink'
+import { ETAT_DOWNLOAD_SUCCES_CHIFFRE } from '../transferts/constantes'
 
 const // ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -76,7 +77,7 @@ function updateUploadAction(state, action) {
         state.completesCycle.push(correlation)
     }
 
-    if(!infoUpload) state.liste.push(infoUpload)    // Append
+    if(!infoUpload) state.liste.push(docUpload)    // Append
     else Object.assign(infoUpload, docUpload)       // Merge
 
     const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
@@ -93,7 +94,9 @@ function continuerUploadAction(state, action) {
         // Trouver objet existant
         const infoUpload = state.liste.filter(item=>item.correlation === correlation).pop()
 
-        if(!infoUpload) state.liste.push(infoUpload)    // Append
+        console.debug("continuerUploadAction ", docUpload)
+
+        if(!infoUpload) state.liste.push(docUpload)    // Append
         else Object.assign(infoUpload, docUpload)       // Merge
     }
 
@@ -209,7 +212,7 @@ export function continuerUpload(workers, opts) {
 async function traiterContinuerUpload(workers, dispatch, getState, opts) {
     opts = opts || {}
     const correlation = opts.correlation
-    // console.debug("traiterContinuerUpload (correlation %s)", correlation)
+    console.debug("traiterContinuerUpload (correlation %s)", correlation)
 
     const { uploadFichiersDao } = workers
     const state = getState().uploader
@@ -218,7 +221,7 @@ async function traiterContinuerUpload(workers, dispatch, getState, opts) {
     const uploads = await uploadFichiersDao.chargerUploads(userId)
     const uploadsIncomplets = uploads.filter(item => {
         if(correlation) return item.correlation === correlation
-        else return [ETAT_UPLOAD_INCOMPLET, ETAT_ECHEC].includes(item.etat)
+        else return [ETAT_ECHEC, ETAT_DOWNLOAD_SUCCES_CHIFFRE].includes(item.etat)
     })
 
     if(uploadsIncomplets.length > 0) {

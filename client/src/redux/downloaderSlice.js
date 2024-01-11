@@ -84,7 +84,7 @@ function updateDownloadAction(state, action) {
         state.completesCycle.push(fuuid)
     }
 
-    if(!infoDownload) state.liste.push(infoDownload)    // Append
+    if(!infoDownload) state.liste.push(docDownload)    // Append
     else Object.assign(infoDownload, docDownload)       // Merge
 
     const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
@@ -101,7 +101,9 @@ function continuerDownloadAction(state, action) {
         // Trouver objet existant
         const infoDownload = state.liste.filter(item=>item.fuuid === fuuid).pop()
 
-        if(!infoDownload) state.liste.push(infoDownload)    // Append
+        console.debug("continuerDownloadAction ", docDownload)
+
+        if(!infoDownload) state.liste.push(docDownload)    // Append
         else Object.assign(infoDownload, docDownload)       // Merge
 
         const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
@@ -439,7 +441,7 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
     const state = getState()[SLICE_NAME]
     const download = state.liste.filter(item=>item.fuuid===fuuid).pop()
     if(download) {
-        console.debug('traiterCompleterDownload ', download)
+        // console.debug('traiterCompleterDownload ', download)
 
         const downloadCopie = {...download}
         downloadCopie.etat = ETAT_COMPLETE
@@ -502,7 +504,7 @@ export function downloaderMiddlewareSetup(workers) {
 }
 
 async function downloaderMiddlewareListener(workers, action, listenerApi) {
-    //console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
+    // console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
 
     await listenerApi.unsubscribe()
     listenerApi.dispatch(setEnCours(true))
@@ -541,7 +543,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
     // Commencer boucle d'upload
     while(nextDownload) {
-        // console.debug("Next download : %O", nextDownload)
+        console.debug("Next download : %O", nextDownload)
         const fuuid = nextDownload.fuuid
         try {
             if(nextDownload.genererZip === true) {
@@ -570,7 +572,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // console.debug("Download fichier params : ", fichier)
-    const { transfertDownloadFichiers, clesDao } = workers
+    const { transfertDownloadFichiers, downloadFichiersDao, clesDao } = workers
     const fuuid = fichier.fuuid,
           fuuidCle = fichier.fuuidCle || fichier.fuuid,
           infoDechiffrage = fichier.infoDechiffrage || {}
@@ -600,20 +602,22 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
         password: valueCles.cleSecrete,
     }
 
-    if(dechiffre) {
-        // console.debug("Params download : ", paramsDownload)
-        const resultat = await transfertDownloadFichiers.downloadCacheFichier(paramsDownload, progressCb)
-        // console.debug("Resultat download fichier : ", resultat)
-    } else {
+    // if(dechiffre) {
+    //     // console.debug("Params download : ", paramsDownload)
+    //     const resultat = await transfertDownloadFichiers.downloadCacheFichier(paramsDownload, progressCb)
+    //     // console.debug("Resultat download fichier : ", resultat)
+    // } else {
         // Downloader les chunks du fichier - supporte resume
-        const resultat = await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb)
+        await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb)
         // console.debug("Resultat download fichier : ", resultat)
+        await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_CHIFFRE, dechiffre: true, DEBUG: false})
+            .catch(err=>console.warn("progressCb Erreur maj download ", err))
 
-        // Dechiffrer le fichier
+        // // Dechiffrer le fichier
         await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDownload, progressCb)
         await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_DECHIFFRE, dechiffre: true, DEBUG: false})
             .catch(err=>console.warn("progressCb Erreur maj download ", err))
-}
+    // }
 
     if(cancelToken && cancelToken.cancelled) {
         console.warn("Upload cancelled")
@@ -757,10 +761,13 @@ async function marquerDownloadEtat(workers, dispatch, fuuid, etat) {
 }
 
 function getProchainDownload(liste) {
-    // console.debug("Get prochain upload pre-tri ", liste)
-    const listeCopie = liste.filter(item=>item.etat === ETAT_PRET)
+    // console.debug("getProchainDownload Get prochain download pre-tri ", liste)
+    const ETATS_RESUME = [
+        CONST_TRANSFERT.ETAT_PRET,
+    ]
+    const listeCopie = liste.filter(item=>ETATS_RESUME.includes(item.etat))
     listeCopie.sort(trierListeDownload)
-    // console.debug("Get prochain upload : ", listeCopie)
+    // console.debug("Get prochain download liste filtree triee: ", listeCopie)
     return listeCopie.shift()
 }
 

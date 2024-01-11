@@ -339,7 +339,7 @@ function createTransformStreamDechiffrage(dataProcessor) {
       }
     },
     async flush(controller) {
-      console.debug("createTransformStreamDechiffrage Close stream")
+      // console.debug("createTransformStreamDechiffrage Close stream")
       if(dataProcessor) {
         const value = await dataProcessor.finish()
         const {message: chunk} = value
@@ -354,7 +354,7 @@ function createTransformStreamDechiffrage(dataProcessor) {
 
 function creerProgresTransformStream(progressCb, size, opts) {
     opts = opts || {}
-    console.debug("creerProgresTransformStream size: %s", size)
+    // console.debug("creerProgresTransformStream size: %s", size)
 
     const downloadEnCours = opts.downloadEnCours,
           abortController = opts.abortController
@@ -497,7 +497,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
 
-  // console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
+  console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
   const DEBUG = opts.DEBUG || false
   const { downloadFichiersDao } = workers
 
@@ -525,8 +525,10 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   // Detecter la position courante (plus grand chunk deja recu)
   let positionPartCourant = 0
   const partsExistants = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+  console.debug("downloadFichierParts Part existants : ", partsExistants)
   if(partsExistants) {
-    const partCourantPosition = partsExistants[partsExistants.length-1]
+    const partCourant = partsExistants[partsExistants.length-1]
+    const partCourantPosition = partCourant.position
     const partCourantObj = await downloadFichiersDao.getPartDownload(fuuid, partCourantPosition)
     positionPartCourant = partCourantPosition + partCourantObj.blobChiffre.size
     console.info("downloadFichierParts Resume download a position ", positionPartCourant)
@@ -534,7 +536,6 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   const partSize = CONST_TRANSFERT.LIMITE_DOWNLOAD_SPLIT
 
-  let pathname
   try {
     for(let positionPart = positionPartCourant; positionPart < tailleFichierChiffre - 1; positionPart += partSize) {
       const {
@@ -591,13 +592,25 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   }
 }
 
+/** Stream toutes les parts chiffrees d'un fichier downloade vers un writable. */
+async function streamPartsChiffrees(downloadFichiersDao, fuuid, writable) {
+  const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+//  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
+  for await(const part of parts) {
+    const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
+    // console.debug("Dechiffrer partObj ", partObj)
+    const blob = partObj.blobChiffre
+    const readerPart = blob.stream()
+    await readerPart.pipeTo(writable, {preventClose: true})
+  }
+  writable.close()
+}
+
 export async function dechiffrerPartsDownload(workers, params, progressCb, opts) {
   opts = opts || {}
   const { downloadFichiersDao } = workers
-  const {fuuid, url, filename, mimetype, password, passwordChiffre} = params
+  const {fuuid, filename, mimetype, password, passwordChiffre} = params
   if((!password && !passwordChiffre)) { throw new Error('Params dechiffrage absents') }
-
-  const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
 
   const paramsDataProcessor = {...params, password, passwordChiffre}
   // console.debug("Dechifrer avec params : %O", paramsDataProcessor)
@@ -609,54 +622,49 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
     if(!actif) throw new Error("Echec activation data processor")
   }
 
-  // Parcourir les parts de fichiers en ordre
-  for await(const part of parts) {
-    // console.debug("Dechiffrer part : ", part)
-    const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
-    // console.debug("Dechiffrer partObj ", partObj)
-    const blob = partObj.blobChiffre
-    const reader = blob.stream().getReader()
-    const arrayBuffers = []
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) {
-        if(value) {
-          const data = await dataProcessor.update(value)
-          arrayBuffers.push(data)
-        }
-        break
-      }
-      const data = await dataProcessor.update(value)
-      arrayBuffers.push(data)
-    }
-    // console.debug("Part %s buffers %O", part, arrayBuffers)
-    const blobDechiffre = new Blob(arrayBuffers)
-    partObj.blob = blobDechiffre
-    // console.debug("Maj part download ", partObj)
-    await downloadFichiersDao.updatePartDownload(partObj)
+  // Creer un transform stream pour dechiffrer le fichier
+  const { writable, readable } = createTransformStreamDechiffrage(dataProcessor)
+
+  const headersModifies = new Headers()
+  //headersModifies.set('content-length', ''+taille)
+  headersModifies.set('content-disposition', `attachment; filename="${filename}"`)
+  headersModifies.set('mimetype', mimetype)
+
+  const response = new Response(readable, {headers: headersModifies, status: 200})
+
+  // Stream to cache
+  const cache = await caches.open(CACHE_TEMP_NAME)
+  const fuuidPath = '/'+fuuid
+  // console.debug("Conserver cache item %s", fuuidPath)
+  
+  try {
+    const promiseCache = cache.put(fuuidPath, response)
+
+    // Parcourir les parts de fichiers en ordre
+    // console.debug("Demarrer parcourir parts")
+    const promiseStreamParts = streamPartsChiffrees(downloadFichiersDao, fuuid, writable)
+
+    // console.debug("Attente de sauvegarde")
+    await Promise.all([promiseCache, promiseStreamParts])
+
+    const downloadInfo = await downloadFichiersDao.getDownload(fuuid)
+
+    // Transferer le blob du cache vers IDB
+    const responseCache = await cache.match(fuuidPath)
+    const blobResponse = await responseCache.blob()
+
+    downloadInfo.blob = blobResponse
+    await downloadFichiersDao.updateFichierDownload(downloadInfo)
+
+    // Cleanup download parts
+    await downloadFichiersDao.supprimerDownloadParts(fuuid)
+    
+  } finally {
+    // Cleanup cache
+    cache.delete(fuuidPath)
+      .catch(err=>console.warn("Erreur cleanup cache storage pour %s : %O", fuuidPath, err))
   }
 
-  const resultatDechiffrage = await dataProcessor.finish()
-  // console.debug("Resultat dechiffrage ", resultatDechiffrage)
-
-  // Ajouter la derniere partie dechiffree
-  if(resultatDechiffrage.message && resultatDechiffrage.message.length > 0) {
-    // console.debug("Ajout message final ", resultatDechiffrage.message)
-    const partFinalObj = await downloadFichiersDao.getPartDownload(fuuid, parts[parts.length-1].position)
-    const blobDechiffreFinal = partFinalObj.blob
-    const blobFinal = new Blob([await blobDechiffreFinal.arrayBuffer(), resultatDechiffrage.message])
-    partFinalObj.blob = blobFinal
-    await downloadFichiersDao.updatePartDownload(partFinalObj)
-  }
-
-  // Cleanup de tous les parts, retirer blobChiffre et faire un append du message final
-  for await (const part of parts) {
-    // console.debug("Cleanup part", part)
-    const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
-    delete partObj.blobChiffre
-    partObj.dechiffre = true
-    await downloadFichiersDao.updatePartDownload(partObj)
-  }
 }
 
 async function emettreEtat(flags) {
@@ -894,7 +902,7 @@ async function streamToDownloadIDB(fuuid, stream, conserverChunkCb, opts) {
       const positionBlob = position - blob.size
       arrayBuffers = []
       tailleChunks = 0
-      console.debug("Dernier blob position %s : ", positionBlob, blob)
+      // console.debug("Dernier blob position %s : ", positionBlob, blob)
       // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
       await conserverChunkCb(fuuid, positionBlob, blob, opts)
   }

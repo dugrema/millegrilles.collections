@@ -161,7 +161,7 @@ function LayoutMain() {
     workers.downloadFichiersDao.getDownload(fuuid)
       .then(info=>{
         console.debug("Download info a resumer : ", info)
-        info.etat = 1
+        info.etat = CONST_ETAT_TRANSFERT.ETAT_PRET
         info.complet = false
         dispatch(continuerDownload(info))
       })
@@ -416,6 +416,9 @@ function InitialisationDownload(props) {
                     }
                 }
                 return true
+            }).map(item=>{
+              // Retirer blob, non serializable
+              return {...item, blob: undefined}
             })
 
             for await (const download of downloads) {
