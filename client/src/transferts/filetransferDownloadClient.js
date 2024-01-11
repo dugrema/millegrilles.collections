@@ -722,8 +722,9 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
     // console.debug("Demarrer parcourir parts")
     const promiseStreamParts = streamPartsChiffrees(downloadFichiersDao, fuuid, writable, {progressCb})
 
-    // console.debug("Attente de sauvegarde")
+    console.debug("dechiffrerPartsDownload Attente de sauvegarde sous cache pour ", fuuid)
     await Promise.all([promiseCache, promiseStreamParts])
+    console.debug("dechiffrerPartsDownload Sauvegarde completee sous cache completee. Transfert vers IDB.", fuuid)
 
     const downloadInfo = await downloadFichiersDao.getDownload(fuuid)
 
