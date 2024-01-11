@@ -30,6 +30,12 @@ import styles from '@dugrema/millegrilles.reactjs/src/styles.module.css'
 //     ETAT_ECHEC: 4
 // }
 
+const CONST_ETATS_DOWNLOADENCOURS = [
+    CONST_ETATS.ETAT_DOWNLOAD_ENCOURS,
+    CONST_ETATS.ETAT_DOWNLOAD_SUCCES_CHIFFRE,
+    CONST_ETATS.ETAT_DOWNLOAD_SUCCES_DECHIFFRE,
+]
+
 function TransfertModal(props) {
 
     const { 
@@ -163,7 +169,7 @@ function EtatDownload(props) {
     }, [workers, continuerDownloads])
 
     const downloadsPending = downloads.filter(item=>item.etat===CONST_ETATS.ETAT_PRET)
-    const downloadEnCours = downloads.filter(item=>item.etat===CONST_ETATS.ETAT_DOWNLOAD_ENCOURS).pop() || ''
+    const downloadEnCours = downloads.filter(item=>CONST_ETATS_DOWNLOADENCOURS.includes(item.etat)).pop() || ''
     const downloadsCompletes = downloads.filter(item=>item.etat===CONST_ETATS.ETAT_COMPLETE)
     const downloadsErreur = downloads.filter(item=>item.etat===CONST_ETATS.ETAT_ECHEC)
     
@@ -171,26 +177,38 @@ function EtatDownload(props) {
 
     const downloadActif = (compteEnCours)?true:false
 
-    let progres = ''
+    let progresTransfert = '', progresDechiffrage = ''
     if(downloadEnCours && downloadEnCours.taille && downloadEnCours.tailleCompletee) {
-        const progresFloat = 100.0 * downloadEnCours.tailleCompletee / downloadEnCours.taille
-        progres = ''+Math.floor(progresFloat)
+        const progresTransfertFloat = 100.0 * downloadEnCours.tailleCompletee / downloadEnCours.taille
+        progresTransfert = ''+Math.floor(progresTransfertFloat)
         // console.debug("Progres %O (%O), tailleCompletee %d / %d ", progres, progresFloat, downloadEnCours.tailleCompletee, downloadEnCours.taille)
+        const progresDechiffrageFloat = 100.0 * (downloadEnCours.tailleDechiffree || 0) / downloadEnCours.taille
+        progresDechiffrage = ''+Math.floor(progresDechiffrageFloat)
     }
 
     return (
         <div>
             <Row className={styles['modal-row-header']}>
-                <Col xs={6}>
-                    Downloads en cours {compteEnCours?<Badge>{compteEnCours}</Badge>:''}
+                <Col xs={12}>
+                    Download en cours
                 </Col>
-                <Col>
-                    {downloadActif?
-                        <ProgressBar now={progres} label={progres+' %'} className={styles.progressmin} />
-                        :''
-                    }
-                </Col>
-            </Row>
+                </Row>
+            {downloadActif?
+                <div>
+                    <Row>
+                        <Col xs={6}>Transfert</Col>
+                        <Col xs={6}>
+                            <ProgressBar now={progresTransfert} label={progresTransfert+' %'} className={styles.progressmin} />
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col xs={6}>Dechiffrage</Col>
+                        <Col xs={6}>
+                            <ProgressBar now={progresDechiffrage} label={progresDechiffrage+' %'} className={styles.progressmin} />
+                        </Col>
+                    </Row>
+                </div>
+            :''}
 
             {downloadActif?''
                 :

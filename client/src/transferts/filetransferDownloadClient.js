@@ -659,11 +659,14 @@ async function getPartsChiffresDownload(fuuid) {
 }
 
 /** Stream toutes les parts chiffrees d'un fichier downloade vers un writable. */
-async function streamPartsChiffrees(downloadFichiersDao, fuuid, writable) {
+async function streamPartsChiffrees(downloadFichiersDao, fuuid, writable, opts) {
+  opts = opts || {}
+  const progressCb = opts.progressCb
   // const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
   const parts = await getPartsChiffresDownload(fuuid)
 
-//  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
+  //  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
+  let positionDechiffrage = 0
   for await(const part of parts) {
     // console.debug("Dechiffrer partObj ", part)
     //const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
@@ -672,6 +675,11 @@ async function streamPartsChiffrees(downloadFichiersDao, fuuid, writable) {
     // const readerPart = blob.stream()
     const readerPart = blob.stream()
     await readerPart.pipeTo(writable, {preventClose: true})
+    if(progressCb) {
+      const tailleBlob = blob.size
+      positionDechiffrage += tailleBlob
+      await progressCb(positionDechiffrage, {'champ': 'tailleDechiffree'})
+    }
   }
   writable.close()
 }
@@ -712,7 +720,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
 
     // Parcourir les parts de fichiers en ordre
     // console.debug("Demarrer parcourir parts")
-    const promiseStreamParts = streamPartsChiffrees(downloadFichiersDao, fuuid, writable)
+    const promiseStreamParts = streamPartsChiffrees(downloadFichiersDao, fuuid, writable, {progressCb})
 
     // console.debug("Attente de sauvegarde")
     await Promise.all([promiseCache, promiseStreamParts])
