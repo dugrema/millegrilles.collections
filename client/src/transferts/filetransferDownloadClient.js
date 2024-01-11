@@ -411,6 +411,17 @@ function creerProgresTransformStream(progressCb, size, opts) {
     // }, queuingStrategy, queuingStrategy)
   }
 
+export async function supprimerCacheFuuid(fuuid) {
+  const parts = await getPartsChiffresDownload(fuuid)
+  const cacheChiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
+  for await(const part of parts) {
+    await cacheChiffre.delete(part.request)
+  }
+
+  const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+  await cacheDechiffre.delete('/'+fuuid)
+}
+
 /** Download un fichier, effectue les transformations (e.g. dechiffrage) et
  *  conserve le resultat dans cache storage */
 export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
@@ -463,7 +474,7 @@ export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
     const size = Number(headers.get('content-length'))
 
     // Utiliser stockage via callback (generalement pour stocker sous IDB)
-    console.debug("downloadCacheFichier Conserver fichier download via IDB")
+    // console.debug("downloadCacheFichier Conserver fichier download via IDB")
     const promiseTraitement = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb)
 
     await Promise.all([done, promiseTraitement])
@@ -497,7 +508,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
 
-  console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
+  // console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
   const DEBUG = opts.DEBUG || false
   const { downloadFichiersDao } = workers
 
@@ -524,17 +535,21 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   // Detecter la position courante (plus grand chunk deja recu)
   let positionPartCourant = 0
-  const partsExistants = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
-  console.debug("downloadFichierParts Part existants : ", partsExistants)
-  if(partsExistants) {
+  // const partsExistants = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+  const partsExistants = await getPartsChiffresDownload(fuuid)
+  // console.debug("downloadFichierParts Part existants : ", partsExistants)
+  if(partsExistants && partsExistants.length > 0) {
     const partCourant = partsExistants[partsExistants.length-1]
     const partCourantPosition = partCourant.position
-    const partCourantObj = await downloadFichiersDao.getPartDownload(fuuid, partCourantPosition)
-    positionPartCourant = partCourantPosition + partCourantObj.blobChiffre.size
+    positionPartCourant = partCourantPosition + (await partCourant.response.blob()).size
+    // const partCourantObj = await downloadFichiersDao.getPartDownload(fuuid, partCourantPosition)
+    // positionPartCourant = partCourantPosition + partCourantObj.blobChiffre.size
     console.info("downloadFichierParts Resume download a position ", positionPartCourant)
   }
 
   const partSize = CONST_TRANSFERT.LIMITE_DOWNLOAD_SPLIT
+
+  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
 
   try {
     for(let positionPart = positionPartCourant; positionPart < tailleFichierChiffre - 1; positionPart += partSize) {
@@ -566,11 +581,15 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
         throw err
       }
 
+      const response = new Response(stream, {status: 200})
+      const fuuidPath = '/'+fuuid+'/'+positionPart
+      const cachePutPromise = cache.put(fuuidPath, response)
+    
       // Utiliser stockage via callback (generalement pour stocker sous IDB)
       // console.debug("downloadCacheFichier Conserver fichier download via IDB")
-      const promiseStream = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb, {position: positionPart, dechiffre: false})
+      //const promiseStream = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb, {position: positionPart, dechiffre: false})
 
-      await Promise.all([done, promiseStream])
+      await Promise.all([done, response, cachePutPromise, /*promiseStream*/])
     }  // Fin loop download parts
 
     // // Attendre que le download soit termine
@@ -592,14 +611,65 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   }
 }
 
+function trierPositions(a, b) {
+  if(a === b) return 0
+  if(!a) return 1
+  if(!b) return -1
+
+  // Trier par date de creation
+  const positionA = a.position,
+        positionB = b.position
+  // if(dateCreationA === dateCreationB) return 0
+  if(positionA !== positionB) return positionA - positionB
+  return 0
+}
+
+
+async function getPartsChiffresDownload(fuuid) {
+  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
+
+  const parts = []
+  {
+    const keys = await cache.keys()
+    for await(const key of keys) {
+      // console.debug("getPartsChiffresDownload Key : ", key.url)
+      const pathName = new URL(key.url).pathname
+      if(pathName.startsWith('/'+fuuid)) {
+        const position = Number.parseInt(pathName.split('/').pop())
+        if(position !== undefined && !isNaN(position)) {
+          const response = await cache.match(key)
+          parts.push({position, request: key, response})
+        }
+      }
+    }
+  }
+  parts.sort(trierPositions)
+
+  // console.debug("Parts : ", parts)
+  return parts
+
+  // for await(const part of parts) {
+  //   console.debug("Part url %O, match %O", part, part.url)
+  //   console.debug(await part.text())
+  // }
+
+  // Trier les parts
+
+  //return parts
+}
+
 /** Stream toutes les parts chiffrees d'un fichier downloade vers un writable. */
 async function streamPartsChiffrees(downloadFichiersDao, fuuid, writable) {
-  const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+  // const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+  const parts = await getPartsChiffresDownload(fuuid)
+
 //  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
   for await(const part of parts) {
-    const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
-    // console.debug("Dechiffrer partObj ", partObj)
-    const blob = partObj.blobChiffre
+    // console.debug("Dechiffrer partObj ", part)
+    //const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
+    // const blob = partObj.blobChiffre
+    const blob = await part.response.blob()
+    // const readerPart = blob.stream()
     const readerPart = blob.stream()
     await readerPart.pipeTo(writable, {preventClose: true})
   }
@@ -633,7 +703,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   const response = new Response(readable, {headers: headersModifies, status: 200})
 
   // Stream to cache
-  const cache = await caches.open(CACHE_TEMP_NAME)
+  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
   const fuuidPath = '/'+fuuid
   // console.debug("Conserver cache item %s", fuuidPath)
   
@@ -654,10 +724,19 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
     const blobResponse = await responseCache.blob()
 
     downloadInfo.blob = blobResponse
+    // console.debug("Transferer blob de cache dechiffre vers IDB ", downloadInfo)
     await downloadFichiersDao.updateFichierDownload(downloadInfo)
 
     // Cleanup download parts
-    await downloadFichiersDao.supprimerDownloadParts(fuuid)
+    //await downloadFichiersDao.supprimerDownloadParts(fuuid)
+    // Cleanup cache
+    // const parts = await getPartsChiffresDownload(fuuid)
+    // const cacheChiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
+    // for await(const part of parts) {
+    //   await cacheChiffre.delete(part.request)
+    // }
+
+    await supprimerCacheFuuid(fuuid)
     
   } finally {
     // Cleanup cache
@@ -826,6 +905,7 @@ export async function down_supprimerDownloadsCache(fuuid) {
     await annulerDownload(fuuid)  // Ajouter le fuuid a la liste des downloads a annuler
     const cache = await caches.open(CACHE_TEMP_NAME)
     await cache.delete('/' + fuuid)
+    await supprimerCacheFuuid(fuuid)
 }
 
 /** Nettoie les entrees dans le cache de download qui ne correspondent a aucune entree de la IndexedDB */

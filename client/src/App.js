@@ -423,7 +423,12 @@ function InitialisationDownload(props) {
 
             for await (const download of downloads) {
                 const { etat } = download
-                if([CONST_ETAT_TRANSFERT.ETAT_PRET, CONST_ETAT_TRANSFERT.ETAT_DOWNLOAD_ENCOURS].includes(etat)) {
+                if([
+                  CONST_ETAT_TRANSFERT.ETAT_PRET, 
+                  CONST_ETAT_TRANSFERT.ETAT_DOWNLOAD_ENCOURS,
+                  CONST_ETAT_TRANSFERT.ETAT_DOWNLOAD_SUCCES_CHIFFRE,
+                  CONST_ETAT_TRANSFERT.ETAT_DOWNLOAD_SUCCES_DECHIFFRE,
+                ].includes(etat)) {
                   download.etat = CONST_ETAT_TRANSFERT.ETAT_ECHEC
                     download.tailleCompletee = 0
                     await downloadFichiersDao.updateFichierDownload(download)

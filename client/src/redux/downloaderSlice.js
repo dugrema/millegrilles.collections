@@ -543,7 +543,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 
     // Commencer boucle d'upload
     while(nextDownload) {
-        console.debug("Next download : %O", nextDownload)
+        // console.debug("Next download : %O", nextDownload)
         const fuuid = nextDownload.fuuid
         try {
             if(nextDownload.genererZip === true) {
