@@ -4,6 +4,8 @@ import { base64 } from "multiformats/bases/base64"
 
 import { chiffrage } from '@dugrema/millegrilles.reactjs/src/chiffrage'
 
+import * as CONST_TRANSFERT from './constantes'
+
 const { dechiffrer, preparerDecipher } = chiffrage
 
 var _urlDownload = '/collections/fichiers',
@@ -201,6 +203,9 @@ async function fetchAvecProgress(url, opts) {
   opts = opts || {}
   const progressCb = opts.progressCb,
         downloadEnCours = opts.downloadEnCours,
+        position = opts.position || 0,
+        partSize = opts.partSize,
+        taille = opts.taille,
         DEBUG = opts.DEBUG
 
   var dataProcessor = opts.dataProcessor
@@ -208,10 +213,30 @@ async function fetchAvecProgress(url, opts) {
   const abortController = new AbortController()
   const signal = abortController.signal
   // Note : cache no-store evite des problemes de memoire sur Firefox
-  const reponse = await fetch(url, {signal, cache: 'no-store', keepalive: false})
-  const contentLength = Number(reponse.headers.get('Content-Length'))
+  const startPosition = position || 0
+  let headerContentRange = `bytes=${startPosition}-`
+  let tailleTransfert = taille
+  if(position !== undefined && partSize && taille) {
+    let endPosition = position + partSize - 1
+    if(endPosition >= taille) {
+      endPosition = taille - 1
+    }
+    tailleTransfert = endPosition - startPosition + 1
+    headerContentRange = `bytes=${startPosition}-${endPosition}/${tailleTransfert}`
+  }
+  // console.debug("fetch url %s header range %O", url, headerContentRange)
+  const reponse = await fetch(url, {
+    signal, cache: 'no-store', keepalive: false,
+    headers: {'Range': headerContentRange}
+  })
+  const contentLengthRecu = Number(reponse.headers.get('Content-Length'))
+  if(tailleTransfert && tailleTransfert !== contentLengthRecu) {
+    throw new Error("mismatch content length")
+  }
+  
+  const contentLength = taille || contentLengthRecu
 
-  progressCb(0, contentLength, {})
+  progressCb(startPosition, contentLength, {})
 
   if(dataProcessor && dataProcessor.start) {
     // Initialiser le data processor au besoin
@@ -226,7 +251,7 @@ async function fetchAvecProgress(url, opts) {
   // Pipe la reponse pour la dechiffrer au passage
   let stream = reponse.body
   if(progressCb) {
-    const progresStream = creerProgresTransformStream(progressCb, contentLength, {downloadEnCours, abortController})
+    const progresStream = creerProgresTransformStream(progressCb, contentLength, {start: startPosition, downloadEnCours, abortController})
     stream = reponse.body.pipeThrough(progresStream)
   }
   const promisePipe = stream.pipeTo(writable)
@@ -334,7 +359,7 @@ function creerProgresTransformStream(progressCb, size, opts) {
     const downloadEnCours = opts.downloadEnCours,
           abortController = opts.abortController
 
-    let position = 0
+    let position = opts.start || 0
     let afficherProgres = true
 
     const setAfficherProgres = () => { afficherProgres = true }
@@ -466,14 +491,15 @@ export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
 /** 
  * Download un fichier en le separant en parts (e.g. 100 mb). 
  * Ne dechiffre pas le fichier. Supporte le resume en detectant les parts recus dans IDB. */
-export async function downloadFichierParts(downloadEnCours, progressCb, opts) {
+export async function downloadFichierParts(workers, downloadEnCours, progressCb, opts) {
   opts = opts || {}
   progressCb = progressCb || function() {}  // Par defaut fonction vide
 
   if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
 
-  console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
+  // console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
   const DEBUG = opts.DEBUG || false
+  const { downloadFichiersDao } = workers
 
   const {fuuid, url} = downloadEnCours
 
@@ -487,43 +513,70 @@ export async function downloadFichierParts(downloadEnCours, progressCb, opts) {
   }
   // console.debug("URL de download de fichier : %O", urlDownload)
 
+  // const infoDownload = await downloadFichiersDao.getDownload(fuuid)
+
+  // Verifier taille fichier chiffree
+  const reponseHead = await fetch(urlDownload, {method: 'HEAD'})
+  const tailleFichierChiffre = Number.parseInt(reponseHead.headers.get('Content-Length'))
+  // console.debug("Reponse head %d, taille : %s", reponseHead.status, tailleFichierChiffre)
+
+  // const taille = infoDownload.taille
+
   // Detecter la position courante (plus grand chunk deja recu)
   let positionPartCourant = 0
-  // TODO : trouver les parts completes (position et taille)
+  const partsExistants = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+  if(partsExistants) {
+    const partCourantPosition = partsExistants[partsExistants.length-1]
+    const partCourantObj = await downloadFichiersDao.getPartDownload(fuuid, partCourantPosition)
+    positionPartCourant = partCourantPosition + partCourantObj.blobChiffre.size
+    console.info("downloadFichierParts Resume download a position ", positionPartCourant)
+  }
+
+  const partSize = CONST_TRANSFERT.LIMITE_DOWNLOAD_SPLIT
 
   let pathname
   try {
-    const {
-      reader: stream, 
-      headers, 
-      status,
-      done,
-      abortController
-    } = await fetchAvecProgress(
-      urlDownload,
-      {progressCb, downloadEnCours, DEBUG}
-    )
+    for(let positionPart = positionPartCourant; positionPart < tailleFichierChiffre - 1; positionPart += partSize) {
+      const {
+        reader: stream, 
+        headers, 
+        status,
+        done,
+        abortController
+      } = await fetchAvecProgress(
+        urlDownload,
+        {progressCb, downloadEnCours, position: positionPart, partSize, taille: tailleFichierChiffre, DEBUG}
+      )
 
-    if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
-    if(status>299) {
-      const err = new Error(`Erreur download fichier ${url} (code ${status})`)
-      err.status = status
-      throw err
-    }
+      if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
 
-    const size = Number(headers.get('content-length'))
+      const sizeRecu = Number(headers.get('content-length'))
+      if(sizeRecu > partSize) {
+        throw new Error("Reception d'une part trop grande")
+      }
 
-    // Utiliser stockage via callback (generalement pour stocker sous IDB)
-    console.debug("downloadCacheFichier Conserver fichier download via IDB")
-    const promiseStream = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb, {dechiffre: false})
+      if(status === 200) {
+        throw new Error("HTTP code 200, devrait etre 206")
+      }
 
-    await Promise.all([done, promiseStream])
+      if(status>299) {
+        const err = new Error(`Erreur download fichier ${url} (code ${status})`)
+        err.status = status
+        throw err
+      }
+
+      // Utiliser stockage via callback (generalement pour stocker sous IDB)
+      // console.debug("downloadCacheFichier Conserver fichier download via IDB")
+      const promiseStream = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb, {position: positionPart, dechiffre: false})
+
+      await Promise.all([done, promiseStream])
+    }  // Fin loop download parts
 
     // // Attendre que le download soit termine
     // if(DEBUG) console.debug("Attendre que le download soit termine, response : %O", response)
 
     // await promiseCache
-    progressCb(size, size, {})
+    progressCb(tailleFichierChiffre, tailleFichierChiffre, {})
     // if(DEBUG) console.debug("Caching complete")
   } catch(err) {
     console.error("Erreur download/processing : %O", err)
@@ -547,7 +600,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
 
   const paramsDataProcessor = {...params, password, passwordChiffre}
-  console.debug("Dechifrer avec params : %O", paramsDataProcessor)
+  // console.debug("Dechifrer avec params : %O", paramsDataProcessor)
   const dataProcessor = await preparerDataProcessor(paramsDataProcessor)
 
   if(dataProcessor && dataProcessor.start) {
@@ -558,9 +611,9 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
 
   // Parcourir les parts de fichiers en ordre
   for await(const part of parts) {
-    console.debug("Dechiffrer part : ", part)
+    // console.debug("Dechiffrer part : ", part)
     const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
-    console.debug("Dechiffrer partObj ", partObj)
+    // console.debug("Dechiffrer partObj ", partObj)
     const blob = partObj.blobChiffre
     const reader = blob.stream().getReader()
     const arrayBuffers = []
@@ -569,26 +622,26 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
       if (done) {
         if(value) {
           const data = await dataProcessor.update(value)
-          arrayBuffers.push(data)          
+          arrayBuffers.push(data)
         }
         break
       }
       const data = await dataProcessor.update(value)
       arrayBuffers.push(data)
     }
-    // console.debug("Part %s buffers %s", part, arrayBuffers)
+    // console.debug("Part %s buffers %O", part, arrayBuffers)
     const blobDechiffre = new Blob(arrayBuffers)
     partObj.blob = blobDechiffre
-    console.debug("Maj part download ", partObj)
+    // console.debug("Maj part download ", partObj)
     await downloadFichiersDao.updatePartDownload(partObj)
   }
 
   const resultatDechiffrage = await dataProcessor.finish()
-  console.debug("Resultat dechiffrage ", resultatDechiffrage)
+  // console.debug("Resultat dechiffrage ", resultatDechiffrage)
 
   // Ajouter la derniere partie dechiffree
   if(resultatDechiffrage.message && resultatDechiffrage.message.length > 0) {
-    console.debug("Ajout message final")
+    // console.debug("Ajout message final ", resultatDechiffrage.message)
     const partFinalObj = await downloadFichiersDao.getPartDownload(fuuid, parts[parts.length-1].position)
     const blobDechiffreFinal = partFinalObj.blob
     const blobFinal = new Blob([await blobDechiffreFinal.arrayBuffer(), resultatDechiffrage.message])
@@ -598,7 +651,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
 
   // Cleanup de tous les parts, retirer blobChiffre et faire un append du message final
   for await (const part of parts) {
-    console.debug("Cleanup part part")
+    // console.debug("Cleanup part", part)
     const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
     delete partObj.blobChiffre
     partObj.dechiffre = true
@@ -806,7 +859,9 @@ export async function down_entretienCache() {
 async function streamToDownloadIDB(fuuid, stream, conserverChunkCb, opts) {
   opts = opts || {}
   // const {downloadFichiersDao} = workers
-  let arrayBuffers = [], tailleChunks = 0, position = 0
+  let arrayBuffers = [], tailleChunks = 0
+  let position = opts.position || 0
+
   const reader = stream.getReader()
   while(true) {
       const val = await reader.read()

@@ -175,7 +175,7 @@ export async function getPartsDownloadChiffre(fuuid) {
     }
 
     if(position === 0) {
-        console.error("Aucun contenu de fichier trouve pour %s", fuuid)
+        //console.error("Aucun contenu de fichier trouve pour %s", fuuid)
         return false
     }
 

@@ -55,7 +55,7 @@ function setDownloadsAction(state, action) {
 function pushDownloadAction(state, action) {
     const docDownload = action.payload
 
-    console.debug("pushDownloadAction payload : ", docDownload)
+    // console.debug("pushDownloadAction payload : ", docDownload)
     state.liste.push(docDownload)
 
     const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
@@ -176,7 +176,7 @@ export function ajouterDownload(workers, docDownload) {
 async function traiterAjouterDownload(workers, docDownload, dispatch, getState) {
     const { downloadFichiersDao, clesDao } = workers
     
-    console.debug("traiterAjouterDownload payload : ", docDownload)
+    // console.debug("traiterAjouterDownload payload : ", docDownload)
     
     const userId = getState()[SLICE_NAME].userId
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
@@ -603,15 +603,15 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     if(dechiffre) {
         // console.debug("Params download : ", paramsDownload)
         const resultat = await transfertDownloadFichiers.downloadCacheFichier(paramsDownload, progressCb)
-        console.debug("Resultat download fichier : ", resultat)
+        // console.debug("Resultat download fichier : ", resultat)
     } else {
         // Downloader les chunks du fichier - supporte resume
-        const resultat = await transfertDownloadFichiers.downloadFichierParts(paramsDownload, progressCb)
-        console.debug("Resultat download fichier : ", resultat)
+        const resultat = await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb)
+        // console.debug("Resultat download fichier : ", resultat)
 
         // Dechiffrer le fichier
         await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDownload, progressCb)
-        marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_DECHIFFRE, dechiffre: true})
+        await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_DECHIFFRE, dechiffre: true, DEBUG: false})
             .catch(err=>console.warn("progressCb Erreur maj download ", err))
 }
 
