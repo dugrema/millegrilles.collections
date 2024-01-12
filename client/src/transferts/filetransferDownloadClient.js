@@ -20,7 +20,8 @@ const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       CONST_PROGRESS_UPDATE_THRESHOLD = 10 * CONST_1MB,
       CONST_PROGRESS_UPDATE_INTERVAL = 1000,
       CONST_BLOB_DOWNLOAD_CHUNKSIZE = 100 * CONST_1MB,
-      CONST_HIGH_WATERMARK_DECHIFFRAGE = 10
+      CONST_HIGH_WATERMARK_DECHIFFRAGE = 10,
+      CONST_BLOB_CACHE_CHUNKSIZE = 1024 * CONST_1MB
 
 // Globals
 var _chiffrage = null
@@ -411,15 +412,22 @@ function creerProgresTransformStream(progressCb, size, opts) {
     // }, queuingStrategy, queuingStrategy)
   }
 
-export async function supprimerCacheFuuid(fuuid) {
+export async function supprimerCacheFuuid(fuuid, opts) {
+  opts = opts || {}
   const parts = await getPartsChiffresDownload(fuuid)
   const cacheChiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
   for await(const part of parts) {
     await cacheChiffre.delete(part.request)
   }
 
-  const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
-  await cacheDechiffre.delete('/'+fuuid)
+  if(!opts.keepDechiffre) {
+    const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+    const partsDechiffre = await getPartsChiffresDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
+    await cacheDechiffre.delete('/'+fuuid)
+    for await(const part of partsDechiffre) {
+      await cacheDechiffre.delete(part.request)
+    }
+  }
 }
 
 /** Download un fichier, effectue les transformations (e.g. dechiffrage) et
@@ -625,8 +633,10 @@ function trierPositions(a, b) {
 }
 
 
-async function getPartsChiffresDownload(fuuid) {
-  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
+async function getPartsChiffresDownload(fuuid, opts) {
+  opts = opts || {}
+  const cacheName = opts.cache || CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE
+  const cache = await caches.open(cacheName)
 
   const parts = []
   {
@@ -708,7 +718,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   headersModifies.set('content-disposition', `attachment; filename="${filename}"`)
   headersModifies.set('mimetype', mimetype)
 
-  const response = new Response(readable, {headers: headersModifies, status: 200})
+  // const response = new Response(readable, {headers: headersModifies, status: 200})
 
   // Stream to cache
   const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
@@ -716,25 +726,26 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   // console.debug("Conserver cache item %s", fuuidPath)
   
   try {
-    const promiseCache = cache.put(fuuidPath, response)
+    // const promiseCache = cache.put(fuuidPath, response)
 
     // Parcourir les parts de fichiers en ordre
     // console.debug("Demarrer parcourir parts")
     const promiseStreamParts = streamPartsChiffrees(downloadFichiersDao, fuuid, writable, {progressCb})
+    const promiseCache = streamToCacheParts(fuuid, readable)
 
     console.debug("dechiffrerPartsDownload Attente de sauvegarde sous cache pour ", fuuid)
     await Promise.all([promiseCache, promiseStreamParts])
     console.debug("dechiffrerPartsDownload Sauvegarde completee sous cache completee. Transfert vers IDB.", fuuid)
 
-    const downloadInfo = await downloadFichiersDao.getDownload(fuuid)
+    // const downloadInfo = await downloadFichiersDao.getDownload(fuuid)
 
     // Transferer le blob du cache vers IDB
-    const responseCache = await cache.match(fuuidPath)
-    const blobResponse = await responseCache.blob()
+    // const responseCache = await cache.match(fuuidPath)
+    // const blobResponse = await responseCache.blob()
 
-    downloadInfo.blob = blobResponse
+    // downloadInfo.blob = blobResponse
     // console.debug("Transferer blob de cache dechiffre vers IDB ", downloadInfo)
-    await downloadFichiersDao.updateFichierDownload(downloadInfo)
+    // await downloadFichiersDao.updateFichierDownload(downloadInfo)
 
     // Cleanup download parts
     //await downloadFichiersDao.supprimerDownloadParts(fuuid)
@@ -745,8 +756,17 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
     //   await cacheChiffre.delete(part.request)
     // }
 
-    await supprimerCacheFuuid(fuuid)
-    
+    await supprimerCacheFuuid(fuuid, {keepDechiffre: true})
+  } catch(err) {
+    // Cleanup cache dechiffre
+    const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+    const partsDechiffre = await getPartsChiffresDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
+    await cacheDechiffre.delete('/'+fuuid)
+    for await(const part of partsDechiffre) {
+      await cacheDechiffre.delete(part.request)
+    }
+  
+    throw err
   } finally {
     // Cleanup cache
     cache.delete(fuuidPath)
@@ -994,5 +1014,50 @@ async function streamToDownloadIDB(fuuid, stream, conserverChunkCb, opts) {
       // console.debug("Dernier blob position %s : ", positionBlob, blob)
       // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
       await conserverChunkCb(fuuid, positionBlob, blob, opts)
+  }
+}
+
+async function streamToCacheParts(fuuid, stream, opts) {
+  opts = opts || {}
+  // const {downloadFichiersDao} = workers
+  let arrayBuffers = [], tailleChunks = 0
+  let position = 0
+
+  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+
+  const reader = stream.getReader()
+  while(true) {
+      const val = await reader.read()
+      // console.debug("genererFichierZip Stream read %O", val)
+      if(val.done) break  // Termine
+
+      const data = val.value
+      if(data) {
+          arrayBuffers.push(data)
+          tailleChunks += data.length
+          position += data.length
+      }
+
+      if(tailleChunks > CONST_TRANSFERT.LIMITE_DOWNLOAD_CACHE_SPLIT) {
+        // Split chunks en parts
+        const blob = new Blob(arrayBuffers)
+        const positionBlob = position - blob.size
+        arrayBuffers = []
+        tailleChunks = 0
+        const response = new Response(blob, {status: 200})
+        const fuuidPath = '/'+fuuid+'/'+positionBlob
+        await cache.put(fuuidPath, response)
+      }
+
+      if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
+  }
+
+  if(arrayBuffers.length > 0) {
+      const blob = new Blob(arrayBuffers)
+      const positionBlob = position - blob.size
+      arrayBuffers = []
+      const response = new Response(blob, {status: 200})
+      const fuuidPath = '/'+fuuid+'/'+positionBlob
+      await cache.put(fuuidPath, response)
   }
 }

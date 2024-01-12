@@ -1,6 +1,7 @@
 import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { ajouterUpload } from '../redux/uploaderSlice'
 import * as Comlink from 'comlink'
+import * as CONST_TRANSFERT from '../transferts/constantes'
 
 const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
       CONST_1MB = 1024 * 1024
@@ -162,6 +163,53 @@ export async function getResponseFuuid(fuuid) {
     return cacheFichier
 }
 
+function trierPositions(a, b) {
+    if(a === b) return 0
+    if(!a) return 1
+    if(!b) return -1
+  
+    // Trier par date de creation
+    const positionA = a.position,
+          positionB = b.position
+    // if(dateCreationA === dateCreationB) return 0
+    if(positionA !== positionB) return positionA - positionB
+    return 0
+  }
+  
+  
+  async function getPartsDechiffresDownload(fuuid) {
+    const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+  
+    const parts = []
+    {
+      const keys = await cache.keys()
+      for await(const key of keys) {
+        // console.debug("getPartsChiffresDownload Key : ", key.url)
+        const pathName = new URL(key.url).pathname
+        if(pathName.startsWith('/'+fuuid)) {
+          const position = Number.parseInt(pathName.split('/').pop())
+          if(position !== undefined && !isNaN(position)) {
+            const response = await cache.match(key)
+            parts.push({position, request: key, response})
+          }
+        }
+      }
+    }
+    parts.sort(trierPositions)
+  
+    // console.debug("Parts : ", parts)
+    return parts
+  
+    // for await(const part of parts) {
+    //   console.debug("Part url %O, match %O", part, part.url)
+    //   console.debug(await part.text())
+    // }
+  
+    // Trier les parts
+  
+    //return parts
+  }
+
 export async function downloadCache(workers, fuuid, opts) {
     opts = opts || {}
     const { downloadFichiersDao } = workers
@@ -175,11 +223,19 @@ export async function downloadCache(workers, fuuid, opts) {
     if(resultat && resultat.blob) {
         promptSaveFichier(resultat.blob, opts)
     } else {
-        const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-        const cacheFichier = await cacheTmp.match('/'+fuuid)
+        const parts = await getPartsDechiffresDownload(fuuid)
+        console.debug('downloadCache Parts : ', parts)
+        // const cacheFichier = await cacheTmp.match('/'+fuuid)
         // console.debug("Cache fichier : %O", cacheFichier)
-        if(cacheFichier) {
-            promptSaveFichier(await cacheFichier.blob(), opts)
+        if(parts && parts.length > 0) {
+            // promptSaveFichier(await cacheFichier.blob(), opts)
+            const blobs = []
+            for(const part of parts) {
+                const blob = await part.response.blob()
+                blobs.push(blob)
+            }
+            const blobFichier = new Blob(blobs)
+            promptSaveFichier(blobFichier, opts)
         } else {
             console.warn("Fichier '%s' non present dans le cache", fuuid)
         }
