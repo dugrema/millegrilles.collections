@@ -4,6 +4,8 @@ import { base64 } from "multiformats/bases/base64"
 
 import { chiffrage } from '@dugrema/millegrilles.reactjs/src/chiffrage'
 
+import { supprimerCacheFuuid, getPartsChiffresDownload, streamPartsChiffrees, streamToCacheParts } from './storage'
+
 import * as CONST_TRANSFERT from './constantes'
 
 const { dechiffrer, preparerDecipher } = chiffrage
@@ -67,96 +69,96 @@ export async function down_getEtatCourant() {
   return etat
 }
 
-export async function down_ajouterDownload(fuuid, opts) {
-  opts = opts || {}
-  // Note: opts doit avoir iv, tag et password/passwordChiffre pour les fichiers chiffres
-  const url = path.join(_urlDownload, ''+fuuid)  // Peut etre override dans opts
+// export async function down_ajouterDownload(fuuid, opts) {
+//   opts = opts || {}
+//   // Note: opts doit avoir iv, tag et password/passwordChiffre pour les fichiers chiffres
+//   const url = path.join(_urlDownload, ''+fuuid)  // Peut etre override dans opts
 
-  // console.debug("ajouterDownload %s, %O", fuuid, opts)
+//   // console.debug("ajouterDownload %s, %O", fuuid, opts)
 
-  if(_fuuidsAnnulerDownload) {
-    // S'assurer que le download ajoute n'est pas dans la liste des downloads annules
-    _fuuidsAnnulerDownload = _fuuidsAnnulerDownload.filter(item=>item !== fuuid)
-  }
+//   if(_fuuidsAnnulerDownload) {
+//     // S'assurer que le download ajoute n'est pas dans la liste des downloads annules
+//     _fuuidsAnnulerDownload = _fuuidsAnnulerDownload.filter(item=>item !== fuuid)
+//   }
 
-  const infoDownload = {
-    url,
-    taille: '',
-    conserver: false,  // Indique de conserver le fichier dans un cache longue duree (offline viewing)
-    ...opts,  // Overrides et params
+//   const infoDownload = {
+//     url,
+//     taille: '',
+//     conserver: false,  // Indique de conserver le fichier dans un cache longue duree (offline viewing)
+//     ...opts,  // Overrides et params
 
-    fuuid,
-    hachage_bytes: fuuid,  // Cle de la collection
+//     fuuid,
+//     hachage_bytes: fuuid,  // Cle de la collection
 
-    annuler: false,
-    status: STATUS_NOUVEAU,
-    dateQueuing: new Date().getTime(),
-    dateComplete: '',
-  }
+//     annuler: false,
+//     status: STATUS_NOUVEAU,
+//     dateQueuing: new Date().getTime(),
+//     dateComplete: '',
+//   }
 
-  // console.debug("ajouterDownload push %O", infoDownload)
+//   // console.debug("ajouterDownload push %O", infoDownload)
 
-  const db = await ouvrirIdb()
-  await db.transaction(STORE_DOWNLOADS, 'readwrite')
-    .objectStore(STORE_DOWNLOADS)
-    .put(infoDownload)
+//   const db = await ouvrirIdb()
+//   await db.transaction(STORE_DOWNLOADS, 'readwrite')
+//     .objectStore(STORE_DOWNLOADS)
+//     .put(infoDownload)
 
-  traiterDownloads()
-}
+//   traiterDownloads()
+// }
 
-async function traiterDownloads() {
-  if(_downloadEnCours) return  // Rien a faire
+// async function traiterDownloads() {
+//   if(_downloadEnCours) return  // Rien a faire
 
-  const progressCb = (loaded, size, flags) => {
-    flags = flags || {}
-    emettreEtat({loaded, size, ...flags})
-  }
+//   const progressCb = (loaded, size, flags) => {
+//     flags = flags || {}
+//     emettreEtat({loaded, size, ...flags})
+//   }
 
-  let complete = ''
-  let downloadsPending = await getDownloadsPending()
-  //for(_downloadEnCours = downloadsPending.shift(); _downloadEnCours; _downloadEnCours = downloadsPending.shift()) {
-  while(downloadsPending.length > 0) {
-      _downloadEnCours = downloadsPending.shift()
-      // console.debug("Traitement fichier %O", _downloadEnCours)
+//   let complete = ''
+//   let downloadsPending = await getDownloadsPending()
+//   //for(_downloadEnCours = downloadsPending.shift(); _downloadEnCours; _downloadEnCours = downloadsPending.shift()) {
+//   while(downloadsPending.length > 0) {
+//       _downloadEnCours = downloadsPending.shift()
+//       // console.debug("Traitement fichier %O", _downloadEnCours)
       
-      //_downloadEnCours.status = STATUS_ENCOURS
-      await majDownload(_downloadEnCours.hachage_bytes, {status: STATUS_ENCOURS})
-      emettreEtat({complete}).catch(err=>(console.warn("Erreur maj etat : %O", err)))
+//       //_downloadEnCours.status = STATUS_ENCOURS
+//       await majDownload(_downloadEnCours.hachage_bytes, {status: STATUS_ENCOURS})
+//       emettreEtat({complete}).catch(err=>(console.warn("Erreur maj etat : %O", err)))
       
-      try {
-          // Reset downloads annules
-          _fuuidsAnnulerDownload = null
+//       try {
+//           // Reset downloads annules
+//           _fuuidsAnnulerDownload = null
 
-          // Download le fichier.
-          await downloadCacheFichier(_downloadEnCours, {progressCb})
-          emettreEtat({fuuidReady: _downloadEnCours.fuuid}).catch(err=>(console.warn("Erreur maj etat apres download complet : %O", err)))
-      } catch(err) {
-          console.error("Erreur GET fichier : %O (downloadEnCours : %O)", err, _downloadEnCours)
-          _downloadEnCours.status = STATUS_ERREUR
-          await majDownload(_downloadEnCours.hachage_bytes, {complete: true, status: STATUS_ERREUR, dateComplete: new Date()})
-      } finally {
-          //if(!_downloadEnCours.annuler) {
-              // _downloadsCompletes.push(_downloadEnCours)
-          //}
-          complete = _downloadEnCours.correlation
-          // _downloadEnCours.complete = true
-          if(_downloadEnCours.status !== STATUS_ERREUR) {
-            await majDownload(_downloadEnCours.hachage_bytes, {
-              complete: true, 
-              status: STATUS_SUCCES, 
-              dateComplete: new Date(),
-              annuler: _downloadEnCours.annuler,
-            })
-          }
+//           // Download le fichier.
+//           await downloadCacheFichier(_downloadEnCours, {progressCb})
+//           emettreEtat({fuuidReady: _downloadEnCours.fuuid}).catch(err=>(console.warn("Erreur maj etat apres download complet : %O", err)))
+//       } catch(err) {
+//           console.error("Erreur GET fichier : %O (downloadEnCours : %O)", err, _downloadEnCours)
+//           _downloadEnCours.status = STATUS_ERREUR
+//           await majDownload(_downloadEnCours.hachage_bytes, {complete: true, status: STATUS_ERREUR, dateComplete: new Date()})
+//       } finally {
+//           //if(!_downloadEnCours.annuler) {
+//               // _downloadsCompletes.push(_downloadEnCours)
+//           //}
+//           complete = _downloadEnCours.correlation
+//           // _downloadEnCours.complete = true
+//           if(_downloadEnCours.status !== STATUS_ERREUR) {
+//             await majDownload(_downloadEnCours.hachage_bytes, {
+//               complete: true, 
+//               status: STATUS_SUCCES, 
+//               dateComplete: new Date(),
+//               annuler: _downloadEnCours.annuler,
+//             })
+//           }
 
-          _downloadEnCours = null
-          emettreEtat({complete}).catch(err=>(console.warn("Erreur maj etat : %O", err)))
-      }
+//           _downloadEnCours = null
+//           emettreEtat({complete}).catch(err=>(console.warn("Erreur maj etat : %O", err)))
+//       }
 
-      downloadsPending = await getDownloadsPending()
-  }
+//       downloadsPending = await getDownloadsPending()
+//   }
 
-}
+// }
 
 async function getDownloadsPending() {
   const db = await ouvrirIdb()
@@ -412,100 +414,100 @@ function creerProgresTransformStream(progressCb, size, opts) {
     // }, queuingStrategy, queuingStrategy)
   }
 
-export async function supprimerCacheFuuid(fuuid, opts) {
-  opts = opts || {}
-  const parts = await getPartsChiffresDownload(fuuid)
-  const cacheChiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
-  for await(const part of parts) {
-    await cacheChiffre.delete(part.request)
-  }
+// export async function supprimerCacheFuuid(fuuid, opts) {
+//   opts = opts || {}
+//   const parts = await getPartsChiffresDownload(fuuid)
+//   const cacheChiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
+//   for await(const part of parts) {
+//     await cacheChiffre.delete(part.request)
+//   }
 
-  if(!opts.keepDechiffre) {
-    const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
-    const partsDechiffre = await getPartsChiffresDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
-    await cacheDechiffre.delete('/'+fuuid)
-    for await(const part of partsDechiffre) {
-      await cacheDechiffre.delete(part.request)
-    }
-  }
-}
+//   if(!opts.keepDechiffre) {
+//     const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+//     const partsDechiffre = await getPartsChiffresDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
+//     await cacheDechiffre.delete('/'+fuuid)
+//     for await(const part of partsDechiffre) {
+//       await cacheDechiffre.delete(part.request)
+//     }
+//   }
+// }
 
-/** Download un fichier, effectue les transformations (e.g. dechiffrage) et
- *  conserve le resultat dans cache storage */
-export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
-  opts = opts || {}
-  progressCb = progressCb || function() {}  // Par defaut fonction vide
+// /** Download un fichier, effectue les transformations (e.g. dechiffrage) et
+//  *  conserve le resultat dans cache storage */
+// export async function downloadCacheFichier(downloadEnCours, progressCb, opts) {
+//   opts = opts || {}
+//   progressCb = progressCb || function() {}  // Par defaut fonction vide
 
-  if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
+//   if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
 
-  // console.debug("downloadCacheFichier %O, Options : %O", downloadEnCours, opts)
-  const DEBUG = opts.DEBUG || false
+//   // console.debug("downloadCacheFichier %O, Options : %O", downloadEnCours, opts)
+//   const DEBUG = opts.DEBUG || false
 
-  var dataProcessor = null
-  const {fuuid, url, filename, mimetype, password, passwordChiffre} = downloadEnCours
-  if((password || passwordChiffre)) {
-    const paramsDataProcessor = {...downloadEnCours, password, passwordChiffre}
-    // console.debug("Dechifrer avec params : %O", paramsDataProcessor)
-    dataProcessor = await preparerDataProcessor(paramsDataProcessor)
-  }
+//   var dataProcessor = null
+//   const {fuuid, url, filename, mimetype, password, passwordChiffre} = downloadEnCours
+//   if((password || passwordChiffre)) {
+//     const paramsDataProcessor = {...downloadEnCours, password, passwordChiffre}
+//     // console.debug("Dechifrer avec params : %O", paramsDataProcessor)
+//     dataProcessor = await preparerDataProcessor(paramsDataProcessor)
+//   }
 
-  let urlDownload = new URL(_urlDownload)
-  try {
-    // Verifier si URL fourni est valide/global
-    urlDownload = new URL(url)
-  } catch(err) {
-    // Ajouter url au path
-    urlDownload.pathname = path.join(urlDownload.pathname, url)
-  }
-  // console.debug("URL de download de fichier : %O", urlDownload)
+//   let urlDownload = new URL(_urlDownload)
+//   try {
+//     // Verifier si URL fourni est valide/global
+//     urlDownload = new URL(url)
+//   } catch(err) {
+//     // Ajouter url au path
+//     urlDownload.pathname = path.join(urlDownload.pathname, url)
+//   }
+//   // console.debug("URL de download de fichier : %O", urlDownload)
 
-  let pathname
-  try {
-    const {
-      reader: stream, 
-      headers, 
-      status,
-      done,
-      abortController
-    } = await fetchAvecProgress(
-      urlDownload,
-      {progressCb, dataProcessor, downloadEnCours, DEBUG}
-    )
+//   let pathname
+//   try {
+//     const {
+//       reader: stream, 
+//       headers, 
+//       status,
+//       done,
+//       abortController
+//     } = await fetchAvecProgress(
+//       urlDownload,
+//       {progressCb, dataProcessor, downloadEnCours, DEBUG}
+//     )
 
-    if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
-    if(status>299) {
-      const err = new Error(`Erreur download fichier ${url} (code ${status})`)
-      err.status = status
-      throw err
-    }
+//     if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
+//     if(status>299) {
+//       const err = new Error(`Erreur download fichier ${url} (code ${status})`)
+//       err.status = status
+//       throw err
+//     }
 
-    const size = Number(headers.get('content-length'))
+//     const size = Number(headers.get('content-length'))
 
-    // Utiliser stockage via callback (generalement pour stocker sous IDB)
-    // console.debug("downloadCacheFichier Conserver fichier download via IDB")
-    const promiseTraitement = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb)
+//     // Utiliser stockage via callback (generalement pour stocker sous IDB)
+//     // console.debug("downloadCacheFichier Conserver fichier download via IDB")
+//     const promiseTraitement = streamToDownloadIDB(fuuid, stream, _callbackAjouterChunkIdb)
 
-    await Promise.all([done, promiseTraitement])
+//     await Promise.all([done, promiseTraitement])
 
-    // // Attendre que le download soit termine
-    // if(DEBUG) console.debug("Attendre que le download soit termine, response : %O", response)
+//     // // Attendre que le download soit termine
+//     // if(DEBUG) console.debug("Attendre que le download soit termine, response : %O", response)
 
-    // await promiseCache
-    progressCb(size, size, {})
-    // if(DEBUG) console.debug("Caching complete")
-  } catch(err) {
-    console.error("Erreur download/processing : %O", err)
-    if(progressCb) progressCb(-1, -1, {flag: 'Erreur', err: ''+err, stack: err.stack})
-    // try {
-    //   const cache = await caches.open(CACHE_TEMP_NAME)
-    //   cache.delete(pathname)
-    // } catch(err) {console.warn("Erreur suppression cache %s : %O", pathname, err)}
-    throw err
-  } finally {
-    downloadEnCours.termine = true
-    // _downloadEnCours = null
-  }
-}
+//     // await promiseCache
+//     progressCb(size, size, {})
+//     // if(DEBUG) console.debug("Caching complete")
+//   } catch(err) {
+//     console.error("Erreur download/processing : %O", err)
+//     if(progressCb) progressCb(-1, -1, {flag: 'Erreur', err: ''+err, stack: err.stack})
+//     // try {
+//     //   const cache = await caches.open(CACHE_TEMP_NAME)
+//     //   cache.delete(pathname)
+//     // } catch(err) {console.warn("Erreur suppression cache %s : %O", pathname, err)}
+//     throw err
+//   } finally {
+//     downloadEnCours.termine = true
+//     // _downloadEnCours = null
+//   }
+// }
 
 /** 
  * Download un fichier en le separant en parts (e.g. 100 mb). 
@@ -619,80 +621,80 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   }
 }
 
-function trierPositions(a, b) {
-  if(a === b) return 0
-  if(!a) return 1
-  if(!b) return -1
+// function trierPositions(a, b) {
+//   if(a === b) return 0
+//   if(!a) return 1
+//   if(!b) return -1
 
-  // Trier par date de creation
-  const positionA = a.position,
-        positionB = b.position
-  // if(dateCreationA === dateCreationB) return 0
-  if(positionA !== positionB) return positionA - positionB
-  return 0
-}
+//   // Trier par date de creation
+//   const positionA = a.position,
+//         positionB = b.position
+//   // if(dateCreationA === dateCreationB) return 0
+//   if(positionA !== positionB) return positionA - positionB
+//   return 0
+// }
 
 
-async function getPartsChiffresDownload(fuuid, opts) {
-  opts = opts || {}
-  const cacheName = opts.cache || CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE
-  const cache = await caches.open(cacheName)
+// async function getPartsChiffresDownload(fuuid, opts) {
+//   opts = opts || {}
+//   const cacheName = opts.cache || CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE
+//   const cache = await caches.open(cacheName)
 
-  const parts = []
-  {
-    const keys = await cache.keys()
-    for await(const key of keys) {
-      // console.debug("getPartsChiffresDownload Key : ", key.url)
-      const pathName = new URL(key.url).pathname
-      if(pathName.startsWith('/'+fuuid)) {
-        const position = Number.parseInt(pathName.split('/').pop())
-        if(position !== undefined && !isNaN(position)) {
-          const response = await cache.match(key)
-          parts.push({position, request: key, response})
-        }
-      }
-    }
-  }
-  parts.sort(trierPositions)
+//   const parts = []
+//   {
+//     const keys = await cache.keys()
+//     for await(const key of keys) {
+//       // console.debug("getPartsChiffresDownload Key : ", key.url)
+//       const pathName = new URL(key.url).pathname
+//       if(pathName.startsWith('/'+fuuid)) {
+//         const position = Number.parseInt(pathName.split('/').pop())
+//         if(position !== undefined && !isNaN(position)) {
+//           const response = await cache.match(key)
+//           parts.push({position, request: key, response})
+//         }
+//       }
+//     }
+//   }
+//   parts.sort(trierPositions)
 
-  // console.debug("Parts : ", parts)
-  return parts
+//   // console.debug("Parts : ", parts)
+//   return parts
 
-  // for await(const part of parts) {
-  //   console.debug("Part url %O, match %O", part, part.url)
-  //   console.debug(await part.text())
-  // }
+//   // for await(const part of parts) {
+//   //   console.debug("Part url %O, match %O", part, part.url)
+//   //   console.debug(await part.text())
+//   // }
 
-  // Trier les parts
+//   // Trier les parts
 
-  //return parts
-}
+//   //return parts
+// }
 
-/** Stream toutes les parts chiffrees d'un fichier downloade vers un writable. */
-async function streamPartsChiffrees(downloadFichiersDao, fuuid, writable, opts) {
-  opts = opts || {}
-  const progressCb = opts.progressCb
-  // const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
-  const parts = await getPartsChiffresDownload(fuuid)
+// /** Stream toutes les parts chiffrees d'un fichier downloade vers un writable. */
+// async function streamPartsChiffrees(downloadFichiersDao, fuuid, writable, opts) {
+//   opts = opts || {}
+//   const progressCb = opts.progressCb
+//   // const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+//   const parts = await getPartsChiffresDownload(fuuid)
 
-  //  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
-  let positionDechiffrage = 0
-  for await(const part of parts) {
-    // console.debug("Dechiffrer partObj ", part)
-    //const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
-    // const blob = partObj.blobChiffre
-    const blob = await part.response.blob()
-    // const readerPart = blob.stream()
-    const readerPart = blob.stream()
-    await readerPart.pipeTo(writable, {preventClose: true})
-    if(progressCb) {
-      const tailleBlob = blob.size
-      positionDechiffrage += tailleBlob
-      await progressCb(positionDechiffrage, {'champ': 'tailleDechiffree'})
-    }
-  }
-  writable.close()
-}
+//   //  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
+//   let positionDechiffrage = 0
+//   for await(const part of parts) {
+//     // console.debug("Dechiffrer partObj ", part)
+//     //const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
+//     // const blob = partObj.blobChiffre
+//     const blob = await part.response.blob()
+//     // const readerPart = blob.stream()
+//     const readerPart = blob.stream()
+//     await readerPart.pipeTo(writable, {preventClose: true})
+//     if(progressCb) {
+//       const tailleBlob = blob.size
+//       positionDechiffrage += tailleBlob
+//       await progressCb(positionDechiffrage, {'champ': 'tailleDechiffree'})
+//     }
+//   }
+//   writable.close()
+// }
 
 export async function dechiffrerPartsDownload(workers, params, progressCb, opts) {
   opts = opts || {}
@@ -730,7 +732,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
 
     // Parcourir les parts de fichiers en ordre
     // console.debug("Demarrer parcourir parts")
-    const promiseStreamParts = streamPartsChiffrees(downloadFichiersDao, fuuid, writable, {progressCb})
+    const promiseStreamParts = streamPartsChiffrees(fuuid, writable, {progressCb})
     const promiseCache = streamToCacheParts(fuuid, readable)
 
     console.debug("dechiffrerPartsDownload Attente de sauvegarde sous cache pour ", fuuid)
@@ -875,25 +877,25 @@ export function down_setCertificatCa(certificat) {
   // _certificatCa = certificat
 }
 
-export async function down_retryDownload(fuuid) {
-  const db = await ouvrirIdb()
+// export async function down_retryDownload(fuuid) {
+//   const db = await ouvrirIdb()
 
-  const data = await db.transaction(STORE_DOWNLOADS, 'readonly').objectStore(STORE_DOWNLOADS).get(fuuid)
-  await db.transaction(STORE_DOWNLOADS, 'readwrite')
-    .objectStore(STORE_DOWNLOADS)
-    .put({
-      ...data, 
-      status: STATUS_NOUVEAU, 
-      err: null, 
-      annuler: false, 
-      complete: false, 
-      dateComplete: '', 
-      dateQueuing: new Date().getTime(),
-    })
+//   const data = await db.transaction(STORE_DOWNLOADS, 'readonly').objectStore(STORE_DOWNLOADS).get(fuuid)
+//   await db.transaction(STORE_DOWNLOADS, 'readwrite')
+//     .objectStore(STORE_DOWNLOADS)
+//     .put({
+//       ...data, 
+//       status: STATUS_NOUVEAU, 
+//       err: null, 
+//       annuler: false, 
+//       complete: false, 
+//       dateComplete: '', 
+//       dateQueuing: new Date().getTime(),
+//     })
   
-  // Demarrer download
-  traiterDownloads()
-}
+//   // Demarrer download
+//   traiterDownloads()
+// }
 
 export async function down_supprimerDownloads(params) {
   params = params || {}
@@ -973,91 +975,98 @@ export async function down_entretienCache() {
   await cleanupCacheOrphelin()
 }
 
-async function streamToDownloadIDB(fuuid, stream, conserverChunkCb, opts) {
-  opts = opts || {}
-  // const {downloadFichiersDao} = workers
-  let arrayBuffers = [], tailleChunks = 0
-  let position = opts.position || 0
+// async function streamToDownloadIDB(fuuid, stream, conserverChunkCb, opts) {
+//   opts = opts || {}
+//   // const {downloadFichiersDao} = workers
+//   let arrayBuffers = [], tailleChunks = 0
+//   let position = opts.position || 0
 
-  const reader = stream.getReader()
-  while(true) {
-      const val = await reader.read()
-      // console.debug("genererFichierZip Stream read %O", val)
-      if(val.done) break  // Termine
+//   const reader = stream.getReader()
+//   while(true) {
+//       const val = await reader.read()
+//       // console.debug("genererFichierZip Stream read %O", val)
+//       if(val.done) break  // Termine
 
-      const data = val.value
-      if(data) {
-          arrayBuffers.push(data)
-          tailleChunks += data.length
-          position += data.length
-      }
+//       const data = val.value
+//       if(data) {
+//           arrayBuffers.push(data)
+//           tailleChunks += data.length
+//           position += data.length
+//       }
 
-      if(tailleChunks > CONST_BLOB_DOWNLOAD_CHUNKSIZE) {
-          // Split chunks en parts
-          const blob = new Blob(arrayBuffers)
-          const positionBlob = position - blob.size
-          arrayBuffers = []
-          tailleChunks = 0
-          // console.debug("Blob cree position %s : ", positionBlob, blob)
-          // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
-          await conserverChunkCb(fuuid, positionBlob, blob, opts)
-      }
+//       if(tailleChunks > CONST_BLOB_DOWNLOAD_CHUNKSIZE) {
+//           // Split chunks en parts
+//           const blob = new Blob(arrayBuffers)
+//           const positionBlob = position - blob.size
+//           arrayBuffers = []
+//           tailleChunks = 0
+//           // console.debug("Blob cree position %s : ", positionBlob, blob)
+//           // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
+//           await conserverChunkCb(fuuid, positionBlob, blob, opts)
+//       }
 
-      if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
-  }
+//       if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
+//   }
 
-  if(arrayBuffers.length > 0) {
-      const blob = new Blob(arrayBuffers)
-      const positionBlob = position - blob.size
-      arrayBuffers = []
-      tailleChunks = 0
-      // console.debug("Dernier blob position %s : ", positionBlob, blob)
-      // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
-      await conserverChunkCb(fuuid, positionBlob, blob, opts)
-  }
-}
+//   if(arrayBuffers.length > 0) {
+//       const blob = new Blob(arrayBuffers)
+//       const positionBlob = position - blob.size
+//       arrayBuffers = []
+//       tailleChunks = 0
+//       // console.debug("Dernier blob position %s : ", positionBlob, blob)
+//       // await downloadFichiersDao.ajouterFichierDownloadFile(fuuid, positionBlob, blob)
+//       await conserverChunkCb(fuuid, positionBlob, blob, opts)
+//   }
+// }
 
-async function streamToCacheParts(fuuid, stream, opts) {
-  opts = opts || {}
-  // const {downloadFichiersDao} = workers
-  let arrayBuffers = [], tailleChunks = 0
-  let position = 0
+// /**
+//  * Lit un stream vers le cache de fichiers dechiffres. Split le contenu.
+//  * @param {*} fuuid 
+//  * @param {*} stream 
+//  * @param {*} opts limitSplitBytes: int
+//  */
+// async function streamToCacheParts(fuuid, stream, opts) {
+//   opts = opts || {}
+//   // const {downloadFichiersDao} = workers
+//   const limitSplitBytes = opts.splitLimit || CONST_TRANSFERT.LIMITE_DOWNLOAD_CACHE_SPLIT
+//   let arrayBuffers = [], tailleChunks = 0
+//   let position = 0
 
-  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+//   const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
 
-  const reader = stream.getReader()
-  while(true) {
-      const val = await reader.read()
-      // console.debug("genererFichierZip Stream read %O", val)
-      if(val.done) break  // Termine
+//   const reader = stream.getReader()
+//   while(true) {
+//       const val = await reader.read()
+//       // console.debug("genererFichierZip Stream read %O", val)
+//       if(val.done) break  // Termine
 
-      const data = val.value
-      if(data) {
-          arrayBuffers.push(data)
-          tailleChunks += data.length
-          position += data.length
-      }
+//       const data = val.value
+//       if(data) {
+//           arrayBuffers.push(data)
+//           tailleChunks += data.length
+//           position += data.length
+//       }
 
-      if(tailleChunks > CONST_TRANSFERT.LIMITE_DOWNLOAD_CACHE_SPLIT) {
-        // Split chunks en parts
-        const blob = new Blob(arrayBuffers)
-        const positionBlob = position - blob.size
-        arrayBuffers = []
-        tailleChunks = 0
-        const response = new Response(blob, {status: 200})
-        const fuuidPath = '/'+fuuid+'/'+positionBlob
-        await cache.put(fuuidPath, response)
-      }
+//       if(tailleChunks > limitSplitBytes) {
+//         // Split chunks en parts
+//         const blob = new Blob(arrayBuffers)
+//         const positionBlob = position - blob.size
+//         arrayBuffers = []
+//         tailleChunks = 0
+//         const response = new Response(blob, {status: 200})
+//         const fuuidPath = '/'+fuuid+'/'+positionBlob
+//         await cache.put(fuuidPath, response)
+//       }
 
-      if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
-  }
+//       if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
+//   }
 
-  if(arrayBuffers.length > 0) {
-      const blob = new Blob(arrayBuffers)
-      const positionBlob = position - blob.size
-      arrayBuffers = []
-      const response = new Response(blob, {status: 200})
-      const fuuidPath = '/'+fuuid+'/'+positionBlob
-      await cache.put(fuuidPath, response)
-  }
-}
+//   if(arrayBuffers.length > 0) {
+//       const blob = new Blob(arrayBuffers)
+//       const positionBlob = position - blob.size
+//       arrayBuffers = []
+//       const response = new Response(blob, {status: 200})
+//       const fuuidPath = '/'+fuuid+'/'+positionBlob
+//       await cache.put(fuuidPath, response)
+//   }
+// }
