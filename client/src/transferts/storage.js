@@ -22,10 +22,8 @@ export async function getPartsDownload(fuuid, opts) {
     opts = opts || {}
     const cacheName = opts.cache || CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE
     const cache = await caches.open(cacheName)
-    const tailleTotale = opts.taille
   
     const parts = []
-    let totalSize = 0
     {
         const keys = await cache.keys()
         for await(const key of keys) {
@@ -35,14 +33,11 @@ export async function getPartsDownload(fuuid, opts) {
                 const position = Number.parseInt(pathName.split('/').pop())
                 if(position !== undefined && !isNaN(position)) {
                     const response = await cache.match(key)
-                    totalSize += response.blob.size
                     parts.push({position, request: key, response})
                 }
             }
         }
     }
-
-    if(tailleTotale && tailleTotale !== totalSize) throw new Error("Mismatch taille")
 
     parts.sort(trierPositionsCache)
     return parts
@@ -51,20 +46,21 @@ export async function getPartsDownload(fuuid, opts) {
 /** Stream toutes les parts chiffrees d'un fichier downloade vers un writable. */
 export async function streamPartsChiffrees(fuuid, writable, opts) {
     opts = opts || {}
+    const tailleChiffre = opts.tailleChiffre
     const progressCb = opts.progressCb
-    // const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
+
+    // Recuperer parts tries en ordre de position
     const parts = await getPartsDownload(fuuid, opts)
   
-    //  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
+    // Pipe tous les blobs (response)
     let positionDechiffrage = 0
     for await(const part of parts) {
-        // console.debug("Dechiffrer partObj ", part)
-        //const partObj = await downloadFichiersDao.getPartDownload(fuuid, part.position)
-        // const blob = partObj.blobChiffre
         const blob = await part.response.blob()
-        // const readerPart = blob.stream()
         const readerPart = blob.stream()
+        // S'assurer de ne pas fermer le writable apres le pipeTo
         await readerPart.pipeTo(writable, {preventClose: true})
+
+        // Mise a jour de l'etat (progress)
         if(progressCb) {
             const tailleBlob = blob.size
             positionDechiffrage += tailleBlob
@@ -72,6 +68,9 @@ export async function streamPartsChiffrees(fuuid, writable, opts) {
         }
     }
     writable.close()
+
+    // Validation de la taille du fichier (optionelle)
+    if(tailleChiffre && tailleChiffre !== positionDechiffrage) throw new Error('mismatch taille chiffree')
 }
 
 /**

@@ -393,6 +393,12 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   const {fuuid, filename, mimetype, password, passwordChiffre} = params
   if((!password && !passwordChiffre)) { throw new Error('Params dechiffrage absents') }
 
+  const infoDownload = await downloadFichiersDao.getDownload(fuuid)
+  console.debug("dechiffrerPartsDownload ", infoDownload)
+  const tailleChiffre = infoDownload.tailleChiffre,
+        tailleDechiffre = infoDownload.taille
+  if(!tailleChiffre || !tailleDechiffre) throw new Error("Taille du fichier chiffre/dechiffre manquante")
+
   const paramsDataProcessor = {...params, password, passwordChiffre}
   // console.debug("Dechifrer avec params : %O", paramsDataProcessor)
   const dataProcessor = await preparerDataProcessor(paramsDataProcessor)
@@ -406,24 +412,9 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   // Creer un transform stream pour dechiffrer le fichier
   const { writable, readable } = createTransformStreamDechiffrage(dataProcessor)
 
-  const headersModifies = new Headers()
-  //headersModifies.set('content-length', ''+taille)
-  headersModifies.set('content-disposition', `attachment; filename="${filename}"`)
-  headersModifies.set('mimetype', mimetype)
-
-  // const response = new Response(readable, {headers: headersModifies, status: 200})
-
-  // Stream to cache
-  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
-  const fuuidPath = '/'+fuuid
-  // console.debug("Conserver cache item %s", fuuidPath)
-  
   try {
-    // const promiseCache = cache.put(fuuidPath, response)
-
     // Parcourir les parts de fichiers en ordre
-    // console.debug("Demarrer parcourir parts")
-    const promiseStreamParts = streamPartsChiffrees(fuuid, writable, {progressCb})
+    const promiseStreamParts = streamPartsChiffrees(fuuid, writable, {progressCb, tailleChiffre})
     const promiseCache = streamToCacheParts(fuuid, readable)
 
     console.debug("dechiffrerPartsDownload Attente de sauvegarde sous cache pour ", fuuid)
@@ -435,16 +426,11 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
     // Cleanup cache dechiffre
     const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
     const partsDechiffre = await getPartsDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
-    await cacheDechiffre.delete('/'+fuuid)
     for await(const part of partsDechiffre) {
       await cacheDechiffre.delete(part.request)
     }
   
     throw err
-  } finally {
-    // Cleanup cache
-    cache.delete(fuuidPath)
-      .catch(err=>console.warn("Erreur cleanup cache storage pour %s : %O", fuuidPath, err))
   }
 
 }
