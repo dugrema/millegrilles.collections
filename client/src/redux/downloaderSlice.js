@@ -56,7 +56,7 @@ function pushDownloadAction(state, action) {
 
 function pushGenererZipAction(state, action) {
     const infoGenererZip = action.payload
-    console.debug("pushGenererZipAction payload : ", infoGenererZip)
+    // console.debug("pushGenererZipAction payload : ", infoGenererZip)
 
     infoGenererZip.etat = ETAT_PRET
     infoGenererZip.dateCreation = new Date().getTime()
@@ -235,7 +235,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     const { connexion, chiffrage, downloadFichiersDao, clesDao } = workers
     let { cuuid, selection, contactId } = params
     
-    console.debug("traiterAjouterZipDownload cuuid : %s, selection : %O (contactId: %s)", cuuid, selection, contactId)
+    // console.debug("traiterAjouterZipDownload cuuid : %s, selection : %O (contactId: %s)", cuuid, selection, contactId)
     
     const userId = getState()[SLICE_NAME].userId
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
@@ -243,7 +243,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     // Charger statistiques cuuid, liste de fichiers/dossiers
     if(cuuid === '') cuuid = null
     const reponseStructure = await connexion.getStructureRepertoire(cuuid, contactId)
-    console.debug("Reponse structure : ", reponseStructure)
+    // console.debug("Reponse structure : ", reponseStructure)
     if(reponseStructure.ok === false) {
         throw new Error("Erreur preparation ZIP : ", reponseStructure.err)
     }
@@ -288,8 +288,8 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
             if(item.tuuid !== cuuid) root.push(item)
         }
     })
-    console.debug("traiterAjouterZipDownload Taille totale : %s, nodeParTuuid : %O, nodeParCuuidParent : %O, root: %O, fuuidsCles: %O", 
-        tailleTotale, nodeParTuuid, nodeParCuuidParent, root, fuuidsCles)
+    // console.debug("traiterAjouterZipDownload Taille totale : %s, nodeParTuuid : %O, nodeParCuuidParent : %O, root: %O, fuuidsCles: %O", 
+    //     tailleTotale, nodeParTuuid, nodeParCuuidParent, root, fuuidsCles)
 
     // Verifier s'il y a assez d'espace pour tout downloader et generer le ZIP
     // if('storage' in navigator) {
@@ -328,18 +328,24 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
 
     const fichiersADownloader = Object.values(nodeParTuuid).filter(item=>item.type_node === 'Fichier')
 
-    console.debug("Arborescence completee : %O\nDownload %d fichiers\n%O", root, fichiersADownloader.length, fichiersADownloader)
+    // console.debug("Arborescence completee : %O\nDownload %d fichiers\n%O", root, fichiersADownloader.length, fichiersADownloader)
 
     // Preparer toutes les cles (tous les tuuids incluant repertoires)
     const cles = await clesDao.getCles(fuuidsCles, {partage: !!contactId})
-    console.debug("Cles chargees : ", cles)
+    // console.debug("Cles chargees : ", cles)
 
     // Dechiffrer le contenu des tuuids. On a besoin du nom (fichiers et repertoires)
+    const fuuidsFichiersDownloadSet = new Set()
     for await(const tuuid of Object.keys(nodeParTuuid)) {
         const item = nodeParTuuid[tuuid]
         const metadata = item.metadata
         let fuuid = metadata.ref_hachage_bytes
-        if(item.fuuids_versions) fuuid = item.fuuids_versions[0]
+        if(item.fuuids_versions) {
+            // C'est un fichier a downloader
+            fuuid = item.fuuids_versions[0]
+            fuuidsFichiersDownloadSet.add(fuuid)
+        }
+
         if(!fuuid) {
             console.warn("Aucun fuuid pour %s - SKIP", tuuid)
             continue
@@ -350,9 +356,9 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
             console.warn("Aucune cle pour fuuid %s - SKIP", fuuid)
         }
 
-        console.debug("Dechiffrer %O avec cle %O", metadata, cle)
+        // console.debug("Dechiffrer %O avec cle %O", metadata, cle)
         const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cle)
-        console.debug("Contenu dechiffre : ", metaDechiffree)
+        // console.debug("Contenu dechiffre : ", metaDechiffree)
         // Ajout/override champs de metadonne avec contenu dechiffre
         Object.assign(item, metaDechiffree)
     }
@@ -375,7 +381,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     const nodeRoot = nodeParTuuid[cuuid] || {}
     nodeRoot.nodes = root
 
-    console.debug("traiterAjouterZipDownload nodeParTuuid : %O, nodeRoot : ", nodeParTuuid, nodeRoot)
+    // console.debug("traiterAjouterZipDownload nodeParTuuid : %O, nodeRoot : ", nodeParTuuid, nodeRoot)
 
     // Creer un fuuid artificiel pour supporter la meme structure que le download de fichiers
     let fuuidZip = 'zip/root'
@@ -386,6 +392,11 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     let nomArchive = 'millegrilles.zip'
     if(nodeRoot.nom) nomArchive = nodeRoot.nom + '.zip'
 
+    const listeFuuidsFichiers = []
+    for(const fuuid of fuuidsFichiersDownloadSet) {
+        listeFuuidsFichiers.push(fuuid)
+    }
+
     const docGenererZip = {
         fuuid: fuuidZip,
         cuuid,
@@ -394,10 +405,11 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         genererZip: true,
         nom: nomArchive,
         mimetype: 'application/zip',
+        fuuids: listeFuuidsFichiers,
     }
 
     // Conserver le nouveau download dans IDB
-    console.debug("Doc generer zip : %O", docGenererZip)
+    // console.debug("Doc generer zip : %O", docGenererZip)
     await downloadFichiersDao.updateFichierDownload(docGenererZip)
     // Inserer dans la Q de traitement
     dispatch(pushGenererZip(docGenererZip))
@@ -458,7 +470,7 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
                 console.warn("Erreur prompt pour sauvegarder fichier downloade ", err)
             }
         } else {
-            console.debug("Skip prompt sauvegarde %O", download)
+            // console.debug("Skip prompt sauvegarde %O", download)
         }
     }
 }
@@ -565,16 +577,25 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
     const transfertDownloadFichiers = workers.transfertDownloadFichiers
     const fuuidZip = downloadInfo.fuuid,
-          userId = downloadInfo.userId
+          userId = downloadInfo.userId,
+          fuuids = downloadInfo.fuuids
+    
     await transfertDownloadFichiers.genererFichierZip(workers, downloadInfo, cancelToken)    
+    
     // console.debug("Marquer download %s comme pret / complete", fuuidZip)
     await marquerDownloadEtat(workers, dispatch, fuuidZip, {etat: ETAT_COMPLETE, userId})
+
+    // Retirer downloads fichiers dans zip
+    for await(const fuuid of fuuids) {
+        await dispatch(arreterDownload(workers, fuuid))    
+    }
+
     await dispatch(completerDownload(workers, fuuidZip))
         .catch(err=>console.error("Erreur cleanup download fichier zip ", err))
 }
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
-    console.debug("Download fichier params : ", fichier)
+    // console.debug("Download fichier params : ", fichier)
     const { transfertDownloadFichiers, downloadFichiersDao, clesDao } = workers
     const fuuid = fichier.fuuid,
           fuuidCle = fichier.fuuidCle || fichier.fuuid,

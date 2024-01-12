@@ -389,13 +389,13 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
 export async function dechiffrerPartsDownload(workers, params, progressCb, opts) {
   opts = opts || {}
-  console.debug("dechiffrerPartsDownload params %O, opts %O", params, opts)
+  // console.debug("dechiffrerPartsDownload params %O, opts %O", params, opts)
   const { downloadFichiersDao } = workers
   const {fuuid, filename, mimetype, password, passwordChiffre} = params
   if((!password && !passwordChiffre)) { throw new Error('Params dechiffrage absents') }
 
   const infoDownload = await downloadFichiersDao.getDownload(fuuid)
-  console.debug("dechiffrerPartsDownload ", infoDownload)
+  // console.debug("dechiffrerPartsDownload ", infoDownload)
   const tailleChiffre = infoDownload.tailleChiffre,
         tailleDechiffre = infoDownload.taille
   if(!tailleChiffre || !tailleDechiffre) throw new Error("Taille du fichier chiffre/dechiffre manquante")
@@ -418,9 +418,9 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
     const promiseStreamParts = streamPartsChiffrees(fuuid, writable, {progressCb, tailleChiffre})
     const promiseCache = streamToCacheParts(fuuid, readable)
 
-    console.debug("dechiffrerPartsDownload Attente de sauvegarde sous cache pour ", fuuid)
+    // console.debug("dechiffrerPartsDownload Attente de sauvegarde sous cache pour ", fuuid)
     await Promise.all([promiseCache, promiseStreamParts])
-    console.debug("dechiffrerPartsDownload Sauvegarde completee sous cache completee. Transfert vers IDB.", fuuid)
+    // console.debug("dechiffrerPartsDownload Sauvegarde completee sous cache completee. Transfert vers IDB.", fuuid)
 
     await supprimerCacheFuuid(fuuid, {keepDechiffre: true})
   } catch(err) {
@@ -615,14 +615,17 @@ export async function down_entretienCache() {
 }
 
 export async function genererFichierZip(workers, downloadInfo, cancelToken) {
-  console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
+  // console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
   const { downloadFichiersDao } = workers
+
+  const { fuuids } = downloadInfo
 
   const fuuidZip = downloadInfo.fuuid
 
   // Parcourir tous les repertoires, streamer les fichiers dans le stream
+  const fuuidsTraites = new Set()
   const nodes = downloadInfo.root.nodes
-  const resultatZip = makeZip(parcourirRepertoireDansZipRecursif(workers, nodes, []))
+  const resultatZip = makeZip(parcourirRepertoireDansZipRecursif(workers, nodes, [], {fuuidsSet: fuuidsTraites}))
 
   const headersModifies = new Headers()
   headersModifies.set('content-type', 'application/zip')
@@ -630,7 +633,16 @@ export async function genererFichierZip(workers, downloadInfo, cancelToken) {
 
   // Sauvegarder blob 
   const resultat = await streamToCacheParts(fuuidZip, resultatZip)
-  console.warn("genererFichierZip Resultat streamToCacheParts : %O", resultat)
+
+  // Verifier si tous les fichiers ont ete traites
+  const fuuidsManquants = []
+  for(const fuuid of fuuids) {
+    if(!fuuidsTraites.has(fuuid)) fuuidsManquants.push(fuuid)
+  }
+  if(fuuidsManquants.length > 0) {
+    console.error("Fuuids traites: %O, manquants du zip : ", fuuidsTraites, fuuidsManquants)
+    throw new Error(`${fuuidsManquants.length} fichiers manquants dans le ZIP`)
+  }
 
   // Cleanup downloads individuels - on garde juste le ZIP
   for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid'})) {
@@ -663,6 +675,7 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
   opts = opts || {}
   const { downloadFichiersDao } = workers
   const operation = opts.operation || 'stream'
+  const fuuidsSet = opts.fuuidsSet
   // console.debug("streamRepertoireDansZipRecursif parents ", parents)
   for await (const node of nodes) {
       if(node.type_node === 'Fichier') {
@@ -679,6 +692,9 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
               // const fichierDownload = await downloadFichiersDao.getDownloadComplet(fuuid)
               // const blob = fichierDownload.blob
               const partsDechiffre = await getPartsDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
+              if(partsDechiffre.length === 0) {
+                throw new Error(`fichier ${fuuid} manquant`)
+              }
               const blobParts = []
               for await(const part of partsDechiffre) {
                 const blob = await part.response.blob()
@@ -692,6 +708,8 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
               //console.debug("parcourirRepertoireDansZipRecursif getFuuid nom: %s, fuuid: %s", nomFichier, fuuid)
               yield {name: nomFichier, fuuid}
           }
+
+          if(fuuidsSet) fuuidsSet.add(fuuid)
       } else {
           // Sous-repertoire
           // console.debug("streamRepertoireDansZipRecursif Sous repertoire ", node.nom)
