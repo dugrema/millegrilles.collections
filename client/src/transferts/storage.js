@@ -123,6 +123,8 @@ export async function streamToCacheParts(fuuid, stream, opts) {
         const fuuidPath = '/'+fuuid+'/'+positionBlob
         await cache.put(fuuidPath, response)
     }
+
+    return true
 }
 
 function trierPositionsCache(a, b) {

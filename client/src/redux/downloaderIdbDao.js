@@ -144,8 +144,7 @@ export async function getDownloadComplet(fuuid) {
     }
 
     if(position === 0) {
-        console.error("Aucun contenu de fichier trouve pour %s", fuuid)
-        return false
+        throw new Error(`Aucun contenu de fichier trouve pour ${fuuid}`)
     }
 
     const blobComplet = new Blob(blobs, {type: mimetype})

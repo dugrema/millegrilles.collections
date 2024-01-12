@@ -1,6 +1,7 @@
 import path from 'path'
 import { openDB } from 'idb'
 import { base64 } from "multiformats/bases/base64"
+import { makeZip } from 'client-zip'
 
 import { chiffrage } from '@dugrema/millegrilles.reactjs/src/chiffrage'
 
@@ -611,4 +612,92 @@ export async function down_entretienCache() {
   
   // Cleanup entrees de download cache inutilisees
   await cleanupCacheOrphelin()
+}
+
+export async function genererFichierZip(workers, downloadInfo, cancelToken) {
+  console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
+  const { downloadFichiersDao } = workers
+
+  const fuuidZip = downloadInfo.fuuid
+
+  // Parcourir tous les repertoires, streamer les fichiers dans le stream
+  const nodes = downloadInfo.root.nodes
+  const resultatZip = makeZip(parcourirRepertoireDansZipRecursif(workers, nodes, []))
+
+  const headersModifies = new Headers()
+  headersModifies.set('content-type', 'application/zip')
+  headersModifies.set('content-disposition', `attachment; filename="${encodeURIComponent('millegrilles.zip')}"`)
+
+  // Sauvegarder blob 
+  const resultat = await streamToCacheParts(fuuidZip, resultatZip)
+  console.warn("genererFichierZip Resultat streamToCacheParts : %O", resultat)
+
+  // Cleanup downloads individuels - on garde juste le ZIP
+  for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid'})) {
+      const fuuid = info.fuuid
+      // console.debug("Supprimer download fuuid %s", fuuid)
+      await downloadFichiersDao.supprimerDownload(fuuid)
+        .catch(err=>console.error("genererFichierZip Erreur suppression download IDB %s : %O", fuuid, err))
+      await supprimerCacheFuuid(fuuid)
+        .catch(err=>console.error("genererFichierZip Erreur suppression download cache %s : %O", fuuid, err))
+  }
+}
+
+async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
+  // console.debug("Ajouter path %O/%s", parents.join('/'), node.nom)
+
+  // Ajouter le node dans le zip
+
+  const pathAjoute = [...parents, node.nom]
+  const nodes = node.nodes
+  if(nodes) {
+      // console.debug("Sous repertoire ", pathAjoute)
+      for await (const fichier of parcourirRepertoireDansZipRecursif(workers, node.nodes, pathAjoute, opts)) {
+          // console.debug("ajouterRepertoireDansZip Node ", fichier)
+          yield fichier
+      }
+  }
+}
+
+async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts) {
+  opts = opts || {}
+  const { downloadFichiersDao } = workers
+  const operation = opts.operation || 'stream'
+  // console.debug("streamRepertoireDansZipRecursif parents ", parents)
+  for await (const node of nodes) {
+      if(node.type_node === 'Fichier') {
+          const fuuid = node.fuuid
+          let nomFichier = node.nom
+          if(parents && parents.length > 0) {
+              nomFichier = parents.join('/') + '/' + node.nom
+          }
+          
+          if(operation === 'stream') {
+              // Ouvrir le stream pour le fuuid
+              // const cacheTmp = await caches.open(CACHE_TEMP_NAME)
+              // const response = await cacheTmp.match('/'+fuuid)
+              // const fichierDownload = await downloadFichiersDao.getDownloadComplet(fuuid)
+              // const blob = fichierDownload.blob
+              const partsDechiffre = await getPartsDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
+              const blobParts = []
+              for await(const part of partsDechiffre) {
+                const blob = await part.response.blob()
+                blobParts.push(blob)
+              }
+              const blobFichier = new Blob(blobParts)
+        
+              // console.debug("parcourirRepertoireDansZipRecursif Conserver fichier %s (parents : %O)", nomFichier, parents)
+              yield {name: nomFichier, input: blobFichier}
+          } else if(operation === 'getFuuid') {
+              //console.debug("parcourirRepertoireDansZipRecursif getFuuid nom: %s, fuuid: %s", nomFichier, fuuid)
+              yield {name: nomFichier, fuuid}
+          }
+      } else {
+          // Sous-repertoire
+          // console.debug("streamRepertoireDansZipRecursif Sous repertoire ", node.nom)
+          for await (const sousNode of ajouterRepertoireDansZip(workers, node, parents, opts)) {
+              yield sousNode
+          }
+      }
+  }
 }

@@ -187,7 +187,7 @@ export async function downloadCache(workers, fuuid, opts) {
                 blobs.push(blob)
             }
             const blobFichier = new Blob(blobs)
-            if(blobFichier.size !== taille) throw new Error('mismatch taille fichier')
+            if(taille && blobFichier.size !== taille) throw new Error('mismatch taille fichier')
             promptSaveFichier(blobFichier, opts)
         } else {
             console.warn("Fichier '%s' non present dans le cache", fuuid)
