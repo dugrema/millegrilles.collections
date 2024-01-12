@@ -571,7 +571,7 @@ async function tacheDownload(workers, listenerApi, forkApi) {
 }
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
-    // console.debug("Download fichier params : ", fichier)
+    console.debug("Download fichier params : ", fichier)
     const { transfertDownloadFichiers, downloadFichiersDao, clesDao } = workers
     const fuuid = fichier.fuuid,
           fuuidCle = fichier.fuuidCle || fichier.fuuid,
@@ -588,35 +588,39 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
         opts = opts || {}
         const champ = opts.champ || 'tailleCompletee'  // tailleCompletee et tailleDechiffree
         const dechiffre = (opts.dechiffre!==undefined)?opts.dechiffre:false
+        if(opts.transfertComplete) {
+            dernierUpdate = 0  // S'assurer de faire une mise a jour
+        }
+        let etat = ETAT_DOWNLOAD_ENCOURS
+        if(champ == 'tailleDechiffree') etat = CONST_TRANSFERT.ETAT_DOWNLOAD_SUCCES_CHIFFRE
         const now = new Date().getTime()
         if(now - frequenceUpdate > dernierUpdate) {
             dernierUpdate = now
-            marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_ENCOURS, [champ]: tailleCompletee, dechiffre})
+            marquerDownloadEtat(workers, dispatch, fuuid, {etat, [champ]: tailleCompletee, dechiffre})
                 .catch(err=>console.warn("progressCb Erreur maj download ", err))
         }
     })
 
-    const url = ''+fuuid
-    const paramsDownload = {
-        ...valueCles,
-        url,
-        fuuid, hachage_bytes: fuuid, filename: fichier.nom, mimetype: fichier.mimetype,
-        password: valueCles.cleSecrete,
-    }
-
     // Downloader les chunks du fichier - supporte resume
+    const url = ''+fuuid
+    const paramsDownload = {url,fuuid}
     await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb)
     // console.debug("Resultat download fichier : ", resultat)
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_CHIFFRE, dechiffre: false, DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
 
-    // // Dechiffrer le fichier
-    await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDownload, progressCb)
+    // Dechiffrer le fichier
+    const paramsDechiffrage = {
+        fuuid, filename: fichier.nom, mimetype: fichier.mimetype,
+        ...valueCles,  // Inclure params optionnels comme iv, header, etc
+        password: valueCles.cleSecrete,
+    }
+    await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDechiffrage, progressCb)
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_DECHIFFRE, dechiffre: true, DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
 
     if(cancelToken && cancelToken.cancelled) {
-        console.warn("Upload cancelled")
+        console.warn("Download cancelled")
         return
     }
 

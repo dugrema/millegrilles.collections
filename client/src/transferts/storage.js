@@ -2,7 +2,7 @@ import * as CONST_TRANSFERT from './constantes'
 
 export async function supprimerCacheFuuid(fuuid, opts) {
     opts = opts || {}
-    const parts = await getPartsChiffresDownload(fuuid)
+    const parts = await getPartsDownload(fuuid)
     const cacheChiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
     for await(const part of parts) {
         await cacheChiffre.delete(part.request)
@@ -10,7 +10,7 @@ export async function supprimerCacheFuuid(fuuid, opts) {
   
     if(!opts.keepDechiffre) {
         const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
-        const partsDechiffre = await getPartsChiffresDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
+        const partsDechiffre = await getPartsDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
         await cacheDechiffre.delete('/'+fuuid)
         for await(const part of partsDechiffre) {
             await cacheDechiffre.delete(part.request)
@@ -18,39 +18,34 @@ export async function supprimerCacheFuuid(fuuid, opts) {
     }
 }
 
-export async function getPartsChiffresDownload(fuuid, opts) {
+export async function getPartsDownload(fuuid, opts) {
     opts = opts || {}
     const cacheName = opts.cache || CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE
     const cache = await caches.open(cacheName)
+    const tailleTotale = opts.taille
   
     const parts = []
+    let totalSize = 0
     {
         const keys = await cache.keys()
         for await(const key of keys) {
-            // console.debug("getPartsChiffresDownload Key : ", key.url)
+            // console.debug("getPartsDownload Key : ", key.url)
             const pathName = new URL(key.url).pathname
             if(pathName.startsWith('/'+fuuid)) {
                 const position = Number.parseInt(pathName.split('/').pop())
                 if(position !== undefined && !isNaN(position)) {
                     const response = await cache.match(key)
+                    totalSize += response.blob.size
                     parts.push({position, request: key, response})
                 }
             }
         }
     }
+
+    if(tailleTotale && tailleTotale !== totalSize) throw new Error("Mismatch taille")
+
     parts.sort(trierPositionsCache)
-  
-    // console.debug("Parts : ", parts)
     return parts
-  
-    // for await(const part of parts) {
-    //   console.debug("Part url %O, match %O", part, part.url)
-    //   console.debug(await part.text())
-    // }
-  
-    // Trier les parts
-  
-    //return parts
 }
 
 /** Stream toutes les parts chiffrees d'un fichier downloade vers un writable. */
@@ -58,7 +53,7 @@ export async function streamPartsChiffrees(fuuid, writable, opts) {
     opts = opts || {}
     const progressCb = opts.progressCb
     // const parts = await downloadFichiersDao.getPartsDownloadChiffre(fuuid)
-    const parts = await getPartsChiffresDownload(fuuid)
+    const parts = await getPartsDownload(fuuid, opts)
   
     //  console.debug("streamPartsChiffrees %s : %O", fuuid, parts)
     let positionDechiffrage = 0
