@@ -23,21 +23,26 @@ export function WrapperPlayer(props) {
     const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad, fichier: fichierProps } = props
 
     const fichier = useMemo(()=>{
-        console.debug("Fichier modifie : ", fichierProps)
+        // console.debug("Fichier modifie : ", fichierProps)
         return fichierProps || {}
     }, [fichierProps])
 
     const videoPortraitCss = useMemo(()=>{
         const { version_courante } = fichier || {}
         const { width, height } = version_courante
+        console.debug("WrapperPlayer Detectect portrait/landscape pour video ", fichier)
         if(width && height) {
-            if(width < height) return 'portrait'
+            if(width < height) {
+                console.debug("portrait")
+                return 'portrait'
+            }
         }
+        console.debug("landscape")
         return ''
     }, [fichier])
 
     const [tuuid, videoLoader] = useMemo(()=>{
-        console.debug("Update tuuid %s, videoLoader", fichier.tuuid)
+        // console.debug("Update tuuid %s, videoLoader", fichier.tuuid)
         return [fichier.tuuid, fichier.videoLoader]
     }, [fichier])
 
@@ -145,7 +150,7 @@ export function WrapperPlayer(props) {
     }, [selecteur, selecteurCourant, setSelecteurCourant])
 
     useEffect(()=>{
-        console.debug("WrapperPlayer useEffect videoLoader %O, selecteurCourant %O, abortController check", videoLoader, selecteurCourant)
+        // console.debug("WrapperPlayer useEffect videoLoader %O, selecteurCourant %O, abortController check", videoLoader, selecteurCourant)
         if(!selecteurCourant || !videoLoader || abortController.aborted === true) return setSrcVideo('')
 
         // Reset indicateurs
