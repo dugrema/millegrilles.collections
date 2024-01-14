@@ -30,14 +30,10 @@ export function WrapperPlayer(props) {
     const videoPortraitCss = useMemo(()=>{
         const { version_courante } = fichier || {}
         const { width, height } = version_courante
-        console.debug("WrapperPlayer Detectect portrait/landscape pour video ", fichier)
+        // console.debug("WrapperPlayer Detect portrait/landscape pour video ", fichier)
         if(width && height) {
-            if(width < height) {
-                console.debug("portrait")
-                return 'portrait'
-            }
+            if(width < height) return 'portrait'
         }
-        console.debug("landscape")
         return ''
     }, [fichier])
 
