@@ -20,12 +20,21 @@ const HTTP_STATUS_ABANDONNER = [401, 403, 404]
 const RETRY_DELAY_HTTP_ERROR = 20_000
 
 export function WrapperPlayer(props) {
-    const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad } = props
+    const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad, fichier: fichierProps } = props
 
     const fichier = useMemo(()=>{
-        console.debug("Fichier modifie : ", props.fichier)
-        return props.fichier || {}
-    }, [props.fichier])
+        console.debug("Fichier modifie : ", fichierProps)
+        return fichierProps || {}
+    }, [fichierProps])
+
+    const videoPortraitCss = useMemo(()=>{
+        const { version_courante } = fichier || {}
+        const { width, height } = version_courante
+        if(width && height) {
+            if(width < height) return 'portrait'
+        }
+        return ''
+    }, [fichier])
 
     const [tuuid, videoLoader] = useMemo(()=>{
         console.debug("Update tuuid %s, videoLoader", fichier.tuuid)
@@ -199,7 +208,7 @@ export function WrapperPlayer(props) {
     }, [onLoad, srcVideo])
 
     return (
-        <div className='player-wrapper'>
+        <div className={'player-wrapper ' + videoPortraitCss}>
             <ProgresChargement 
                 value={progresChargement} 
                 srcVideo={srcVideo} 
@@ -212,7 +221,8 @@ export function WrapperPlayer(props) {
                 selecteur={selecteur}
                 videoChargePret={videoChargePret}
                 errVideo={errVideo} 
-                posterPresent={!!fichier.imageLoader}>
+                posterPresent={!!fichier.imageLoader}
+                className={videoPortraitCss}>
                     <VideoViewer 
                         srcVideo={srcVideo}
                         poster={posterObj} 
@@ -348,7 +358,9 @@ function ProgresChargement(props) {
 
 function PlayerEtatPassthrough(props) {
 
-    const {posterObj, srcVideo, selecteur, videoChargePret, posterPresent, errVideo} = props
+    const {posterObj, srcVideo, selecteur, videoChargePret, posterPresent, errVideo, className} = props
+
+    const classNameAdditionnel = className || ''
 
     const [delaiSelecteur, setDelaiSelecteur] = useState(false)
 
@@ -367,7 +379,7 @@ function PlayerEtatPassthrough(props) {
     // Cas special pour video original sans poster (traitement media incomplet)
     if(srcVideo && !posterObj && selecteur === 'original') {
         return (
-            <div className='video-window video-empty'>
+            <div className={'video-window video-empty ' + classNameAdditionnel}>
                 {props.children}
             </div>
         )
@@ -379,14 +391,14 @@ function PlayerEtatPassthrough(props) {
 
         if(posterObj) {
             return (
-                <div className='video-window'>
+                <div className={'video-window ' + classNameAdditionnel}>
                     <img src={posterObj} width='100%' />
                     {message}
                 </div>
             )
         } else {
             return (
-                <div className='video-window'>
+                <div className={'video-window ' + classNameAdditionnel}>
                     {message}
                 </div>
 
@@ -396,7 +408,7 @@ function PlayerEtatPassthrough(props) {
 
     return (
         <div>
-            <div className='video-window'>
+            <div className={'video-window ' + classNameAdditionnel}>
                 {props.children}
             </div>
         </div>
@@ -419,43 +431,6 @@ function ErreurChargement(props) {
         </Alert>
     )
 }
-
-
-function PanneauInformation(props) {
-
-    const { fichier, showInfoModalOuvrir, selecteur, setSelecteur, abLoop, toggleAbLoop } = props
-
-    const variantBoutonLoop = useMemo(()=>{
-        if(abLoop) {
-            if(abLoop.b >= 0) return 'success'
-            else if(abLoop.a >= 0) return 'primary'
-        }
-        return 'secondary'
-    }, [abLoop])
-
-    return (
-        <div>
-            <p></p>
-            <Row>
-                <Col sm={6} md={2}>
-                    <Button variant="secondary" onClick={showInfoModalOuvrir}>Convertir</Button>
-                </Col>
-
-                <Col sm={6} md={2}>
-                    <Col><Button variant={variantBoutonLoop} onClick={toggleAbLoop}>AB Loop</Button></Col>
-                </Col>
-
-                <Col>
-                    <SelecteurResolution 
-                        fichier={fichier} 
-                        selecteur={selecteur} 
-                        setSelecteur={setSelecteur} />
-                </Col>
-            </Row>
-        </div>
-    )
-}
-
 
 export function SelecteurResolution(props) {
     const { fichier, selecteur, setSelecteur } = props
@@ -584,89 +559,6 @@ function SelecteurVideoResolution(props) {
         }
     })
 }
-
-// function SelecteurVideoDetail(props) {
-//     return 'SelecteurVideoDetail'
-// }
-
-// function SelecteurResolutionOld(props) {
-//     const { listeVideos, /*support,*/ selecteur, setSelecteur, /*videoLoader,*/ selecteurs } = props
-
-//     const [listeOptions, setListeOptions] = useState([])
-
-//     useEffect(()=>{
-//         if(selecteur || !selecteurs) return  // Deja initialise
-//         // Identifier un selecteur initial
-//         const selecteursKeys = Object.keys(selecteurs)
-
-//         if(!selecteursKeys) {
-//             // Aucunes options (probablement nouveau video) - utiliser original
-//             return setSelecteur('original')
-//         } else if(selecteursKeys.includes('fallback')) {
-//             // Selectionner le format fallback (la plus faible resolution)
-//             return setSelecteur('fallback')
-//         } else {
-//             console.error("Aucuns format video n'est disponible dans le selecteur")
-//         }
-//     }, [selecteurs, selecteur, setSelecteur])
-
-//     useEffect(()=>{
-//         // if(!listeVideos || !videoLoader) return
-//         if(!listeVideos || !selecteurs) return
-
-//         // const options = videoLoader.getSelecteurs()
-//         const options = Object.keys(selecteurs)
-//         options.sort(trierLabelsVideos)
-
-//         setListeOptions(options)
-
-//     }, [listeVideos, setListeOptions, selecteurs, /*, videoLoader*/])
-
-//     const changerSelecteur = useCallback(value=>setSelecteur(value), [setSelecteur])
-
-//     return (
-//         <>
-//             <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
-//                 {listeOptions.map(item=>{
-//                     if(item === selecteur) {
-//                         return <Dropdown.Item key={item} eventKey={item} active>{item}</Dropdown.Item>
-//                     } else {
-//                         return <Dropdown.Item key={item} eventKey={item}>{item}</Dropdown.Item>
-//                     }
-//                 })}
-//             </DropdownButton>
-//         </>
-//     )
-// }
-
-// function AfficherLiensVideo(props) {
-//     const { show, srcVideo } = props
-
-//     if(!show) return ''
-
-//     // console.debug("VIDEOS : %O", srcVideo)
-
-//     return (
-//         <div>
-//             <h3>Liens video</h3>
-//             {srcVideo.map(item=>{
-//                 return <LienVideo key={item.fuuid||item.label} video={item} /> 
-//             })}
-//         </div>
-//     )
-// }
-
-// function LienVideo(props) {
-//     const video = props.video
-//     const nomVideo = video.codecVideo || video.mimetype || video.src
-//     return (
-//         <Row>
-//             <Col>
-//                 <a href={video.src} target="_top">{nomVideo}</a>
-//             </Col>
-//         </Row>
-//     )
-// }
 
 export function determinerSelecteursVideos(videos, original) {
     // console.debug("determinerSelecteursVideos %O, original %O", videos, original)

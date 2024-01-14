@@ -172,6 +172,17 @@ div.upload {
 }
 
 .video-window {
+    object-fit: contain;
+}
+
+/* Pour un video mode portrait, limite la taille de l'affichage vertical */
+.video-window.portrait {
+    height: calc(100vh - 15rem);
+}
+.video-window.portrait video {
+    height: calc(100vh - 15rem);
+}    
+.player-wrapper.portrait {
     height: calc(100vh - 15rem);
 }
 

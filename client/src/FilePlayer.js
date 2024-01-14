@@ -307,16 +307,14 @@ function PreviewVideoMobile(props) {
     return (
         <Row>
             <Col {...cols[0]} className={'player-media-container ' + orientation}>
-                <Ratio aspectRatio='4x3'>
-                    <div className={"player-media-image mobile " + orientation}>
-                        <WrapperPlayer 
-                            fichier={fichier}
-                            selecteur={selecteur} abLoop={abLoop} 
-                            timeStamp={timeStamp} setTimeStamp={setTimeStamp}
-                            onLoad={setSrcVideo}
-                            />
-                    </div>
-                </Ratio>
+                <div className={"player-media-image mobile " + orientation}>
+                    <WrapperPlayer 
+                        fichier={fichier}
+                        selecteur={selecteur} abLoop={abLoop} 
+                        timeStamp={timeStamp} setTimeStamp={setTimeStamp}
+                        onLoad={setSrcVideo}
+                        />
+                </div>
             </Col>
             <Col {...cols[1]}>
                 <Row>
