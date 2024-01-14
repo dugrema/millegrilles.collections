@@ -9,94 +9,28 @@ import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import { VideoViewer } from '@dugrema/millegrilles.reactjs'
+import VideoViewer from './VideoViewer'
 import { supporteFormatVideo } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 
-import {trierLabelsVideos} from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { useCapabilities } from './WorkerContext'
 
 const HTTP_STATUS_ATTENTE = [202, 204]
 const HTTP_STATUS_ABANDONNER = [401, 403, 404]
-
-function AfficherVideo(props) {
-
-    const { support, showInfoModalOuvrir, onLoad } = props
-
-    const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
-    const nomFichier = fichier.nom || '',
-          version_courante = fichier.version_courante || {},
-          videoLoader = fichier.videoLoader
-
-    const videos = useMemo(()=>version_courante.video || {}, [version_courante.video])
-
-    const [selecteur, setSelecteur] = useState('')
-    const [timeStamp, setTimeStamp] = useState(-1)
-    const [abLoop, setAbLoop] = useState(null)
-
-    const selecteurs = useMemo(()=>videoLoader.getSelecteurs(), [videoLoader])
-
-    const abLoopToggleHandler = useCallback(()=>{
-        let ts = timeStamp
-        if(ts === -1 || !ts) ts = 0
-        if(!abLoop) {
-            // console.debug("AB Loop - set valeur A ", ts)
-            setAbLoop({a: ts})
-        } else {
-            if(!(abLoop.b >= 0)) {
-                // console.debug("AB Loop - set valeur B ", ts)
-                setAbLoop({...abLoop, b: ts})
-            } else {
-                // console.debug("AB Loop - reset")
-                setAbLoop(null)
-            }
-        }
-    }, [abLoop, setAbLoop, timeStamp])
-
-    return (
-        <div>
-            <Row>
-                <Col>
-                    <WrapperPlayer 
-                        fichier={fichier}
-                        selecteur={selecteur} abLoop={abLoop} 
-                        timeStamp={timeStamp} setTimeStamp={setTimeStamp}
-                        onLoad={onLoad}
-                        />
-                </Col>
-            </Row>
-            <Row>
-                <Col>
-                    <PanneauInformation 
-                        fichier={fichier}
-                        nomFichier={nomFichier}
-                        fermer={props.fermer}
-                        showInfoModalOuvrir={showInfoModalOuvrir}
-                        videos={videos}
-                        support={support}
-                        selecteurs={selecteurs}
-                        selecteur={selecteur}
-                        setSelecteur={setSelecteur}
-                        toggleAbLoop={abLoopToggleHandler}
-                        abLoop={abLoop}
-                        />
-                </Col>
-
-            </Row>
-
-        </div>
-    )
-}
-
-export default AfficherVideo
 
 const RETRY_DELAY_HTTP_ERROR = 20_000
 
 export function WrapperPlayer(props) {
     const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad } = props
 
-    const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
-    const tuuid = fichier.tuuid
-    const videoLoader = fichier.videoLoader
+    const fichier = useMemo(()=>{
+        console.debug("Fichier modifie : ", props.fichier)
+        return props.fichier || {}
+    }, [props.fichier])
+
+    const [tuuid, videoLoader] = useMemo(()=>{
+        console.debug("Update tuuid %s, videoLoader", fichier.tuuid)
+        return [fichier.tuuid, fichier.videoLoader]
+    }, [fichier])
 
     const [selecteurCourant, setSelecteurCourant] = useState('')
     const [srcVideo, setSrcVideo] = useState('')
@@ -202,6 +136,7 @@ export function WrapperPlayer(props) {
     }, [selecteur, selecteurCourant, setSelecteurCourant])
 
     useEffect(()=>{
+        console.debug("WrapperPlayer useEffect videoLoader %O, selecteurCourant %O, abortController check", videoLoader, selecteurCourant)
         if(!selecteurCourant || !videoLoader || abortController.aborted === true) return setSrcVideo('')
 
         // Reset indicateurs

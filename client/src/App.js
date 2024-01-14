@@ -39,7 +39,6 @@ import Menu from './Menu'
 import TransfertModal from './TransfertModal'
 
 const NavigationCollections = lazy( () => import('./NavigationCollections') )
-const NavigationRecents = lazy( () => import('./NavigationRecents') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
 const NavigationRecherche = lazy( () => import('./NavigationRecherche') )
 const MediaJobsModal = lazy( () => import('./MediaJobsModal') )
@@ -290,7 +289,6 @@ function Contenu(props) {
   let Page
   switch(props.page) {
     case 'recherche': Page = NavigationRecherche; break
-    case 'recents': Page = NavigationRecents; break
     case 'corbeille': Page = NavigationCorbeille; break
     case 'partager': Page = Partager; break
     case 'parametres': Page = Parametres; break
