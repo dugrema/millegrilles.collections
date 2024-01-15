@@ -231,6 +231,8 @@ function createTransformStreamDechiffrage(dataProcessor) {
   }, queuingStrategy)
 }
 
+const CONST_UPDATE_FREQ = 750
+
 function creerProgresTransformStream(progressCb, size, opts) {
     opts = opts || {}
     // console.debug("creerProgresTransformStream size: %s", size)
@@ -247,7 +249,7 @@ function creerProgresTransformStream(progressCb, size, opts) {
 
     const setAfficherProgres = () => { 
       afficherProgres = true 
-      rateTransfert = 2 * (position - dernierePosition)  // 2X -> Update aux 500ms
+      rateTransfert = 1000/CONST_UPDATE_FREQ * (position - dernierePosition)
       fenetreRates.push(rateTransfert)
       while(fenetreRates.length > 10) fenetreRates.unshift()
       const totalRates = fenetreRates.reduce((item, acc)=>acc+item, 0)
@@ -287,7 +289,7 @@ function creerProgresTransformStream(progressCb, size, opts) {
             const positionPonderee = position  // Math.floor(0.95 * position)
             afficherProgres = false
             await progressCb(positionPonderee, {flag: 'Download', rate: rateTransfert})
-            setTimeout(setAfficherProgres, 500)
+            setTimeout(setAfficherProgres, CONST_UPDATE_FREQ)
           }
           controller.enqueue(chunk)
         } catch(err) {
