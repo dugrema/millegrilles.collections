@@ -241,7 +241,14 @@ function creerProgresTransformStream(progressCb, size, opts) {
     let position = opts.start || 0
     let afficherProgres = true
 
-    const setAfficherProgres = () => { afficherProgres = true }
+    let dernierePosition = 0,
+        rateTransfert = 0
+
+    const setAfficherProgres = () => { 
+      afficherProgres = true 
+      rateTransfert = 2 * (position - dernierePosition)  // 2X -> Update aux 500ms
+      dernierePosition = position
+    }
 
     // let termine = false
 
@@ -274,7 +281,7 @@ function creerProgresTransformStream(progressCb, size, opts) {
           if(afficherProgres) {
             const positionPonderee = position  // Math.floor(0.95 * position)
             afficherProgres = false
-            await progressCb(positionPonderee, {flag: 'Dechiffrage en cours'})
+            await progressCb(positionPonderee, {flag: 'Download', rate: rateTransfert})
             setTimeout(setAfficherProgres, 500)
           }
           controller.enqueue(chunk)

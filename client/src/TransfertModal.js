@@ -209,7 +209,11 @@ function EtatDownload(props) {
                     </Row>
                     <Row>
                         <Col xs={6}>Taux</Col>
-                        <Col xs={6}>{downloadEnCours.rate}</Col>
+                        <Col xs={6}>
+                            {downloadEnCours.rate?
+                                <span><FormatteurTaille value={downloadEnCours.rate}/>/s</span>
+                            :''}
+                        </Col>
                     </Row>
                 </div>
             :''}

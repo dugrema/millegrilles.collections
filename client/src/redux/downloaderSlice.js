@@ -611,6 +611,7 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     const progressCb = proxy( (tailleCompletee, opts) => {
         opts = opts || {}
         const champ = opts.champ || 'tailleCompletee'  // tailleCompletee et tailleDechiffree
+        const rate = opts.rate
         const dechiffre = (opts.dechiffre!==undefined)?opts.dechiffre:false
         if(opts.transfertComplete) {
             dernierUpdate = 0  // S'assurer de faire une mise a jour
@@ -620,7 +621,7 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
         const now = new Date().getTime()
         if(now - frequenceUpdate > dernierUpdate) {
             dernierUpdate = now
-            marquerDownloadEtat(workers, dispatch, fuuid, {etat, [champ]: tailleCompletee, dechiffre})
+            marquerDownloadEtat(workers, dispatch, fuuid, {etat, [champ]: tailleCompletee, dechiffre, rate})
                 .catch(err=>console.warn("progressCb Erreur maj download ", err))
         }
     })
