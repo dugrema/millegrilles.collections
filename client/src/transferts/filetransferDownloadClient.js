@@ -242,11 +242,16 @@ function creerProgresTransformStream(progressCb, size, opts) {
     let afficherProgres = true
 
     let dernierePosition = 0,
-        rateTransfert = 0
+        rateTransfert = 0,
+        fenetreRates = []
 
     const setAfficherProgres = () => { 
       afficherProgres = true 
       rateTransfert = 2 * (position - dernierePosition)  // 2X -> Update aux 500ms
+      fenetreRates.push(rateTransfert)
+      while(fenetreRates.length > 10) fenetreRates.unshift()
+      const totalRates = fenetreRates.reduce((item, acc)=>acc+item, 0)
+      rateTransfert = Math.floor(totalRates / fenetreRates.length)
       dernierePosition = position
     }
 
