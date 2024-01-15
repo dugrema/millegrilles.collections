@@ -208,6 +208,7 @@ export function WorkerProvider(props) {
   
     // Evenement pour empecher de changer de page (e.g. si transfert en cours)
     useEffect(()=>{
+        // console.info("WorkerProvider.useEffect sur stopUnload %O", stopUnload)
         if(stopUnload) {
             console.info("Ajout beforeunload")
             const unloadBlock = e => {
