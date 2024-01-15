@@ -8,7 +8,7 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 // import { AlertTimeout } from './Alerts'
-import { AlertTimeout } from '@dugrema/millegrilles.reactjs'
+import { AlertTimeout, FormatteurTaille } from '@dugrema/millegrilles.reactjs'
 
 import * as CONST_ETATS from './transferts/constantes'
 
@@ -206,6 +206,10 @@ function EtatDownload(props) {
                         <Col xs={6}>
                             <ProgressBar now={progresDechiffrage} label={progresDechiffrage+' %'} className={styles.progressmin} />
                         </Col>
+                    </Row>
+                    <Row>
+                        <Col xs={6}>Taux</Col>
+                        <Col xs={6}>{downloadEnCours.rate}</Col>
                     </Row>
                 </div>
             :''}
@@ -511,7 +515,17 @@ function EtatUpload(props) {
                 </Col>
             </Row>
 
-            {uploadActif?''
+            {uploadActif?
+                <div>
+                    <Row>
+                        <Col xs={6}>Taux</Col>
+                        <Col xs={6}>
+                            {uploadEnCours.rate?
+                                <span><FormatteurTaille value={uploadEnCours.rate}/>/s</span>
+                            :''}
+                        </Col>
+                    </Row>
+                </div>
                 :
                 <Row>
                     <Col>Aucun upload en cours</Col>

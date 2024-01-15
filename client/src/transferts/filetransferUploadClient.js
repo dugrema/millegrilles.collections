@@ -53,9 +53,9 @@ const THRESHOLD_512kb = 10 * CONST_1MB,
 // Retourne la taille a utiliser pour les batch
 function getUploadBatchSize(fileSize) {
     if(!fileSize) throw new Error("NaN")
-    if(fileSize < THRESHOLD_512kb) return 512 * 1024
-    if(fileSize < THRESHOLD_1mb) return 1024 * 1024
-    if(fileSize < THRESHOLD_2mb) return 2 * CONST_1MB
+    // if(fileSize < THRESHOLD_512kb) return 512 * 1024
+    // if(fileSize < THRESHOLD_1mb) return 1024 * 1024
+    // if(fileSize < THRESHOLD_2mb) return 2 * CONST_1MB
     if(fileSize < THRESHOLD_5mb) return 5 * CONST_1MB
     if(fileSize < THRESHOLD_10mb) return 10 * CONST_1MB
     if(fileSize < THRESHOLD_20mb) return 20 * CONST_1MB
@@ -525,7 +525,7 @@ export function cancelUpload() {
     if(_cancelUploadToken) return _cancelUploadToken.cancel()
 }
 
-export async function partUploader(token, correlation, position, partContent, opts) {
+async function partUploader(token, correlation, position, partContent, opts) {
     opts = opts || {}
     const onUploadProgress = opts.onUploadProgress,
     hachagePart = opts.hachagePart
@@ -668,33 +668,26 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
     retryCount++
     await marquerUploadEtat(correlation, {retryCount})
 
+    const progressFichier  = state => {
+        const {loaded, total, progress, bytes, estimated, rate, upload} = state
+        // console.debug("Progress fichier : ", state)
+        const positionCourante = tailleCompletee + loaded
+        marquerUploadEtat(correlation, {tailleCompletee: positionCourante, rate})
+            .catch(err=>console.warn("uploadFichier.progressFichier Erreur maj etat upload : ", err))
+    }
+
     for await (const part of parts) {
         let tailleCumulative = tailleCompletee
         const position = part.position,
               partContent = part.data
         await marquerUploadEtat(correlation, {tailleCompletee: tailleCumulative})
         
-        // {
-        //     // TODO: Debug probleme hachage
-        //     // console.debug("part upload ", part)
-        //     const hachagePartChiffre = new hachage.Hacheur({encoding: 'base64', hashingCode: 'blake2s-256'})
-        //     const arrayBuffer = Buffer.from(await partContent.arrayBuffer())
-        //     // console.debug("part upload array buffer ", arrayBuffer)
-        //     await hachagePartChiffre.update(arrayBuffer)
-        //     const hachagePart = await hachagePartChiffre.finalize()
-        //     if(hachagePart === part.hachagePart) {
-        //         console.debug("part hachage %s (db: %s)", hachagePart, part.hachagePart)
-        //     } else {
-        //         console.error("part hachage %s (db: %s)", hachagePart, part.hachagePart)
-        //     }
-        // }
-
-        // await new Promise(resolve=>setTimeout(resolve, 250))
         const opts = {
             hachagePart: part.hachagePart,
+            onUploadProgress: progressFichier,
         }
         // console.debug("uploadFichier Debut upload %s", correlation)
-        const resultatUpload = await transfertUploadFichiers.partUploader(token, correlation, position, partContent, opts)
+        const resultatUpload = await partUploader(token, correlation, position, partContent, opts)
         // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
 
         if(cancelToken && cancelToken.cancelled) {
