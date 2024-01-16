@@ -1,8 +1,9 @@
 import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit'
-import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
-import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
 import * as Comlink from 'comlink'
-import { ETAT_DOWNLOAD_SUCCES_CHIFFRE } from '../transferts/constantes'
+import * as CONST_TRANSFERT from '../transferts/constantes'
+
+
+const SLICE_NAME = 'uploader'
 
 const // ETAT_PREPARATION = 1,
       ETAT_PRET = 2,
@@ -18,6 +19,9 @@ const initialState = {
     progres: null,              // Pourcentage de progres en int
     completesCycle: [],         // Conserve la liste des uploads completes qui restent dans le total de progres
     enCours: false,             // True si un upload est en cours de transfert
+    autoResumeMs: 20_000,       // Intervalle en millisecondes pour l'activation de l'auto-resume
+    autoResumeEnCours: false,   // Auto-resume deja en cours (timer actif)
+    uploadPause: false,         // Pause de l'upload. Empeche le demarrage des jobs et arrete la job en cours.
 }
 
 function setUserIdAction(state, action) {
@@ -94,7 +98,7 @@ function continuerUploadAction(state, action) {
         // Trouver objet existant
         const infoUpload = state.liste.filter(item=>item.correlation === correlation).pop()
 
-        console.debug("continuerUploadAction ", docUpload)
+        // console.debug("continuerUploadAction ", docUpload)
 
         if(!infoUpload) state.liste.push(docUpload)    // Append
         else Object.assign(infoUpload, docUpload)       // Merge
@@ -141,6 +145,15 @@ function setUploadEnCoursAction(state, action) {
     state.enCours = action.payload
 }
 
+
+function bloquerAutoResumeAction(state, action) {
+    state.autoResumeEnCours = true
+}
+
+function debloquerAutoResumeAction(state, action) {
+    state.autoResumeEnCours = false
+}
+
 const uploadSlice = createSlice({
     name: 'uploader',
     initialState,
@@ -156,6 +169,8 @@ const uploadSlice = createSlice({
         arretUpload: arretUploadAction,
         clearCycleUpload: clearCycleUploadAction,
         setUploadEnCours: setUploadEnCoursAction,
+        bloquerAutoResume: bloquerAutoResumeAction,
+        debloquerAutoResume: debloquerAutoResumeAction,
     }
 })
 
@@ -163,6 +178,7 @@ export const {
     setUserId, ajouterUpload, updateUpload, retirerUpload, setUploads, 
     clearUploadsState, supprimerUploadsParEtat, majContinuerUpload,
     arretUpload, clearCycleUpload, setUploadEnCours,
+    bloquerAutoResume, debloquerAutoResume,
 } = uploadSlice.actions
 export default uploadSlice.reducer
 
@@ -221,7 +237,7 @@ async function traiterContinuerUpload(workers, dispatch, getState, opts) {
     const uploads = await uploadFichiersDao.chargerUploads(userId)
     const uploadsIncomplets = uploads.filter(item => {
         if(correlation) return item.correlation === correlation
-        else return [ETAT_ECHEC, ETAT_DOWNLOAD_SUCCES_CHIFFRE].includes(item.etat)
+        else return [CONST_TRANSFERT.ETAT_ECHEC, CONST_TRANSFERT.ETAT_DOWNLOAD_SUCCES_CHIFFRE].includes(item.etat)
     })
 
     if(uploadsIncomplets.length > 0) {
@@ -297,6 +313,11 @@ async function uploaderMiddlewareListener(workers, action, listenerApi) {
     // console.debug("uploaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
     // console.debug("Arret upload info : %O", arretUpload)
 
+    {
+        const state = listenerApi.getState()[SLICE_NAME]
+        if(state.uploadPause) return  // Upload est en pause
+    }
+
     await listenerApi.unsubscribe()
     listenerApi.dispatch(setUploadEnCours(true))
     try {
@@ -320,6 +341,42 @@ async function uploaderMiddlewareListener(workers, action, listenerApi) {
     } finally {
         listenerApi.dispatch(setUploadEnCours(false))
         await listenerApi.subscribe()
+    }
+
+    // Verifier si on doit declencher un trigger d'auto-resume apres un certain delai
+    {
+        const state = listenerApi.getState()[SLICE_NAME]
+        // console.debug("Verifier si on redemarre automatiquement : %O", state)
+        if(state.liste) {
+            const echecTransfert = state.liste.reduce((acc, item)=>{
+                if(acc) return acc
+                if(item.etat === CONST_TRANSFERT.ETAT_ECHEC) return item
+                return false
+            }, false)
+            // console.debug("Resultat echecTransfert ", echecTransfert)
+            if(echecTransfert && state.autoResumeMs && !state.autoResumeEnCours) {
+                console.info("Au moins un transfert en echec (%O), on cedule le redemarrage", echecTransfert)
+                listenerApi.dispatch(bloquerAutoResume())
+                setTimeout(()=>declencherRedemarrage(workers, listenerApi.dispatch, listenerApi.getState), state.autoResumeMs)
+            }
+        }
+    }
+}
+
+function declencherRedemarrage(workers, dispatch, getState) {
+    dispatch(debloquerAutoResume())
+    const state = getState()[SLICE_NAME]
+    const fichier = state.liste.reduce((acc, item)=>{
+        if(acc) return acc
+        if(item.etat === CONST_TRANSFERT.ETAT_ECHEC) return item
+        return false
+    }, false)
+    if(fichier) {
+        console.info("declencherRedemarrage Transfert de %O", fichier.fuuid)
+        dispatch(continuerUpload(workers))
+            .catch(err=>console.error("declencherRedemarrage Erreur auto-resume upload", err))
+    } else {
+        console.debug("declencherRedemarrage Il ne reste aucun fichiers a transferer")
     }
 }
 

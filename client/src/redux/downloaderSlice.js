@@ -1,7 +1,5 @@
 import { createSlice, isAnyOf, createListenerMiddleware } from '@reduxjs/toolkit'
-// import path from 'path'
-import { releaseProxy, proxy } from 'comlink'
-// import { makeZip } from 'client-zip'
+import { proxy } from 'comlink'
 
 import {ETAT_PRET, ETAT_COMPLETE, ETAT_DOWNLOAD_ENCOURS, ETAT_DOWNLOAD_SUCCES_CHIFFRE, ETAT_DOWNLOAD_SUCCES_DECHIFFRE, ETAT_ECHEC} from '../transferts/constantes'
 
@@ -248,7 +246,7 @@ export function ajouterZipDownload(workers, cuuid) {
 
 async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
     const { connexion, chiffrage, downloadFichiersDao, clesDao } = workers
-    let { cuuid, selection, contactId } = params
+    let { cuuid, contactId } = params
     
     // console.debug("traiterAjouterZipDownload cuuid : %s, selection : %O (contactId: %s)", cuuid, selection, contactId)
     
@@ -341,7 +339,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         }
     }
 
-    const fichiersADownloader = Object.values(nodeParTuuid).filter(item=>item.type_node === 'Fichier')
+    // const fichiersADownloader = Object.values(nodeParTuuid).filter(item=>item.type_node === 'Fichier')
 
     // console.debug("Arborescence completee : %O\nDownload %d fichiers\n%O", root, fichiersADownloader.length, fichiersADownloader)
 
@@ -570,6 +568,7 @@ function declencherRedemarrage(dispatch, getState) {
     const fichier = state.liste.reduce((acc, item)=>{
         if(acc) return acc
         if(item.etat === CONST_TRANSFERT.ETAT_ECHEC) return item
+        return false
     }, false)
     if(fichier) {
         console.info("declencherRedemarrage Transfert de %O", fichier)
@@ -646,7 +645,7 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
 
 async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // console.debug("Download fichier params : ", fichier)
-    const { transfertDownloadFichiers, downloadFichiersDao, clesDao } = workers
+    const { transfertDownloadFichiers, clesDao } = workers
     const fuuid = fichier.fuuid,
           fuuidCle = fichier.fuuidCle || fichier.fuuid,
           infoDechiffrage = fichier.infoDechiffrage || {}
@@ -667,7 +666,7 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
             dernierUpdate = 0  // S'assurer de faire une mise a jour
         }
         let etat = ETAT_DOWNLOAD_ENCOURS
-        if(champ == 'tailleDechiffree') etat = CONST_TRANSFERT.ETAT_DOWNLOAD_SUCCES_CHIFFRE
+        if(champ === 'tailleDechiffree') etat = CONST_TRANSFERT.ETAT_DOWNLOAD_SUCCES_CHIFFRE
         const now = new Date().getTime()
         if(now - frequenceUpdate > dernierUpdate) {
             dernierUpdate = now
