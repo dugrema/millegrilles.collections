@@ -200,11 +200,12 @@ function EtatDownload(props) {
     const downloadActif = (compteEnCours)?true:false
 
     let progresTransfert = '', progresDechiffrage = ''
-    if(downloadEnCours && downloadEnCours.taille && downloadEnCours.tailleCompletee) {
-        const progresTransfertFloat = 100.0 * downloadEnCours.tailleCompletee / downloadEnCours.taille
+    const tailleTotale = downloadEnCours.tailleContenu || downloadEnCours.taille
+    if(downloadEnCours && tailleTotale && downloadEnCours.tailleCompletee) {
+        const progresTransfertFloat = 100.0 * downloadEnCours.tailleCompletee / tailleTotale
         progresTransfert = ''+Math.floor(progresTransfertFloat)
         // console.debug("Progres %O (%O), tailleCompletee %d / %d ", progres, progresFloat, downloadEnCours.tailleCompletee, downloadEnCours.taille)
-        const progresDechiffrageFloat = 100.0 * (downloadEnCours.tailleDechiffree || 0) / downloadEnCours.taille
+        const progresDechiffrageFloat = 100.0 * (downloadEnCours.tailleDechiffree || 0) / tailleTotale
         progresDechiffrage = ''+Math.floor(progresDechiffrageFloat)
     }
 

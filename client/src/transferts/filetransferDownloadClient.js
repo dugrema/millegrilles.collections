@@ -317,7 +317,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
 
-  console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
+  // console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
   const DEBUG = opts.DEBUG || false
   const { downloadFichiersDao } = workers
 
@@ -331,7 +331,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
     // Ajouter url au path
     urlDownload.pathname = path.join(urlDownload.pathname, url)
   }
-  console.debug("URL de download de fichier : %O", urlDownload)
+  // console.debug("URL de download de fichier : %O", urlDownload)
 
   const infoFichier = await downloadFichiersDao.getDownload(fuuid)
   let tailleFichierChiffre = infoFichier.tailleChiffre
@@ -346,7 +346,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   // Detecter la position courante (plus grand chunk deja recu)
   let positionPartCourant = 0
   const partsExistants = await getPartsDownload(fuuid)
-  console.debug("downloadFichierParts Part existants : ", partsExistants)
+  // console.debug("downloadFichierParts Part existants : ", partsExistants)
   if(partsExistants && partsExistants.length > 0) {
     const partCourant = partsExistants[partsExistants.length-1]
     const partCourantPosition = partCourant.position
@@ -649,7 +649,7 @@ export async function down_entretienCache() {
   await cleanupCacheOrphelin()
 }
 
-export async function genererFichierZip(workers, downloadInfo, cancelToken) {
+export async function genererFichierZip(workers, downloadInfo, getAborted, progressCb) {
   // console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
   const { downloadFichiersDao } = workers
 
@@ -657,10 +657,18 @@ export async function genererFichierZip(workers, downloadInfo, cancelToken) {
 
   const fuuidZip = downloadInfo.fuuid
 
+  const nodes = downloadInfo.root.nodes
+  let tailleFichiers = 0
+  for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid', progressCb})) {
+    // console.debug("genererFichierZip Prepass fichier : ", info)
+    tailleFichiers += info.taille
+  }
+  // console.debug("Mettre %d bytes dans le zip", tailleFichiers)
+  await progressCb(0, {tailleTotale: tailleFichiers})
+
   // Parcourir tous les repertoires, streamer les fichiers dans le stream
   const fuuidsTraites = new Set()
-  const nodes = downloadInfo.root.nodes
-  const resultatZip = makeZip(parcourirRepertoireDansZipRecursif(workers, nodes, [], {fuuidsSet: fuuidsTraites}))
+  const resultatZip = makeZip(parcourirRepertoireDansZipRecursif(workers, nodes, [], {fuuidsSet: fuuidsTraites, getAborted, progressCb}))
 
   const headersModifies = new Headers()
   headersModifies.set('content-type', 'application/zip')
@@ -680,7 +688,7 @@ export async function genererFichierZip(workers, downloadInfo, cancelToken) {
   }
 
   // Cleanup downloads individuels - on garde juste le ZIP
-  for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid'})) {
+  for await (const info of parcourirRepertoireDansZipRecursif(workers, nodes, [], {operation: 'getFuuid', progressCb})) {
       const fuuid = info.fuuid
       // console.debug("Supprimer download fuuid %s", fuuid)
       await downloadFichiersDao.supprimerDownload(fuuid)
@@ -711,8 +719,15 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
   const { downloadFichiersDao } = workers
   const operation = opts.operation || 'stream'
   const fuuidsSet = opts.fuuidsSet
+  const getAborted = opts.getAborted
+  const progressCb = opts.progressCb
   // console.debug("streamRepertoireDansZipRecursif parents ", parents)
+  let bytesTraites = 0
   for await (const node of nodes) {
+      if(getAborted && await getAborted()) {
+        throw new Error("abort")
+      }
+
       if(node.type_node === 'Fichier') {
           const fuuid = node.fuuid
           let nomFichier = node.nom
@@ -736,12 +751,15 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
                 blobParts.push(blob)
               }
               const blobFichier = new Blob(blobParts)
+              bytesTraites += blobFichier.size
+              if(progressCb) await progressCb(bytesTraites)
         
               // console.debug("parcourirRepertoireDansZipRecursif Conserver fichier %s (parents : %O)", nomFichier, parents)
               yield {name: nomFichier, input: blobFichier}
           } else if(operation === 'getFuuid') {
-              //console.debug("parcourirRepertoireDansZipRecursif getFuuid nom: %s, fuuid: %s", nomFichier, fuuid)
-              yield {name: nomFichier, fuuid}
+              // console.debug("parcourirRepertoireDansZipRecursif getFuuid nom: %s, fuuid: %s, node:%O", nomFichier, fuuid, node)
+              const version_courante = node.version_courante || {}
+              yield {name: nomFichier, fuuid, taille: version_courante.taille}
           }
 
           if(fuuidsSet) fuuidsSet.add(fuuid)

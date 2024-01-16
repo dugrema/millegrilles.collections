@@ -677,14 +677,30 @@ async function tacheDownload(workers, listenerApi, forkApi, abortController) {
     }
 }
 
-async function genererFichierZip(workers, dispatch, downloadInfo, abortController) {
+async function genererFichierZip(workers, dispatch, downloadInfo, getAborted) {
     const transfertDownloadFichiers = workers.transfertDownloadFichiers
     const fuuidZip = downloadInfo.fuuid,
           userId = downloadInfo.userId,
           fuuids = downloadInfo.fuuids
+
+    const frequenceUpdate = 500
+    let dernierUpdate = 0
+    const progressCb = proxy( (tailleCompletee, opts) => {
+        opts = opts || {}
+        const champ = opts.champ || 'tailleCompletee'
+        const tailleTotale = opts.tailleTotale
+        let etat = ETAT_DOWNLOAD_ENCOURS
+        const now = new Date().getTime()
+        if(now - frequenceUpdate > dernierUpdate) {
+            dernierUpdate = now
+            const paramsOpts = {etat, [champ]: tailleCompletee, dechiffre: true}
+            if(tailleTotale) paramsOpts.tailleContenu = tailleTotale
+            marquerDownloadEtat(workers, dispatch, fuuidZip, paramsOpts)
+                .catch(err=>console.warn("progressCb Erreur maj download ", err))
+        }
+    })
     
-    throw new Error("fix me - abortController")
-    await transfertDownloadFichiers.genererFichierZip(workers, downloadInfo, abortController)    
+    await transfertDownloadFichiers.genererFichierZip(workers, downloadInfo, getAborted, progressCb)    
     
     // console.debug("Marquer download %s comme pret / complete", fuuidZip)
     await marquerDownloadEtat(workers, dispatch, fuuidZip, {etat: ETAT_COMPLETE, userId})
@@ -734,7 +750,7 @@ async function downloadFichier(workers, dispatch, fichier, getAborted) {
     const url = ''+fuuid
     const paramsDownload = {url,fuuid}
     await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb, getAborted)
-    console.debug("Download fichier complete ", url)
+    // console.debug("Download fichier complete ", url)
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_CHIFFRE, dechiffre: false, DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
 
