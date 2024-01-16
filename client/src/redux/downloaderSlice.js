@@ -7,14 +7,18 @@ import * as CONST_TRANSFERT from '../transferts/constantes'
 
 const SLICE_NAME = 'downloader'
       
+const CONST_LOCALSTORAGE_PAUSEDOWNLOADS = 'downloadsPaused'
+
 const initialState = {
     liste: [],                  // Liste de fichiers en traitement (tous etats confondus)
     userId: '',                 // UserId courant, permet de stocker plusieurs users localement
     progres: null,              // Pourcentage de progres en int
     completesCycle: [],         // Conserve la liste des uploads completes qui restent dans le total de progres
     enCours: false,             // True si download en cours
+    annulerFuuid: [],           // Liste de downloads a annuler
     autoResumeMs: 20_000,       // Intervalle en millisecondes pour l'activation de l'auto-resume
     autoResumeBlocked: false,   // Blockage de l'auto-resume en cas d'erreur specifique
+    downloadsPaused: 'true'===window.localStorage.getItem(CONST_LOCALSTORAGE_PAUSEDOWNLOADS),  // Pause le download
 }
 
 // Actions
@@ -86,7 +90,13 @@ function updateDownloadAction(state, action) {
 function continuerDownloadAction(state, action) {
     const docDownload = action.payload
 
-    state.autoResumeBlocked = false
+    window.localStorage.setItem(CONST_LOCALSTORAGE_PAUSEDOWNLOADS, 'false')
+
+    if(state.autoResumeBlocked) {
+        clearTimeout(state.autoResumeBlocked)  // Retirer le timeout pour empecher cedule auto-resume
+        state.autoResumeBlocked = false
+    }
+    state.downloadsPaused = false
 
     // docDownload peut etre null si on fait juste redemarrer le middleware
     if(docDownload) {
@@ -108,7 +118,6 @@ function continuerDownloadAction(state, action) {
 function retirerDownloadAction(state, action) {
     const fuuid = action.payload
     state.liste = state.liste.filter(item=>item.fuuid !== fuuid)
-
     const { pourcentage } = calculerPourcentage(state.liste, state.completesCycle)
     state.progres = pourcentage
 }
@@ -124,7 +133,7 @@ function supprimerDownloadAction(state, action) {
 }
 
 function arretDownloadAction(state, action) {
-    // Middleware trigger seulement
+    // Declenchement du middleware (via trigger)
 }
 
 function clearCycleDownloadAction(state, action) {
@@ -136,11 +145,29 @@ function setEnCoursAction(state, action) {
 }
 
 function bloquerAutoResumeAction(state, action) {
-    state.autoResumeBlocked = true
+    const timeout = action.payload
+    state.autoResumeBlocked = timeout
 }
 
 function debloquerAutoResumeAction(state, action) {
     state.autoResumeBlocked = false
+}
+
+function pauseDownloadsAction(state, action) {
+    state.downloadsPaused = true
+
+    window.localStorage.setItem(CONST_LOCALSTORAGE_PAUSEDOWNLOADS, 'true')
+
+    if(state.autoResumeBlocked) {
+        // Retirer le timeout pour empecher declenchement du auto-resume
+        clearTimeout(state.autoResumeBlocked)
+        state.autoResumeBlocked = false
+    }
+}
+
+function resumeDownloadsAction(state, action) {
+    state.downloadsPaused = false
+    window.localStorage.setItem(CONST_LOCALSTORAGE_PAUSEDOWNLOADS, 'false')
 }
 
 const downloaderSlice = createSlice({
@@ -161,6 +188,8 @@ const downloaderSlice = createSlice({
         setEnCours: setEnCoursAction, 
         bloquerAutoResume: bloquerAutoResumeAction,
         debloquerAutoResume: debloquerAutoResumeAction,
+        pauseDownloads: pauseDownloadsAction,
+        resumeDownloads: resumeDownloadsAction,
     }
 })
 
@@ -170,7 +199,7 @@ export const {
     clearDownloads, clearCycleDownload,
     updateDownload, supprimerDownload,
     pushGenererZip, setEnCours,
-    bloquerAutoResume, debloquerAutoResume,
+    pauseDownloads, resumeDownloads, bloquerAutoResume, debloquerAutoResume,
 } = downloaderSlice.actions
 export default downloaderSlice.reducer
 
@@ -513,7 +542,7 @@ export function downloaderMiddlewareSetup(workers) {
     const uploaderMiddleware = createListenerMiddleware()
     
     uploaderMiddleware.startListening({
-        matcher: isAnyOf(ajouterDownload, pushGenererZip, setDownloads, continuerDownload),
+        matcher: isAnyOf(ajouterDownload, pushGenererZip, setDownloads, continuerDownload, resumeDownloads),
         effect: (action, listenerApi) => downloaderMiddlewareListener(workers, action, listenerApi)
     }) 
     
@@ -523,20 +552,34 @@ export function downloaderMiddlewareSetup(workers) {
 async function downloaderMiddlewareListener(workers, action, listenerApi) {
     // console.debug("downloaderMiddlewareListener running effect, action : %O, listener : %O", action, listenerApi)
 
+    {
+        const state = listenerApi.getState()[SLICE_NAME]
+        if(state.downloadsPaused) return  // Download en pause
+    }
+
+    const abortController = new AbortController()
+
     await listenerApi.unsubscribe()
     listenerApi.dispatch(setEnCours(true))
     try {
         // Reset liste de fichiers completes utilises pour calculer pourcentage upload
         listenerApi.dispatch(clearCycleDownload())
 
-        const task = listenerApi.fork( forkApi => tacheDownload(workers, listenerApi, forkApi) )
-        const stopAction = listenerApi.condition(arretDownload.match)
+        const task = listenerApi.fork( forkApi => tacheDownload(workers, listenerApi, forkApi, abortController) )
+        // console.debug("Task : ", task)
+        const stopAction = listenerApi.condition(arretDownload.match).then(params=>{
+            // console.debug("Annulation manuelle params : %O", params)
+            abortController.abort('Annulation manuelle')
+            task.cancel()
+            // console.debug("Task cancelled")
+        })
         await Promise.race([task.result, stopAction])
+        // await task.result
 
         // console.debug("downloaderMiddlewareListener Task %O\nstopAction %O", task, stopAction)
-        task.result.catch(err=>console.error("Erreur task : %O", err))
-
-        await task.result  // Attendre fin de la tache en cas d'annulation
+        // Attendre fin de la tache en cas d'annulation        
+        await task.result.catch(err=>console.error("Erreur task : %O", err))
+        // console.debug("downloaderMiddlewareListener Task completee")
     } finally {
         listenerApi.dispatch(setEnCours(false))
         await listenerApi.subscribe()
@@ -544,19 +587,24 @@ async function downloaderMiddlewareListener(workers, action, listenerApi) {
 
     // Verifier si on doit declencher un trigger d'auto-resume apres un certain delai
     {
-        const state = listenerApi.getState()[SLICE_NAME]
-        // console.debug("Verifier si on redemarre automatiquement : %O", state)
-        if(state.liste) {
-            const echecTransfert = state.liste.reduce((acc, item)=>{
-                if(acc) return acc
-                if(item.etat === CONST_TRANSFERT.ETAT_ECHEC) return item
-                return false
-            }, false)
-            // console.debug("Resultat echecTransfert ", echecTransfert)
-            if(echecTransfert && state.autoResumeMs && !state.autoResumeBlocked) {
-                console.info("Au moins un transfert en echec (%O), on cedule le redemarrage", echecTransfert)
-                listenerApi.dispatch(bloquerAutoResume())
-                setTimeout(()=>declencherRedemarrage(listenerApi.dispatch, listenerApi.getState), state.autoResumeMs)
+        if(action === resumeDownloadsAction.name) {
+            console.debug("downloaderMiddlewareListener Declencher suite a resume action")
+            declencherRedemarrage(listenerApi.dispatch, listenerApi.getState)
+        } else {
+            const state = listenerApi.getState()[SLICE_NAME]
+            // console.debug("Verifier si on redemarre automatiquement : %O", state)
+            if(state.liste) {
+                const echecTransfert = state.liste.reduce((acc, item)=>{
+                    if(acc) return acc
+                    if(item.etat === CONST_TRANSFERT.ETAT_ECHEC) return item
+                    return false
+                }, false)
+                // console.debug("Resultat echecTransfert ", echecTransfert)
+                if(echecTransfert && state.autoResumeMs && !state.autoResumeBlocked) {
+                    console.info("Au moins un transfert en echec (%O), on cedule le redemarrage", echecTransfert)
+                    const timeout = setTimeout(()=>declencherRedemarrage(listenerApi.dispatch, listenerApi.getState), state.autoResumeMs)
+                    listenerApi.dispatch(bloquerAutoResume(timeout))
+                }
             }
         }
     }
@@ -579,20 +627,22 @@ function declencherRedemarrage(dispatch, getState) {
     }
 }
 
-async function tacheDownload(workers, listenerApi, forkApi) {
+async function tacheDownload(workers, listenerApi, forkApi, abortController) {
     // console.debug("Fork api : %O", forkApi)
     const dispatch = listenerApi.dispatch
 
     let nextDownload = getProchainDownload(listenerApi.getState()[SLICE_NAME].liste)
 
-    const cancelToken = {cancelled: false}
-    const aborted = event => {
-        // console.debug("Aborted ", event)
-        cancelToken.cancelled = true
-    }
-    forkApi.signal.onabort = aborted
+    // const cancelToken = {cancelled: false}
+    // const aborted = event => {
+    //     console.debug("tacheDownload.aborted Event recu ", event)
+    //     cancelToken.cancelled = true
+    // }
+    // forkApi.signal.onabort = aborted
 
     if(!nextDownload) return  // Rien a faire
+
+    const getAborted = proxy(()=>abortController.signal.aborted)
 
     // Commencer boucle d'upload
     while(nextDownload) {
@@ -601,9 +651,9 @@ async function tacheDownload(workers, listenerApi, forkApi) {
         try {
             if(nextDownload.genererZip === true) {
                 // Generer un fichier zip
-                await genererFichierZip(workers, dispatch, nextDownload, cancelToken)
+                await genererFichierZip(workers, dispatch, nextDownload, getAborted)
             } else {
-                await downloadFichier(workers, dispatch, nextDownload, cancelToken)
+                await downloadFichier(workers, dispatch, nextDownload, getAborted)
             }
         } catch (err) {
             console.error("Erreur tache download fuuid %s: %O", fuuid, err)
@@ -613,8 +663,12 @@ async function tacheDownload(workers, listenerApi, forkApi) {
         }
 
         // Trouver prochain download
-        if (forkApi.signal.aborted) {
-            // console.debug("tacheUpload annulee")
+        if(listenerApi.getState()[SLICE_NAME].downloadsPaused) {
+            // console.debug("tacheDownload Downloads paused, on arrete le traitement")
+            abortController.abort('Downloads paused')  // Annule le transfert
+            return
+        } else if (await getAborted()) {
+            console.debug("tacheDownload annulee")
             marquerDownloadEtat(workers, dispatch, fuuid, {etat: CONST_TRANSFERT.ETAT_ECHEC})
                 .catch(err=>console.error("Erreur marquer download echec %s : %O", fuuid, err))
             return
@@ -623,13 +677,14 @@ async function tacheDownload(workers, listenerApi, forkApi) {
     }
 }
 
-async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
+async function genererFichierZip(workers, dispatch, downloadInfo, abortController) {
     const transfertDownloadFichiers = workers.transfertDownloadFichiers
     const fuuidZip = downloadInfo.fuuid,
           userId = downloadInfo.userId,
           fuuids = downloadInfo.fuuids
     
-    await transfertDownloadFichiers.genererFichierZip(workers, downloadInfo, cancelToken)    
+    throw new Error("fix me - abortController")
+    await transfertDownloadFichiers.genererFichierZip(workers, downloadInfo, abortController)    
     
     // console.debug("Marquer download %s comme pret / complete", fuuidZip)
     await marquerDownloadEtat(workers, dispatch, fuuidZip, {etat: ETAT_COMPLETE, userId})
@@ -643,7 +698,7 @@ async function genererFichierZip(workers, dispatch, downloadInfo, cancelToken) {
         .catch(err=>console.error("Erreur cleanup download fichier zip ", err))
 }
 
-async function downloadFichier(workers, dispatch, fichier, cancelToken) {
+async function downloadFichier(workers, dispatch, fichier, getAborted) {
     // console.debug("Download fichier params : ", fichier)
     const { transfertDownloadFichiers, clesDao } = workers
     const fuuid = fichier.fuuid,
@@ -678,8 +733,8 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     // Downloader les chunks du fichier - supporte resume
     const url = ''+fuuid
     const paramsDownload = {url,fuuid}
-    await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb)
-    // console.debug("Resultat download fichier : ", resultat)
+    await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb, getAborted)
+    console.debug("Download fichier complete ", url)
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_CHIFFRE, dechiffre: false, DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
 
@@ -693,7 +748,8 @@ async function downloadFichier(workers, dispatch, fichier, cancelToken) {
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_DECHIFFRE, dechiffre: true, DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
 
-    if(cancelToken && cancelToken.cancelled) {
+
+    if(getAborted && await getAborted()) {
         console.warn("Download cancelled")
         return
     }

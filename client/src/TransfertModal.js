@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { proxy } from 'comlink'
+import { useSelector, useDispatch } from 'react-redux'
 import Modal from 'react-bootstrap/Modal'
 import Badge from 'react-bootstrap/Badge'
 import Alert from 'react-bootstrap/Alert'
@@ -7,13 +7,17 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import ProgressBar from 'react-bootstrap/ProgressBar'
-// import { AlertTimeout } from './Alerts'
+
 import { AlertTimeout, FormatteurTaille } from '@dugrema/millegrilles.reactjs'
+
+import { pauseDownloads, resumeDownloads, arretDownload } from './redux/downloaderSlice'
 
 import * as CONST_ETATS from './transferts/constantes'
 
 // import styles from './styles.module.css'
 import styles from '@dugrema/millegrilles.reactjs/src/styles.module.css'
+
+const SLICE_NAME = 'downloader'
 
 // const ETAT_PREPARATION = 1,
 //       ETAT_PRET = 2,
@@ -132,6 +136,12 @@ function EtatDownload(props) {
     // console.debug("EtatDownload PROPPYS %O", props)
 
     const { workers, continuerDownloads, supprimerDownloads } = props
+
+    const dispatch = useDispatch()
+
+    const downloadsPaused = useSelector(state=>state[SLICE_NAME].downloadsPaused)
+    // console.debug("Downloads paused : ", downloadsPaused)
+
     // const { transfertFichiers } = workers
     const { traitementFichiers } = workers
     const downloads = props.downloads || []
@@ -142,13 +152,14 @@ function EtatDownload(props) {
         traitementFichiers.downloadCache(fuuid, {filename})
     }, [])
 
+    // Arreter et supprimer le download courant
     const supprimerDownloadAction = useCallback( event => {
         const fuuid = event.currentTarget.value
         // console.debug("Supprimer download ", fuuid)
+        // Arreter le download courant
+        dispatch(arretDownload())
         supprimerDownloads({fuuid})
-        // transfertFichiers.down_supprimerDownloads({hachage_bytes: fuuid})
-        //     .catch(err=>{console.error("Erreur supprimer download %O", err)})
-    }, [supprimerDownloads])
+    }, [dispatch, workers, supprimerDownloads])
 
     const supprimerDownloadsSuccesAction = useCallback( event => {
         // console.debug("Supprimer tous downloads")
@@ -167,6 +178,17 @@ function EtatDownload(props) {
         // console.debug("Continuer download ", fuuid)
         continuerDownloads(fuuid)
     }, [workers, continuerDownloads])
+
+    const pauseHandler = useCallback( () => {
+        console.debug("Pause downloads")
+        dispatch(pauseDownloads())
+        dispatch(arretDownload())  // Annule le transfert en cours
+    }, [dispatch])
+
+    const resumeHandler = useCallback( () => {
+        console.debug("Resume downloads")
+        dispatch(resumeDownloads())
+    }, [downloads])
 
     const downloadsPending = downloads.filter(item=>item.etat===CONST_ETATS.ETAT_PRET)
     const downloadEnCours = downloads.filter(item=>CONST_ETATS_DOWNLOADENCOURS.includes(item.etat)).pop() || ''
@@ -217,6 +239,13 @@ function EtatDownload(props) {
                     </Row>
                 </div>
             :''}
+
+            <Row>
+                <Col>
+                    <Button variant='secondary' disabled={!!downloadsPaused} onClick={pauseHandler}>Pause</Button>
+                    <Button variant='secondary' disabled={!downloadsPaused} onClick={resumeHandler}>Resume</Button>
+                </Col>
+            </Row>
 
             {downloadActif?''
                 :

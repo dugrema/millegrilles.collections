@@ -9,6 +9,8 @@ import { supprimerCacheFuuid, getPartsDownload, streamPartsChiffrees, streamToCa
 
 import * as CONST_TRANSFERT from './constantes'
 
+const SLICE_NAME = 'downloader'
+
 const { preparerDecipher } = chiffrage
 
 var _urlDownload = '/collections/fichiers',
@@ -24,8 +26,8 @@ var _chiffrage = null
 // Structure downloads : {}
 var _downloadEnCours = null,
     _callbackEtatDownload = null,
-    _callbackAjouterChunkIdb = null,
-    _fuuidsAnnulerDownload = null  // Array de fuuids pour annuler le download en cours - doit matcher le fuuid courant
+    _callbackAjouterChunkIdb = null
+//    , _fuuidsAnnulerDownload = null  // Array de fuuids pour annuler le download en cours - doit matcher le fuuid courant
 
 const STATUS_NOUVEAU = 1,
   STATUS_ENCOURS = 2,
@@ -63,11 +65,11 @@ export async function down_getEtatCourant() {
 }
 
 /** Permet d'annuler le download en cours - doit matcher le fuuid dans la boucle de download */
-export async function annulerDownload(fuuids) {
-  if(typeof(fuuids) === 'string') fuuids = [fuuids]
-  if(!_fuuidsAnnulerDownload) _fuuidsAnnulerDownload = fuuids
-  else _fuuidsAnnulerDownload = [..._fuuidsAnnulerDownload, ...fuuids]
-}
+// export async function annulerDownload(fuuids) {
+//   if(typeof(fuuids) === 'string') fuuids = [fuuids]
+//   if(!_fuuidsAnnulerDownload) _fuuidsAnnulerDownload = fuuids
+//   else _fuuidsAnnulerDownload = [..._fuuidsAnnulerDownload, ...fuuids]
+// }
 
 function trierPending(a, b) {
   if(a===b) return 0
@@ -91,12 +93,13 @@ async function fetchAvecProgress(url, opts) {
         position = opts.position || 0,
         partSize = opts.partSize,
         taille = opts.taille,
+        signal = opts.signal,  // abortController.signal (optionnel)
         DEBUG = opts.DEBUG
 
   var dataProcessor = opts.dataProcessor
 
-  const abortController = new AbortController()
-  const signal = abortController.signal
+  // const abortController = new AbortController()
+  // const signal = abortController.signal
   // Note : cache no-store evite des problemes de memoire sur Firefox
   const startPosition = position || 0
   let headerContentRange = `bytes=${startPosition}-`
@@ -130,23 +133,24 @@ async function fetchAvecProgress(url, opts) {
   }
 
   // Creer un transform stream pour dechiffrer le fichier
-  const { writable, readable } = createTransformStreamDechiffrage(
-    dataProcessor, {...opts, contentLength})
+  // const { writable, readable } = createTransformStreamDechiffrage(
+  //   dataProcessor, {...opts, contentLength})
 
   // Pipe la reponse pour la dechiffrer au passage
   let stream = reponse.body
   if(progressCb) {
-    const progresStream = creerProgresTransformStream(progressCb, contentLength, {start: startPosition, downloadEnCours, abortController})
+    const progresStream = creerProgresTransformStream(progressCb, contentLength, {start: startPosition, downloadEnCours})
     stream = reponse.body.pipeThrough(progresStream)
   }
-  const promisePipe = stream.pipeTo(writable)
+  // const promisePipe = stream.pipeTo(writable)
 
   return {
-    reader: readable,           // Stream dechiffre
+    // reader: readable,           // Stream dechiffre
+    reader: stream,
     headers: reponse.headers,
     status: reponse.status,
-    done: promisePipe,           // Faire un await pour obtenir resultat download
-    abortController,
+    // done: promisePipe,           // Faire un await pour obtenir resultat download
+    // abortController,
   }
 
 }
@@ -237,8 +241,8 @@ function creerProgresTransformStream(progressCb, size, opts) {
     opts = opts || {}
     // console.debug("creerProgresTransformStream size: %s", size)
 
-    const downloadEnCours = opts.downloadEnCours,
-          abortController = opts.abortController
+    // const downloadEnCours = opts.downloadEnCours,
+    //       abortController = opts.abortController
 
     let position = opts.start || 0
     let afficherProgres = true
@@ -270,19 +274,19 @@ function creerProgresTransformStream(progressCb, size, opts) {
         //   console.warn("creerProgresTransformStream Appele apres fin")
         //   return controller.error("Termine")
         // }
-        if(_fuuidsAnnulerDownload) {
-          const fuuidAnnuler = _fuuidsAnnulerDownload
-          _fuuidsAnnulerDownload = null  // Vider le signal - doit matcher le fuuid courant
-          if(fuuidAnnuler.includes(downloadEnCours.fuuid)) {
-            if(abortController) {
-              abortController.abort()
-              console.debug("creerProgresTransformStream AbortController.abort")
-            } else {
-            // termine = true
-              return controller.error(new Error('download annule'))
-            }
-          }
-        }
+        //if(_fuuidsAnnulerDownload) {
+          // const fuuidAnnuler = _fuuidsAnnulerDownload
+          // _fuuidsAnnulerDownload = null  // Vider le signal - doit matcher le fuuid courant
+          // if(fuuidAnnuler.includes(downloadEnCours.fuuid)) {
+          //   if(abortController) {
+          //     abortController.abort()
+          //     console.debug("creerProgresTransformStream AbortController.abort")
+          //   } else {
+          //   // termine = true
+          //     return controller.error(new Error('download annule'))
+          //   }
+          // }
+        //}
         try{
           position += chunk.length
           if(afficherProgres) {
@@ -307,13 +311,13 @@ function creerProgresTransformStream(progressCb, size, opts) {
 /** 
  * Download un fichier en le separant en parts (e.g. 100 mb). 
  * Ne dechiffre pas le fichier. Supporte le resume en detectant les parts recus dans IDB. */
-export async function downloadFichierParts(workers, downloadEnCours, progressCb, opts) {
+export async function downloadFichierParts(workers, downloadEnCours, progressCb, getAborted, opts) {
   opts = opts || {}
   progressCb = progressCb || function() {}  // Par defaut fonction vide
 
   if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
 
-  // console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
+  console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
   const DEBUG = opts.DEBUG || false
   const { downloadFichiersDao } = workers
 
@@ -327,7 +331,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
     // Ajouter url au path
     urlDownload.pathname = path.join(urlDownload.pathname, url)
   }
-  // console.debug("URL de download de fichier : %O", urlDownload)
+  console.debug("URL de download de fichier : %O", urlDownload)
 
   const infoFichier = await downloadFichiersDao.getDownload(fuuid)
   let tailleFichierChiffre = infoFichier.tailleChiffre
@@ -342,7 +346,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   // Detecter la position courante (plus grand chunk deja recu)
   let positionPartCourant = 0
   const partsExistants = await getPartsDownload(fuuid)
-  // console.debug("downloadFichierParts Part existants : ", partsExistants)
+  console.debug("downloadFichierParts Part existants : ", partsExistants)
   if(partsExistants && partsExistants.length > 0) {
     const partCourant = partsExistants[partsExistants.length-1]
     const partCourantPosition = partCourant.position
@@ -354,17 +358,24 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
 
+  const abortControllerLocal = new AbortController()
+  const intervalAbort = setInterval(async () => {
+    const aborted = await getAborted()
+    if(aborted) abortControllerLocal.abort()
+  }, 750)
+
   try {
     for(let positionPart = positionPartCourant; positionPart < tailleFichierChiffre - 1; positionPart += partSize) {
+      // console.debug("downloadFichierParts Position %d", positionPart)
+
       const {
         reader: stream, 
         headers, 
         status,
-        done,
-        abortController
+        // done,
       } = await fetchAvecProgress(
         urlDownload,
-        {progressCb, downloadEnCours, position: positionPart, partSize, taille: tailleFichierChiffre, DEBUG}
+        {progressCb, downloadEnCours, position: positionPart, partSize, taille: tailleFichierChiffre, signal: abortControllerLocal.signal, DEBUG}
       )
 
       if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
@@ -387,8 +398,17 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
       const response = new Response(stream, {status: 200})
       const fuuidPath = '/'+fuuid+'/'+positionPart
       const cachePutPromise = cache.put(fuuidPath, response)
-    
-      await Promise.all([done, response, cachePutPromise])
+
+      // await Promise.all([done, response, cachePutPromise])
+      try {
+        await cachePutPromise
+      } catch(err) {
+        // S'assurer de retirer le cache
+        cache.delete(fuuidPath).catch(err=>console.error("Erreur suppression cache %s : %O", fuuidPath, err))
+        throw err
+      }
+
+      //await Promise.all([response, cachePutPromise])
     }  // Fin loop download parts
 
     progressCb(tailleFichierChiffre, {transfertComplete: true})
@@ -397,6 +417,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
     if(progressCb) progressCb(-1, {flag: 'Erreur', err: ''+err, stack: err.stack})
     throw err
   } finally {
+    clearInterval(intervalAbort)
     downloadEnCours.termine = true
   }
 }
@@ -490,26 +511,26 @@ async function emettreEtat(flags) {
   }
 }
 
-export async function down_annulerDownload(fuuid) {
+// export async function down_annulerDownload(fuuid) {
 
-  const etatAnnule = {complete: true, status: STATUS_ERREUR, annuler: true, dateComplete: new Date()}
+//   const etatAnnule = {complete: true, status: STATUS_ERREUR, annuler: true, dateComplete: new Date()}
 
-  if(!fuuid) {
-    // console.debug("Annuler tous les downloads")
-    await majIdb(item=>item.status===STATUS_NOUVEAU, etatAnnule)
-    if(_downloadEnCours) _downloadEnCours.annuler = true
-  } else {
-    // console.warn("Annuler download %s", fuuid)
-    if(_downloadEnCours && _downloadEnCours.fuuid === fuuid) {
-      _downloadEnCours.annuler = true
-    } else {
-      await majDownload(fuuid, etatAnnule)
-    }
-  }
+//   if(!fuuid) {
+//     // console.debug("Annuler tous les downloads")
+//     await majIdb(item=>item.status===STATUS_NOUVEAU, etatAnnule)
+//     if(_downloadEnCours) _downloadEnCours.annuler = true
+//   } else {
+//     // console.warn("Annuler download %s", fuuid)
+//     if(_downloadEnCours && _downloadEnCours.fuuid === fuuid) {
+//       _downloadEnCours.annuler = true
+//     } else {
+//       await majDownload(fuuid, etatAnnule)
+//     }
+//   }
 
-  // Met a jour le client
-  emettreEtat()
-}
+//   // Met a jour le client
+//   emettreEtat()
+// }
 
 /** Maj des downloads avec filtre/values */
 async function majIdb(filtre, values) {
@@ -586,7 +607,7 @@ export async function down_supprimerDownloads(params) {
 }
 
 export async function down_supprimerDownloadsCache(fuuid) {
-    await annulerDownload(fuuid)  // Ajouter le fuuid a la liste des downloads a annuler
+    // await annulerDownload(fuuid)  // Ajouter le fuuid a la liste des downloads a annuler
     const cache = await caches.open(CACHE_TEMP_NAME)
     await cache.delete('/' + fuuid)
     await supprimerCacheFuuid(fuuid)
