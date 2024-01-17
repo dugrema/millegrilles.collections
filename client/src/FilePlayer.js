@@ -298,7 +298,9 @@ function PreviewVideoMobile(props) {
         setTimeout(()=>setCopierNotif(false), 2_000)
     }, [srcVideo, setCopierNotif])
 
-    const downloadHandler = useCallback(()=>downloadAction(fichier), [downloadAction, fichier])
+    const downloadHandler = useCallback(()=>{
+        downloadAction({...fichier, modeVideo: true})
+    }, [downloadAction, fichier])
 
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
@@ -331,24 +333,26 @@ function PreviewVideoMobile(props) {
                     }
                 </Row>
                 <InformationFichier {...props} />                    
-                {srcVideo?
                     <Row>
                         <Col xs={3}>
                             Action
                         </Col>
                         <Col>
-                            {capabilities.mobile?'':
+                            {/* {capabilities.mobile?'': */}
                                 <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
-                            }
+                            {/* } */}
                             {' '}
-                            <Button disabled={!!copierNotif} variant={copierNotif?'outline-secondary':'secondary'} onClick={copierSrcVideo}>
-                                <i className='fa fa-copy' /> Copier
-                            </Button>
+                            {srcVideo?
+                                <span>
+                                    <Button disabled={!!copierNotif} variant={copierNotif?'outline-secondary':'secondary'} onClick={copierSrcVideo}>
+                                        <i className='fa fa-copy' /> Copier
+                                    </Button>
+                                </span>
+                            :''}
                             {' '}
                             <Button variant={variantBoutonLoop} onClick={abLoopToggleHandler}>Boucle</Button>
                         </Col>
                     </Row>
-                :''}
             </Col>
         </Row>
 

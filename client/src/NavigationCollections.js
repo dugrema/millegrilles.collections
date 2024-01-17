@@ -404,7 +404,9 @@ function Modals(props) {
     const dispatch = useDispatch()
     const workers = useWorkers()
 
-    const downloadAction = useCallback((params) => {
+    const downloadAction = useCallback(params => {
+        // console.debug("downloadAction params ", params)
+        const modeVideo = params.modeVideo || false
         let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
         if(!fichier) return  // Pas de fichier
         const version_courante = fichier.version_courante || {}
@@ -424,11 +426,16 @@ function Modals(props) {
                 ...fichier, 
                 infoDechiffrage: infoVideo,
                 fuuidDownload: params.fuuid,
+                noSave: modeVideo,
             }
             // console.debug("!!! Modals.downloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         } else {
+            fichier = {
+                ...fichier, 
+                noSave: modeVideo,
+            }
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         }

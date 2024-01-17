@@ -212,7 +212,7 @@ export function ajouterDownload(workers, docDownload) {
 async function traiterAjouterDownload(workers, docDownload, dispatch, getState) {
     const { downloadFichiersDao, clesDao } = workers
     
-    // console.debug("traiterAjouterDownload payload : ", docDownload)
+    console.debug("traiterAjouterDownload payload : ", docDownload)
     
     const userId = getState()[SLICE_NAME].userId
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
@@ -500,7 +500,7 @@ async function traiterCompleterDownload(workers, fuuid, dispatch, getState) {
         // Maj redux state
         dispatch(updateDownload(downloadCopie))
 
-        const noSave = downloadCopie.noSave || false
+        const noSave = downloadCopie.noSave || downloadCopie.modeVideo || false
 
         if(!noSave) {
             try {
