@@ -136,11 +136,17 @@ function traiterCacheStream(e) {
                 // On va combiner tous les elemens de cache en un seul blob pour recreer le video complet
                 console.debug("On a trouver le video en cache : ", elem0)
 
+                const parts = await getPartsDownload(fuuid)
+                const partsBlobs = []
+                for(const part of parts) {
+                    partsBlobs.push(await part.response.blob())
+                }
+
                 // Extraire information de posision
                 const headers = e.request.headers
                 const range = headers.get('Range')
 
-                const blobComplet = new Blob([await elem0.blob()])
+                const blobComplet = new Blob(partsBlobs)
                 const taille = blobComplet.size
 
                 let start = 0, end = taille - 1
@@ -187,4 +193,42 @@ function traiterCacheStream(e) {
 
     e.waitUntil(promise)
     e.respondWith(promise)
+}
+
+async function getPartsDownload(fuuid, opts) {
+    opts = opts || {}
+    const cacheName = opts.cache || CONST_CACHE_DOWNLOADS
+    const cache = await caches.open(cacheName)
+  
+    const parts = []
+    {
+        const keys = await cache.keys()
+        for await(const key of keys) {
+            // console.debug("getPartsDownload Key : ", key.url)
+            const pathName = new URL(key.url).pathname
+            if(pathName.startsWith('/'+fuuid)) {
+                const position = Number.parseInt(pathName.split('/').pop())
+                if(position !== undefined && !isNaN(position)) {
+                    const response = await cache.match(key)
+                    parts.push({position, request: key, response})
+                }
+            }
+        }
+    }
+
+    parts.sort(trierPositionsCache)
+    return parts
+}
+
+function trierPositionsCache(a, b) {
+    if(a === b) return 0
+    if(!a) return 1
+    if(!b) return -1
+  
+    // Trier par date de creation
+    const positionA = a.position,
+          positionB = b.position
+    // if(dateCreationA === dateCreationB) return 0
+    if(positionA !== positionB) return positionA - positionB
+    return 0
 }
