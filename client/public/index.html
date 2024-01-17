@@ -25,6 +25,12 @@
 </html>
 
 <script>
+  // S'assurer d'avoir le path /collections/ avec le / a la fin
+  const pathname = window.location.pathname
+  if(!pathname.startsWith('/collections/')) {
+    window.location = '/collections/'
+  }
+
   if ('serviceWorker' in navigator) {
       if('%NODE_ENV%' === 'development') {
         navigator.serviceWorker.ready.then(function(registration) {
