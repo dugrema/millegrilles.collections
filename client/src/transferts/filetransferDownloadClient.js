@@ -201,6 +201,7 @@ function createTransformStreamDechiffrage(dataProcessor) {
 
   return new TransformStream({
     async transform(chunk, controller) {
+      // console.debug("TransformStream chunk size : %s", chunk?chunk.length:'null')
       if(!chunk || chunk.length === 0) return controller.error("Aucun contenu")
       try {
         if(dataProcessor) {

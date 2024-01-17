@@ -55,6 +55,7 @@ export async function streamPartsChiffrees(fuuid, writable, opts) {
     // Pipe tous les blobs (response)
     let positionDechiffrage = 0
     for await(const part of parts) {
+        // console.debug("streamPartsChiffrees Stream part a position ", positionDechiffrage)
         const blob = await part.response.blob()
         const readerPart = blob.stream()
         // S'assurer de ne pas fermer le writable apres le pipeTo
@@ -73,6 +74,57 @@ export async function streamPartsChiffrees(fuuid, writable, opts) {
     if(tailleChiffre && tailleChiffre !== positionDechiffrage) throw new Error('mismatch taille chiffree')
 }
 
+export async function createWritableStream(fuuid, opts) {
+    const limitSplitBytes = opts.splitLimit || CONST_TRANSFERT.LIMITE_DOWNLOAD_CACHE_SPLIT_MOBILE
+    let arrayBuffers = [], tailleChunks = 0
+    let position = 0
+
+    const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
+    // const queuingStrategy = new CountQueuingStrategy({ highWaterMark: 1 })
+    const queuingStrategy = new ByteLengthQueuingStrategy({ highWaterMark: 256 * 1024, size: 64*1024 })
+    const stream = new WritableStream(
+        {
+          start(controller) {},
+          async write(chunk, controller) {
+            // console.debug("streamToCacheParts for await chunk len %s", chunk?chunk.length:'null')
+            if(chunk && chunk.length > 0) {
+                arrayBuffers.push(chunk)
+                tailleChunks += chunk.length
+                position += chunk.length
+            }
+      
+            if(tailleChunks > limitSplitBytes) {
+                // Split chunks en parts
+                {
+                    const blob = new Blob(arrayBuffers)
+                    const positionBlob = position - blob.size
+                    arrayBuffers = []
+                    tailleChunks = 0
+                    const response = new Response(blob, {status: 200})
+                    const fuuidPath = '/'+fuuid+'/'+positionBlob
+                    await cache.put(fuuidPath, response)
+                }
+            }
+          },
+          async close(controller) {
+            // console.debug("createWritableStream Close output")
+            if(arrayBuffers.length > 0) {
+                const blob = new Blob(arrayBuffers)
+                const positionBlob = position - blob.size
+                arrayBuffers = []
+                const response = new Response(blob, {status: 200})
+                const fuuidPath = '/'+fuuid+'/'+positionBlob
+                await cache.put(fuuidPath, response)
+            }
+          },
+          abort(reason) {},
+        },
+        queuingStrategy,
+      )
+
+    return stream
+}
+
 /**
  * Lit un stream vers le cache de fichiers dechiffres. Split le contenu.
  * @param {*} fuuid 
@@ -81,49 +133,8 @@ export async function streamPartsChiffrees(fuuid, writable, opts) {
  */
 export async function streamToCacheParts(fuuid, stream, opts) {
     opts = opts || {}
-    // const {downloadFichiersDao} = workers
-    const limitSplitBytes = opts.splitLimit || CONST_TRANSFERT.LIMITE_DOWNLOAD_CACHE_SPLIT
-    let arrayBuffers = [], tailleChunks = 0
-    let position = 0
-  
-    const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
-  
-    const reader = stream.getReader()
-    while(true) {
-        const val = await reader.read()
-        // console.debug("genererFichierZip Stream read %O", val)
-        if(val.done) break  // Termine
-  
-        const data = val.value
-        if(data) {
-            arrayBuffers.push(data)
-            tailleChunks += data.length
-            position += data.length
-        }
-  
-        if(tailleChunks > limitSplitBytes) {
-          // Split chunks en parts
-          const blob = new Blob(arrayBuffers)
-          const positionBlob = position - blob.size
-          arrayBuffers = []
-          tailleChunks = 0
-          const response = new Response(blob, {status: 200})
-          const fuuidPath = '/'+fuuid+'/'+positionBlob
-          await cache.put(fuuidPath, response)
-        }
-  
-        if(val.done === undefined) throw new Error('Erreur lecture stream, undefined')
-    }
-  
-    if(arrayBuffers.length > 0) {
-        const blob = new Blob(arrayBuffers)
-        const positionBlob = position - blob.size
-        arrayBuffers = []
-        const response = new Response(blob, {status: 200})
-        const fuuidPath = '/'+fuuid+'/'+positionBlob
-        await cache.put(fuuidPath, response)
-    }
-
+    const writableStream = await createWritableStream(fuuid, opts)
+    await stream.pipeTo(writableStream)
     return true
 }
 
