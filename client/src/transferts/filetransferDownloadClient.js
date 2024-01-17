@@ -132,25 +132,17 @@ async function fetchAvecProgress(url, opts) {
     if(!actif) dataProcessor = null
   }
 
-  // Creer un transform stream pour dechiffrer le fichier
-  // const { writable, readable } = createTransformStreamDechiffrage(
-  //   dataProcessor, {...opts, contentLength})
-
   // Pipe la reponse pour la dechiffrer au passage
   let stream = reponse.body
   if(progressCb) {
     const progresStream = creerProgresTransformStream(progressCb, contentLength, {start: startPosition, downloadEnCours})
     stream = reponse.body.pipeThrough(progresStream)
   }
-  // const promisePipe = stream.pipeTo(writable)
 
   return {
-    // reader: readable,           // Stream dechiffre
     reader: stream,
     headers: reponse.headers,
     status: reponse.status,
-    // done: promisePipe,           // Faire un await pour obtenir resultat download
-    // abortController,
   }
 
 }
@@ -239,70 +231,73 @@ const CONST_UPDATE_FREQ = 750
 
 function creerProgresTransformStream(progressCb, size, opts) {
     opts = opts || {}
-    // console.debug("creerProgresTransformStream size: %s", size)
-
-    // const downloadEnCours = opts.downloadEnCours,
-    //       abortController = opts.abortController
 
     let position = opts.start || 0
-    let afficherProgres = true
 
     let dernierePosition = 0,
+        derniereLecture = new Date().getTime(),
         rateTransfert = 0,
         fenetreRates = []
 
+    let timeout = null  // Timeout pour l'affichage du progres
+    let afficherProgres = false
     const setAfficherProgres = () => { 
-      afficherProgres = true 
-      rateTransfert = 1000/CONST_UPDATE_FREQ * (position - dernierePosition)
-      fenetreRates.push(rateTransfert)
-      while(fenetreRates.length > 10) fenetreRates.unshift()
-      const totalRates = fenetreRates.reduce((item, acc)=>acc+item, 0)
-      rateTransfert = Math.floor(totalRates / fenetreRates.length)
-      dernierePosition = position
+      afficherProgres = true
     }
 
-    // let termine = false
+    const afficherProgresHandler = () => { 
+      afficherProgres = false
+      const now = new Date().getTime()
+      const intervalleLectureMs = now - derniereLecture
+      rateTransfert = 1000/intervalleLectureMs * (position - dernierePosition)
+      fenetreRates.push(rateTransfert)
 
-    // Demander un high watermark de 10 buffers de 64kb (64kb est la taille du buffer de dechiffrage)
-    // const queuingStrategy = new ByteLengthQueuingStrategy({ highWaterMark: 1024 * 64 * 10 });
+      // Slice a 10 lectures
+      if(fenetreRates.length > 10) fenetreRates = fenetreRates.slice(1, 11)
+
+      const totalRates = fenetreRates.reduce((item, acc)=>acc+item, 0)
+      rateTransfert = Math.floor(totalRates / fenetreRates.length)
+
+      // Repositionner les curseurs
+      derniereLecture = now
+      dernierePosition = position
+
+      progressCb(position, {flag: 'Download', rate: rateTransfert})
+        .catch(err=>{
+          console.error("setAfficherProgres Erreur ", err)
+        })
+        .finally(()=>{
+          timeout = null
+        })
+    }
 
     return new TransformStream({
-      async transform(chunk, controller) {
-        if(!chunk || chunk.length === 0) return controller.error("Aucun contenu")
-        // console.trace("creerProgresTransformStream Chunk size %s", chunk.length)
-        // if(termine) {
-        //   console.warn("creerProgresTransformStream Appele apres fin")
-        //   return controller.error("Termine")
-        // }
-        //if(_fuuidsAnnulerDownload) {
-          // const fuuidAnnuler = _fuuidsAnnulerDownload
-          // _fuuidsAnnulerDownload = null  // Vider le signal - doit matcher le fuuid courant
-          // if(fuuidAnnuler.includes(downloadEnCours.fuuid)) {
-          //   if(abortController) {
-          //     abortController.abort()
-          //     console.debug("creerProgresTransformStream AbortController.abort")
-          //   } else {
-          //   // termine = true
-          //     return controller.error(new Error('download annule'))
-          //   }
-          // }
-        //}
+      transform(chunk, controller) {
+        if(!chunk || chunk.length === 0) {
+          controller.terminate()
+          return
+        }
         try{
           position += chunk.length
-          if(afficherProgres) {
-            const positionPonderee = position  // Math.floor(0.95 * position)
-            afficherProgres = false
-            await progressCb(positionPonderee, {flag: 'Download', rate: rateTransfert})
-            setTimeout(setAfficherProgres, CONST_UPDATE_FREQ)
+          if(!timeout) {
+            timeout = setTimeout(setAfficherProgres, CONST_UPDATE_FREQ)
+          } else if(afficherProgres) {
+            try {
+              afficherProgresHandler()
+            } catch(err) {
+              console.error("TransformStream Erreur afficher progres ", err)
+            }
           }
           controller.enqueue(chunk)
         } catch(err) {
-          controller.error(err)
+          console.error("Erreur controlleur : ", err)
+          controller.terminate()
         }
       },
       flush(controller) { 
-        // termine = true
-        return controller.terminate() 
+        // console.debug("TransformStream flush %O", controller)
+        if(timeout) clearTimeout(timeout)
+        controller.terminate() 
       }
     })
     // }, queuingStrategy, queuingStrategy)
