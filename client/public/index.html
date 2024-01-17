@@ -25,7 +25,7 @@
 </html>
 
 <script>
-  // S'assurer d'avoir le path /collections/ avec le / a la fin
+  // S'assurer d'avoir le path /collections/ avec le / a la fin. Requis pour activer le service worker.
   const pathname = window.location.pathname
   if(!pathname.startsWith('/collections/')) {
     window.location = '/collections/'

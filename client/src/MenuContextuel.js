@@ -104,8 +104,8 @@ export function MenuContextuelFichierRecherche(props) {
     }, [fichier, previewDisponible, fermerContextuel, showPreview])
 
     const downloadEvent = useCallback( async event => {
-        //console.debug("Download fichier %O", fichier)
-        downloadAction(fichier)
+        const paramsDownload = {...fichier, dechiffre: false}
+        downloadAction(paramsDownload)
         fermerContextuel()
     }, [fichier, downloadAction, fermerContextuel])
 

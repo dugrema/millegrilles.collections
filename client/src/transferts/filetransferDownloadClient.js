@@ -318,6 +318,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   const { downloadFichiersDao } = workers
 
   const {fuuid, url} = downloadEnCours
+  let dechiffre = downloadEnCours.dechiffre || false
 
   let urlDownload = new URL(_urlDownload)
   try {
@@ -325,13 +326,17 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
     urlDownload = new URL(url)
   } catch(err) {
     // Ajouter url au path
-    urlDownload.pathname = path.join(urlDownload.pathname, url)
+    urlDownload.pathname = path.join(urlDownload.pathname, fuuid)
+    dechiffre = false
   }
-  // console.debug("URL de download de fichier : %O", urlDownload)
+  // console.debug("URL de download de fichier : %O, dechiffre : %s", urlDownload, dechiffre)
 
   const infoFichier = await downloadFichiersDao.getDownload(fuuid)
   let tailleFichierChiffre = infoFichier.tailleChiffre
-  if(!tailleFichierChiffre) {
+  if(dechiffre) {
+    const reponseHead = await fetch(urlDownload, {method: 'HEAD'})
+    tailleFichierChiffre = Number.parseInt(reponseHead.headers.get('Content-Length'))
+  } else if(!tailleFichierChiffre) {
     // Recuperer la taille du fichier chiffre
     const reponseHead = await fetch(urlDownload, {method: 'HEAD'})
     tailleFichierChiffre = Number.parseInt(reponseHead.headers.get('Content-Length'))
@@ -341,7 +346,8 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   // Detecter la position courante (plus grand chunk deja recu)
   let positionPartCourant = 0
-  const partsExistants = await getPartsDownload(fuuid)
+  let cacheName = dechiffre?CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE:CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE
+  const partsExistants = await getPartsDownload(fuuid, {cache: cacheName})
   // console.debug("downloadFichierParts Part existants : ", partsExistants)
   if(partsExistants && partsExistants.length > 0) {
     const partCourant = partsExistants[partsExistants.length-1]
@@ -352,7 +358,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   const partSize = CONST_TRANSFERT.LIMITE_DOWNLOAD_SPLIT
 
-  const cache = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_CHIFFRE)
+  const cache = await caches.open(cacheName)
 
   const abortControllerLocal = new AbortController()
   const intervalAbort = setInterval(async () => {

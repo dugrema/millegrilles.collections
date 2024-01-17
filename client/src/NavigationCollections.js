@@ -407,6 +407,8 @@ function Modals(props) {
     const downloadAction = useCallback(params => {
         // console.debug("downloadAction params ", params)
         const modeVideo = params.modeVideo || false
+        const dechiffre = params.dechiffre || false
+        const url = params.url
         let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
         if(!fichier) return  // Pas de fichier
         const version_courante = fichier.version_courante || {}
@@ -426,7 +428,7 @@ function Modals(props) {
                 ...fichier, 
                 infoDechiffrage: infoVideo,
                 fuuidDownload: params.fuuid,
-                noSave: modeVideo,
+                url, dechiffre, noSave: modeVideo,
             }
             // console.debug("!!! Modals.downloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
             dispatch(ajouterDownload(workers, fichier))
@@ -434,7 +436,7 @@ function Modals(props) {
         } else {
             fichier = {
                 ...fichier, 
-                noSave: modeVideo,
+                url, dechiffre, noSave: modeVideo,
             }
             dispatch(ajouterDownload(workers, fichier))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
@@ -675,7 +677,7 @@ function MenuContextuel(props) {
 
         const fichier = fichiers.filter(item=>item.tuuid === tuuid).pop()
         if(fichier) {
-            const fichierCopy = {...fichier, breadcrumbPath}
+            const fichierCopy = {...fichier, breadcrumbPath, dechiffre: false}
             dispatch(ajouterDownload(workers, fichierCopy))
                 .catch(err=>erreurCb(err, 'Erreur ajout download'))
         }

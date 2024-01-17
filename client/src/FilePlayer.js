@@ -299,8 +299,21 @@ function PreviewVideoMobile(props) {
     }, [srcVideo, setCopierNotif])
 
     const downloadHandler = useCallback(()=>{
-        downloadAction({...fichier, modeVideo: true})
+        downloadAction({...fichier})
     }, [downloadAction, fichier])
+
+    // const cacheVideoHandler = useCallback(()=>{
+    //     console.debug("cacheVideoHandler selecteur : %O, fichier : %O, srcVideo: %O", selecteur, fichier, srcVideo)
+    //     const urlVideo = new URL(srcVideo)
+    //     const fuuid = urlVideo.pathname.split('/').pop()
+    //     const params = {
+    //         ...fichier, 
+    //         fuuid,
+    //         url: srcVideo, dechiffre: true, modeVideo: true
+    //     }
+    //     console.debug("Params cache video ", params)
+    //     downloadAction(params)
+    // }, [downloadAction, fichier, srcVideo, selecteur])
 
     const setErrCb = useCallback(e => {
         console.error("Erreur chargement image : %O", e)
@@ -338,9 +351,9 @@ function PreviewVideoMobile(props) {
                             Action
                         </Col>
                         <Col>
-                            {/* {capabilities.mobile?'': */}
+                            {capabilities.mobile?'':
                                 <Button variant="secondary" onClick={downloadHandler}><i className='fa fa-download'/> Download</Button>
-                            {/* } */}
+                            }
                             {' '}
                             {srcVideo?
                                 <span>
@@ -353,6 +366,12 @@ function PreviewVideoMobile(props) {
                             <Button variant={variantBoutonLoop} onClick={abLoopToggleHandler}>Boucle</Button>
                         </Col>
                     </Row>
+                    {/* <p>TODO - fix me</p>
+                    <Row>
+                        <Col>
+                            <Button variant="secondary" onClick={cacheVideoHandler}><i className='fa fa-download'/> Cache</Button>
+                        </Col>
+                    </Row> */}
             </Col>
         </Row>
 

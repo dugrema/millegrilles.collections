@@ -715,7 +715,7 @@ async function genererFichierZip(workers, dispatch, downloadInfo, getAborted) {
 }
 
 async function downloadFichier(workers, dispatch, fichier, getAborted) {
-    // console.debug("Download fichier params : ", fichier)
+    // console.debug("downloadFichier Download fichier params : ", fichier)
     const { transfertDownloadFichiers, clesDao } = workers
     const fuuid = fichier.fuuid,
           fuuidCle = fichier.fuuidCle || fichier.fuuid,
@@ -732,7 +732,6 @@ async function downloadFichier(workers, dispatch, fichier, getAborted) {
         opts = opts || {}
         const champ = opts.champ || 'tailleCompletee'  // tailleCompletee et tailleDechiffree
         const rate = opts.rate
-        const dechiffre = (opts.dechiffre!==undefined)?opts.dechiffre:false
         if(opts.transfertComplete) {
             dernierUpdate = 0  // S'assurer de faire une mise a jour
         }
@@ -741,29 +740,32 @@ async function downloadFichier(workers, dispatch, fichier, getAborted) {
         const now = new Date().getTime()
         if(now - frequenceUpdate > dernierUpdate) {
             dernierUpdate = now
-            marquerDownloadEtat(workers, dispatch, fuuid, {etat, [champ]: tailleCompletee, dechiffre, rate})
+            marquerDownloadEtat(workers, dispatch, fuuid, {etat, [champ]: tailleCompletee, /*dechiffre,*/ rate})
                 .catch(err=>console.warn("progressCb Erreur maj download ", err))
         }
     })
 
     // Downloader les chunks du fichier - supporte resume
-    const url = ''+fuuid
-    const paramsDownload = {url,fuuid}
+    const url = fichier.url
+    const dechiffre = fichier.dechiffre || false
+    const paramsDownload = {url,fuuid,dechiffre}
+    // console.debug("downloadFichier Params download ", paramsDownload)
     await transfertDownloadFichiers.downloadFichierParts(workers, paramsDownload, progressCb, getAborted)
-    // console.debug("Download fichier complete ", url)
-    await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_CHIFFRE, dechiffre: false, DEBUG: false})
+    // console.debug("downloadFichier Download fichier complete ", url)
+    await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_CHIFFRE, /*dechiffre: false, */ DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
 
-    // Dechiffrer le fichier
-    const paramsDechiffrage = {
-        fuuid, filename: fichier.nom, mimetype: fichier.mimetype,
-        ...valueCles,  // Inclure params optionnels comme iv, header, etc
-        password: valueCles.cleSecrete,
+    if(!dechiffre) {
+        // Dechiffrer le fichier
+        const paramsDechiffrage = {
+            fuuid, filename: fichier.nom, mimetype: fichier.mimetype,
+            ...valueCles,  // Inclure params optionnels comme iv, header, etc
+            password: valueCles.cleSecrete,
+        }
+        await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDechiffrage, progressCb)
     }
-    await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDechiffrage, progressCb)
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_DECHIFFRE, dechiffre: true, DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
-
 
     if(getAborted && await getAborted()) {
         console.warn("Download cancelled")
