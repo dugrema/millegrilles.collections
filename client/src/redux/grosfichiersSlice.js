@@ -1366,7 +1366,7 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
 
         const tuuidsBatch = tuuids.slice(0, CONST_FICHIER_BATCH_SIZE)
         {
-            const tuuidsRestants = tuuidsBatch.slice(CONST_FICHIER_BATCH_SIZE)
+            const tuuidsRestants = tuuids.slice(CONST_FICHIER_BATCH_SIZE)
             listenerApi.dispatch(actions.setListeDirty(tuuidsRestants))
         }
 
@@ -1374,7 +1374,7 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
         
         const contactId = getStateFichiers().partageContactId
         const opts = {etapeChargement: getStateFichiers().etapeChargement}
-        const listeBatch = await chargerDocuments(workers, listenerApi.dispatch, actions.mergeTuuidData, tuuids, contactId, opts)
+        const listeBatch = await chargerDocuments(workers, listenerApi.dispatch, actions.mergeTuuidData, tuuidsBatch, contactId, opts)
         liste = [...liste, ...listeBatch]
     }
 
