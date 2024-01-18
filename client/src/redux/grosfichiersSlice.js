@@ -83,25 +83,6 @@ function setIntervalleAction(state, action) {
 function setCollectionInfoAction(state, action) {
     const collection = action.payload
     state.collection = collection
-    // state.source = SOURCE_COLLECTION
-    // state.sortKeys = {}
-
-    // // Transferer le nom vers le breadcrumb
-    // for(const bc of state.breadcrumb) {
-    //     console.debug("setCollectionInfoAction Breadcrumb ", {...bc})
-    // }
-    // console.debug("setCollectionInfoAction %O", collection)
-    // if(collection && collection.nom) {
-    //     const len = state.breadcrumb.length
-    //     if(len > 0) {
-    //         const courant = state.breadcrumb[len-1]
-    //         // console.debug("Breadcrumb courant %s (nom %s)", courant.tuuid, courant.nom)
-    //         if(courant.tuuid === collection.tuuid) {
-    //             // console.debug("Changer nom courant pour %s", collection.nom)
-    //             courant.label = collection.nom
-    //         }
-    //     }
-    // }
 }
 
 function pushAction(state, action) {
@@ -148,11 +129,6 @@ function clearAction(state) {
     state.maxNombreAffiches = TAILLE_AFFICHEE_INIT
     state.dechiffrageInitialComplete = false
 }
-
-// function supprimerAction(state, action) {
-//     const tuuid = action.payload
-//     state.liste = state.liste.filter(item => item.tuuid !== tuuid)
-// }
 
 function breadcrumbPushAction(state, action) {
     // console.debug("State breadcrumb %O, action %O", state.breadcrumb, action)
@@ -369,7 +345,6 @@ function pushFichiersChiffresAction(state, action) {
         return acc
     }, {})
     // console.debug("pushFichiersChiffresAction Dechiffrer ", fichiers)
-    // state.listeDechiffrage = [...state.listeDechiffrage, ...fichiers]
     state.dictDechiffrage = {...state.dictDechiffrage, ...fichiers}
 }
 
@@ -379,13 +354,11 @@ function setFichiersChiffresAction(state, action) {
         return acc
     }, {})
     // console.debug("setFichiersChiffresAction Dechiffrer ", fichiers)
-    // state.listeDechiffrage = fichiers
     state.dictDechiffrage = fichiers
 }
 
 // Retourne un fichier de la liste a dechiffrer
 function clearFichiersChiffresAction(state) {
-    // state.listeDechiffrage = []
     state.dictDechiffrage = {}
 }
 
@@ -444,7 +417,6 @@ export function creerSlice(name) {
             setCollectionInfo: setCollectionInfoAction,
             setUserContactId: setUserContactIdAction,
             push: pushAction, 
-            // supprimer: supprimerAction,
             clear: clearAction,
             mergeTuuidData: mergeTuuidDataAction,
             breadcrumbPush: breadcrumbPushAction,
@@ -1308,8 +1280,6 @@ async function dechiffrageMiddlewareListener(workers, actions, _thunks, nomSlice
         // const partage = !!(contactId || source === SOURCE_PARTAGES_CONTACTS)
         while(tuuidsChiffres.length > 0) {
             // Trier et slicer une batch de fichiers a dechiffrer
-            // const sortKeys = getState().sortKeys
-            // fichiersChiffres.sort(genererTriListe(sortKeys))
             const batchTuuids = tuuidsChiffres.slice(0, 50)  // Batch de 20 fichiers a la fois
             tuuidsChiffres = tuuidsChiffres.slice(50)  // Clip
 

@@ -130,28 +130,6 @@ export async function getParCollection(cuuid, userId) {
         curseur = await curseur.continue()
     }
 
-    // console.debug("IDB fichiers Parcours de %d rows (%d supprimes) pour resultat %O", compteur, compteurSupprimes, docs)
-
-    // // Curseur repertoires (cuuid)
-    // if(cuuid) {
-    //     const index = store.index('cuuid')
-    //     curseur = await index.openCursor(cuuid)
-
-    //     while(curseur) {
-    //         const value = curseur.value
-    //         console.debug("getParCollection Row %O = %O", curseur, value)
-    //         const { cuuid: cuuidDb, supprime } = value
-    //         if(supprime === true) {
-    //             // Supprime
-    //         } else if(cuuid === cuuidDb) {
-    //             docs.push(value)
-    //         }
-    //         curseur = await curseur.continue()
-    //     }
-    // }
-
-    // console.debug('getParCollection cuuid %s userId: %s resultat collection %O, documents %O', cuuid, userId, collection, docs)
-
     return { collection, documents: docs }
 }
 

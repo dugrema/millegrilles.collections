@@ -504,15 +504,6 @@ export function trierListeUpload(a, b) {
     if(!a) return 1
     if(!b) return -1
 
-    // // Trier par taille completee (desc)
-    // const tailleCompleteeA = a.tailleCompletee,
-    //       tailleCompleteeB = b.tailleCompletee
-    // if(tailleCompleteeA !== tailleCompleteeB) {
-    //     if(!tailleCompleteeA) return 1
-    //     if(!tailleCompleteeB) return -1
-    //     return tailleCompleteeB - tailleCompleteeA
-    // }
-
     // Trier par date de creation
     const dateCreationA = a.dateCreation,
           dateCreationB = b.dateCreation

@@ -34,24 +34,6 @@ export async function updateFichierDownload(doc) {
     await store.put(docExistant)
 }
 
-// export async function supprimerDownloadParts(fuuid, opts) {
-//     opts = opts || {}
-//     let db = opts.db
-//     if(!db) db = await ouvrirDB()
-
-//     // Supprimer fichiers (blobs)
-//     const storeDownloadsFichiers = db.transaction(STORE_DOWNLOADS_FICHIERS, 'readwrite').store
-//     const keyRange = IDBKeyRange.bound([fuuid, 0], [fuuid, Number.MAX_SAFE_INTEGER])
-//     let cursorFichiers = await storeDownloadsFichiers.openCursor(keyRange, 'next')
-//     while(cursorFichiers) {
-//         const correlationCursor = cursorFichiers.value.fuuid
-//         if(correlationCursor === fuuid) {
-//             await cursorFichiers.delete()
-//         }
-//         cursorFichiers = await cursorFichiers.continue()
-//     }
-// }
-
 export async function supprimerDownload(fuuid) {
     const db = await ouvrirDB()
 
@@ -188,12 +170,6 @@ export async function getPartsDownloadChiffre(fuuid) {
     }
 
     return parts
-}
-
-export async function getPartDownload(fuuid, position) {
-    // const db = await ouvrirDB()
-    // const storeDownloadsFichiers = db.transaction(STORE_DOWNLOADS_FICHIERS, 'readonly').store
-    // return await storeDownloadsFichiers.get([fuuid, position])
 }
 
 export async function updatePartDownload(doc) {
