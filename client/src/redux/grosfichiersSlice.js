@@ -74,6 +74,8 @@ function setUserContactIdAction(state, action) {
     if(state.liste) state.liste.forEach(item=>{
         item.contactId = contactId
     })
+    state.etapeChargement = CONST_ETAPE_CHARGEMENT_INITIAL
+    state.listeTuuidsDirty = []
 }
 
 function setSourceAction(state, action) {
@@ -521,41 +523,10 @@ export function creerThunks(actions, nomSlice) {
     const { 
         setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
         setSortKeys, setSource, setIntervalle, pushFichiersChiffres, setDechiffrageComplete,
-        setUserContactId, breadcrumbPush, breadcrumbSlice, retirerTuuidsListe, setEtapeChargement, pushTuuidsDirty,
+        setUserContactId, breadcrumbPush, breadcrumbSlice, retirerTuuidsListe, setEtapeChargement, 
+        setListeDirty, pushTuuidsDirty,
     } = actions
 
-    // Async thunks
-    
-    function dechiffrerFichiers(workers, fichiers) {
-        return (dispatch, getState) => traiterDechiffrerFichiers(workers, fichiers, dispatch, getState)
-    }
-    
-    async function traiterDechiffrerFichiers(workers, fichiers, dispatch, getState) {
-    
-        if(!fichiers || fichiers.length === 0) return
-    
-        const { collectionsDao } = workers
-    
-        // Detecter les cles requises
-        const {fichiersChiffres} = identifierClesHachages(fichiers)
-
-        // console.debug('traiterDechiffrerFichiers Cles a extraire : %O de fichiers %O', clesHachage_bytes, fichiersChiffres)
-        if(fichiersChiffres.length > 0) dispatch(pushFichiersChiffres(fichiersChiffres))
-    
-        const tuuidsChiffres = fichiersChiffres.map(item=>item.tuuid)
-        for (const fichier of fichiers) {
-            // console.debug("traiterDechiffrerFichiers Dechiffrer fichier ", fichier)
-            const dechiffre = ! tuuidsChiffres.includes(fichier.tuuid)
-    
-            // Mettre a jour dans IDB
-            collectionsDao.updateDocument(fichier, {dechiffre})
-                .catch(err=>console.error("Erreur maj document %O dans idb : %O", fichier, err))
-    
-            // console.debug("traiterDechiffrerFichiers chargeTuuids dispatch merge %O", fichier)
-            dispatch(mergeTuuidData({tuuid: fichier.tuuid, data: fichier}))
-        }
-    }
-    
     function chargerTuuids(workers, tuuids, opts) {
         return (dispatch, getState) => traiterChargerTuuids(workers, tuuids, opts, dispatch, getState)
     }
@@ -568,11 +539,13 @@ export function creerThunks(actions, nomSlice) {
             return
         }
 
-        const contactId = opts.contactId || getState().fichiers.partageContactId
+        const contactId = opts.contactId || getState().fichiers.partageContactId,
+              userIdTiers = getState().fichiers.partageUserIdTiers,
+              partage = !!userIdTiers
 
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
 
-        await chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, opts)
+        await chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, {...opts, partage})
 
         const fichiersChiffres = getState().fichiers.liste.filter(item=>!item.dechiffre)
         dispatch(pushFichiersChiffres(fichiersChiffres))
@@ -614,7 +587,7 @@ export function creerThunks(actions, nomSlice) {
         const state = getState()[nomSlice]
         const { userId, cuuid, partageContactId: contactId } = state
     
-        // console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
+        console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
     
         // Charger le contenu de la collection deja connu
         promisesPreparationCollection = promisesPreparationCollection || []
@@ -1020,11 +993,6 @@ export function creerThunks(actions, nomSlice) {
     async function traiterChargerPartagesUsager(workers, contactId, opts, dispatch, getState) {
         opts = opts || {}
     
-        const stateInitial = getState()[nomSlice]
-        const { parametresRecherche } = stateInitial
-
-        console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
-    
         // Changer source, nettoyer la liste
         dispatch(setSource(SOURCE_PARTAGES_USAGER))
         dispatch(clear())
@@ -1033,7 +1001,7 @@ export function creerThunks(actions, nomSlice) {
     
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.getPartagesUsager(contactId)
-        // console.debug("Resultat getPartagesUsager : ", resultat)
+        console.debug("Resultat getPartagesUsager : ", resultat)
         const partages = resultat.partages
         const partagesDict = partages.reduce((acc, item)=>{
             acc[item.tuuid] = item
@@ -1041,31 +1009,35 @@ export function creerThunks(actions, nomSlice) {
         }, {})
 
         // Charger le contenu de la collection deja connu
-        let contenuIdb = await collectionsDao.getParTuuids(partages.map(item=>item.tuuid))
-        contenuIdb = contenuIdb.filter(item=>item)
+        // let contenuIdb = await collectionsDao.getParTuuids(partages.map(item=>item.tuuid))
+        // contenuIdb = contenuIdb.filter(item=>item)
 
-
-        // Injecter le contactId
-        contenuIdb.forEach(item=>{
-            item.contactId = contactId
-            delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
-        })
+        // // Injecter le contactId
+        // contenuIdb.forEach(item=>{
+        //     item.contactId = contactId
+        //     delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
+        // })
 
         // Ajouter tous les resultats manquants
-        const tuuidsManquants = []
-        for(const item of Object.values(partagesDict)) {
-            contenuIdb.push(item)
-            tuuidsManquants.push(item.tuuid)
-        }
+        // const tuuidsManquants = []
+        // for(const item of Object.values(partagesDict)) {
+        //     contenuIdb.push(item)
+        //     tuuidsManquants.push(item.tuuid)
+        // }
+
+        const tuuids = Object.values(partagesDict).map(item=>item.tuuid)
+        console.debug("Charger tuuids ", tuuids)
 
         // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        if(contenuIdb) {
+        // if(contenuIdb) {
             // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
-            const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-            dispatch(chargerTuuids(workers, tuuids))
+            // dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
+            // const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+
+            await dispatch(chargerTuuids(workers, tuuids))
                 .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-        }
+            dispatch(clear())
+        // }
     
         // await syncRecherche(dispatch, workers, tuuidsManquants)
     }
@@ -1078,21 +1050,17 @@ export function creerThunks(actions, nomSlice) {
     async function traiterChargerPartagesContact(workers, userIdTiers, contactId, opts, dispatch, getState) {
         opts = opts || {}
     
-        const stateInitial = getState()[nomSlice]
-        const { parametresRecherche } = stateInitial
-
-        // console.debug("Rechercher fichiers correspondants au terme : %s", parametresRecherche)
-    
         // Changer source, nettoyer la liste
         dispatch(setSource(SOURCE_PARTAGES_CONTACTS))
         dispatch(clear())
 
+        console.debug("traiterChargerPartagesContact userIdTiers %O, contactId %O", userIdTiers, contactId)
         dispatch(setUserContactId({userId: userIdTiers, contactId: contactId}))
         dispatch(setSortKeys({key: 'nom', ordre: 1}))
     
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.getPartagesContact(userIdTiers, contactId)
-        // console.debug("Resultat getPartagesContact : ", resultat)
+        console.debug("Resultat getPartagesContact : ", resultat)
         const partages = resultat.partages.filter(item=>{
             if(contactId) return item.contact_id === contactId
             return item.user_id === userIdTiers
@@ -1102,32 +1070,51 @@ export function creerThunks(actions, nomSlice) {
                 acc[item.tuuid] = item
                 return acc
             }, {})
-
-        // Charger le contenu de la collection deja connu
-        let contenuIdb = await collectionsDao.getParTuuids(partages.map(item=>item.tuuid))
-        contenuIdb = contenuIdb.filter(item=>item)
-
-        // Injecter le contactId
-        contenuIdb.forEach(item=>{
-            item.contactId = contactId
-            delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
-        })
-
-        // Ajouter tous les resultats manquants
-        const tuuidsManquants = []
-        for(const item of Object.values(partagesDict)) {
-            contenuIdb.push(item)
-            tuuidsManquants.push(item.tuuid)
+    
+        const tuuidsDirty = Object.keys(partagesDict)
+        // dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_SYNC))
+    
+        console.debug("traiterChargerPartagesContact Liste tuuids dirty actifs : ", tuuidsDirty)
+        if(tuuidsDirty.length > 0) {
+            // Override la liste
+            dispatch(setListeDirty(tuuidsDirty))
         }
 
-        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        if(contenuIdb) {
-            // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
-            const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-            dispatch(chargerTuuids(workers, tuuids, {partage: true, contactId}))
-                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-        }
+        // Retirer les fichiers qui ne sont plus partages mais encore dans IDB
+        // TODO
+
+        // Passer au download de la liste
+        dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
+
+        // // Charger le contenu de la collection deja connu
+        // let contenuIdb = await collectionsDao.getParTuuids(partagesTuuids)
+        
+        // const tuuidsConnus = new Set()
+        // for(const item of contenuIdb) {
+        //     tuuidsConnus.add(item.tuuid)
+        // }
+
+        // // Injecter le contactId
+        // contenuIdb.forEach(item=>{
+        //     item.contactId = contactId
+        //     delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
+        // })
+
+        // // Ajouter tous les resultats manquants
+        // const tuuidsManquants = []
+        // for(const item of Object.values(partagesDict)) {
+        //     contenuIdb.push(item)
+        //     tuuidsManquants.push(item.tuuid)
+        // }
+
+        // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+        // if(contenuIdb) {
+        //     // console.debug("Push documents provenance idb : %O", contenuIdb)
+        //     dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
+        //     const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+        //     dispatch(chargerTuuids(workers, tuuids, {partage: true, contactId}))
+        //         .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+        // }
     }
 
     async function chargerResultatsPartages(workers, opts, dispatch, getState, tuuidsPartagesManquants) {
@@ -1365,6 +1352,8 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
 
     while(true) {
         const tuuids = getStateFichiers().listeTuuidsDirty
+        const userIdTiers = getStateFichiers().partageUserIdTiers,
+              partage = !!userIdTiers
         if(tuuids.length === 0) {
             // Chargement complete
             break
@@ -1376,10 +1365,10 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
             listenerApi.dispatch(actions.setListeDirty(tuuidsRestants))
         }
 
-        // console.debug("chargerListe Batch tuuids : ", tuuidsBatch)
+        console.debug("chargerListe Batch tuuids : ", tuuidsBatch)
         
         const contactId = getStateFichiers().partageContactId
-        const opts = {etapeChargement: getStateFichiers().etapeChargement}
+        const opts = {etapeChargement: getStateFichiers().etapeChargement, partage}
         const listeBatch = await chargerDocuments(workers, listenerApi.dispatch, actions.mergeTuuidData, tuuidsBatch, contactId, opts)
         // console.debug("chargerListe Batch fichiers recus : ", listeBatch)
         liste = [...liste, ...listeBatch]
@@ -1397,6 +1386,11 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
     const contactId = getStateFichiers().partageContactId
     const userId = getStateFichiers().userId
     const etapeChargement = getStateFichiers().etapeChargement
+    const userIdTiers = getStateFichiers().partageUserIdTiers,
+          partage = !!userIdTiers,
+          userIdEffectif = userIdTiers || userId
+
+    console.debug("dechiffrerFichiers userIdTiers %s, userId %s", userIdTiers, userId)
 
     // Preparer la liste de fichiers a dechiffrer
     const fichiersChiffres = getStateFichiers().liste.filter(item=>!item.dechiffre)
@@ -1412,30 +1406,19 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
         listenerApi.dispatch(actions.getBatchFichiersChiffres())
         // console.debug("state : ", getStateFichiers())
         const batchFichiers = getStateFichiers().batchDechiffrage
-        // console.debug("dechiffrerFichiers Batch a dechiffrer : ", batchFichiers)
+        console.debug("dechiffrerFichiers Batch a dechiffrer : ", batchFichiers)
         if(batchFichiers.length === 0) break  // Done
 
         // Extraire toutes les cles a charger
-        const {liste_hachage_bytes, liste_hachage_bytes_partages} = identifierClesHachages(batchFichiers, userId)
-        // console.debug("Dechiffrer avec liste_hachage_bytes %O, liste_hachages_bytes_partages : %O (source: %s) ", liste_hachage_bytes, liste_hachage_bytes_partages)
+        const {liste_hachage_bytes} = identifierClesHachages(batchFichiers, userIdEffectif)
+        console.debug("Dechiffrer avec liste_hachage_bytes %O (source: %s) ", liste_hachage_bytes)
         let cles = null
         if(liste_hachage_bytes && liste_hachage_bytes.length > 0) {
             try {
-                cles = await clesDao.getCles(liste_hachage_bytes, {partage: false})
+                cles = await clesDao.getCles(liste_hachage_bytes, {partage})
                 // console.debug("Reponse cles : ", cles)
             } catch(err) {
                 console.error("Erreur chargement cles %O : %O", liste_hachage_bytes, err)
-                continue  // Prochaine batch
-            }
-        }
-        if(liste_hachage_bytes_partages && liste_hachage_bytes_partages.length > 0) {
-            try {
-                const clesPartages = await clesDao.getCles(liste_hachage_bytes_partages, {partage: true})
-                // console.debug("Reponse cles partage : ", clesPartages)
-                if(cles) cles = {...cles, ...clesPartages}
-                else {cles = clesPartages}
-            } catch(err) {
-                console.error("Erreur chargement cles partages %O : %O", liste_hachage_bytes_partages, err)
                 continue  // Prochaine batch
             }
         }
@@ -1570,8 +1553,9 @@ function genererTriListe(sortKeys) {
 async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, opts) {
     const { connexion, collectionsDao } = workers
     const etapeChargement = opts.etapeChargement || 5
+    console.debug("chargerDocuments Charger tuuids : %O, contactId %O, opts %O", tuuids, contactId, opts)
     const resultat = await connexion.getDocuments(tuuids, {...opts, contactId})
-    // console.debug("traiterChargerTuuids Reponse ", resultat)
+    console.debug("traiterChargerTuuids Reponse ", resultat)
 
     const listeResultat = []
     if(resultat.fichiers) {
@@ -1583,7 +1567,7 @@ async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, conta
         for await(const item of fichiers) {
             let chiffre = false
 
-            // console.debug("traiterChargerTuuids Traiter item ", item)
+            console.debug("traiterChargerTuuids Traiter item ", item)
             
             const version_courante = item.version_courante || {},
                   { images } = version_courante,
@@ -1607,11 +1591,9 @@ async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, conta
     return listeResultat
 }
 
-function identifierClesHachages(liste, userId) {
+function identifierClesHachages(liste) {
     const liste_hachage_bytes = new Set(),
           fichiersChiffres = []
-
-    const liste_hachage_bytes_partages = new Set()
 
     for (const item of liste) {
         let chiffre = false
@@ -1631,8 +1613,7 @@ function identifierClesHachages(liste, userId) {
             } else {
                 hachage_bytes = fuuid_v_courante
             }
-            if(!userId || item.user_id === userId) liste_hachage_bytes.add(hachage_bytes)
-            else liste_hachage_bytes_partages.add(hachage_bytes)
+            liste_hachage_bytes.add(hachage_bytes)
 
             chiffre = true
         }
@@ -1646,13 +1627,10 @@ function identifierClesHachages(liste, userId) {
         if(chiffre) fichiersChiffres.push(item)
     }
 
-    const listeItems = [], listeItemsPartages = []
+    const listeItems = []
     for(const item of liste_hachage_bytes) {
         listeItems.push(item)
     }
-    for(const item of liste_hachage_bytes_partages) {
-        listeItemsPartages.push(item)
-    }
 
-    return {liste_hachage_bytes: listeItems, liste_hachage_bytes_partages: listeItemsPartages, fichiersChiffres}
+    return {liste_hachage_bytes: listeItems, fichiersChiffres}
 }

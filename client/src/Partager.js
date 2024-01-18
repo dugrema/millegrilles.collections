@@ -224,11 +224,11 @@ function NavigationPartageTiers(props) {
             // console.debug("Changer collection pour contact %O, cuuid %O", contactInfoEffectif, cuuid)
             dispatch(fichiersActions.setUserContactId({userId: userInfo.user_id, contactId: contactInfoEffectif.contact_id}))
             if(cuuid) {
-                // console.debug("naviguerCollection vers cuuid %s", cuuid)
+                console.debug("naviguerCollection vers cuuid %s", cuuid)
                 dispatch(fichiersThunks.changerCollection(workers, cuuid))
                     .catch(err=>erreurCb(err, 'Erreur changer collection'))
             } else {
-                // console.debug("naviguerCollection vers contact %s", contactId)
+                console.debug("naviguerCollection vers contact %s", contactId)
                 dispatch(fichiersThunks.afficherPartagesContact(workers, userId, contactId))
                     .catch(err=>erreurCb(err, 'Erreur changer collection vers contact'))
             }
@@ -272,7 +272,7 @@ function NavigationPartageTiers(props) {
         setShowPreview(false)
         setToggleOffCarousel(true)
         try {
-            // Set tri par date modification desc
+            console.debug("Afficher partages contact pour userId ", userId)
             dispatch(fichiersThunks.afficherPartagesContact(workers, userId, null))
                 .catch(err=>erreurCb(err, 'Erreur changer collection'))
         } catch(err) {
@@ -738,7 +738,7 @@ function ListePartagesUsager(props) {
 
 function preparerColonnes(workers, getState) {
 
-    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx, {getState})
+    const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx, {getState, contactId})
 
     const params = {
         ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier' /*, 'boutonDetail'*/],

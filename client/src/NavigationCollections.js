@@ -24,7 +24,7 @@ import fichiersActions, {thunks as fichiersThunks} from './redux/fichiersSlice'
 import { ajouterDownload, ajouterZipDownload } from './redux/downloaderSlice'
 import { chargerInfoContacts, chargerPartagesUsager, chargerPartagesDeTiers } from './redux/partagerSlice'
 
-import { BarreInformation, FormatterColonneDate, AffichagePrincipal } from './NavigationCommun'
+import { BarreInformation, FormatterColonneDate, AffichagePrincipal, InformationListe } from './NavigationCommun'
 import { PartagesUsagersTiers } from './Partager'
 import { BadgeUpload } from './Menu'
 
@@ -182,16 +182,6 @@ function NavigationCollections(props) {
         setToggleOffCarousel(false)
         if(modeView === 'carousel') setModeView('liste')
     }, [modeView, setModeView, toggleOffCarousel, setToggleOffCarousel])
-
-    // useEffect(()=>{
-    //     if(!navInitDone || !cuuidTransfere) return
-    //     console.debug("NavigationCollections naviguer vers cuuid transfere (page externe) ", cuuidTransfere)
-        
-    //     // Naviguer vers collection visee
-    //     naviguerCollection(cuuidTransfere)
-
-    //     setCuuidTransfere('')  // Reset
-    // }, [cuuidTransfere, setCuuidTransfere, naviguerCollection, navInitDone])
 
     return (
         <>
@@ -857,44 +847,44 @@ function AfficherRejets(props) {
     )
 }
 
-function InformationListe(_props) {
+// function InformationListe(_props) {
 
-    const liste = useSelector(state => state.fichiers.liste)
-    const cuuid = useSelector(state => state.fichiers.cuuid)
-    // const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)?true:false
-    const etapeChargement = useSelector(state => state.fichiers.etapeChargement)
-    const chargementTermine = etapeChargement === 5
+//     const liste = useSelector(state => state.fichiers.liste)
+//     const cuuid = useSelector(state => state.fichiers.cuuid)
+//     // const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)?true:false
+//     const etapeChargement = useSelector(state => state.fichiers.etapeChargement)
+//     const chargementTermine = true  //!!liste  //etapeChargement === 5
 
-    if (!liste || !chargementTermine) return <p>Chargement en cours...</p>
+//     if (!liste || !chargementTermine) return <p>Chargement en cours...</p>
 
-    if(!cuuid) {
-        const tailleListe = (liste && liste.length) || 0
-        if(tailleListe === 0) {
-            return (
-                <div>
-                    <br/>
-                    <Alert>
-                        <Alert.Heading>Aucune collection</Alert.Heading>
-                        <p>
-                            Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
-                        </p>
-                    </Alert>
-                </div>
-            )
-        }
-    } else {
-        const tailleListe = (liste && liste.length) || 0
-        if(tailleListe === 0) {
-            if(!chargementTermine) {
-            //     return <p>Aucuns fichiers.</p>
-            // } else {
-                return <p>Chargement en cours...</p>
-            }
-        }
-    }
+//     if(!cuuid) {
+//         const tailleListe = (liste && liste.length) || 0
+//         if(tailleListe === 0) {
+//             return (
+//                 <div>
+//                     <br/>
+//                     <Alert>
+//                         <Alert.Heading>Aucune collection</Alert.Heading>
+//                         <p>
+//                             Cliquez sur le bouton <span><i className="fa fa-folder"/> Collection</span> pour creer votre premiere collection.
+//                         </p>
+//                     </Alert>
+//                 </div>
+//             )
+//         }
+//     } else {
+//         const tailleListe = (liste && liste.length) || 0
+//         if(tailleListe === 0) {
+//             if(!chargementTermine) {
+//             //     return <p>Aucuns fichiers.</p>
+//             // } else {
+//                 return <p>Chargement en cours...</p>
+//             }
+//         }
+//     }
 
-    return ''
-}
+//     return ''
+// }
 
 function traiterCollectionEvenement(workers, dispatch, evenement) {
     // console.trace("traiterCollectionEvenement ", evenement)

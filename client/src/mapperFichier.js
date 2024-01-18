@@ -28,12 +28,13 @@ export function mapDocumentComplet(workers, doc, opts) {
     opts = opts || {}
     // console.debug("mapDocumentComplet : %O (opts: %O)", doc, opts)
     const userId = opts.userId
+    const contactId = opts.contactId
 
     const { connexion, traitementFichiers } = workers
 
     // Instance mediaLoader pour contenu (fichier, images, videos)
     const creerTokenStreamInst = commande => {
-        if(doc.contactId) commande = {...commande, contact_id: doc.contactId}
+        if(doc.contactId) commande = {...commande, contact_id: contactId}
         // console.debug("creerTokenStreamInst Commande %O, doc: %O", commande, doc)
 
         const fuuid = commande.fuuids[0]
