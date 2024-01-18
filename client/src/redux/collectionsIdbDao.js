@@ -18,6 +18,11 @@ export async function syncDocuments(docs) {
         const { tuuid, derniere_modification } = infoFichier
         const fichierDoc = await store.get(tuuid)
         if(fichierDoc) {
+            if(fichierDoc.supprime !== infoFichier.supprime) {
+                // Mettre a jour flag supprime
+                fichierDoc.supprime = infoFichier.supprime
+                await store.put(fichierDoc)
+            }
             if(derniere_modification !== fichierDoc.derniere_modification) {
                 // Fichier connu avec une date differente
                 // console.debug("syncDocuments Push dirty doc %O (local %O)", infoFichier, fichierDoc)

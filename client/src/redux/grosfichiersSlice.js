@@ -760,18 +760,24 @@ export function creerThunks(actions, nomSlice) {
         const resultat = await connexion.syncCollection(cuuid, {limit, skip, contactId})
         // console.debug("syncCollection liste sync docs : ", resultat)
         const { liste } = resultat
-        const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
         if(existants) {
             for (const doc of liste) {
                 existants.delete(doc.tuuid)
             }
         }
 
+        const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
+
+        // Retirer tous les fuuids dirty qui sont supprimes
+        // console.debug("Filtrer liste pour supprimes : ", liste)
+        const tuuidsSupprimes = liste.filter(item=>item.supprime).map(item=>item.tuuid)
+        const listeTuuidsActifsDirty = listeTuuidsDirty.filter(item=>!tuuidsSupprimes.includes(item))
+
         dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_SYNC))
     
-        // console.debug("syncCollection Liste tuuids dirty : ", listeTuuidsDirty)
-        if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-            dispatch(pushTuuidsDirty(listeTuuidsDirty))
+        // console.debug("syncCollection Liste tuuids dirty actifs : ", listeTuuidsActifsDirty)
+        if(listeTuuidsActifsDirty.length > 0) {
+            dispatch(pushTuuidsDirty(listeTuuidsActifsDirty))
         }
   
         return resultat
@@ -1375,6 +1381,7 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
         const contactId = getStateFichiers().partageContactId
         const opts = {etapeChargement: getStateFichiers().etapeChargement}
         const listeBatch = await chargerDocuments(workers, listenerApi.dispatch, actions.mergeTuuidData, tuuidsBatch, contactId, opts)
+        // console.debug("chargerListe Batch fichiers recus : ", listeBatch)
         liste = [...liste, ...listeBatch]
     }
 
