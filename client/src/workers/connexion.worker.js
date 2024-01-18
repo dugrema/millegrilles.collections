@@ -24,26 +24,14 @@ async function getClesFichiers(fuuids, usager, opts) {
 
   const partage = opts.partage
 
-  // const extensions = usager || {}
-  // const delegationGlobale = extensions.delegationGlobale
-
-  // if(!delegationGlobale) {
-    // On doit demander une permission en premier
-    const params = { fuuids, partage }
-    return ConnexionClient.emitBlocking(
-      'getPermissionCles', params, 
-      {
-        kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', 
-        timeout: 30_000, ajouterCertificat: true
-      }
-    )
-  // } else {
-  //   const params = {
-  //     liste_hachage_bytes: fuuids,
-  //     domaine: CONST_DOMAINE_GROSFICHIERS,
-  //   }
-  //   return ConnexionClient.emitBlocking('getClesFichiers', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_MAITREDESCLES, action: 'dechiffrage', ajouterCertificat: true})
-  // }
+  const params = { fuuids, partage }
+  return ConnexionClient.emitBlocking(
+    'getPermissionCles', params, 
+    {
+      kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', 
+      timeout: 30_000, ajouterCertificat: true
+    }
+  )
 }
 
 async function getPermission(fuuids) {
@@ -176,11 +164,6 @@ function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
 function rechercheIndex(mots_cles, from_idx, size) {
   from_idx = from_idx?from_idx:0
   size = size?size:200
-  // return ConnexionClient.emitBlocking(
-  //   'rechercheIndex',
-  //   {query: mots_cles, start: from_idx, limit: size},
-  //   {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'solrrelai', action: CONST_DOMAINE_FICHIERS, attacherCertificat: true}
-  // )
   return ConnexionClient.emitBlocking(
     'rechercheIndex',
     {query: mots_cles, start: from_idx, limit: size, inclure_partages: true},
