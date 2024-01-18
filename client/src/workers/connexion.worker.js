@@ -4,8 +4,7 @@ import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 
 const DEBUG = false
 
-const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers',
-      CONST_DOMAINE_FICHIERS = 'fichiers'
+const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers'
 
 function getFavoris() {
   return ConnexionClient.emitBlocking('getFavoris', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
@@ -13,10 +12,6 @@ function getFavoris() {
 
 function getCorbeille() {
   return ConnexionClient.emitBlocking('getCorbeille', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getCorbeille', ajouterCertificat: true})
-}
-
-function getRecents(params) {
-  return ConnexionClient.emitBlocking('getRecents', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'activiteRecente', ajouterCertificat: true})
 }
 
 async function getClesFichiers(fuuids, usager, opts) {
@@ -383,7 +378,7 @@ expose({
 
     // Requetes et commandes privees
     getDocuments, getClesFichiers,
-    getFavoris, getCorbeille, getRecents, 
+    getFavoris, getCorbeille,
     creerCollection, toggleFavoris, 
     recupererDocuments, supprimerDocuments,
     decrireFichier, decrireCollection,

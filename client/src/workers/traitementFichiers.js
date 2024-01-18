@@ -1,11 +1,7 @@
-import { trouverLabelImage, trouverLabelVideo } from '@dugrema/millegrilles.reactjs/src/labelsRessources'
 import { ajouterUpload } from '../redux/uploaderSlice'
 import * as Comlink from 'comlink'
 import * as CONST_TRANSFERT from '../transferts/constantes'
 import {getPartsDownload} from '../transferts/storage'
-
-// const CACHE_TEMP_NAME = 'fichiersDechiffresTmp',
-//       CONST_1MB = 1024 * 1024
 
 function setup(workers) {
     return {
@@ -16,7 +12,6 @@ function setup(workers) {
         submitBatchUpload(doc) {
             return submitBatchUpload(workers, doc)
         },
-        resLoader,
         clean,
         downloadCache(fuuid, opts) {
             return downloadCache(workers, fuuid, opts)
@@ -88,65 +83,6 @@ async function getCleSecrete(workers, cle_id, opts) {
     return cleFichier
 }
 
-/* Donne acces aux ressources, selection via typeRessource. Chargement async. 
-   Retourne { src } qui peut etre un url ou un blob. 
-*/
-export function resLoader(fichier, typeRessource, opts) {
-    // console.debug("Res loader fichier %s : typeRessource %O, opts %O", fichier, typeRessource, opts)
-    opts = opts || {}
-    const { fileId } = fichier
-    const versionCourante = fichier.version_courante || {}
-    const { anime } = versionCourante
-    // console.debug("Loader %s avec sources %O (opts: %O)", typeRessource, fichier, opts)
-
-    let selection = ''
-    if(typeRessource === 'video') {
-        // Charger video pleine resolution
-        const {video} = versionCourante
-        if(video) {
-            const labelVideo = trouverLabelVideo(Object.keys(video), opts)
-            // console.debug("Label video trouve : '%s'", labelVideo)
-            selection = video[labelVideo]
-        }
-    } else if(typeRessource === 'image') {
-        // Charger image pleine resolution
-        const mimetype = versionCourante.mimetype
-        if(anime && mimetype.startsWith('image/')) {
-            // Pas un video et anime
-            selection = {versionCourante, fuuid: fichier.fuuid}
-        } else {
-            const images = versionCourante.images || {}
-            const labelImage = trouverLabelImage(Object.keys(images), opts)
-            // console.debug("Label image trouve : '%s'", labelImage)
-            selection = images[labelImage]
-        }
-    } else if(typeRessource === 'poster') {
-        // Charger poster (fallback image pleine resolution)
-        const images = versionCourante.images || {}
-        if(images.poster) selection = images.poster
-        else {
-            const labelImage = trouverLabelImage(Object.keys(images), opts)
-            // console.debug("Label image trouve : '%s'", labelImage)
-            selection = images[labelImage]
-        }
-    } else if(typeRessource === 'thumbnail') {
-        // Charger thumbnail (fallback image poster, sinon pleine resolution)
-        const images = versionCourante.images || {}
-        if(images.thumbnail) selection = images.thumbnail
-        else if(images.poster) selection = images.poster
-        else {
-            const labelImage = trouverLabelImage(Object.keys(images), opts)
-            // console.debug("Label image trouve : '%s'", labelImage)
-            selection = images[labelImage]
-        }
-    } else if(typeRessource === 'original') {
-        // Charger contenu original
-        selection = {versionCourante, fuuid: fichier.fuuid}
-    }
-
-    return false
-}
-
 async function clean(urlBlobPromise) {
     try {
         const urlBlob = await urlBlobPromise
@@ -157,13 +93,6 @@ async function clean(urlBlobPromise) {
     }
 }
 
-// export async function getResponseFuuid(fuuid) {
-//     if(fuuid.currentTarget) fuuid = fuuid.currentTarget.value
-//     const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-//     const cacheFichier = await cacheTmp.match('/'+fuuid)
-//     return cacheFichier
-// }
-  
 export async function downloadCache(workers, fuuid, opts) {
     opts = opts || {}
     const { downloadFichiersDao } = workers
@@ -221,7 +150,7 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
     const { acceptedFiles, /*token, batchId, cuuid, */ userId, breadcrumbPath } = params
     const { setProgres, signalAnnuler } = opts
-    const { transfertFichiers, transfertUploadFichiers, usagerDao } = workers
+    const { transfertUploadFichiers, usagerDao } = workers
     // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
 
     // const certificatsMaitredescles = await workers.connexion.getClesChiffrage()

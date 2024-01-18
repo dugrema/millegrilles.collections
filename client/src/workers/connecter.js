@@ -16,14 +16,6 @@ export async function connecter(workers, setUsagerState, setEtatConnexion, setEt
     const setEtatFormatteurMessageCb = proxy(setEtatFormatteurMessage)
     await connexion.setCallbacks(setEtatConnexionCb, setUsagerCb, setEtatFormatteurMessageCb)
 
-    // try {
-    //     const axiosImport = await import('axios')
-    //     const axios = axiosImport.default
-    //     await axios.get('/collections/initSession')
-    // } catch(err) {
-    //     console.error("Erreur init session : %O", err)
-    // }
-
     return connexion.connecter(location.href, {DEBUG: false, reconnectionDelay: 5_000})
 }
 
@@ -44,20 +36,12 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
     if(usager && usager.certificat) {
         const { 
             connexion, chiffrage, 
-            transfertFichiers, transfertUploadFichiers, transfertDownloadFichiers
+            transfertUploadFichiers, transfertDownloadFichiers
         } = workers
         const fullchain = usager.certificat,
               caPem = usager.ca
 
         const certificatPem = fullchain.join('')
-
-        // // Initialiser le CertificateStore
-        // console.debug("connexion initialiserCertificateStore")
-        // await connexion.initialiserCertificateStore(caPem)
-        // console.debug("chiffrage initialiserCertificateStore")
-        // await chiffrage.initialiserCertificateStore(caPem, {isPEM: true, DEBUG: false})
-
-        // await x509.init(caPem)
 
         // Init cles privees
         await chiffrage.initialiserFormatteurMessage(certificatPem, usager.clePriveePem, {DEBUG: false})

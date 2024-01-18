@@ -21,8 +21,7 @@ const { preparerCipher, preparerCommandeMaitrecles } = chiffrage
 var _uploadsPending = [],
     _uploadEnCours = null,
     _uploadsCompletes = [],
-    _lockHachageChiffre = false,
-    _lockHachageDechiffre = false
+    _lockHachageChiffre = false
 
 // Callback etat : (nbFichiersPending, pctFichierEnCours, {encours: uuid, complete: uuid})
 var _callbackEtatUpload = null,
@@ -41,11 +40,7 @@ const _hachageDechiffre = new hachage.Hacheur({hashingCode: 'blake2b-512', DEBUG
 _pathServeur.pathname = '/collections/fichiers'
 
 const CONST_1MB = 1024 * 1024
-const THRESHOLD_DECHIFFRAGE_DIRECT = CONST_1MB * 5
-const THRESHOLD_512kb = 10 * CONST_1MB,
-      THRESHOLD_1mb = 25 * CONST_1MB,
-      THRESHOLD_2mb = 50 * CONST_1MB,
-      THRESHOLD_5mb = 100 * CONST_1MB,
+const THRESHOLD_5mb = 100 * CONST_1MB,
       THRESHOLD_10mb = 250 * CONST_1MB,
       THRESHOLD_20mb = 500 * CONST_1MB,
       THRESHOLD_50mb = 1000 * CONST_1MB
@@ -53,23 +48,12 @@ const THRESHOLD_512kb = 10 * CONST_1MB,
 // Retourne la taille a utiliser pour les batch
 function getUploadBatchSize(fileSize) {
     if(!fileSize) throw new Error("NaN")
-    // if(fileSize < THRESHOLD_512kb) return 512 * 1024
-    // if(fileSize < THRESHOLD_1mb) return 1024 * 1024
-    // if(fileSize < THRESHOLD_2mb) return 2 * CONST_1MB
     if(fileSize < THRESHOLD_5mb) return 5 * CONST_1MB
     if(fileSize < THRESHOLD_10mb) return 10 * CONST_1MB
     if(fileSize < THRESHOLD_20mb) return 20 * CONST_1MB
     if(fileSize < THRESHOLD_50mb) return 50 * CONST_1MB
     return 100 * CONST_1MB
 }
-
-// const UPLOAD_BATCH_SIZE = 5 * 1024 * 1024,  // 5 MB
-//       CONST_BUFFER_CHIFFRAGE = 64 * 1024
-const STATUS_NOUVEAU = 1,
-      STATUS_ENCOURS = 2,
-      STATUS_SUCCES = 3,
-      STATUS_ERREUR = 4,
-      STATUS_NONCONFIRME = 5
 
 const ETAT_PREPARATION = 1,
       ETAT_PRET = 2
@@ -417,7 +401,7 @@ async function traiterFichier(file, tailleTotale, params, fcts) {
     }
 
     const now = new Date().getTime()
-    const { userId, cuuid, token, skipTransactions } = params
+    const { userId, cuuid, token } = params
     const { updateFichier } = fcts
 
     let demarrer = true
@@ -455,9 +439,7 @@ async function traiterFichier(file, tailleTotale, params, fcts) {
 
     try {
         const paramsConserver = {...params, correlation, tailleTotale}
-        const debutConserverFichier = new Date().getTime()
         const etatFinalChiffrage = await conserverFichier(file, fileMappe, paramsConserver, fcts)
-        // console.debug("traiterFichier Temps conserver fichier %d ms", new Date().getTime()-debutConserverFichier)
 
         const docIdbMaj = await formatterDocIdb(docIdb, etatFinalChiffrage)
 
@@ -574,12 +556,6 @@ async function partUploader(token, correlation, position, partContent, opts) {
 export async function confirmerUpload(token, correlation, opts) {
     opts = opts || {}
     const { transaction } = opts
-    if(transaction) {
-        var attachements = transaction.attachements || {},
-            cle = opts.cle || attachements.cle
-    } else {
-        var attachements = null, cle = null
-    }
     // console.debug("confirmerUpload %s cle : %O, transaction : %O", correlation, cle, transaction)
 
     let hachage = opts.hachage
@@ -669,7 +645,8 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
     await marquerUploadEtat(correlation, {retryCount})
 
     const progressFichier  = state => {
-        const {loaded, total, progress, bytes, estimated, rate, upload} = state
+        // const {loaded, total, progress, bytes, estimated, rate, upload} = state
+        const {loaded, rate} = state
         // console.debug("Progress fichier : ", state)
         const positionCourante = tailleCompletee + loaded
         marquerUploadEtat(correlation, {tailleCompletee: positionCourante, rate})
@@ -687,7 +664,7 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
             onUploadProgress: progressFichier,
         }
         // console.debug("uploadFichier Debut upload %s", correlation)
-        const resultatUpload = await partUploader(token, correlation, position, partContent, opts)
+        await partUploader(token, correlation, position, partContent, opts)
         // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
 
         if(cancelToken && cancelToken.cancelled) {
@@ -747,8 +724,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
     const zipFileReader = new BlobReader(fichier)
     const zipReader = new ZipReader(zipFileReader)
 
-    const ETAT_PREPARATION = 1,
-          ETAT_PRET = 2
+    const ETAT_PREPARATION = 1
 
     const mapExtensions = getExtMimetypeMap()
     console.debug("Map extensions : ", mapExtensions)

@@ -9,8 +9,6 @@ import { supprimerCacheFuuid, getPartsDownload, streamPartsChiffrees, streamToCa
 
 import * as CONST_TRANSFERT from './constantes'
 
-const SLICE_NAME = 'downloader'
-
 const { preparerDecipher } = chiffrage
 
 var _urlDownload = '/collections/fichiers',
@@ -29,10 +27,7 @@ var _downloadEnCours = null,
     _callbackAjouterChunkIdb = null
 //    , _fuuidsAnnulerDownload = null  // Array de fuuids pour annuler le download en cours - doit matcher le fuuid courant
 
-const STATUS_NOUVEAU = 1,
-  STATUS_ENCOURS = 2,
-  STATUS_SUCCES = 3,
-  STATUS_ERREUR = 4
+const STATUS_ENCOURS = 2
 
 export function down_setNomIdb(nomIdb) {
   _nomIdb = nomIdb
@@ -47,7 +42,7 @@ export async function down_getEtatCourant() {
   const downloads = []
 
   while(cursor) {
-    const {key, value} = cursor
+    const value = cursor.value
     // console.log(key, value)
     downloads.push(value)
     cursor = await cursor.continue()
@@ -77,13 +72,13 @@ function trierPending(a, b) {
   return aDate.getTime() - bDate.getTime()
 }
 
-async function majDownload(hachage_bytes, value) {
-  const db = await ouvrirIdb()
-  const data = await db.transaction(STORE_DOWNLOADS, 'readonly').objectStore(STORE_DOWNLOADS).get(hachage_bytes)
-  await db.transaction(STORE_DOWNLOADS, 'readwrite')
-    .objectStore(STORE_DOWNLOADS)
-    .put({...data, ...value})
-}
+// async function majDownload(hachage_bytes, value) {
+//   const db = await ouvrirIdb()
+//   const data = await db.transaction(STORE_DOWNLOADS, 'readonly').objectStore(STORE_DOWNLOADS).get(hachage_bytes)
+//   await db.transaction(STORE_DOWNLOADS, 'readwrite')
+//     .objectStore(STORE_DOWNLOADS)
+//     .put({...data, ...value})
+// }
 
 /** Fetch fichier, permet d'acceder au reader */
 async function fetchAvecProgress(url, opts) {
@@ -93,8 +88,7 @@ async function fetchAvecProgress(url, opts) {
         position = opts.position || 0,
         partSize = opts.partSize,
         taille = opts.taille,
-        signal = opts.signal,  // abortController.signal (optionnel)
-        DEBUG = opts.DEBUG
+        signal = opts.signal
 
   var dataProcessor = opts.dataProcessor
 
@@ -150,7 +144,6 @@ async function fetchAvecProgress(url, opts) {
 async function preparerDataProcessor(opts) {
   // console.debug("preparerDataProcessor opts : %O", opts)
   opts = opts || {}
-  const DEBUG = opts.DEBUG || false
   let {password, passwordChiffre} = opts
   let blockCipher = null
 
@@ -428,7 +421,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   opts = opts || {}
   // console.debug("dechiffrerPartsDownload params %O, opts %O", params, opts)
   const { downloadFichiersDao } = workers
-  const {fuuid, filename, mimetype, password, passwordChiffre} = params
+  const {fuuid, password, passwordChiffre} = params
   if((!password && !passwordChiffre)) { throw new Error('Params dechiffrage absents') }
 
   const infoDownload = await downloadFichiersDao.getDownload(fuuid)
@@ -513,40 +506,19 @@ async function emettreEtat(flags) {
   }
 }
 
-// export async function down_annulerDownload(fuuid) {
-
-//   const etatAnnule = {complete: true, status: STATUS_ERREUR, annuler: true, dateComplete: new Date()}
-
-//   if(!fuuid) {
-//     // console.debug("Annuler tous les downloads")
-//     await majIdb(item=>item.status===STATUS_NOUVEAU, etatAnnule)
-//     if(_downloadEnCours) _downloadEnCours.annuler = true
-//   } else {
-//     // console.warn("Annuler download %s", fuuid)
-//     if(_downloadEnCours && _downloadEnCours.fuuid === fuuid) {
-//       _downloadEnCours.annuler = true
-//     } else {
-//       await majDownload(fuuid, etatAnnule)
+// /** Maj des downloads avec filtre/values */
+// async function majIdb(filtre, values) {
+//   const db = await ouvrirIdb()
+//   const store = db.transaction(STORE_DOWNLOADS, 'readwrite').objectStore(STORE_DOWNLOADS)
+//   let cursor = await store.openCursor()
+//   while(cursor) {
+//     const { value } = cursor
+//     if(filtre(value)) {
+//       cursor.update({...value, ...values})
 //     }
+//     cursor = await cursor.continue()
 //   }
-
-//   // Met a jour le client
-//   emettreEtat()
 // }
-
-/** Maj des downloads avec filtre/values */
-async function majIdb(filtre, values) {
-  const db = await ouvrirIdb()
-  const store = db.transaction(STORE_DOWNLOADS, 'readwrite').objectStore(STORE_DOWNLOADS)
-  let cursor = await store.openCursor()
-  while(cursor) {
-    const { key, value } = cursor
-    if(filtre(value)) {
-      cursor.update({...value, ...values})
-    }
-    cursor = await cursor.continue()
-  }
-}
 
 function ouvrirIdb() {
   return openDB(_nomIdb)
@@ -677,7 +649,7 @@ export async function genererFichierZip(workers, downloadInfo, getAborted, progr
   headersModifies.set('content-disposition', `attachment; filename="${encodeURIComponent('millegrilles.zip')}"`)
 
   // Sauvegarder blob 
-  const resultat = await streamToCacheParts(fuuidZip, resultatZip)
+  await streamToCacheParts(fuuidZip, resultatZip)
 
   // Verifier si tous les fichiers ont ete traites
   const fuuidsManquants = []
@@ -718,7 +690,6 @@ async function* ajouterRepertoireDansZip(workers, node, parents, opts) {
 
 async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts) {
   opts = opts || {}
-  const { downloadFichiersDao } = workers
   const operation = opts.operation || 'stream'
   const fuuidsSet = opts.fuuidsSet
   const getAborted = opts.getAborted
@@ -739,10 +710,6 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
           
           if(operation === 'stream') {
               // Ouvrir le stream pour le fuuid
-              // const cacheTmp = await caches.open(CACHE_TEMP_NAME)
-              // const response = await cacheTmp.match('/'+fuuid)
-              // const fichierDownload = await downloadFichiersDao.getDownloadComplet(fuuid)
-              // const blob = fichierDownload.blob
               const partsDechiffre = await getPartsDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
               if(partsDechiffre.length === 0) {
                 throw new Error(`fichier ${fuuid} manquant`)
