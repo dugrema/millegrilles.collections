@@ -861,9 +861,11 @@ function InformationListe(_props) {
 
     const liste = useSelector(state => state.fichiers.liste)
     const cuuid = useSelector(state => state.fichiers.cuuid)
-    const chargementTermine = useSelector(state => state.fichiers.dechiffrageInitialComplete)?true:false
+    // const dechiffrageInitialComplete = useSelector(state => state.fichiers.dechiffrageInitialComplete)?true:false
+    const etapeChargement = useSelector(state => state.fichiers.etapeChargement)
+    const chargementTermine = etapeChargement === 5
 
-    if (!liste && !chargementTermine) return <p>Chargement en cours...</p>
+    if (!liste || !chargementTermine) return <p>Chargement en cours...</p>
 
     if(!cuuid) {
         const tailleListe = (liste && liste.length) || 0

@@ -748,6 +748,7 @@ export function AffichagePrincipal(props) {
     const liste = useSelector(state => state.fichiers.liste)
     const sortKeys = useSelector(state => state.fichiers.sortKeys)
     const selection = useSelector(state => state.fichiers.selection)
+    const etapeChargement = useSelector(state => state.fichiers.etapeChargement)
     const colonnes = useMemo(()=>preparerColonnes(), [preparerColonnes])
 
     const isMobile = capabilities.mobile
@@ -758,13 +759,13 @@ export function AffichagePrincipal(props) {
     }, [isMobile])
 
     const [listeAffichee, listeComplete] = useMemo(()=>{
-        if(!liste) return ''                // Liste vide
+        if(!liste || etapeChargement < 5) return ''                // Liste vide
         if(!tailleAffichee) return [liste, true]    // Liste complete
         const listeFiltree = liste.filter((item, idx)=>idx<tailleAffichee)  // Filtre
         const listeComplete = listeFiltree === liste.length
         // console.debug("Liste, %O, Liste filtree %O, liste est complete? %s", liste, listeFiltree, listeComplete)
         return [listeFiltree, listeComplete]
-    }, [liste, tailleAffichee])
+    }, [liste, tailleAffichee, etapeChargement])
 
     const colonnesEffectives = useMemo(()=>{
         const tri = {
@@ -857,8 +858,9 @@ export function InformationListe(_props) {
 
     const liste = useSelector(state => state.fichiers.liste)
     const cuuid = useSelector(state => state.fichiers.cuuid)
+    const etapeChargement = useSelector(state => state.fichiers.etapeChargement)
 
-    if (!liste) return <p>Chargement en cours...</p>
+    if (!liste || etapeChargement < 5) return <p>Chargement en cours...</p>
 
     if(!cuuid) {
         const tailleListe = (liste && liste.length) || 0
