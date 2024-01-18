@@ -1313,14 +1313,20 @@ async function dechiffrageMiddlewareListener(workers, actions, thunks, nomSlice,
             // Downloader les fichiers du repertoire courant en utilisant la liste IDB
             console.debug("dechiffrageMiddlewareListener Effectuer chargement de la liste (etape est : %d)", etapeChargement)
             const task = listenerApi.fork( forkApi => chargerListe(workers, listenerApi, actions, thunks, nomSlice) )
-            const {value: listeChargee} = await task.result
+            const taskResult = await task.result
+            const listeChargee = taskResult.value
             
-            console.debug("Liste chargee : ", listeChargee)
-            // Conserver la liste dans state (one-shot)
-            listenerApi.dispatch(actions.push({liste: listeChargee}))
+            if(taskResult.status === 'ok') {
+                console.debug("Liste chargee : ", listeChargee)
+                // Conserver la liste dans state (one-shot)
+                listenerApi.dispatch(actions.push({liste: listeChargee}))
 
-            console.debug("Chargement tuuids dirty termine, passer au dechiffrage")
-            listenerApi.dispatch(actions.setEtapeChargement(CONST_ETAPE_CHARGEMENT_DECHIFFRAGE))
+                console.debug("Chargement tuuids dirty termine, passer au dechiffrage")
+                listenerApi.dispatch(actions.setEtapeChargement(CONST_ETAPE_CHARGEMENT_DECHIFFRAGE))
+            } else {
+                console.error("Erreur traitement chargerListe, resultat ", taskResult)
+            }
+
             etapeChargement = CONST_ETAPE_CHARGEMENT_DECHIFFRAGE
         } 
         
@@ -1347,7 +1353,7 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
 
     let debutChargerListe = new Date().getTime()
 
-    const CONST_FICHIER_BATCH_SIZE = 5
+    const CONST_FICHIER_BATCH_SIZE = 30
 
     let liste = []
 

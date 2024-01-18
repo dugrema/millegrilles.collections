@@ -114,7 +114,7 @@ function getDocuments(tuuids, opts) {
     {tuuids_documents: tuuids, partage, contact_id},
     {
       kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'documentsParTuuid', 
-      timeout: 30_000, attacherCertificat: true
+      timeout: 60_000, attacherCertificat: true
     }
   )
 }
