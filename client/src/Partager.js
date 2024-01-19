@@ -597,8 +597,14 @@ function ListePartagesUsager(props) {
         const tuuid = e.currentTarget.value
         // console.debug("ListePartagesUsager Supprimer partage %s avec usager %s", tuuid, contactId)
         workers.connexion.supprimerPartageUsager(contactId, tuuid)
+            .then(reponse=>{
+                // console.debug("supprimerPartageUsager Reponse ", reponse)
+                if(reponse.ok === true) {
+                    dispatch(fichiersActions.retirerTuuidsListe({tuuids: [tuuid]}))
+                }
+            })
             .catch(err=>console.error("Erreur suppression partage ", err))
-    }, [workers, contactId])
+    }, [workers, dispatch, contactId])
 
     // Charger les informations de dossiers partages avec le contact
     useEffect(()=>{

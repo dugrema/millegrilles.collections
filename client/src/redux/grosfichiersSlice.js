@@ -463,7 +463,7 @@ function setParametresRechercheAction(state, action) {
 function retirerTuuidsListeAction(state, action) {
     const {cuuid, tuuids} = action.payload
     // console.debug("retirerTuuidsListeAction Retirer de %s tuuids %O", cuuid, tuuids)
-    if(cuuid === state.cuuid) {
+    if(!cuuid || cuuid === state.cuuid) {
         const listeMaj = state.liste.filter(item=>!tuuids.includes(item.tuuid))
         state.liste = listeMaj
     }
