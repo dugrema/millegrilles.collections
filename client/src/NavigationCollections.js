@@ -887,11 +887,11 @@ function AfficherRejets(props) {
 // }
 
 function traiterCollectionEvenement(workers, dispatch, evenement) {
-    // console.trace("traiterCollectionEvenement ", evenement)
+    console.debug("traiterCollectionEvenement ", evenement)
 }
 
 async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
-    // console.trace("traiterContenuCollectionEvenement ", evenement)
+    console.debug("traiterContenuCollectionEvenement ", evenement)
 
     const message = evenement.message || {}
     
@@ -909,7 +909,7 @@ async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
     const promises = []
 
     if(tuuids.length > 0) {
-        // console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
+        console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
         promises.push(dispatch(fichiersThunks.chargerTuuids(workers, tuuids)))
     }
 

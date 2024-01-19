@@ -537,7 +537,8 @@ export function creerThunks(actions, nomSlice) {
     
     async function traiterChargerTuuids(workers, tuuids, opts, dispatch, getState) {
         opts = opts || {}
-        if(getState().etapeChargement < CONST_ETAPE_CHARGEMENT_LISTE) {
+        const etapeChargement = getState().etapeChargement
+        if(etapeChargement < CONST_ETAPE_CHARGEMENT_LISTE) {
             // Skip, chargement en cours
             console.debug("traiterChargerTuuids Skip, chargement en cours")
             return
@@ -549,7 +550,9 @@ export function creerThunks(actions, nomSlice) {
 
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
 
-        const resultat = await chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, {...opts, partage})
+        const resultat = await chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, {...opts, partage, etapeChargement})
+
+        // console.debug("traiterChargerTuuids Resultats charges : ", resultat)
 
         let listeCourante = getState().fichiers.liste
         if(!listeCourante) {
@@ -1547,6 +1550,7 @@ async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, conta
             listeResultat.push({...item})
 
             // Mettre a jour dans IDB
+            item.dechiffre = !chiffre
             await collectionsDao.updateDocument(item, {dirty: false, dechiffre: !chiffre})
                 .catch(err=>console.error("Erreur maj document %O dans idb : %O", item, err))
 
