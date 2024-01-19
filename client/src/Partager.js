@@ -537,57 +537,14 @@ function PageContact(props) {
 
     const { contactId, fermer } = props
 
-    // const workers = useWorkers(),
-    //       dispatch = useDispatch()
-
-    const etatPret = useEtatPret()
     const contacts = useSelector(state=>state.partager.listeContacts)
-    // const userId = useSelector(state=>state.fichiers.userId)
-    const collections = useSelector(state=>state.fichiers.liste)
-
-    const [modePartage, setModePartage] = useState('usager')
 
     const contact = useMemo(()=>{
         if(!contacts) return
         return contacts.filter(item=>item.contact_id === contactId).pop()
     }, [contacts])
-    
-    // const supprimerPartageCb = useCallback(e=>{
-    //     const tuuid = e.currentTarget.value
-    //     workers.connexion.supprimerPartageUsager(contactId, tuuid)
-    //         .catch(err=>console.error("Erreur suppression partage ", err))
-    // }, [workers])
-
-    // // Charger les informations de dossiers partages avec le contact
-    // useEffect(()=>{
-    //     if(!etatPret || !userId || !contact) return  // Rien a faire
-    //     if(modePartage === 'usager') {
-    //         dispatch(fichiersThunks.afficherPartagesUsager(workers, contactId))
-    //             .catch(err=>console.error('Partager Erreur chargement partages ', err))
-    //     } else if(modePartage === 'contact') {
-    //         dispatch(fichiersThunks.afficherPartagesContact(workers, contactId))
-    //             .catch(err=>console.error('Partager Erreur chargement partages ', err))
-    //     }
-    // }, [workers, etatPret, userId, contactId, modePartage])
-
-    // useEffect(()=>{
-    //     console.debug("Collections partagees : %O", collections)
-    // }, [collections])
 
     if(!contact) return 'Aucune information sur le contact'
-
-    // let ListePartages = 'Aucune information sur le contact'
-    // switch(modePartage) {
-    //     case 'usager': ListePartages = ListePartagesUsager; break
-    //     // case 'contact': ListePartages = ListePartagesContact; break
-    //     default:
-    //         break
-    // }
-
-    // if(modePartage === 'usager') return <ListePartagesUsager contactId={contactId} fermer={fermer} />
-    // if(modePartage === 'contact') return <ListePartagesContact contactId={contactId} fermer={fermer} />
-
-    // return 'Mode non supporte'
 
     return (
         <div>
@@ -650,10 +607,6 @@ function ListePartagesUsager(props) {
             .catch(err=>console.error('Partager Erreur chargement partages ', err))
     }, [workers, etatPret, userId, contactId])
 
-    // useEffect(()=>{
-    //     console.debug("Collections partagees : %O", collections)
-    // }, [collections])
-
     if(!contact) return 'Aucune information sur le contact'
 
     return (
@@ -672,69 +625,6 @@ function ListePartagesUsager(props) {
         </div>
     )
 }
-
-// function ListePartagesContact(props) {
-//     const { contactId, fermer } = props
-
-//     const workers = useWorkers(),
-//           dispatch = useDispatch()
-
-//     const etatPret = useEtatPret()
-//     const contacts = useSelector(state=>state.partager.listeContacts)
-//     const userId = useSelector(state=>state.fichiers.userId)
-//     const collections = useSelector(state=>state.fichiers.liste)
-
-//     const contact = useMemo(()=>{
-//         if(!contacts) return
-//         return contacts.filter(item=>item.contact_id === contactId).pop()
-//     }, [contacts])
-    
-//     const supprimerPartageCb = useCallback(e=>{
-//         const tuuid = e.currentTarget.value
-//         workers.connexion.supprimerPartageUsager(contactId, tuuid)
-//             .catch(err=>console.error("Erreur suppression partage ", err))
-//     }, [workers])
-
-//     // Charger les informations de dossiers partages avec le contact
-//     useEffect(()=>{
-//         if(!etatPret || !userId || !contact) return  // Rien a faire
-//         dispatch(fichiersThunks.afficherPartagesContact(workers, contactId))
-//             .catch(err=>console.error('Partager Erreur chargement partages ', err))
-//     }, [workers, etatPret, userId, contactId])
-
-//     useEffect(()=>{
-//         console.debug("Collections partagees : %O", collections)
-//     }, [collections])
-
-//     if(!contact) return 'Aucune information sur le contact'
-
-//     return (
-//         <div>
-//             <Row>
-//                 <Col xs={11}>
-//                     <h3>Partages avec {contact.nom_usager}</h3>
-//                 </Col>
-//                 <Col>
-//                     <Button variant="secondary" onClick={fermer}>X</Button>
-//                 </Col>
-//             </Row>
-            
-//             {collections && collections.map(item=>{
-//                 return (
-//                     <Row>
-//                         <Col>
-//                             {item.nom||item.tuuid}
-//                         </Col>
-//                         <Col>
-//                             <Button variant="secondary" value={item.tuuid} onClick={supprimerPartageCb}>Supprimer</Button>
-//                         </Col>
-//                     </Row>
-//                 )
-//             })}
-
-//         </div>
-//     )
-// }
 
 function preparerColonnes(workers, getState, contactId) {
 
@@ -783,23 +673,16 @@ function Modals(props) {
     const dispatch = useDispatch()
     const workers = useWorkers()
 
-    const downloadAction = useCallback((params) => {
-        let fichier = liste.filter(item=>item.tuuid === params.tuuid).pop()
+    const downloadAction = useCallback(tuuid => {
+        if(typeof(tuuid) !== 'string') tuuid = tuuid.tuuid
+        // console.debug("DownloadAction tuuid %O, liste %O", tuuid, liste)
+        const fichier = liste.filter(item=>item.tuuid === tuuid).pop()
         if(fichier) {
-            const videos = fichier.version_courante.video
-            const infoVideo = Object.values(videos).filter(item=>item.fuuid_video === params.fuuid).pop()
-            // console.debug("!!! DownloadAction params %O, fichier %O, infoVideo: %O", params, fichier, infoVideo)
-            // Set le fuuid de video a downloader, params dechiffrage
-            fichier = {
-                ...fichier, 
-                infoDechiffrage: infoVideo,
-                fuuidDownload: params.fuuid
-            }
-            throw new Error("fix me")
-            // dispatch(ajouterDownload(workers, fichier))
-            //     .catch(err=>erreurCb(err, 'Erreur ajout download'))
+            const fichierCopy = {...fichier, dechiffre: false, contactId}
+            dispatch(ajouterDownload(workers, fichierCopy))
+                .catch(err=>erreurCb(err, 'Erreur ajout download'))
         }
-    }, [workers, dispatch, liste])
+    }, [workers, dispatch, liste, contactId])
 
     return (
         <>
@@ -826,6 +709,7 @@ function Modals(props) {
                 setShowPreview={setShowPreview}
                 tuuidSelectionne={tuuidSelectionne}
                 fichiers={liste}
+                downloadAction={downloadAction}
               />
 
             <CopierModal 
