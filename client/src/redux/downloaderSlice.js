@@ -255,11 +255,13 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
             fuuidCle,
             taille,
             userId,
+            dechiffre: docDownload.url?true:false,
             etat: ETAT_PRET,
             dateCreation: new Date().getTime(),
         }
 
         // Conserver le nouveau download dans IDB
+        // console.debug("ajouterDownloadAction Ajouter download dans IDB ", nouveauDownload)
         await downloadFichiersDao.updateFichierDownload(nouveauDownload)
 
         dispatch(pushDownload(nouveauDownload))
@@ -763,6 +765,8 @@ async function downloadFichier(workers, dispatch, fichier, getAborted) {
             password: valueCles.cleSecrete,
         }
         await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDechiffrage, progressCb)
+    } else {
+        // console.debug("downloadFichier Fichier %s deja dechiffre", fuuid)
     }
     await marquerDownloadEtat(workers, dispatch, fuuid, {etat: ETAT_DOWNLOAD_SUCCES_DECHIFFRE, dechiffre: true, DEBUG: false})
         .catch(err=>console.warn("progressCb Erreur maj download ", err))
