@@ -860,6 +860,15 @@ export function InformationListe(_props) {
     const cuuid = useSelector(state => state.fichiers.cuuid)
     const etapeChargement = useSelector(state => state.fichiers.etapeChargement)
 
+    if(etapeChargement === 6) {
+        return (
+            <Alert variant="danger">
+                <Alert.Heading>Erreur</Alert.Heading>
+                <p>Erreur de chargement du contenu pour ce reperoire.</p>
+            </Alert>
+        )
+    }
+
     if (!liste || etapeChargement < 5) return <p>Chargement en cours...</p>
 
     if(!cuuid) {

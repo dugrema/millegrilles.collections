@@ -1,4 +1,3 @@
-// import {supporteFormatWebp, /*supporteFormatWebm*/ } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes.js'
 
@@ -16,11 +15,6 @@ const Icones = {
     ICONE_FOLDER, ICONE_FICHIER, ICONE_FICHIER_PDF, ICONE_FICHIER_IMAGE, ICONE_FICHIER_AUDIO, 
     ICONE_FICHIER_VIDEO, ICONE_FICHIER_TEXT, ICONE_FICHIER_ZIP, ICONE_QUESTION,
 }
-
-// Detection format media
-// const supporteWebm = supporteFormatWebm()
-//let supporteWebp
-//supporteFormatWebp().then(supporte=>supporteWebp=supporte).catch(err=>console.warn("Erreur detection webp : %O", err))
 
 export { Icones }
 

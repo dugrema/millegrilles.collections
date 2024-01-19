@@ -20,7 +20,8 @@ const CONST_ETAPE_CHARGEMENT_INITIAL = 1,
       CONST_ETAPE_CHARGEMENT_SYNC = 2,
       CONST_ETAPE_CHARGEMENT_LISTE = 3,
       CONST_ETAPE_CHARGEMENT_DECHIFFRAGE = 4,
-      CONST_ETAPE_CHARGEMENT_COMPLETE = 5
+      CONST_ETAPE_CHARGEMENT_COMPLETE = 5,
+      CONST_ETAPE_CHARGEMENT_ERREUR = 6
 
 const initialState = {
     idbInitialise: false,       // Flag IDB initialise
@@ -139,11 +140,13 @@ function pushAction(state, action) {
 
 function remplacerFichiersAction(state, action) {
     let nouvelleListe = []
-    const remplacements = action.payload.reduce((acc, item)=>{
+    const listePayload = action.payload || []
+    const remplacements = listePayload.reduce((acc, item)=>{
         acc[item.tuuid] = item
         return acc
     }, {})
-    for(const item of state.liste) {
+    const copieListe = state.liste?[...state.liste]:[]
+    for(const item of copieListe) {
         const tuuid = item.tuuid
         if(remplacements[tuuid]) {
             nouvelleListe.push(remplacements[tuuid])
@@ -436,7 +439,7 @@ function incrementerNombreAffichesAction(state, action) {
         state.maxNombreAffiches = state.maxNombreAffiches + INCREMENT_TAILLE_AFFICHEE
         if(state.dechiffrageInitialComplete === true) {
             // Verifier taille totale des fichiers
-            const nombreFichiers = state.liste.length
+            const nombreFichiers = state.liste?state.liste.length:0
             if(state.maxNombreAffiches >= nombreFichiers) {
                 state.maxNombreAffiches = null
             }
@@ -448,7 +451,7 @@ function incrementerNombreAffichesAction(state, action) {
 function setDechiffrageCompleteAction(state, action) {
     state.dechiffrageInitialComplete = true
     // console.debug("Dechiffrage complete")
-    if(state.maxNombreAffiches >= state.liste.length) {
+    if(state.liste && state.maxNombreAffiches >= state.liste.length) {
         state.maxNombreAffiches = null
     }
 }
@@ -583,68 +586,73 @@ export function creerThunks(actions, nomSlice) {
     async function traiterRafraichirCollection(workers, dispatch, getState, promisesPreparationCollection) {
         // console.debug('traiterRafraichirCollection')
         const { collectionsDao } = workers
-    
-        const state = getState()[nomSlice]
-        const { userId, cuuid, partageContactId: contactId } = state
-    
-        console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
-    
-        // Charger le contenu de la collection deja connu
-        promisesPreparationCollection = promisesPreparationCollection || []
-        promisesPreparationCollection.push(collectionsDao.getParCollection(cuuid, userId))
 
-        // Attendre que les listeners soient prets, recuperer contenu idb
-        const contenuIdb = (await Promise.all(promisesPreparationCollection)).pop()
-
-        // Nettoyer la liste
-        dispatch(clear())
+        try {
+            const state = getState()[nomSlice]
+            const { userId, cuuid, partageContactId: contactId } = state
         
-        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        let documentsExistants = new Set()
-        if(contenuIdb) {
-            const { documents, collection } = contenuIdb
+            console.debug("Rafraichir '%s' pour userId %O (contactId: %O)", cuuid, userId, contactId)
+        
+            // Charger le contenu de la collection deja connu
+            promisesPreparationCollection = promisesPreparationCollection || []
+            promisesPreparationCollection.push(collectionsDao.getParCollection(cuuid, userId))
 
-            // Conserver la liste de tuuids pour determiner si on doit les retirer (e.g. deplace vers autre collection)
-            for (const doc of documents) { documentsExistants.add(doc.tuuid) }
+            // Attendre que les listeners soient prets, recuperer contenu idb
+            const contenuIdb = (await Promise.all(promisesPreparationCollection)).pop()
 
-            // console.debug("Push documents provenance idb : %O", documents)
-            dispatch(setCollectionInfo(collection))
-            dispatch(push({liste: documents}))
-        }
-    
-        let debutSync = new Date().getTime()
-        let compteur = 0
-        for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
-            let resultatSync = await syncCollection(
-                dispatch, workers, cuuid, CONST_SYNC_BATCH_SIZE, compteur, 
-                {existants: documentsExistants, contactId}
-            )
-            // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
-            if( ! resultatSync || ! resultatSync.liste ) break
-            compteur += resultatSync.liste.length
-            if( resultatSync.complete ) break
-        }
-        if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCollection")
+            // Nettoyer la liste
+            dispatch(clear())
+            
+            // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+            let documentsExistants = new Set()
+            if(contenuIdb) {
+                const { documents, collection } = contenuIdb
 
-        console.debug("Fin sync, duree %d", new Date().getTime()-debutSync)
-    
-        if(documentsExistants.size > 0) {
-            // console.debug("Documents retires/deplaces de '%s' : %O", cuuid, documentsExistants)
-            const tuuids = []
-            for(const tuuid of documentsExistants) {
-                dispatch(mergeTuuidData({tuuid, data: {tuuid, cuuid, supprime: true}}))
-                tuuids.push(tuuid)
+                // Conserver la liste de tuuids pour determiner si on doit les retirer (e.g. deplace vers autre collection)
+                for (const doc of documents) { documentsExistants.add(doc.tuuid) }
+
+                // console.debug("Push documents provenance idb : %O", documents)
+                dispatch(setCollectionInfo(collection))
+                dispatch(push({liste: documents}))
             }
-            await collectionsDao.deleteDocuments(tuuids)
+    
+            let debutSync = new Date().getTime()
+            let compteur = 0
+            for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
+                let resultatSync = await syncCollection(
+                    dispatch, workers, cuuid, CONST_SYNC_BATCH_SIZE, compteur, 
+                    {existants: documentsExistants, contactId}
+                )
+                // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+                if( ! resultatSync || ! resultatSync.liste ) break
+                compteur += resultatSync.liste.length
+                if( resultatSync.complete ) break
+            }
+            if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCollection")
+
+            console.debug("Fin sync, duree %d", new Date().getTime()-debutSync)
+        
+            if(documentsExistants.size > 0) {
+                // console.debug("Documents retires/deplaces de '%s' : %O", cuuid, documentsExistants)
+                const tuuids = []
+                for(const tuuid of documentsExistants) {
+                    dispatch(mergeTuuidData({tuuid, data: {tuuid, cuuid, supprime: true}}))
+                    tuuids.push(tuuid)
+                }
+                await collectionsDao.deleteDocuments(tuuids)
+            }
+
+            console.debug("traiterRafraichirCollection sync termine, passer au download de la liste", )
+
+            // Passer au dechiffrage
+            dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
+
+            // On marque la fin du chargement/sync
+            dispatch(push({liste: []}))
+        } catch(err) {
+            dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_ERREUR))
+            throw err
         }
-
-        console.debug("traiterRafraichirCollection sync termine, passer au download de la liste", )
-
-        // Passer au dechiffrage
-        dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
-
-        // On marque la fin du chargement/sync
-        dispatch(push({liste: []}))
     }
     
     async function traiterRafraichirBreadcrumb(workers, dispatch, getState) {
@@ -1001,45 +1009,13 @@ export function creerThunks(actions, nomSlice) {
     
         const { connexion, collectionsDao } = workers
         const resultat = await connexion.getPartagesUsager(contactId)
-        console.debug("Resultat getPartagesUsager : ", resultat)
+        console.debug("traiterChargerPartagesUsager Resultat getPartagesUsager : ", resultat)
         const partages = resultat.partages
-        const partagesDict = partages.reduce((acc, item)=>{
-            acc[item.tuuid] = item
-            return acc
-        }, {})
+        const tuuids = partages.map(item=>item.tuuid)
+        console.debug("traiterChargerPartagesUsager Charger tuuids ", tuuids)
 
-        // Charger le contenu de la collection deja connu
-        // let contenuIdb = await collectionsDao.getParTuuids(partages.map(item=>item.tuuid))
-        // contenuIdb = contenuIdb.filter(item=>item)
-
-        // // Injecter le contactId
-        // contenuIdb.forEach(item=>{
-        //     item.contactId = contactId
-        //     delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
-        // })
-
-        // Ajouter tous les resultats manquants
-        // const tuuidsManquants = []
-        // for(const item of Object.values(partagesDict)) {
-        //     contenuIdb.push(item)
-        //     tuuidsManquants.push(item.tuuid)
-        // }
-
-        const tuuids = Object.values(partagesDict).map(item=>item.tuuid)
-        console.debug("Charger tuuids ", tuuids)
-
-        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        // if(contenuIdb) {
-            // console.debug("Push documents provenance idb : %O", contenuIdb)
-            // dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
-            // const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-
-            await dispatch(chargerTuuids(workers, tuuids))
-                .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-            dispatch(clear())
-        // }
-    
-        // await syncRecherche(dispatch, workers, tuuidsManquants)
+        await dispatch(chargerTuuids(workers, tuuids))
+            .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
     }
 
     function afficherPartagesContact(workers, userIdTiers, contactId, opts) {
@@ -1049,72 +1025,47 @@ export function creerThunks(actions, nomSlice) {
 
     async function traiterChargerPartagesContact(workers, userIdTiers, contactId, opts, dispatch, getState) {
         opts = opts || {}
-    
-        // Changer source, nettoyer la liste
+
+        // Changer source
         dispatch(setSource(SOURCE_PARTAGES_CONTACTS))
-        dispatch(clear())
 
-        console.debug("traiterChargerPartagesContact userIdTiers %O, contactId %O", userIdTiers, contactId)
-        dispatch(setUserContactId({userId: userIdTiers, contactId: contactId}))
-        dispatch(setSortKeys({key: 'nom', ordre: 1}))
-    
-        const { connexion, collectionsDao } = workers
-        const resultat = await connexion.getPartagesContact(userIdTiers, contactId)
-        console.debug("Resultat getPartagesContact : ", resultat)
-        const partages = resultat.partages.filter(item=>{
-            if(contactId) return item.contact_id === contactId
-            return item.user_id === userIdTiers
-        })
-        const partagesDict = partages
-            .reduce((acc, item)=>{
-                acc[item.tuuid] = item
-                return acc
-            }, {})
-    
-        const tuuidsDirty = Object.keys(partagesDict)
-        // dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_SYNC))
-    
-        console.debug("traiterChargerPartagesContact Liste tuuids dirty actifs : ", tuuidsDirty)
-        if(tuuidsDirty.length > 0) {
-            // Override la liste
-            dispatch(setListeDirty(tuuidsDirty))
-        }
-
-        // Retirer les fichiers qui ne sont plus partages mais encore dans IDB
-        // TODO
-
-        // Passer au download de la liste
-        dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
-
-        // // Charger le contenu de la collection deja connu
-        // let contenuIdb = await collectionsDao.getParTuuids(partagesTuuids)
+        try {
+            const { connexion, collectionsDao } = workers
+            const resultat = await connexion.getPartagesContact(userIdTiers, contactId)
+            // console.debug("Resultat getPartagesContact : ", resultat)
+            const partages = resultat.partages.filter(item=>{
+                if(contactId) return item.contact_id === contactId
+                return item.user_id === userIdTiers
+            })
+            const partagesDict = partages
+                .reduce((acc, item)=>{
+                    acc[item.tuuid] = item
+                    return acc
+                }, {})
         
-        // const tuuidsConnus = new Set()
-        // for(const item of contenuIdb) {
-        //     tuuidsConnus.add(item.tuuid)
-        // }
+            const tuuidsDirty = Object.keys(partagesDict)
+        
+            // Nettoyer la liste, mettre parametres d'affichage
+            // console.debug("traiterChargerPartagesContact userIdTiers %O, contactId %O", userIdTiers, contactId)
+            dispatch(clear())
+            dispatch(setUserContactId({userId: userIdTiers, contactId: contactId}))
+            dispatch(setSortKeys({key: 'nom', ordre: 1}))
 
-        // // Injecter le contactId
-        // contenuIdb.forEach(item=>{
-        //     item.contactId = contactId
-        //     delete partagesDict[item.tuuid]  // Retirer la collection qui est deja connue
-        // })
+            // Retirer les fichiers qui ne sont plus partages mais encore dans IDB
+            // TODO
 
-        // // Ajouter tous les resultats manquants
-        // const tuuidsManquants = []
-        // for(const item of Object.values(partagesDict)) {
-        //     contenuIdb.push(item)
-        //     tuuidsManquants.push(item.tuuid)
-        // }
+            // console.debug("traiterChargerPartagesContact Liste tuuids dirty actifs : ", tuuidsDirty)
+            if(tuuidsDirty.length > 0) {
+                // Override la liste
+                dispatch(setListeDirty(tuuidsDirty))
+            }
 
-        // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        // if(contenuIdb) {
-        //     // console.debug("Push documents provenance idb : %O", contenuIdb)
-        //     dispatch(push({liste: contenuIdb, nombreFichiersTotal: partages.length, clear: true}))
-        //     const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
-        //     dispatch(chargerTuuids(workers, tuuids, {partage: true, contactId}))
-        //         .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-        // }
+            // Passer au download de la liste
+            dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
+        } catch(err) {
+            console.error("traiterChargerPartagesContact Erreur chargement ", err)
+            dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_ERREUR))
+        }
     }
 
     async function chargerResultatsPartages(workers, opts, dispatch, getState, tuuidsPartagesManquants) {
@@ -1304,38 +1255,44 @@ async function dechiffrageMiddlewareListener(workers, actions, thunks, nomSlice,
         
         if(etapeChargement === CONST_ETAPE_CHARGEMENT_LISTE) {
             // Downloader les fichiers du repertoire courant en utilisant la liste IDB
-            console.debug("dechiffrageMiddlewareListener Effectuer chargement de la liste (etape est : %d)", etapeChargement)
+            // console.warn("dechiffrageMiddlewareListener Effectuer chargement de la liste (etape est : %d, passe %d)", etapeChargement, passeMiddleware)
             const task = listenerApi.fork( forkApi => chargerListe(workers, listenerApi, actions, thunks, nomSlice) )
             const taskResult = await task.result
             const listeChargee = taskResult.value
             
             if(taskResult.status === 'ok') {
-                console.debug("Liste chargee : ", listeChargee)
+                // console.debug("dechiffrageMiddlewareListener Liste chargee : ", listeChargee)
                 // Conserver la liste dans state (one-shot)
-                listenerApi.dispatch(actions.push({liste: listeChargee}))
+                for(const item of listeChargee) {
+                    listenerApi.dispatch(actions.mergeTuuidData({tuuid: item.tuuid, data: item}))
+                }
+                // listenerApi.dispatch(actions.push({liste: listeChargee}))
 
-                console.debug("Chargement tuuids dirty termine, passer au dechiffrage")
+                // console.debug("dechiffrageMiddlewareListener Chargement tuuids dirty termine, passer au dechiffrage")
                 listenerApi.dispatch(actions.setEtapeChargement(CONST_ETAPE_CHARGEMENT_DECHIFFRAGE))
             } else {
-                console.error("Erreur traitement chargerListe, resultat ", taskResult)
+                console.error("dechiffrageMiddlewareListener Erreur traitement chargerListe, resultat ", taskResult)
             }
 
             etapeChargement = CONST_ETAPE_CHARGEMENT_DECHIFFRAGE
         } 
         
         if(etapeChargement >= CONST_ETAPE_CHARGEMENT_DECHIFFRAGE) {
-            console.debug("dechiffrageMiddlewareListener Effectuer dechiffrage (etape est : %d)", etapeChargement)
+            // console.warn("dechiffrageMiddlewareListener Effectuer dechiffrage (etape est : %d, passe %d)", etapeChargement, passeMiddleware)
             const task = listenerApi.fork( forkApi => dechiffrerFichiers(workers, listenerApi, actions, nomSlice) )
             const {value: fichiersDechiffres} = await task.result
 
-            console.debug("Dechiffrage complete, liste prete")
+            // console.debug("dechiffrageMiddlewareListener Dechiffrage complete, liste prete")
             listenerApi.dispatch(actions.setEtapeChargement(CONST_ETAPE_CHARGEMENT_COMPLETE))
             listenerApi.dispatch(actions.setDechiffrageComplete())
 
             // Reload tous les fichiers non dechiffres en memoire
-            console.debug("Fichiers dechiffres : ", fichiersDechiffres)
+            // console.debug("dechiffrageMiddlewareListener Fichiers dechiffres : ", fichiersDechiffres)
             listenerApi.dispatch(actions.remplacerFichiers(fichiersDechiffres))
         }
+    } catch(err) {
+        console.error("dechiffrageMiddlewareListener Erreur chargement ", err)
+        listenerApi.dispatch(actions.setEtapeChargement(CONST_ETAPE_CHARGEMENT_ERREUR))
     } finally {
         await listenerApi.subscribe()
     }
@@ -1365,7 +1322,7 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
             listenerApi.dispatch(actions.setListeDirty(tuuidsRestants))
         }
 
-        console.debug("chargerListe Batch tuuids : ", tuuidsBatch)
+        // console.debug("chargerListe Batch tuuids : ", tuuidsBatch)
         
         const contactId = getStateFichiers().partageContactId
         const opts = {etapeChargement: getStateFichiers().etapeChargement, partage}
@@ -1406,12 +1363,12 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
         listenerApi.dispatch(actions.getBatchFichiersChiffres())
         // console.debug("state : ", getStateFichiers())
         const batchFichiers = getStateFichiers().batchDechiffrage
-        console.debug("dechiffrerFichiers Batch a dechiffrer : ", batchFichiers)
+        // console.debug("dechiffrerFichiers Batch a dechiffrer : ", batchFichiers)
         if(batchFichiers.length === 0) break  // Done
 
         // Extraire toutes les cles a charger
         const {liste_hachage_bytes} = identifierClesHachages(batchFichiers, userIdEffectif)
-        console.debug("Dechiffrer avec liste_hachage_bytes %O (source: %s) ", liste_hachage_bytes)
+        // console.debug("Dechiffrer avec liste_hachage_bytes %O (source: %s) ", liste_hachage_bytes)
         let cles = null
         if(liste_hachage_bytes && liste_hachage_bytes.length > 0) {
             try {
@@ -1553,9 +1510,9 @@ function genererTriListe(sortKeys) {
 async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, opts) {
     const { connexion, collectionsDao } = workers
     const etapeChargement = opts.etapeChargement || 5
-    console.debug("chargerDocuments Charger tuuids : %O, contactId %O, opts %O", tuuids, contactId, opts)
+    // console.debug("chargerDocuments Charger tuuids : %O, contactId %O, opts %O", tuuids, contactId, opts)
     const resultat = await connexion.getDocuments(tuuids, {...opts, contactId})
-    console.debug("traiterChargerTuuids Reponse ", resultat)
+    // console.debug("traiterChargerTuuids Reponse ", resultat)
 
     const listeResultat = []
     if(resultat.fichiers) {
@@ -1567,7 +1524,7 @@ async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, conta
         for await(const item of fichiers) {
             let chiffre = false
 
-            console.debug("traiterChargerTuuids Traiter item ", item)
+            // console.debug("traiterChargerTuuids Traiter item ", item)
             
             const version_courante = item.version_courante || {},
                   { images } = version_courante,
