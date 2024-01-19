@@ -367,12 +367,13 @@ function mergeTuuidDataAction(state, action) {
         }
     }
 
-    // Trier
-    state.liste.sort(genererTriListe(state.sortKeys))
-
-    state.bytesTotalDossier = state.liste
-        .filter(item=>item.version_courante && item.version_courante.taille)
-        .reduce((acc, item)=>acc+item.version_courante.taille, 0)
+    if(state.liste) {
+        // Trier
+        state.liste.sort(genererTriListe(state.sortKeys))
+        state.bytesTotalDossier = state.liste
+            .filter(item=>item.version_courante && item.version_courante.taille)
+            .reduce((acc, item)=>acc+item.version_courante.taille, 0)
+    }
 
 }
 
@@ -548,9 +549,15 @@ export function creerThunks(actions, nomSlice) {
 
         if(typeof(tuuids) === 'string') tuuids = [tuuids]
 
-        await chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, {...opts, partage})
+        const resultat = await chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, contactId, {...opts, partage})
 
-        const fichiersChiffres = getState().fichiers.liste.filter(item=>!item.dechiffre)
+        let listeCourante = getState().fichiers.liste
+        if(!listeCourante) {
+            // Chargement initial
+            dispatch(push({liste: resultat}))
+            listeCourante = resultat
+        }
+        const fichiersChiffres = listeCourante.filter(item=>!item.dechiffre)
         dispatch(pushFichiersChiffres(fichiersChiffres))
     }
     
@@ -1548,6 +1555,7 @@ async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, conta
             }
         }
     }
+
     return listeResultat
 }
 
