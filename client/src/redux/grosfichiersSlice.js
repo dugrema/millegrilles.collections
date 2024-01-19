@@ -265,8 +265,8 @@ function mergeTuuidDataAction(state, action) {
             peutAppend = data.supprime === true
         } else if(source === SOURCE_RECHERCHE) {
             peutAppend = data.supprime === true
-        // } else if(source === SOURCE_PARTAGES_USAGER) {
-        //     peutAppend = true  // On n'a pas de filtres sur les partages usager
+        } else if(source === SOURCE_PARTAGES_USAGER) {
+            peutAppend = true  // On n'a pas de filtres sur les partages usager
         } else if(source === SOURCE_PARTAGES_CONTACTS) {
             peutAppend = true  // On n'a pas de filtres sur les partages contacts
         } else if(source === SOURCE_PLUS_RECENT) {
@@ -1016,6 +1016,9 @@ export function creerThunks(actions, nomSlice) {
 
         await dispatch(chargerTuuids(workers, tuuids))
             .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+
+        // Passer au dechiffrage
+        dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_DECHIFFRAGE))
     }
 
     function afficherPartagesContact(workers, userIdTiers, contactId, opts) {
