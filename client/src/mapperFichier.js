@@ -22,29 +22,10 @@ export function mapDocumentComplet(workers, doc, opts) {
     opts = opts || {}
     // console.debug("mapDocumentComplet : %O (opts: %O)", doc, opts)
     const userId = opts.userId
-    const contactId = opts.contactId
 
-    const { connexion, traitementFichiers } = workers
+    const { traitementFichiers } = workers
 
-    // Instance mediaLoader pour contenu (fichier, images, videos)
-    const creerTokenStreamInst = commande => {
-        // if(doc.contactId) commande = {...commande, contact_id: doc.contactId}
-        commande = {...commande, contact_id: contactId}
-        // console.debug("creerTokenStreamInst Commande %O, doc: %O", commande, doc)
-
-        const fuuid = commande.fuuids[0]
-        const commandeV2 = { fuuid }
-        if(commande.fuuidStream && commande.fuuidStream !== fuuid) {
-            // Remplacer le fuuid par fuuidStream - le fuuid devient la reference de dechiffrage
-            commandeV2.fuuid = commande.fuuidStream
-            commandeV2.fuuid_ref = fuuid
-        }
-        if(doc.contactId) commandeV2.contact_id = doc.contactId
-        // console.debug("creerTokenStreamInst Commande V2 %O", commandeV2)
-
-        return connexion.creerTokenStream(commandeV2)
-    }
-    const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)
+    const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete)
 
     const { nom, tuuid, date_creation, mimetype, user_id, /* archive, */ } = doc
     const version_courante = doc.version_courante?{...doc.version_courante}:null
@@ -88,13 +69,6 @@ export function mapDocumentComplet(workers, doc, opts) {
         if(images) {
             copie.imageLoader = mediaLoader.imageLoader(images, {cle_id: fuuid_v_courante, fuuid: fuuid_v_courante, mimetype, anime, header})
             copie.thumbnailLoader = mediaLoader.thumbnailLoader(images, {cle_id: fuuid_v_courante, local: true})
-        }
-
-        if(estMimetypeVideo(mimetype)) {
-        // if(mimetype.toLowerCase().startsWith('video/')) {
-            copie.videoLoader = mediaLoader.videoLoader(video || {}, {fuuid: fuuid_v_courante, mimetype})
-        } else if(mimetype.toLowerCase().startsWith('audio/')) {
-            copie.audioLoader = mediaLoader.audioLoader(fuuid_v_courante, mimetype)
         }
     }
 

@@ -1,18 +1,20 @@
 import {useState, useEffect, useCallback, useMemo} from 'react'
+import { useSelector } from 'react-redux'
 import axios from 'axios'
 
 import Alert from 'react-bootstrap/Alert'
-import Button from 'react-bootstrap/Button'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import VideoViewer from './VideoViewer'
+import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
 import { supporteFormatVideo } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 
-import { useCapabilities } from './WorkerContext'
+import VideoViewer from './VideoViewer'
+
+import useWorkers, { useCapabilities } from './WorkerContext'
 
 const HTTP_STATUS_ATTENTE = [202, 204]
 const HTTP_STATUS_ABANDONNER = [401, 403, 404]
@@ -21,6 +23,10 @@ const RETRY_DELAY_HTTP_ERROR = 20_000
 
 export function WrapperPlayer(props) {
     const { selecteur, abLoop, timeStamp, setTimeStamp, onLoad, fichier: fichierProps } = props
+
+    const contactId = useSelector(state=>state.fichiers.partageContactId)
+
+    const workers = useWorkers()
 
     const fichier = useMemo(()=>{
         // console.debug("Fichier modifie : ", fichierProps)
@@ -37,10 +43,35 @@ export function WrapperPlayer(props) {
         return ''
     }, [fichier])
 
-    const [tuuid, videoLoader] = useMemo(()=>{
-        // console.debug("Update tuuid %s, videoLoader", fichier.tuuid)
-        return [fichier.tuuid, fichier.videoLoader]
-    }, [fichier])
+    const tuuid = fichier.tuuid
+
+    const videoLoader = useMemo(()=>{
+        const { connexion, traitementFichiers } = workers
+        console.debug("videoLoader fichier: %O, contactId: %O", fichier, contactId)
+        const version_courante = fichier.version_courante
+        const {fuuid, video} = version_courante
+        const creerTokenStreamInst = commande => {
+            const commandeV2 = { fuuid }
+            if(commande.fuuidStream && commande.fuuidStream !== fuuid) {
+                // Remplacer le fuuid par fuuidStream - le fuuid devient la reference de dechiffrage
+                commandeV2.fuuid = commande.fuuidStream
+                commandeV2.fuuid_ref = fuuid
+            }
+            if(contactId) commandeV2.contact_id = contactId
+            console.debug("creerTokenStreamInst Commande V2 %O, fichier %O", commandeV2, fichier)
+    
+            return connexion.creerTokenStream(commandeV2)
+        }        
+        const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)        
+        console.debug("Nouveau mediaLoad : ", mediaLoader)
+
+        const mimetype = fichier.mimetype || version_courante.mimetype
+
+        console.debug("Creer videoloader avec video : %O, fuuid %O, mimetype %O", video, fuuid, mimetype)
+
+        const videoLoader = mediaLoader.videoLoader(video || {}, {fuuid, mimetype})
+        return videoLoader
+    }, [workers, fichier, contactId])
 
     const [selecteurCourant, setSelecteurCourant] = useState('')
     const [srcVideo, setSrcVideo] = useState('')

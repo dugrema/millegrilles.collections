@@ -1,11 +1,15 @@
 import axios from 'axios'
-
 import {useState, useEffect, useMemo, useCallback} from 'react'
+import { useSelector } from 'react-redux'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Alert from 'react-bootstrap/Alert'
 import ProgressBar from 'react-bootstrap/ProgressBar'
+
+import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
+import useWorkers from './WorkerContext'
 
 const HTTP_STATUS_ATTENTE = [202, 204]
 
@@ -53,11 +57,42 @@ export function AudioPlayer(props) {
 
     const { fichier } = props
 
+    const contactId = useSelector(state=>state.fichiers.partageContactId)
+    const workers = useWorkers()
+
     const [progresChargement, setProgresChargement] = useState(0)
     const [chargementPret, setChargementPret] = useState(false)
     const [errChargement, setErrChargement] = useState('')
 
     const [audioFile, setAudioFile] = useState('')
+
+    const audioLoader = useMemo(()=>{
+        const { connexion, traitementFichiers } = workers
+        console.debug("audioLoader fichier: %O, contactId: %O", fichier, contactId)
+        const version_courante = fichier.version_courante
+        const {fuuid} = version_courante
+        const creerTokenStreamInst = commande => {
+            const commandeV2 = { fuuid }
+            if(commande.fuuidStream && commande.fuuidStream !== fuuid) {
+                // Remplacer le fuuid par fuuidStream - le fuuid devient la reference de dechiffrage
+                commandeV2.fuuid = commande.fuuidStream
+                commandeV2.fuuid_ref = fuuid
+            }
+            if(contactId) commandeV2.contact_id = contactId
+            console.debug("creerTokenStreamInst Commande V2 %O, fichier %O", commandeV2, fichier)
+    
+            return connexion.creerTokenStream(commandeV2)
+        }        
+        const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)        
+        console.debug("Nouveau mediaLoad : ", mediaLoader)
+
+        const mimetype = fichier.mimetype || version_courante.mimetype
+
+        console.debug("Creer audioLoader avec fuuid %O, mimetype %O", fuuid, mimetype)
+        
+        const audioLoader = mediaLoader.audioLoader(fuuid, mimetype)
+        return audioLoader
+    }, [workers, fichier, contactId])
 
     const urlAudio = useMemo(()=>{
         if(audioFile) return audioFile.src
@@ -68,19 +103,6 @@ export function AudioPlayer(props) {
         if(audioFile) return audioFile.mimetype
         return ''
     }, [audioFile])
-
-    // useEffect(()=>{
-    //     const audioLoader = fichier.audioLoader
-    //     if(audioLoader) {
-    //         audioLoader.load().then(fichiers=>{
-    //             const fichierAudio = fichiers.pop()
-    //             console.debug("Fichier audio : ", fichierAudio)
-    //             setAudioFile(fichierAudio)
-    //         })
-    //         .catch(err=>console.error("Erreur chargement URL audio ", err))
-    //         return audioLoader.unload
-    //     }
-    // }, [fichier, setAudioFile])
 
     const majChargement = useCallback(info=>{
         // console.debug("Maj chargement ", info)
@@ -110,8 +132,7 @@ export function AudioPlayer(props) {
         setErrChargement('')
         setProgresChargement(0)
 
-        if(!fichier || !fichier.audioLoader) return 
-        const audioLoader = fichier.audioLoader
+        if(!fichier || !audioLoader) return 
 
         audioLoader.load()
             .then(async fichiers => {
@@ -144,7 +165,7 @@ export function AudioPlayer(props) {
                 console.error("AfficherVideo erreur chargement video : %O", err)
                 setErrChargement('Erreur chargement video (general)')
             })
-    }, [fichier, setAudioFile, majChargement, setChargementPret, setProgresChargement, setErrChargement])
+    }, [fichier, audioLoader, setAudioFile, majChargement, setChargementPret, setProgresChargement, setErrChargement])
 
     return (
         <div>
