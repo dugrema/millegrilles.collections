@@ -237,7 +237,7 @@ function NavigationPartageTiers(props) {
         }
     }, [dispatch, workers, userInfo, erreurCb, contactInfo, setShowPreview, setAfficherVideo, setAfficherAudio, setToggleOffCarousel, setHideMenu])
 
-    const preparerColonnesCb = useCallback(()=>preparerColonnes(workers), [workers])
+    const preparerColonnesCb = useCallback(()=>preparerColonnes(workers, null, contactId), [workers, contactId])
 
     const showInformationRepertoireHandler = useCallback(()=>{
         // console.debug("Show information repertoire ", cuuidCourant)
@@ -736,7 +736,7 @@ function ListePartagesUsager(props) {
 //     )
 // }
 
-function preparerColonnes(workers, getState) {
+function preparerColonnes(workers, getState, contactId) {
 
     const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx, {getState, contactId})
 
