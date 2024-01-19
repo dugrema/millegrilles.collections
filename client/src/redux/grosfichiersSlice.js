@@ -216,8 +216,9 @@ function mergeTuuidDataAction(state, action) {
         payload = [payload]
     }
 
+    // console.debug("State source %O, merging %O", state.source, payload)
     const cuuidCourant = state.cuuid
-    if([SOURCE_RECHERCHE, SOURCE_CORBEILLE].includes(state.source)) {
+    if([SOURCE_RECHERCHE, SOURCE_CORBEILLE, SOURCE_PARTAGES_USAGER, SOURCE_PARTAGES_CONTACTS].includes(state.source)) {
         // Pas de filtre, les fichiers proviennent de tous les cuuids
     } else {
         if(!cuuidCourant) {
@@ -346,6 +347,12 @@ function mergeTuuidDataAction(state, action) {
                 // Verifier si le document est toujours supprime
                 retirer = dataCourant.supprime !== true
             } else if( source === SOURCE_RECHERCHE ) {
+                // Verifier si le document est toujours supprime
+                retirer = dataCourant.supprime === true
+            } else if( source === SOURCE_PARTAGES_USAGER ) {
+                // Verifier si le document est toujours supprime
+                retirer = dataCourant.supprime === true
+            } else if( source === SOURCE_PARTAGES_CONTACTS ) {
                 // Verifier si le document est toujours supprime
                 retirer = dataCourant.supprime === true
             } else {
@@ -647,7 +654,7 @@ export function creerThunks(actions, nomSlice) {
             }
             if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCollection")
 
-            console.debug("Fin sync, duree %d", new Date().getTime()-debutSync)
+            // console.debug("Fin sync, duree %d", new Date().getTime()-debutSync)
         
             if(documentsExistants.size > 0) {
                 // console.debug("Documents retires/deplaces de '%s' : %O", cuuid, documentsExistants)
@@ -1020,17 +1027,27 @@ export function creerThunks(actions, nomSlice) {
         dispatch(setSortKeys({key: 'nom', ordre: 1}))
     
         const { connexion, collectionsDao } = workers
-        const resultat = await connexion.getPartagesUsager(contactId)
-        console.debug("traiterChargerPartagesUsager Resultat getPartagesUsager : ", resultat)
-        const partages = resultat.partages
+        const partagesUsager = await connexion.getPartagesUsager(contactId)
+        // console.debug("traiterChargerPartagesUsager Resultat getPartagesUsager : ", partagesUsager)
+        const partages = partagesUsager.partages
         const tuuids = partages.map(item=>item.tuuid)
-        console.debug("traiterChargerPartagesUsager Charger tuuids ", tuuids)
+        // console.debug("traiterChargerPartagesUsager Charger tuuids ", tuuids)
 
-        await dispatch(chargerTuuids(workers, tuuids))
-            .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+        // const listePartagesUsager = await chargerDocuments(
+        //     workers, dispatch, mergeTuuidData, tuuids, null, 
+        //     {etapeChargement: CONST_ETAPE_CHARGEMENT_SYNC}
+        // )
 
-        // Passer au dechiffrage
-        dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_DECHIFFRAGE))
+        // console.debug("traiterChargerPartagesUsager Liste partages usager : ", listePartagesUsager)
+
+        dispatch(setListeDirty(tuuids))
+        dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
+
+        // dispatch(push({liste: listePartagesUsager, clear: true}))
+        // dispatch(pushFichiersChiffres(listePartagesUsager))
+
+        // // Passer au dechiffrage
+        // dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_DECHIFFRAGE))
     }
 
     function afficherPartagesContact(workers, userIdTiers, contactId, opts) {
@@ -1298,9 +1315,11 @@ async function dechiffrageMiddlewareListener(workers, actions, thunks, nomSlice,
             if(taskResult.status === 'ok') {
                 // console.debug("dechiffrageMiddlewareListener Liste chargee : ", listeChargee)
                 // Conserver la liste dans state (one-shot)
+                listenerApi.dispatch(actions.setFichiersChiffres(listeChargee))
                 for(const item of listeChargee) {
                     listenerApi.dispatch(actions.mergeTuuidData({tuuid: item.tuuid, data: item}))
                 }
+                // console.debug("dechiffrageMiddlewareListener Liste fichiers state apres chargement liste : ", listenerApi.getState()[nomSlice].liste)
 
                 // console.debug("dechiffrageMiddlewareListener Chargement tuuids dirty termine, passer au dechiffrage")
                 listenerApi.dispatch(actions.setEtapeChargement(CONST_ETAPE_CHARGEMENT_DECHIFFRAGE))
@@ -1371,7 +1390,7 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
             listenerApi.dispatch(actions.setListeDirty(tuuidsRestants))
         }
 
-        // console.debug("chargerListe Batch tuuids : ", tuuidsBatch)
+        // console.debug("chargerListe Batch tuuids : %O, userIdTiers %O, partage %O ", tuuidsBatch, userIdTiers, partage)
         
         const contactId = getStateFichiers().partageContactId
         const opts = {etapeChargement: getStateFichiers().etapeChargement, partage}
@@ -1380,7 +1399,7 @@ async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
         liste = [...liste, ...listeBatch]
     }
 
-    console.debug("Duree chargerListe : %d", new Date().getTime()-debutChargerListe)
+    // console.debug("Duree chargerListe : %d", new Date().getTime()-debutChargerListe)
     return liste
 }
 
@@ -1502,7 +1521,7 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
         }
     }
 
-    console.debug("Duree dechiffrage : %d", new Date().getTime()-debutDechiffrer)
+    // console.debug("Duree dechiffrage : %d", new Date().getTime()-debutDechiffrer)
     return fichiersDechiffres
 }
 
@@ -1595,10 +1614,11 @@ async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, conta
                 if(image.data_chiffre) chiffre = true
             })
 
-            listeResultat.push({...item})
-
             // Mettre a jour dans IDB
             item.dechiffre = !chiffre
+
+            listeResultat.push({...item})
+
             await collectionsDao.updateDocument(item, {dirty: false, dechiffre: !chiffre})
                 .catch(err=>console.error("Erreur maj document %O dans idb : %O", item, err))
 
