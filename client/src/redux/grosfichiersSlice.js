@@ -9,7 +9,7 @@ const SOURCE_COLLECTION = 'collection',
       SOURCE_PARTAGES_CONTACTS = 'partagesContacts',  // Partages par un autre usager (on est le contact)
 
       // SOURCE_INDEX = 'index'
-      CONST_SYNC_BATCH_SIZE = 2,
+      CONST_SYNC_BATCH_SIZE = 200,
       SAFEGUARD_BATCH_MAX = 1000,
       TAILLE_AFFICHEE_INIT = 50,
       INCREMENT_TAILLE_AFFICHEE = 25,
