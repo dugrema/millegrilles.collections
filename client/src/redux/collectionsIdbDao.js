@@ -191,11 +191,6 @@ export async function getSupprime(intervalle, userId) {
     const db = await ouvrirDB()
     const store = db.transaction(STORE_FICHIERS, 'readonly').store
 
-    const { debut, fin } = intervalle
-    if(!debut) throw new Error("getSupprime Date debut est requise dans l'intervalle")
-    // console.debug("getSupprime Date debut : %O", new Date(debut*1000))
-    // if(fin) console.debug("getSupprime Date fin : %O", new Date(fin*1000))
-
     let curseur = await store.openCursor()
     const docs = []
     while(curseur) {
@@ -204,24 +199,10 @@ export async function getSupprime(intervalle, userId) {
         const { user_id, supprime, supprime_indirect } = value
         let conserver = false
         // const supprimeEffectif = !!(supprime || supprime_indirect)
-        const supprimeEffectif = (supprime && !supprime_indirect)
+        const supprimeEffectif = (supprime || supprime_indirect)
 
         if(user_id === userId && supprimeEffectif === true) {
-            const champsDate = ['derniere_modification', 'date_creation']
-            champsDate.forEach(champ=>{
-                const valDate = value[champ]
-                if(valDate) {
-                    // console.debug("Date %s: %s = %O", value.tuuid, champ, new Date(valDate*1000))
-                    if(valDate >= debut) {
-                        if(fin) {
-                            if(valDate <= fin) conserver = true
-                        } else {
-                            // Pas de date de fin
-                            conserver = true
-                        }
-                    }
-                }
-            })
+            conserver = true
         }
         
         if(conserver) docs.push(value)

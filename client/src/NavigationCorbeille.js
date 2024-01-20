@@ -12,6 +12,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { ListeFichiers, FormatteurTaille, FormatterDate } from '@dugrema/millegrilles.reactjs'
 
+import { FormatterColonneDate, InformationListe } from './NavigationCommun'
 import PreviewFichiers from './FilePlayer'
 import { mapDocumentComplet } from './mapperFichier'
 import { MenuContextuelCorbeille, onContextMenu } from './MenuContextuel'
@@ -29,7 +30,7 @@ function NavigationCorbeille(props) {
     const userId = useSelector(state=>state.fichiers.userId)
     const selection = useSelector(state => state.fichiers.selection )
     const liste = useSelector(state => state.fichiers.liste )
-
+    
     const [modeView, setModeView] = useState('')
     const [scrollValue, setScrollValue] = useState(0)
 
@@ -207,6 +208,7 @@ function AffichagePrincipal(props) {
     const selection = useSelector(state => state.fichiers.selection)
     const listeComplete = tailleAffichee?false:true
     const colonnes = useMemo(()=>preparerColonnes(workers), [workers])
+    const etapeChargement = useSelector(state => state.fichiers.etapeChargement)
 
     const listeAffichee = useMemo(()=>{
         if(!liste) return ''                // Liste vide
@@ -249,6 +251,8 @@ function AffichagePrincipal(props) {
     const onOpenHandler = useCallback(item=>{
         console.debug("Open ", item)
     }, [])
+
+    if(etapeChargement !== 5) return ''  // Chargement en cours
 
     // Default - liste fichiers
     return (
@@ -462,44 +466,8 @@ function preparerColonnes(workers) {
 
         // Tenter de mapper le path
         const docMappe = mapDocumentComplet(workers, item, idx)
-        let supprimePath = ''
-        // if(item.supprime_cuuids_path) {
-        //     const tuuids = await collectionsDao.getParTuuids(item.supprime_cuuids_path)
-        //     const tuuidsMappes = {}
-        //     tuuids.forEach(item=>{
-        //         tuuidsMappes[item.tuuid] = item
-        //     })
-        //     const tuuidsOrdre = item.supprime_cuuids_path.map(cuuid=>{
-        //         return tuuidsMappes[cuuid].nom || cuuid
-        //     })
-            
-        //     console.debug("!!! tuuids ", tuuids)
-        //     supprimePath = '/'+tuuidsOrdre.join('/')
-        // }
 
         let recupererPaths = []
-
-        // Creer path pour un fichier supprime
-        // if(item.map_path_cuuids) {
-        //     // Fichier
-        //     for await (const cuuidSupprime of item.cuuids_supprimes) {
-        //         const pathComplet = item.map_path_cuuids[cuuidSupprime]
-        //         const tuuids = await collectionsDao.getParTuuids(pathComplet)
-        //         const tuuidsMappes = {}
-        //         tuuids.forEach(item=>{
-        //             tuuidsMappes[item.tuuid] = item
-        //         })
-        //         const tuuidsOrdre = pathComplet.map(cuuid=>{
-        //             return tuuidsMappes[cuuid].nom || cuuid
-        //         })
-        //         tuuidsOrdre.reverse()
-        //         // recupererPaths[cuuidSupprime] = '/'+tuuidsOrdre.join('/')
-        //         recupererPaths.push({cuuid: cuuidSupprime, path: '/'+tuuidsOrdre.join('/')})
-        //         // supprimePath = '/'+tuuidsOrdre.join('/')
-        //         // break
-        //     }
-
-        // } 
 
         // Creer path pour un repertoire supprime
         if(['Repertoire', 'Fichier'].includes(item.type_node)) {
@@ -527,17 +495,22 @@ function preparerColonnes(workers) {
     }
 
     const params = {
-        ordreColonnes: ['nom', 'taille', 'supprimePath', /*'dateAjout'*/],
+        ordreColonnes: ['nom', 'taille', 'supprimePath', 'derniere_modification'],
         paramsColonnes: {
-            'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 5},
+            'nom': {'label': 'Nom', formatteur: FormatterNom, showThumbnail: true, xs: 11, lg: 4},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1},
-            'supprimePath': {'label': 'Repertoire', className: 'details', formatteur: FormatterPathSupprimer, xs: 9, lg: 6},
-            // 'dateAjout': {'label': 'Date modification', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
+            'derniere_modification': {'label': 'Date suppression', className: 'details', formatteur: FormatterColonneDate, xs: 9, lg: 2},
+            'supprimePath': {'label': 'Repertoire', className: 'details', formatteur: FormatterPathSupprimer, xs: 12, lg: 5},
         },
-        tri: {colonne: 'dateAjout', ordre: -1},
+        tri: {colonne: 'derniere_modification', ordre: -1},
         rowLoader,
     }
     return params
+}
+
+function FormatterNom(props) {
+    const value = props.value || props.data.tuuid
+    return <span title={value}>{value}</span>
 }
 
 function FormatterPathSupprimer(props) {
@@ -568,7 +541,7 @@ function FormatterPathSupprimer(props) {
     const liste = useMemo(()=>{
         if(!data.recupererPaths) return ''
         return data.recupererPaths.map((item, idx)=>{
-            return item.path
+            return <span title={item.path}>{item.path}</span>
             // return (
             //     <Col xs={8} lg={9}>{item.path}</Col>
             //     <Row key={idx}>
@@ -588,23 +561,23 @@ function FormatterPathSupprimer(props) {
     )
 }
 
-function FormatterColonneDate(props) {
-    const data = props.data || {}
-    const { upload } = data
-    if(upload) {
-        if( upload.status === 1 ) {
-            return <span>En attente</span>
-        } else if( upload.status === 2 ) {
-            const taille = data.size || data.taille
-            const pct = Math.min(Math.round(upload.position / taille * 100)) || 0
-            return <ProgressBar now={pct} label={pct + '%'} />
-        } else {
-            return <span>En cours de traitement</span>
-        }
-    } else {
-        return <FormatterDate value={props.value} />   
-    }
-}
+// function FormatterColonneDate(props) {
+//     const data = props.data || {}
+//     const { upload } = data
+//     if(upload) {
+//         if( upload.status === 1 ) {
+//             return <span>En attente</span>
+//         } else if( upload.status === 2 ) {
+//             const taille = data.size || data.taille
+//             const pct = Math.min(Math.round(upload.position / taille * 100)) || 0
+//             return <ProgressBar now={pct} label={pct + '%'} />
+//         } else {
+//             return <span>En cours de traitement</span>
+//         }
+//     } else {
+//         return <FormatterDate value={props.value} />   
+//     }
+// }
 
 function MenuContextuel(props) {
 
@@ -646,37 +619,37 @@ function MenuContextuel(props) {
     return ''
 }
 
-function InformationListe(_props) {
+// function InformationListe(_props) {
 
-    const liste = useSelector(state => state.fichiers.liste)
-    const cuuid = useSelector(state => state.fichiers.cuuid)
+//     const liste = useSelector(state => state.fichiers.liste)
+//     const cuuid = useSelector(state => state.fichiers.cuuid)
 
-    if (!liste) return <p>Chargement en cours...</p>
+//     if (!liste) return <p>Chargement en cours...</p>
 
-    if(!cuuid) {
-        const tailleListe = (liste && liste.length) || 0
-        if(tailleListe === 0) {
-            return (
-                <div>
-                    <br/>
-                    <Alert>
-                        <Alert.Heading>Aucuns fichiers</Alert.Heading>
-                        <p>
-                            Il n'y a aucun fichier supprime.
-                        </p>
-                    </Alert>
-                </div>
-            )
-        }
-    } else {
-        const tailleListe = (liste && liste.length) || 0
-        if(tailleListe === 0) {
-            return <p>Aucuns fichiers.</p>
-        }
-    }
+//     if(!cuuid) {
+//         const tailleListe = (liste && liste.length) || 0
+//         if(tailleListe === 0) {
+//             return (
+//                 <div>
+//                     <br/>
+//                     <Alert>
+//                         <Alert.Heading>Aucuns fichiers</Alert.Heading>
+//                         <p>
+//                             Il n'y a aucun fichier supprime.
+//                         </p>
+//                     </Alert>
+//                 </div>
+//             )
+//         }
+//     } else {
+//         const tailleListe = (liste && liste.length) || 0
+//         if(tailleListe === 0) {
+//             return <p>Aucuns fichiers.</p>
+//         }
+//     }
 
-    return ''
-}
+//     return ''
+// }
 
 function traiterCollectionEvenement(workers, dispatch, evenement) {
     // console.debug("traiterCollectionEvenement ", evenement)

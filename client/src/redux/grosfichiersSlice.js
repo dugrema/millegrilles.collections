@@ -765,30 +765,54 @@ export function creerThunks(actions, nomSlice) {
         return resultat
     }
     
-    async function syncCorbeille(dispatch, workers, intervalle, limit, skip, opts) {
-        opts = opts || {}
-        const existants = opts.existants
+    async function syncCorbeille(dispatch, workers, limit, skip, opts) {
+        // opts = opts || {}
+        // const existants = opts.existants
 
-        const { connexion, collectionsDao } = workers
-        const resultat = await connexion.syncCorbeille(intervalle.debut, intervalle.fin, {limit, skip})
+        // const { connexion, collectionsDao } = workers
+        // const resultat = await connexion.syncCorbeille(intervalle.debut, intervalle.fin, {limit, skip})
         // console.debug("syncCorbeille resultat : %O (existants: %O)", resultat, existants)
 
+        // const { liste } = resultat
+        // if(existants) {
+        //     for (const doc of liste) {
+        //         existants.delete(doc.tuuid)
+        //     }
+        // }
+        // const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
+    
+        // // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
+        // if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
+        //     await dispatch(chargerTuuids(workers, listeTuuidsDirty))
+        //         .catch(err=>console.error("syncCorbeille Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
+        // } else {
+        //     dispatch(setDechiffrageComplete())
+        // }
+    
+        // return resultat
+
+        opts = opts || {}
+        // const existants = opts.existants
+        const { connexion, collectionsDao } = workers
+        // const resultat = await connexion.syncCorbeille(intervalle.debut, intervalle.fin, {limit, skip})
+        const resultat = await connexion.syncCorbeille({limit, skip})
+        // console.debug("syncCollection liste sync docs : ", resultat)
         const { liste } = resultat
-        if(existants) {
-            for (const doc of liste) {
-                existants.delete(doc.tuuid)
-            }
-        }
+        // if(existants) {
+        //     for (const doc of liste) {
+        //         existants.delete(doc.tuuid)
+        //     }
+        // }
+
         const listeTuuidsDirty = await collectionsDao.syncDocuments(liste)
+
+        dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_SYNC))
     
-        // console.debug("Liste tuuids dirty : ", listeTuuidsDirty)
-        if(listeTuuidsDirty && listeTuuidsDirty.length > 0) {
-            await dispatch(chargerTuuids(workers, listeTuuidsDirty))
-                .catch(err=>console.error("syncCorbeille Erreur traitement tuuids %O : %O", listeTuuidsDirty, err))
-        } else {
-            dispatch(setDechiffrageComplete())
+        // console.debug("syncCollection Liste tuuids dirty supprimes : ", listeTuuidsDirty)
+        if(listeTuuidsDirty.length > 0) {
+            dispatch(pushTuuidsDirty(listeTuuidsDirty))
         }
-    
+  
         return resultat
     }
    
@@ -810,91 +834,102 @@ export function creerThunks(actions, nomSlice) {
     }
     
     async function traiterChargerCorbeille(workers, opts, dispatch, getState) {
-        opts = opts || {}
-    
-        const stateInitial = getState()[nomSlice]
-        const { userId } = stateInitial
-    
-        // Changer source, nettoyer la liste
-        dispatch(setSource(SOURCE_CORBEILLE))
-        dispatch(clear())
+        try {
+            opts = opts || {}
         
-        let intervalle = opts.intervalle
-        if(!opts.intervalle) {
-            intervalle = stateInitial.intervalle
-        }
-        dispatch(setIntervalle(intervalle))
-        dispatch(setSortKeys({key: 'date_suppression', ordre: -1}))
-    
-        // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
+            const stateInitial = getState()[nomSlice]
+            const { userId } = stateInitial
         
-        const { collectionsDao } = workers
-    
-        // Charger le contenu de la collection deja connu
-        const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
-    
-        // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
-        const documentsExistants = new Set()
-        const cuuids = new Set()
-        // console.debug("Contenu idb : %O", contenuIdb)
-        if(contenuIdb) {
-            // TODO Retirer les documents partages
+            // Changer source, nettoyer la liste
+            dispatch(setSource(SOURCE_CORBEILLE))
+            dispatch(clear())
+            
+            let intervalle = opts.intervalle
+            if(!opts.intervalle) {
+                intervalle = stateInitial.intervalle
+            }
+            dispatch(setIntervalle(intervalle))
+            dispatch(setSortKeys({key: 'date_suppression', ordre: -1}))
+        
+            // console.debug("traiterChargerCorbeille Intervalle ", intervalle)
+            
+            const { collectionsDao } = workers
+        
+            // Charger le contenu de la collection deja connu
+            const contenuIdb = await collectionsDao.getSupprime(intervalle, userId)
+        
+            // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
+            const tuuidsIdbSet = new Set(contenuIdb.map(item=>item.tuuid))
+            // const cuuids = new Set()
+            // console.debug("Contenu idb : %O, set tuuids %O", contenuIdb, tuuidsIdbSet)
+            // if(contenuIdb) {
+            //     // TODO Retirer les documents partages
 
-            // Conserver set docs existants
-            for (const doc of contenuIdb) { 
-                documentsExistants.add(doc.tuuid) 
-                if(doc.path_cuuids) {
-                    for(const cuuid of doc.path_cuuids) cuuids.add(cuuid)
+            //     // Conserver set docs existants
+            //     for (const doc of contenuIdb) { 
+            //         documentsExistants.add(doc.tuuid) 
+            //         if(doc.path_cuuids) {
+            //             for(const cuuid of doc.path_cuuids) cuuids.add(cuuid)
+            //         }
+            //     }
+
+            //    // console.debug("Push documents provenance idb : %O", contenuIdb)
+            //    dispatch(push({liste: contenuIdb, clear: true}))
+        
+            //     const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+
+            //     // S'assurer de charger tous les repertoires pour les afficher
+            //     const cuuidsListe = []
+            //     for(const cuuid of cuuids) cuuidsListe.push(cuuid)
+            //     const collectionsConnues = (await collectionsDao.getParTuuids(cuuidsListe)).filter(item=>!!item)
+            //     // console.debug("idbCollections : ", collectionsConnues)
+            //     collectionsConnues.forEach(item=>cuuids.delete(item.tuuid))
+            //     for(const cuuid of cuuids) tuuids.push(cuuid)
+
+            //     if(tuuids.length > 0) {
+            //         // console.debug("traiterChargerCorbeille Tuuids deja dans idb : ", documentsExistants)
+            //         dispatch(chargerTuuids(workers, tuuids))
+            //             .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
+            //     }
+            // }
+        
+            let compteur = 0
+            for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
+                let resultatSync = await syncCorbeille(
+                    dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur, 
+                )
+                // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+                if( ! resultatSync || ! resultatSync.liste ) break
+                compteur += resultatSync.liste.length
+
+                // Retirer tous les tuuids confirmes
+                for(const item of resultatSync.liste) {
+                    tuuidsIdbSet.delete(item.tuuid)
                 }
+
+                if( resultatSync.complete ) break
             }
+            if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCorbeille")
+        
+            // console.debug("traiterChargerCorbeille Documents existants stale : %O (len: %O)", tuuidsIdbSet, tuuidsIdbSet.size)
 
-            // console.debug("Push documents provenance idb : %O", contenuIdb)
-            dispatch(push({liste: contenuIdb, clear: true}))
-    
-            const tuuids = contenuIdb.filter(item=>item.dirty||!item.dechiffre).map(item=>item.tuuid)
+            // Retirer tous les fichiers IDB qui ne sont pas dans la liste sync
+            const contenuIdbFiltre = contenuIdb.filter(item=>!tuuidsIdbSet.has(item.tuuid))
+            // console.debug("traiterChargerCorbeille Contenu IDB filtre", contenuIdbFiltre)
+            dispatch(push({liste: contenuIdbFiltre, clear: true}))
 
-            // S'assurer de charger tous les repertoires pour les afficher
-            const cuuidsListe = []
-            for(const cuuid of cuuids) cuuidsListe.push(cuuid)
-            const collectionsConnues = (await collectionsDao.getParTuuids(cuuidsListe)).filter(item=>!!item)
-            // console.debug("idbCollections : ", collectionsConnues)
-            collectionsConnues.forEach(item=>cuuids.delete(item.tuuid))
-            for(const cuuid of cuuids) tuuids.push(cuuid)
-
-            if(tuuids.length > 0) {
-                // console.debug("traiterChargerCorbeille Tuuids deja dans idb : ", documentsExistants)
-                dispatch(chargerTuuids(workers, tuuids))
-                    .catch(err=>console.error("Erreur traitement tuuids %O : %O", tuuids, err))
-            }
-        }
-    
-        let compteur = 0
-        for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
-            let resultatSync = await syncCorbeille(
-                dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur, 
-                {existants: documentsExistants}
-            )
-            // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
-            if( ! resultatSync || ! resultatSync.liste ) break
-            compteur += resultatSync.liste.length
-            if( resultatSync.complete ) break
-        }
-        if(cycle === SAFEGUARD_BATCH_MAX) throw new Error("Detection boucle infinie dans syncCorbeille")
-    
-        // console.debug("traiterChargerCorbeille Documents existants stale : %O", documentsExistants)
-        if(documentsExistants.size > 0) {
-            // console.debug("Documents retires/deplaces de '%s' : %O", cuuid, documentsExistants)
+            // Retirer de IDB les fichiers qui sont supprimes
             const tuuids = []
-            for(const tuuid of documentsExistants) {
-                dispatch(mergeTuuidData({tuuid, data: {tuuid, supprime: false, supprime_indirect: false}}))
-                tuuids.push(tuuid)
-            }
-            await collectionsDao.deleteDocuments(tuuids)
+            for(const tuuid of tuuidsIdbSet) { tuuids.push(tuuid) }
+            if(tuuids.length > 0) await collectionsDao.deleteDocuments(tuuids)
+
+            // Passer au dechiffrage
+            dispatch(push({liste: []}))
+            dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
+        } catch(err) {
+            console.error("traiterChargerCorbeille Erreur chargement corbeille ", err)
+            dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_ERREUR))
         }
-
-
-        // On marque la fin du chargement/sync
-        dispatch(push({liste: []}))
     }
 
     // Async recherche
