@@ -861,7 +861,7 @@ export function creerThunks(actions, nomSlice) {
             // // Pre-charger le contenu de la liste de fichiers avec ce qu'on a deja dans idb
             const tuuidsIdbSet = new Set(contenuIdb.map(item=>item.tuuid))
             // const cuuids = new Set()
-            // console.debug("Contenu idb : %O, set tuuids %O", contenuIdb, tuuidsIdbSet)
+            console.debug("Contenu idb : %O, set tuuids %O", contenuIdb, tuuidsIdbSet)
             // if(contenuIdb) {
             //     // TODO Retirer les documents partages
 
@@ -915,7 +915,7 @@ export function creerThunks(actions, nomSlice) {
 
             // Retirer tous les fichiers IDB qui ne sont pas dans la liste sync
             const contenuIdbFiltre = contenuIdb.filter(item=>!tuuidsIdbSet.has(item.tuuid))
-            // console.debug("traiterChargerCorbeille Contenu IDB filtre", contenuIdbFiltre)
+            console.debug("traiterChargerCorbeille Contenu IDB filtre", contenuIdbFiltre)
             dispatch(push({liste: contenuIdbFiltre, clear: true}))
 
             // Retirer de IDB les fichiers qui sont supprimes
