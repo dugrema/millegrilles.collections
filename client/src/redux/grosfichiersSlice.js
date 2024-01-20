@@ -3,7 +3,6 @@ import { createSlice, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit
 import { getDocuments } from '../fonctionsFichiers'
 
 const SOURCE_COLLECTION = 'collection',
-      SOURCE_PLUS_RECENT = 'plusrecent',
       SOURCE_CORBEILLE = 'corbeille',
       SOURCE_RECHERCHE = 'recherche',
       SOURCE_PARTAGES_USAGER = 'partagesUsager',  // Usager courant envers d'autres usagers (contacts)
@@ -27,7 +26,7 @@ const initialState = {
     idbInitialise: false,       // Flag IDB initialise
     cuuid: null,                // Identificateur de collection
     sortKeys: {key: 'nom', ordre: 1}, // Ordre de tri
-    source: SOURCE_COLLECTION,  // Source de la requete - collection, plusrecent, corbeille, index, etc.
+    source: SOURCE_COLLECTION,  // Source de la requete - collection, corbeille, recherche, etc.
     liste: null,                // Liste triee de fichiers
     collection: '',             // Information sur la collection courante
     breadcrumb: [],             // Breadcrumb du path de la collection affichee
@@ -250,8 +249,7 @@ function mergeTuuidDataAction(state, action) {
 
         const liste = state.liste || []
         const cuuidCourant = state.cuuid,
-            source = state.source,
-            intervalle = state.intervalle
+            source = state.source
         
         let peutAppend = false
         if(source === SOURCE_COLLECTION) {
@@ -272,26 +270,6 @@ function mergeTuuidDataAction(state, action) {
             peutAppend = true  // On n'a pas de filtres sur les partages usager
         } else if(source === SOURCE_PARTAGES_CONTACTS) {
             peutAppend = true  // On n'a pas de filtres sur les partages contacts
-        } else if(source === SOURCE_PLUS_RECENT) {
-            if(data.supprime === true) {
-                // False
-            } else if(intervalle) {
-                const { debut, fin } = intervalle
-                const champsDate = ['derniere_modification', 'date_creation']
-                champsDate.forEach(champ=>{
-                    const valDate = data[champ]
-                    if(valDate) {
-                        if(valDate >= debut) {
-                            if(fin) {
-                                if(valDate <= fin) peutAppend = true
-                            } else {
-                                // Pas de date de fin
-                                peutAppend = true
-                            }
-                        }
-                    }
-                })
-            }
         } else {
             throw new Error(`Source ${source} non supportee`)
         }
@@ -640,7 +618,6 @@ export function creerThunks(actions, nomSlice) {
                 dispatch(push({liste: documents}))
             }
     
-            let debutSync = new Date().getTime()
             let compteur = 0
             for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
                 let resultatSync = await syncCollection(
@@ -683,7 +660,7 @@ export function creerThunks(actions, nomSlice) {
         const { collectionsDao } = workers
     
         const state = getState()[nomSlice]
-        const { userId, cuuid, partageContactId: contactId } = state
+        const { cuuid, partageContactId: contactId } = state
 
         // console.debug('traiterRafraichirBreadcrumb cuuid ', cuuid)
 
@@ -1026,7 +1003,7 @@ export function creerThunks(actions, nomSlice) {
 
         dispatch(setSortKeys({key: 'nom', ordre: 1}))
     
-        const { connexion, collectionsDao } = workers
+        const { connexion } = workers
         const partagesUsager = await connexion.getPartagesUsager(contactId)
         // console.debug("traiterChargerPartagesUsager Resultat getPartagesUsager : ", partagesUsager)
         const partages = partagesUsager.partages
@@ -1062,7 +1039,7 @@ export function creerThunks(actions, nomSlice) {
         dispatch(setSource(SOURCE_PARTAGES_CONTACTS))
 
         try {
-            const { connexion, collectionsDao } = workers
+            const { connexion } = workers
             const resultat = await connexion.getPartagesContact(userIdTiers, contactId)
             // console.debug("Resultat getPartagesContact : ", resultat)
             const partages = resultat.partages.filter(item=>{
@@ -1369,8 +1346,6 @@ async function dechiffrageMiddlewareListener(workers, actions, thunks, nomSlice,
 async function chargerListe(workers, listenerApi, actions, thunks, nomSlice) {
     const getStateFichiers = () => listenerApi.getState()[nomSlice]
 
-    let debutChargerListe = new Date().getTime()
-
     const CONST_FICHIER_BATCH_SIZE = 30
 
     let liste = []
@@ -1408,7 +1383,6 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
 
     const getStateFichiers = () => listenerApi.getState()[nomSlice]
 
-    const contactId = getStateFichiers().partageContactId
     const userId = getStateFichiers().userId
     const etapeChargement = getStateFichiers().etapeChargement
     const userIdTiers = getStateFichiers().partageUserIdTiers,
@@ -1421,11 +1395,8 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
     const fichiersChiffres = getStateFichiers().liste.filter(item=>!item.dechiffre)
     listenerApi.dispatch(actions.setFichiersChiffres(fichiersChiffres))
 
-    let debutDechiffrer = new Date().getTime()
-
     // const partage = !!(contactId || source === SOURCE_PARTAGES_CONTACTS)
     let fichiersDechiffres = []
-    let compteur = 0
     while(true) {
         // console.debug("Dispatch actions.getBatchFichiersChiffres")
         listenerApi.dispatch(actions.getBatchFichiersChiffres())
