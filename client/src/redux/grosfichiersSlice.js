@@ -9,7 +9,7 @@ const SOURCE_COLLECTION = 'collection',
       SOURCE_PARTAGES_CONTACTS = 'partagesContacts',  // Partages par un autre usager (on est le contact)
 
       // SOURCE_INDEX = 'index'
-      CONST_SYNC_BATCH_SIZE = 200,
+      CONST_SYNC_BATCH_SIZE = 2,
       SAFEGUARD_BATCH_MAX = 1000,
       TAILLE_AFFICHEE_INIT = 50,
       INCREMENT_TAILLE_AFFICHEE = 25,
@@ -808,7 +808,7 @@ export function creerThunks(actions, nomSlice) {
 
         dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_SYNC))
     
-        // console.debug("syncCollection Liste tuuids dirty supprimes : ", listeTuuidsDirty)
+        console.debug("syncCollection Liste tuuids dirty supprimes : ", listeTuuidsDirty)
         if(listeTuuidsDirty.length > 0) {
             dispatch(pushTuuidsDirty(listeTuuidsDirty))
         }
@@ -896,9 +896,9 @@ export function creerThunks(actions, nomSlice) {
             let compteur = 0
             for(var cycle=0; cycle<SAFEGUARD_BATCH_MAX; cycle++) {
                 let resultatSync = await syncCorbeille(
-                    dispatch, workers, intervalle, CONST_SYNC_BATCH_SIZE, compteur, 
+                    dispatch, workers, CONST_SYNC_BATCH_SIZE, compteur, 
                 )
-                // console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
+                console.debug("Sync collection (cycle %d) : %O", cycle, resultatSync)
                 if( ! resultatSync || ! resultatSync.liste ) break
                 compteur += resultatSync.liste.length
 
@@ -906,6 +906,10 @@ export function creerThunks(actions, nomSlice) {
                 for(const item of resultatSync.liste) {
                     tuuidsIdbSet.delete(item.tuuid)
                 }
+
+                console.debug("State : ", getState())
+                const source = getState()[nomSlice].source
+                if(source !== SOURCE_CORBEILLE) throw new Error("cancelled")
 
                 if( resultatSync.complete ) break
             }

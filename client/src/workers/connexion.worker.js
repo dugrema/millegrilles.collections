@@ -227,10 +227,10 @@ function syncRecents(debut, fin, opts) {
   return ConnexionClient.emitBlocking('syncRecents', requete, params)
 }
 
-function syncCorbeille(debut, fin, opts) {
+function syncCorbeille(opts) {
   opts = opts || {}
   const {skip, limit} = opts
-  const requete = {debut, fin, skip, limit}
+  const requete = {skip, limit}
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCorbeille', ajouterCertificat: true}
   return ConnexionClient.emitBlocking('syncCorbeille', requete, params)
 }
