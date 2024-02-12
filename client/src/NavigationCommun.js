@@ -405,7 +405,7 @@ function BoutonUpload(props) {
     const upload = useCallback( acceptedFiles => {
         // console.debug("Files : %O pour usager: %O, signalAnnuler: %O", acceptedFiles, usager, signalAnnuler)
         const breadcrumbPath = breadcrumb.map(item=>item.label).join('/')
-        console.debug("BoutonUpload.uploader breadcrumb %O, path %s", breadcrumb, breadcrumbPath)
+        // console.debug("BoutonUpload.uploader breadcrumb %O, path %s", breadcrumb, breadcrumbPath)
 
         for(const file of acceptedFiles) {
             if(!file.type && file.size === 0) {

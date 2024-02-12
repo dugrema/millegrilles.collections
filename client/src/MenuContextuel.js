@@ -44,7 +44,7 @@ export function MenuContextuelFichier(props) {
     }, [fichier, previewDisponible, fermerContextuel, showPreview])
 
     const downloadEvent = useCallback( async event => {
-        console.debug("Download fichier %O", fichier)
+        // console.debug("Download fichier %O", fichier)
         const tuuid = fichier.tuuid
         downloadAction(tuuid)
         fermerContextuel()

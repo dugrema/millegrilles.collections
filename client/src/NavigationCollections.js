@@ -721,7 +721,7 @@ function PreparationModal(props) {
     }, [complet])
 
     useEffect(()=>{
-        console.debug("Progres : ", progres)
+        // console.debug("Progres : ", progres)
         if(show === false) return reset()
         if(!progres) return reset()
 
@@ -739,7 +739,7 @@ function PreparationModal(props) {
 
     useEffect(()=>{
         if(!complet) return
-        console.debug("Err : %O, rejets: %O, valeur: %O", err, rejets, valeur)
+        // console.debug("Err : %O, rejets: %O, valeur: %O", err, rejets, valeur)
         if(err || rejets) return
         if(isNaN(valeur)) return fermer()
         if(window.localStorage.getItem('uploadHint1') === 'false') return fermer()
@@ -891,7 +891,7 @@ function traiterCollectionEvenement(workers, dispatch, evenement) {
 }
 
 async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
-    console.debug("traiterContenuCollectionEvenement ", evenement)
+    // console.debug("traiterContenuCollectionEvenement ", evenement)
 
     const message = evenement.message || {}
     
@@ -909,7 +909,7 @@ async function traiterContenuCollectionEvenement(workers, dispatch, evenement) {
     const promises = []
 
     if(tuuids.length > 0) {
-        console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
+        // console.debug("traiterCollectionEvenement Refresh tuuids ", tuuids)
         promises.push(dispatch(fichiersThunks.chargerTuuids(workers, tuuids)))
     }
 
