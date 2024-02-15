@@ -1,5 +1,6 @@
 import { expose } from 'comlink'
-import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
+// import * as ConnexionClient from '@dugrema/millegrilles.reactjs/src/connexionClient'
+import connexionClient from '@dugrema/millegrilles.reactjs/src/connexionClientV2'
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 
 const DEBUG = false
@@ -7,11 +8,11 @@ const DEBUG = false
 const CONST_DOMAINE_GROSFICHIERS = 'GrosFichiers'
 
 function getFavoris() {
-  return ConnexionClient.emitBlocking('getFavoris', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
+  return connexionClient.emitWithAck('getFavoris', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'favoris', ajouterCertificat: true})
 }
 
 function getCorbeille() {
-  return ConnexionClient.emitBlocking('getCorbeille', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getCorbeille', ajouterCertificat: true})
+  return connexionClient.emitWithAck('getCorbeille', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getCorbeille', ajouterCertificat: true})
 }
 
 async function getClesFichiers(fuuids, usager, opts) {
@@ -20,7 +21,7 @@ async function getClesFichiers(fuuids, usager, opts) {
   const partage = opts.partage
 
   const params = { fuuids, partage }
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'getPermissionCles', params, 
     {
       kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getClesFichiers', 
@@ -32,7 +33,7 @@ async function getClesFichiers(fuuids, usager, opts) {
 async function getPermission(fuuids) {
   // On doit demander une permission en premier
   const params = { fuuids }
-  const permission = await ConnexionClient.emitBlocking('getPermissionCle', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
+  const permission = await connexionClient.emitWithAck('getPermissionCle', params, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPermission', ajouterCertificat: true})
   // console.debug("Permission recue : %O", permission)
 
   return permission
@@ -49,7 +50,7 @@ async function creerCollection(metadataChiffre, commandeMaitrecles, opts) {
   // params['_commandeMaitrecles'] = commandeMaitrecles
   const attachements = {cle: commandeMaitrecles}
 
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'creerCollection', 
     params, 
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'nouvelleCollection', ajouterCertificat: true, attachements}
@@ -58,7 +59,7 @@ async function creerCollection(metadataChiffre, commandeMaitrecles, opts) {
 
 function toggleFavoris(etatFavoris) {
   // Format etatFavoris : {tuuid1: false, tuuid2: true, ...}
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'changerFavoris',
     {favoris: etatFavoris},
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'changerFavoris', attacherCertificat: true}
@@ -66,7 +67,7 @@ function toggleFavoris(etatFavoris) {
 }
 
 function supprimerDocuments(cuuid, tuuids, supprimePath) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'supprimerDocuments',
     {cuuid, tuuids, cuuids_path: supprimePath},
     {
@@ -77,7 +78,7 @@ function supprimerDocuments(cuuid, tuuids, supprimePath) {
 }
 
 function archiverDocuments(tuuids) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'archiverDocuments',
     {tuuids},
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'archiverDocuments', attacherCertificat: true}
@@ -85,7 +86,7 @@ function archiverDocuments(tuuids) {
 }
 
 function decrireFichier(tuuid, params) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'decrireFichier',
     {...params, tuuid},
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireFichier', attacherCertificat: true}
@@ -93,7 +94,7 @@ function decrireFichier(tuuid, params) {
 }
 
 function decrireCollection(tuuid, params) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'decrireCollection',
     {...params, tuuid},
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'decrireCollection', attacherCertificat: true}
@@ -109,7 +110,7 @@ function getDocuments(tuuids, opts) {
     partage = true
   }
 
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'getDocuments',
     {tuuids_documents: tuuids, partage, contact_id},
     {
@@ -121,7 +122,7 @@ function getDocuments(tuuids, opts) {
 
 function recupererDocuments(items) {
   // Format de items : {[cuuid]: [tuuid, ...]}
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'recupererDocumentsV2',
     {items},
     {
@@ -135,7 +136,7 @@ function copierVersCollection(cuuid, tuuids, opts) {
   opts = opts || {}
   const contactId = opts.contactId
   // console.debug("copierVersCollection cuuid %O, tuuids : %O, opts : %O", cuuid, tuuids, opts)
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'copierVersCollection',
     {cuuid, inclure_tuuids: tuuids, contact_id: contactId},
     {
@@ -146,7 +147,7 @@ function copierVersCollection(cuuid, tuuids, opts) {
 }
 
 function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'deplacerFichiersCollection',
     {cuuid_origine, cuuid_destination, inclure_tuuids: tuuids},
     {
@@ -159,7 +160,7 @@ function deplacerFichiersCollection(cuuid_origine, cuuid_destination, tuuids) {
 function rechercheIndex(mots_cles, from_idx, size) {
   from_idx = from_idx?from_idx:0
   size = size?size:200
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'rechercheIndex',
     {query: mots_cles, start: from_idx, limit: size, inclure_partages: true},
     {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'GrosFichiers', action: 'rechercheIndex', attacherCertificat: true, timeout: 20_000}
@@ -167,7 +168,7 @@ function rechercheIndex(mots_cles, from_idx, size) {
 }
 
 function transcoderVideo(commande) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'transcoderVideo',
     commande,
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'transcoderVideo', attacherCertificat: true}
@@ -175,7 +176,7 @@ function transcoderVideo(commande) {
 }
 
 function ajouterFichier(commande) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'ajouterFichier',
     commande,
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'commandeNouveauFichier', attacherCertificat: true}
@@ -184,7 +185,7 @@ function ajouterFichier(commande) {
 
 function supprimerVideo(fuuidVideo) {
   const commande = {fuuid_video: fuuidVideo}
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'supprimerVideo',
     commande,
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerVideo', attacherCertificat: true}
@@ -192,7 +193,7 @@ function supprimerVideo(fuuidVideo) {
 }
 
 function supprimerJobVideo(commande) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'supprimerJobVideo',
     commande,
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerJobVideo', attacherCertificat: true}
@@ -201,7 +202,7 @@ function supprimerJobVideo(commande) {
 
 function creerTokenStream(commande) {
   // const commande = {fuuids}
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'creerTokenStream', 
     commande, 
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getJwtStreaming', ajouterCertificat: true}
@@ -216,7 +217,7 @@ function syncCollection(cuuid, opts) {
   if(cuuid) requete.cuuid = cuuid
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCollection', ajouterCertificat: true}
   // console.debug("syncCollection %O, %O", requete, params)
-  return ConnexionClient.emitBlocking('syncCollection', requete, params)
+  return connexionClient.emitWithAck('syncCollection', requete, params)
 }
 
 function syncRecents(debut, fin, opts) {
@@ -224,7 +225,7 @@ function syncRecents(debut, fin, opts) {
   const {skip, limit} = opts
   const requete = {debut, fin, skip, limit}
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncRecents', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('syncRecents', requete, params)
+  return connexionClient.emitWithAck('syncRecents', requete, params)
 }
 
 function syncCorbeille(opts) {
@@ -232,24 +233,24 @@ function syncCorbeille(opts) {
   const {skip, limit} = opts
   const requete = {skip, limit}
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'syncCorbeille', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('syncCorbeille', requete, params)
+  return connexionClient.emitWithAck('syncCorbeille', requete, params)
 }
 
 function getMediaJobs(opts) {
   opts = opts || {}
   const requete = {...opts}
   const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'requeteJobsVideo', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('requeteJobsVideo', requete, params)
+  return connexionClient.emitWithAck('requeteJobsVideo', requete, params)
 }
 
 /** Retourne nouveau { token, batchId } */
 function getBatchUpload() {
-  return ConnexionClient.emitBlocking('getBatchUpload', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, timeout: 30_000})
+  return connexionClient.emitWithAck('getBatchUpload', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, timeout: 30_000, noverif: true})
 }
 
 async function submitBatchUpload(token) {
   const commande = { token }
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'submitBatchUpload',
     commande,
     {noformat: true, timeout: 60_000}
@@ -259,31 +260,31 @@ async function submitBatchUpload(token) {
 function chargerContacts() {
   const requete = {}
   const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'chargerContacts', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('chargerContacts', requete, params)
+  return connexionClient.emitWithAck('chargerContacts', requete, params)
 }
 
 function ajouterContactLocal(nomUsager) {
   const commande = { nom_usager: nomUsager }
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterContactLocal', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('ajouterContactLocal', commande, params)
+  return connexionClient.emitWithAck('ajouterContactLocal', commande, params)
 }
 
 function supprimerContacts(contactIds) {
   const commande = { contact_ids: contactIds }
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerContacts', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('supprimerContacts', commande, params)
+  return connexionClient.emitWithAck('supprimerContacts', commande, params)
 }
 
 function partagerCollections(cuuids, contactIds) {
   const commande = { cuuids, contact_ids: contactIds }
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'partagerCollections', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('partagerCollections', commande, params)
+  return connexionClient.emitWithAck('partagerCollections', commande, params)
 }
 
 function getPartagesUsager(contactId) {
   const requete = {contact_id: contactId}
   const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPartagesUsager', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('getPartagesUsager', requete, params)
+  return connexionClient.emitWithAck('getPartagesUsager', requete, params)
 }
 
 function getPartagesContact(opts) {
@@ -291,13 +292,13 @@ function getPartagesContact(opts) {
   const contact_id = opts.contactId
   const requete = {contact_id}
   const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getPartagesContact', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('getPartagesContact', requete, params)
+  return connexionClient.emitWithAck('getPartagesContact', requete, params)
 }
 
 function supprimerPartageUsager(contactId, tuuid) {
   const commande = { contact_id: contactId, tuuid }
   const params = {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerPartageUsager', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('supprimerPartageUsager', commande, params)
+  return connexionClient.emitWithAck('supprimerPartageUsager', commande, params)
 }
 
 function getInfoStatistiques(cuuid, contactId) {
@@ -306,19 +307,19 @@ function getInfoStatistiques(cuuid, contactId) {
     kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getInfoStatistiques', 
     timeout: 45_000, ajouterCertificat: true
   }
-  return ConnexionClient.emitBlocking('getInfoStatistiques', requete, params)
+  return connexionClient.emitWithAck('getInfoStatistiques', requete, params)
 }
 
 function getStructureRepertoire(cuuid, contactId) {
   const requete = { cuuid, contact_id: contactId }
   const params = {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getStructureRepertoire', ajouterCertificat: true}
-  return ConnexionClient.emitBlocking('getStructureRepertoire', requete, params)
+  return connexionClient.emitWithAck('getStructureRepertoire', requete, params)
 }
 
 // Fonctions delegues
 
 function indexerContenu(reset) {
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'indexerContenu',
     {reset},
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'indexerContenu', attacherCertificat: true}
@@ -327,7 +328,7 @@ function indexerContenu(reset) {
 
 async function regenererPreviews(fuuids) {
   const commande = { fuuids, reset: true }
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'completerPreviews',
     commande,
     {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: 'GrosFichiers', action: 'completerPreviews', attacherCertificat: true}
@@ -336,7 +337,7 @@ async function regenererPreviews(fuuids) {
 
 async function getSousRepertoires(cuuid) {
   const requete = { cuuid }
-  return ConnexionClient.emitBlocking(
+  return connexionClient.emitWithAck(
     'getSousRepertoires',
     requete,
     {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getSousRepertoires', ajouterCertificat: true}
@@ -346,35 +347,35 @@ async function getSousRepertoires(cuuid) {
 // Listeners
 
 function enregistrerCallbackMajCollection(cuuid, cb) { 
-  return ConnexionClient.subscribe('enregistrerCallbackMajCollection', cb, {cuuid, DEBUG})
+  return connexionClient.subscribe('enregistrerCallbackMajCollection', cb, {cuuid, DEBUG})
 }
 
 function retirerCallbackMajCollection(cuuid, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackMajCollection', cb, {cuuid, DEBUG}) 
+  return connexionClient.unsubscribe('retirerCallbackMajCollection', cb, {cuuid, DEBUG}) 
 }
 
 function enregistrerCallbackMajContenuCollection(cuuid, cb, opts) { 
   opts = opts || {}
-  return ConnexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, {...opts, cuuid, DEBUG})
+  return connexionClient.subscribe('enregistrerCallbackMajContenuCollection', cb, {...opts, cuuid, DEBUG})
 }
 
 function retirerCallbackMajContenuCollection(cuuid, cb, opts) { 
   opts = opts || {}
-  return ConnexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, {...opts, cuuid, DEBUG}) 
+  return connexionClient.unsubscribe('retirerCallbackMajContenuCollection', cb, {...opts, cuuid, DEBUG}) 
 }
 
 function enregistrerCallbackTranscodageProgres(params, cb) { 
   // console.debug("enregistrerCallbackTranscodageProgres params : %O", params)
-  return ConnexionClient.subscribe('enregistrerCallbackTranscodageVideo', cb, params) 
+  return connexionClient.subscribe('enregistrerCallbackTranscodageVideo', cb, params) 
 }
 
 function retirerCallbackTranscodageProgres(params, cb) { 
-  return ConnexionClient.unsubscribe('retirerCallbackTranscodageVideo', cb, params) 
+  return connexionClient.unsubscribe('retirerCallbackTranscodageVideo', cb, params) 
 }
 
 // Exposer methodes du Worker
 expose({
-    ...ConnexionClient, 
+    ...connexionClient, 
 
     // Requetes et commandes privees
     getDocuments, getClesFichiers,

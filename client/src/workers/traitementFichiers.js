@@ -148,18 +148,16 @@ function promptSaveFichier(blob, opts) {
 
 async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     opts = opts || {}
-    const { acceptedFiles, /*token, batchId, cuuid, */ userId, breadcrumbPath } = params
+    const { acceptedFiles, userId, breadcrumbPath } = params
     const { setProgres, signalAnnuler } = opts
     const { transfertUploadFichiers, usagerDao } = workers
-    // console.debug("traiterAcceptedFiles Debut upload vers cuuid %s pour fichiers %O", cuuid, acceptedFiles)
+    console.debug("traiterAcceptedFiles Debut upload pour fichiers %O", acceptedFiles)
 
-    // const certificatsMaitredescles = await workers.connexion.getClesChiffrage()
     const certificatsMaitredescles = await workers.clesDao.getCertificatsMaitredescles()
-    // console.debug("Certificats : %O", certificatsMaitredescles)
+    console.debug("Certificats : %O", certificatsMaitredescles)
 
-    // await transfertFichiers.up_setCertificats(certificatsMaitredescles)
     await transfertUploadFichiers.up_setCertificats(certificatsMaitredescles)
-    // console.debug("Certificat maitre des cles OK")
+    console.debug("Certificat maitre des cles OK")
 
     const fichiersRejetes = []
 
@@ -193,43 +191,47 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
             continue
         }
 
-        // Recuperer un token, faire 1 fichier par batch
-        // const debutGetBatch = new Date().getTime()
-        const infoBatch = await workers.connexion.getBatchUpload()
-        // console.debug("traiterAcceptedFiles InfoBatch %O (duree get %d)", infoBatch, new Date().getTime()-debutGetBatch)
-        const { batchId, token } = infoBatch
-        const paramBatch = {...params, acceptedFiles: [file], token, batchId, infoTaille}
+        try {
+            // Recuperer un token, faire 1 fichier par batch
+            const debutGetBatch = new Date().getTime()
+            const infoBatch = await workers.connexion.getBatchUpload()
+            console.debug("traiterAcceptedFiles InfoBatch %O (duree get %d)", infoBatch, new Date().getTime()-debutGetBatch)
+            const { batchId, token } = infoBatch
+            const paramBatch = {...params, acceptedFiles: [file], token, batchId, infoTaille}
 
-        // console.debug("Params batch upload ", paramBatch)
+            console.debug("Params batch upload ", paramBatch)
 
-        const updateFichierProxy = Comlink.proxy((doc, opts) => {
-            const docWithIds = {...doc, userId, batchId, token, breadcrumbPath}
-            // console.debug("updateFichierProxy docWithIds ", docWithIds)
-            return updateFichier(workers, dispatch, docWithIds, opts)
-        })
+            const updateFichierProxy = Comlink.proxy((doc, opts) => {
+                const docWithIds = {...doc, userId, batchId, token, breadcrumbPath}
+                // console.debug("updateFichierProxy docWithIds ", docWithIds)
+                return updateFichier(workers, dispatch, docWithIds, opts)
+            })
 
-        const ajouterPartProxy = Comlink.proxy(
-            (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
-        )
-    
-        const resultat = await transfertUploadFichiers.traiterAcceptedFilesV2(
-            Comlink.transfer(paramBatch),
-            ajouterPartProxy, 
-            updateFichierProxy,
-            setProgresProxy,
-            signalAnnuler
-        )
+            const ajouterPartProxy = Comlink.proxy(
+                (correlation, compteurPosition, chunk) => ajouterPart(workers, batchId, correlation, compteurPosition, chunk)
+            )
+        
+            const resultat = await transfertUploadFichiers.traiterAcceptedFilesV2(
+                Comlink.transfer(paramBatch),
+                ajouterPartProxy, 
+                updateFichierProxy,
+                setProgresProxy,
+                signalAnnuler
+            )
 
-        // Conserver les cles dans IDB pour reference future
-        for await (const cle of resultat.chiffrage) {
-            await usagerDao.saveCleDechiffree(cle.hachage, cle.key, cle)
+            // Conserver les cles dans IDB pour reference future
+            for await (const cle of resultat.chiffrage) {
+                await usagerDao.saveCleDechiffree(cle.hachage, cle.key, cle)
+            }
+
+            infoTaille.positionChiffre += file.size
+            infoTaille.positionFichier++
+
+            // console.debug("traiterAcceptedFiles Temps traiter fichier %d ms", new Date().getTime()-debutFichier)
+            // debutFichier = new Date().getTime()
+        } catch(err) {
+            console.error("traiterAcceptedFiles Erreur traitement %O : %O", file, err)
         }
-
-        infoTaille.positionChiffre += file.size
-        infoTaille.positionFichier++
-
-        // console.debug("traiterAcceptedFiles Temps traiter fichier %d ms", new Date().getTime()-debutFichier)
-        // debutFichier = new Date().getTime()
     }
 
     return({rejets: fichiersRejetes})
