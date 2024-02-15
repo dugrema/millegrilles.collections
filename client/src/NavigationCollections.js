@@ -720,15 +720,22 @@ function PreparationModal(props) {
         return window.localStorage.getItem('uploadHint1') !== 'false'
     }, [complet])
 
-    const hideCb = useCallback(e=>{
-        if(!complet) return annulerCb()
-        return fermer()
-    }, [fermer, annulerCb, complet])
+    // const hideCb = useCallback(e=>{
+    //     // console.debug("Event %O, complet %O, show : %O", e, complet, show)
+    //     if(!complet) annulerCb()
+    //     fermer()
+    // }, [fermer, annulerCb, complet, show])
 
     useEffect(()=>{
         // console.debug("Progres : ", progres)
-        if(show === false) return reset()
-        if(!progres) return reset()
+        if(show === false) {
+            reset()
+            return
+        }
+        if(!progres) {
+            reset()
+            return
+        }
 
         if(progres.annuler === true) {
             reset()
@@ -746,12 +753,20 @@ function PreparationModal(props) {
         if(!complet) return
         // console.debug("Err : %O, rejets: %O, valeur: %O", err, rejets, valeur)
         if(err || rejets) return
-        if(isNaN(valeur)) return fermer()
-        if(window.localStorage.getItem('uploadHint1') === 'false') return fermer()
+        if(isNaN(valeur)) {
+            fermer()
+            return
+        }
+        if(window.localStorage.getItem('uploadHint1') === 'false') {
+            fermer()
+            return
+        }
     }, [complet, valeur, fermer])
 
+    // Desactiver animation a cause d'une race condition (arrive souvent sur Brave, Chromium)
+    // https://github.com/react-bootstrap/react-bootstrap/issues/6153
     return (
-        <Modal show={show} onHide={hideCb}>
+        <Modal show={show} animation={false} /*onHide={hideCb}*/ >
             <Modal.Header>Preparation de fichiers</Modal.Header>
             <Modal.Body>
                 <PreparationModalProgress valeur={valeur} err={err} complet={complet} rejets={rejets} />

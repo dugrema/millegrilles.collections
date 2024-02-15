@@ -151,13 +151,13 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
     const { acceptedFiles, userId, breadcrumbPath } = params
     const { setProgres, signalAnnuler } = opts
     const { transfertUploadFichiers, usagerDao } = workers
-    console.debug("traiterAcceptedFiles Debut upload pour fichiers %O", acceptedFiles)
+    // console.debug("traiterAcceptedFiles Debut upload pour fichiers %O", acceptedFiles)
 
     const certificatsMaitredescles = await workers.clesDao.getCertificatsMaitredescles()
-    console.debug("Certificats : %O", certificatsMaitredescles)
+    // console.debug("Certificats : %O", certificatsMaitredescles)
 
     await transfertUploadFichiers.up_setCertificats(certificatsMaitredescles)
-    console.debug("Certificat maitre des cles OK")
+    // console.debug("Certificat maitre des cles OK")
 
     const fichiersRejetes = []
 
@@ -195,11 +195,11 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
             // Recuperer un token, faire 1 fichier par batch
             const debutGetBatch = new Date().getTime()
             const infoBatch = await workers.connexion.getBatchUpload()
-            console.debug("traiterAcceptedFiles InfoBatch %O (duree get %d)", infoBatch, new Date().getTime()-debutGetBatch)
+            // console.debug("traiterAcceptedFiles InfoBatch %O (duree get %d)", infoBatch, new Date().getTime()-debutGetBatch)
             const { batchId, token } = infoBatch
             const paramBatch = {...params, acceptedFiles: [file], token, batchId, infoTaille}
 
-            console.debug("Params batch upload ", paramBatch)
+            // console.debug("Params batch upload ", paramBatch)
 
             const updateFichierProxy = Comlink.proxy((doc, opts) => {
                 const docWithIds = {...doc, userId, batchId, token, breadcrumbPath}

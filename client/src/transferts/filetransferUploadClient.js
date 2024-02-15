@@ -279,11 +279,15 @@ async function conserverFichier(file, fileMappe, params, fcts) {
     const { size } = fileMappe
     const { correlation } = params
 
+    let positionOriginal = 0,
+        positionChiffre = 0
+
     // Preparer chiffrage
     await _hachageDechiffre.reset()
     const transformInst = await preparerTransform()
     const transform = {
         transform: async chunk => {
+            positionOriginal += chunk.length
             await _hachageDechiffre.update(chunk)
             return await transformInst.cipher.update(chunk)
         },
@@ -294,46 +298,49 @@ async function conserverFichier(file, fileMappe, params, fcts) {
     }
 
     // console.debug("traiterAcceptedFiles Transform : ", transformInst)
+    let intervalProgres = null
+    if(setProgres) {
+        intervalProgres = setInterval(()=>{
+            // console.debug("intervalProgres positionOriginal %d, tailleCumulative %d", positionOriginal, tailleCumulative)
+            const taillePreparee = positionOriginal + tailleCumulative
+            setProgres(Math.floor(100*taillePreparee/tailleTotale), {idxFichier: positionFichier})
+        }, 750)
+    }
 
     const batchSize = getUploadBatchSize(size)
+
+    const batchStream64k = createTransformBatch(64*1024)
     const fileReadable = getAcceptedFileStream(file)
     const transformStream = createTransformStreamCallback(transform)
     const batchStream = createTransformBatch(batchSize)
-    const fr2 = fileReadable.pipeThrough(transformStream).pipeThrough(batchStream)
+    const fr2 = fileReadable.pipeThrough(batchStream64k).pipeThrough(transformStream).pipeThrough(batchStream)
     const reader = fr2.getReader()
 
     // Convertir reader en async iterable
     const iterReader = streamAsyncReaderIterable(reader, {batchSize, transform})
 
-    const frequenceUpdate = 500
-    let dernierUpdate = 0,
-        compteurPosition = 0,
-        taillePreparee = tailleCumulative
-
-    for await (let chunk of iterReader) {
-        if(signalAnnuler) if (await signalAnnuler()) throw new Error("Cancelled")
-
-        // Conserver dans idb
-        await ajouterPart(correlation, compteurPosition, Comlink.transfer(chunk))
-        compteurPosition += chunk.length
-
-        taillePreparee += chunk.length
-        const now = new Date().getTime()
-        if(setProgres) {
-            if(dernierUpdate + frequenceUpdate < now) {
-                dernierUpdate = now
-                setProgres(Math.floor(100*taillePreparee/tailleTotale), {idxFichier: positionFichier})
+    try {
+        for await (let chunk of iterReader) {
+            if(signalAnnuler) if (await signalAnnuler()) {
+                if(intervalProgres) clearInterval(intervalProgres)
+                throw new Error("Cancelled")
             }
+
+            // Conserver dans idb
+            await ajouterPart(correlation, positionChiffre, Comlink.transfer(chunk))
+            positionChiffre += chunk.length
         }
+    } finally {
+        if(intervalProgres) clearInterval(intervalProgres)
     }
 
-    if(size >= compteurPosition) {
-        // Le fichier chiffre devrait etre plus grand que l'original
-        console.error("conserverFichier - fichier %O incomplet. Taille lue %d", fileMappe, compteurPosition)
+    if(size !== positionOriginal || size >= positionChiffre) {
+        // Le fichier original n'a pas ete lu au complet
+        console.error("conserverFichier - fichier %O incomplet. Taille lue %d", fileMappe, positionOriginal)
         throw new Error(`Erreur lecture ZIP, fichier ${fileMappe.name} incomplet`)
     }
 
-    // console.debug("conserverFichier - fichier %O taille chiffree %d", fileMappe, compteurPosition)
+    // console.debug("conserverFichier - fichier %O taille originale %d, chiffree %d", fileMappe, positionOriginal, positionChiffre)
 
     const etatFinalChiffrage = transform.etatFinal()
     etatFinalChiffrage.secretChiffre = transformInst.secretChiffre
@@ -461,6 +468,7 @@ async function traiterFichier(file, tailleTotale, params, fcts) {
 
         return etatFinalChiffrage
     } catch(err) {
+        docIdb.etat = ETAT_ECHEC
         if(updateFichier) await updateFichier(Comlink.transfer(docIdb), {err: ''+err})
         throw err
     }

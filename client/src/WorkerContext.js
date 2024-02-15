@@ -207,23 +207,23 @@ export function WorkerProvider(props) {
     }, [setCapabilities, device, orientation, overrideAffichage])
   
     // Evenement pour empecher de changer de page (e.g. si transfert en cours)
-    // useEffect(()=>{
-    //     // console.info("WorkerProvider.useEffect sur stopUnload %O", stopUnload)
-    //     if(stopUnload) {
-    //         console.info("Ajout beforeunload")
-    //         const unloadBlock = e => {
-    //             e.preventDefault()
-    //             // console.debug("Unload intercepted, event %O", e)
-    //             e.returnValue = true
-    //             setModalTransfertEnCours(true)
-    //         }
-    //         window.addEventListener('beforeunload', unloadBlock)
-    //         return () => {
-    //             // console.info("Nettoyage beforeunload")
-    //             window.removeEventListener('beforeunload', unloadBlock)
-    //         }
-    //     }
-    // }, [stopUnload, setModalTransfertEnCours])
+    useEffect(()=>{
+        // console.info("WorkerProvider.useEffect sur stopUnload %O", stopUnload)
+        if(stopUnload) {
+            console.info("Ajout beforeunload")
+            const unloadBlock = e => {
+                e.preventDefault()
+                // console.debug("Unload intercepted, event %O", e)
+                e.returnValue = true
+                setModalTransfertEnCours(true)
+            }
+            window.addEventListener('beforeunload', unloadBlock)
+            return () => {
+                // console.info("Nettoyage beforeunload")
+                window.removeEventListener('beforeunload', unloadBlock)
+            }
+        }
+    }, [stopUnload, setModalTransfertEnCours])
 
     if(!workersPrets) return props.attente
 
