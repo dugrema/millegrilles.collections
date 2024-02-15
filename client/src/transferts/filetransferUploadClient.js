@@ -6,7 +6,7 @@ import { pki } from '@dugrema/node-forge'
 import { base64 } from 'multiformats/bases/base64'
 import { BlobReader, ZipReader } from '@zip.js/zip.js'
 
-import { getAcceptedFileReader, streamAsyncIterable } from '@dugrema/millegrilles.reactjs/src/stream'
+import { getAcceptedFileReader, streamAsyncIterable, streamAsyncReaderIterable, createTransformStreamCallback, createTransformBatch, getAcceptedFileStream } from '@dugrema/millegrilles.reactjs/src/stream'
 import { chiffrage }  from '@dugrema/millegrilles.reactjs/src/chiffrage'
 import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
 
@@ -283,11 +283,11 @@ async function conserverFichier(file, fileMappe, params, fcts) {
     await _hachageDechiffre.reset()
     const transformInst = await preparerTransform()
     const transform = {
-        update: async chunk => {
+        transform: async chunk => {
             await _hachageDechiffre.update(chunk)
             return await transformInst.cipher.update(chunk)
         },
-        finalize: async () => {
+        flush: async () => {
             return await transformInst.cipher.finalize()
         },
         etatFinal: transformInst.cipher.etatFinal,
@@ -296,20 +296,25 @@ async function conserverFichier(file, fileMappe, params, fcts) {
     // console.debug("traiterAcceptedFiles Transform : ", transformInst)
 
     const batchSize = getUploadBatchSize(size)
-    const reader = getAcceptedFileReader(file)
-    const iterReader = streamAsyncIterable(reader, {batchSize, transform})
+    const fileReadable = getAcceptedFileStream(file)
+    const transformStream = createTransformStreamCallback(transform)
+    const batchStream = createTransformBatch(batchSize)
+    const fr2 = fileReadable.pipeThrough(transformStream).pipeThrough(batchStream)
+    const reader = fr2.getReader()
+
+    // Convertir reader en async iterable
+    const iterReader = streamAsyncReaderIterable(reader, {batchSize, transform})
 
     const frequenceUpdate = 500
     let dernierUpdate = 0,
         compteurPosition = 0,
         taillePreparee = tailleCumulative
 
-    for await (const chunk of iterReader) {
+    for await (let chunk of iterReader) {
         if(signalAnnuler) if (await signalAnnuler()) throw new Error("Cancelled")
 
         // Conserver dans idb
-        if(ajouterPart) await ajouterPart(correlation, compteurPosition, Comlink.transfer(chunk))
-        // if(ajouterPart) await ajouterPart(correlation, compteurPosition, chunk)
+        await ajouterPart(correlation, compteurPosition, Comlink.transfer(chunk))
         compteurPosition += chunk.length
 
         taillePreparee += chunk.length
@@ -321,6 +326,14 @@ async function conserverFichier(file, fileMappe, params, fcts) {
             }
         }
     }
+
+    if(size >= compteurPosition) {
+        // Le fichier chiffre devrait etre plus grand que l'original
+        console.error("conserverFichier - fichier %O incomplet. Taille lue %d", fileMappe, compteurPosition)
+        throw new Error(`Erreur lecture ZIP, fichier ${fileMappe.name} incomplet`)
+    }
+
+    // console.debug("conserverFichier - fichier %O taille chiffree %d", fileMappe, compteurPosition)
 
     const etatFinalChiffrage = transform.etatFinal()
     etatFinalChiffrage.secretChiffre = transformInst.secretChiffre
@@ -785,7 +798,6 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
     }, {})
 
     console.debug("Repertoires connus : ", mappingRepertoires)
-
 
     for await (const entry of zipReader.getEntriesGenerator()) {
         console.debug("Zip entry : ", entry)

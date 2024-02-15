@@ -980,15 +980,17 @@ function UploadBatchZip(props) {
     const [erreurTraitement, setErreurTraitement] = useState('')
     const [fichiers, setFichiers] = useState('')
 
-    const ajouterPartProxy = comlinkProxy((correlation, compteurPosition, chunk) => {
+    const ajouterPartProxy = useMemo(()=>comlinkProxy((correlation, compteurPosition, chunk) => {
         return workers.traitementFichiers.ajouterPart(batchId, correlation, compteurPosition, chunk)
-    })
+        // return workers.uploadFichiersDao.ajouterFichierUploadFile(batchId, correlation, compteurPosition, chunk)
+    }), [workers, batchId])
 
-    const updateFichierProxy = comlinkProxy((doc, opts) => {
+    const updateFichierProxy = useMemo(()=>comlinkProxy((doc, opts) => {
         const docWithIds = {...doc, userId, batchId, token}
         // console.debug("updateFichierProxy docWithIds ", docWithIds)
         return workers.traitementFichiers.updateFichier(dispatch, docWithIds, opts)
-    })
+        // return workers.uploadFichiersDao.updateFichierUpload(docWithIds)
+    }), [workers, userId, token, batchId])
 
     const fichiersChangeHandler = useCallback(e=>{
         const files = e.currentTarget.files
@@ -1010,7 +1012,7 @@ function UploadBatchZip(props) {
         Promise.resolve()
             .then(async () => {
                 for await (const fichier of fichiers) {
-                    await workers.transfertFichiers.parseZipFile(workers, userId, fichier, cuuid, updateFichierProxy, ajouterPartProxy)
+                    await workers.transfertUploadFichiers.parseZipFile(workers, userId, fichier, cuuid, updateFichierProxy, ajouterPartProxy)
                 }
                 fermer()
             })
