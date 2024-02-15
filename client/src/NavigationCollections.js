@@ -720,6 +720,11 @@ function PreparationModal(props) {
         return window.localStorage.getItem('uploadHint1') !== 'false'
     }, [complet])
 
+    const hideCb = useCallback(e=>{
+        if(!complet) return annulerCb()
+        return fermer()
+    }, [fermer, annulerCb, complet])
+
     useEffect(()=>{
         // console.debug("Progres : ", progres)
         if(show === false) return reset()
@@ -746,7 +751,7 @@ function PreparationModal(props) {
     }, [complet, valeur, fermer])
 
     return (
-        <Modal show={show}>
+        <Modal show={show} onHide={hideCb}>
             <Modal.Header>Preparation de fichiers</Modal.Header>
             <Modal.Body>
                 <PreparationModalProgress valeur={valeur} err={err} complet={complet} rejets={rejets} />
