@@ -270,6 +270,14 @@ export function up_retryErreur(opts) {
     //traiterUploads()  // Demarrer traitement si pas deja en cours
 }
 
+/**
+ * Chiffre et conserve un fichier dans IDB.
+ * @param {*} file 
+ * @param {*} fileMappe 
+ * @param {*} params 
+ * @param {*} fcts 
+ * @returns 
+ */
 async function conserverFichier(file, fileMappe, params, fcts) {
 
     const tailleTotale = params.tailleTotale || file.size
@@ -310,10 +318,15 @@ async function conserverFichier(file, fileMappe, params, fcts) {
     const batchSize = getUploadBatchSize(size)
 
     const batchStream64k = createTransformBatch(64*1024)
-    const fileReadable = getAcceptedFileStream(file)
     const transformStream = createTransformStreamCallback(transform)
     const batchStream = createTransformBatch(batchSize)
-    const fr2 = fileReadable.pipeThrough(batchStream64k).pipeThrough(transformStream).pipeThrough(batchStream)
+    const fileReadable = getAcceptedFileStream(file)
+
+    const fr2 = fileReadable
+        .pipeThrough(batchStream64k)    // Split l'input en chunks de 64kb (optimise le chiffrage).
+        .pipeThrough(transformStream)   // Chiffrage
+        .pipeThrough(batchStream)       // Accumule le resultat chiffre en blocks pour sauvegarder d'un coup dans IDB
+
     const reader = fr2.getReader()
 
     // Convertir reader en async iterable
@@ -327,11 +340,15 @@ async function conserverFichier(file, fileMappe, params, fcts) {
             }
 
             // Conserver dans idb
+            // console.debug("Conserver chunk position %d dans IDB", positionChiffre)
             await ajouterPart(correlation, positionChiffre, Comlink.transfer(chunk))
+            // console.debug("Chunk position %d done, waiting", positionChiffre)
             positionChiffre += chunk.length
+            await new Promise(resolve => setTimeout(resolve, 2_000))  // TODO : DEBUG backpressure
         }
     } finally {
         if(intervalProgres) clearInterval(intervalProgres)
+        // console.debug("Chunks done, size %d", positionChiffre)
     }
 
     if(size !== positionOriginal || size >= positionChiffre) {
@@ -412,6 +429,15 @@ async function formatterDocIdb(docIdb, infoChiffrage) {
     return docIdb
 }
 
+/**
+ * Chiffre et split un fichier qui a ete recu. Conserve le resultat dans IDB.
+ * Demarre l'upload sauf si opts.demarrer est present et falsy.
+ * @param {*} file 
+ * @param {*} tailleTotale 
+ * @param {*} params 
+ * @param {*} fcts 
+ * @returns 
+ */
 async function traiterFichier(file, tailleTotale, params, fcts) {
     fcts = fcts || {}
     // console.debug("traiterFichier params %O", params)
