@@ -344,7 +344,7 @@ async function conserverFichier(file, fileMappe, params, fcts) {
             await ajouterPart(correlation, positionChiffre, Comlink.transfer(chunk))
             // console.debug("Chunk position %d done, waiting", positionChiffre)
             positionChiffre += chunk.length
-            await new Promise(resolve => setTimeout(resolve, 2_000))  // TODO : DEBUG backpressure
+            // await new Promise(resolve => setTimeout(resolve, 2_000))  // TODO : DEBUG backpressure
         }
     } finally {
         if(intervalProgres) clearInterval(intervalProgres)
