@@ -41,7 +41,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
     if(usager && usager.certificat) {
         const { 
             connexion, chiffrage, 
-            transfertUploadFichiers, transfertDownloadFichiers
+            transfertUploadFichiers,
         } = workers
         const fullchain = usager.certificat,
               caPem = usager.ca
@@ -58,7 +58,7 @@ async function setUsager(workers, nomUsager, setUsagerState, opts) {
         // await transfertFichiers.up_setCertificatCa(caPem)
         await transfertUploadFichiers.up_setCertificatCa(caPem)
         // await transfertFichiers.down_setCertificatCa(caPem)
-        await transfertDownloadFichiers.down_setCertificatCa(caPem)
+        // await transfertDownloadFichiers.down_setCertificatCa(caPem)
 
         const reponseAuthentifier = await workers.connexion.authentifier()
         // console.debug("Reponse authentifier : %O", reponseAuthentifier)

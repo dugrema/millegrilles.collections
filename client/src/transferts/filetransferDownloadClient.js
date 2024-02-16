@@ -59,26 +59,11 @@ export async function down_getEtatCourant() {
   return etat
 }
 
-/** Permet d'annuler le download en cours - doit matcher le fuuid dans la boucle de download */
-// export async function annulerDownload(fuuids) {
-//   if(typeof(fuuids) === 'string') fuuids = [fuuids]
-//   if(!_fuuidsAnnulerDownload) _fuuidsAnnulerDownload = fuuids
-//   else _fuuidsAnnulerDownload = [..._fuuidsAnnulerDownload, ...fuuids]
-// }
-
 function trierPending(a, b) {
   if(a===b) return 0
   const aDate = a.dateQueuing, bDate = b.dateQueuing
   return aDate.getTime() - bDate.getTime()
 }
-
-// async function majDownload(hachage_bytes, value) {
-//   const db = await ouvrirIdb()
-//   const data = await db.transaction(STORE_DOWNLOADS, 'readonly').objectStore(STORE_DOWNLOADS).get(hachage_bytes)
-//   await db.transaction(STORE_DOWNLOADS, 'readwrite')
-//     .objectStore(STORE_DOWNLOADS)
-//     .put({...data, ...value})
-// }
 
 /** Fetch fichier, permet d'acceder au reader */
 async function fetchAvecProgress(url, opts) {
@@ -472,8 +457,8 @@ async function emettreEtat(flags) {
 
       if(_downloadEnCours) {
           flags.enCoursFuuid = _downloadEnCours.fuuid
-          flags.enCoursTaille = isNaN(_downloadEnCours.taille)?0:_downloadEnCours.taille
-          flags.enCoursLoaded = isNaN(_downloadEnCours.loaded)?0:_downloadEnCours.loaded
+          flags.enCoursTaille = !_downloadEnCours.taille?0:_downloadEnCours.taille
+          flags.enCoursLoaded = !_downloadEnCours.loaded?0:_downloadEnCours.loaded
       }
 
       const loadedEnCours = flags.loaded || flags.enCoursLoaded
@@ -506,20 +491,6 @@ async function emettreEtat(flags) {
   }
 }
 
-// /** Maj des downloads avec filtre/values */
-// async function majIdb(filtre, values) {
-//   const db = await ouvrirIdb()
-//   const store = db.transaction(STORE_DOWNLOADS, 'readwrite').objectStore(STORE_DOWNLOADS)
-//   let cursor = await store.openCursor()
-//   while(cursor) {
-//     const { value } = cursor
-//     if(filtre(value)) {
-//       cursor.update({...value, ...values})
-//     }
-//     cursor = await cursor.continue()
-//   }
-// }
-
 function ouvrirIdb() {
   return openDB(_nomIdb)
 }
@@ -539,10 +510,6 @@ export function down_setCallbackAjouterChunkIdb(cb) {
 
 export function down_setUrlDownload(urlDownload) {
   _urlDownload = urlDownload
-}
-
-export function down_setCertificatCa(certificat) {
-  // _certificatCa = certificat
 }
 
 export async function down_supprimerDownloads(params) {
