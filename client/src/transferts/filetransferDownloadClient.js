@@ -25,7 +25,6 @@ var _chiffrage = null
 var _downloadEnCours = null,
     _callbackEtatDownload = null,
     _callbackAjouterChunkIdb = null
-//    , _fuuidsAnnulerDownload = null  // Array de fuuids pour annuler le download en cours - doit matcher le fuuid courant
 
 const STATUS_ENCOURS = 2
 
@@ -375,20 +374,17 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
         throw err
       }
 
-      const response = new Response(stream, {status: 200})
-      const fuuidPath = '/'+fuuid+'/'+positionPart
-      const cachePutPromise = cache.put(fuuidPath, response)
+      const fuuidPath = '/'+fuuid+'?position='+positionPart
+      const response = new Response(stream, {status: 200, statusText: ''+positionPart})
 
-      // await Promise.all([done, response, cachePutPromise])
       try {
-        await cachePutPromise
+        await cache.put(fuuidPath, response)
       } catch(err) {
         // S'assurer de retirer le cache
         cache.delete(fuuidPath).catch(err=>console.error("Erreur suppression cache %s : %O", fuuidPath, err))
         throw err
       }
 
-      //await Promise.all([response, cachePutPromise])
     }  // Fin loop download parts
 
     progressCb(tailleFichierChiffre, {transfertComplete: true})
@@ -441,11 +437,7 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
   } catch(err) {
     // Cleanup cache dechiffre
     const cacheDechiffre = await caches.open(CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE)
-    const partsDechiffre = await getPartsDownload(fuuid, {cache: CONST_TRANSFERT.CACHE_DOWNLOAD_DECHIFFRE})
-    for await(const part of partsDechiffre) {
-      await cacheDechiffre.delete(part.request)
-    }
-  
+    await cacheDechiffre.delete(`/${fuuid}`, {ignoreSearch: true})
     throw err
   }
 
@@ -521,7 +513,7 @@ export async function down_supprimerDownloads(params) {
     // console.debug("Supprimer download/cache pour %s", hachage_bytes)
     const store = db.transaction(STORE_DOWNLOADS, 'readwrite').objectStore(STORE_DOWNLOADS)
     await store.delete(hachage_bytes)
-    await cache.delete('/' + hachage_bytes)
+    await cache.delete('/' + hachage_bytes, {ignoreSearch: true})
   } else if(completes === true || filtre) {
     const verifierItem = params.filtre?params.filtre:value=>value.complete
     // Supprimer tout les downloads completes
@@ -532,7 +524,7 @@ export async function down_supprimerDownloads(params) {
       const { key, value } = cursor
       try {
         if(verifierItem(value)) {
-          cache.delete('/' + value.hachage_bytes).catch(err=>{console.warn("Erreur suppression cache entry %s : %O", value.hachage_bytes, err)})
+          cache.delete('/' + value.hachage_bytes, {ignoreSearch: true}).catch(err=>{console.warn("Erreur suppression cache entry %s : %O", value.hachage_bytes, err)})
           await cursor.delete()
         }
       } catch(err) {
@@ -550,7 +542,7 @@ export async function down_supprimerDownloads(params) {
 export async function down_supprimerDownloadsCache(fuuid) {
     // await annulerDownload(fuuid)  // Ajouter le fuuid a la liste des downloads a annuler
     const cache = await caches.open(CACHE_TEMP_NAME)
-    await cache.delete('/' + fuuid)
+    await cache.delete('/' + fuuid, {ignoreSearch: true})
     await supprimerCacheFuuid(fuuid)
 }
 
