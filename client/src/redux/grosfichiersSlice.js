@@ -129,7 +129,6 @@ function pushAction(state, action) {
 
     // Trier
     liste.sort(genererTriListe(state.sortKeys))
-    // console.debug("pushAction liste triee : %O", liste)
 
     state.bytesTotalDossier = liste
         .filter(item=>item.version_courante && item.version_courante.taille)
@@ -265,7 +264,7 @@ function mergeTuuidDataAction(state, action) {
         } else if(source === SOURCE_CORBEILLE) {
             peutAppend = data.supprime === true
         } else if(source === SOURCE_RECHERCHE) {
-            peutAppend = data.supprime === true
+            peutAppend = data.supprime === false
         } else if(source === SOURCE_PARTAGES_USAGER) {
             peutAppend = true  // On n'a pas de filtres sur les partages usager
         } else if(source === SOURCE_PARTAGES_CONTACTS) {
@@ -1019,8 +1018,10 @@ export function creerThunks(actions, nomSlice) {
         }
 
         // console.debug("traiterChargerRecherche Liste fichiers ", listeFichiers)
+        // dispatch(push(listeFichiers))
 
-        dispatch(push({liste: listeFichiers}))
+        const listeFichiersMerge = listeFichiers.map(item=>{return {tuuid: item.tuuid, data: item}})
+        dispatch(mergeTuuidData(listeFichiersMerge))
 
         // Charger la liste des docs de l'usager qui ne sont pas encore dechiffres
         dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_LISTE))
