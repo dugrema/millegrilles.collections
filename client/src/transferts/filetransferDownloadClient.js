@@ -144,9 +144,9 @@ async function preparerDataProcessor(opts) {
   let estActif = false
   const dataProcessor = {
     start: async params => {
-      // On active le blockCipher si le fichier depasse le seuil pour utiliser subtle
       try {
-        const cipher = await preparerDecipher(password, {...opts})
+        const header = opts.header || opts.nonce
+        const cipher = await preparerDecipher(password, {...opts, header})
         estActif = true
         blockCipher = cipher
       } catch(err) {
