@@ -1449,12 +1449,12 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
         // Les items mixtes sont des fichiers qui peuvent provenir de plusieurs userIds (e.g. pour recherche)
         const {liste_hachage_bytes: fuuids, listeItemsMixtes: fuuidsPartages} = identifierClesHachages(batchFichiers, userIdEffectif)
 
-        // console.debug("Dechiffrer avec fuuids %O, fuuidsPartages : %O ", fuuids, fuuidsPartages)
+        console.debug("Dechiffrer avec fuuids %O, fuuidsPartages : %O ", fuuids, fuuidsPartages)
         let cles = {}
         if(fuuids && fuuids.length > 0) {
             try {
                 const clesUsager = await clesDao.getCles(fuuids, {partage})
-                // console.debug("Reponse cles : ", clesUsager)
+                console.debug("Reponse cles : ", clesUsager)
                 cles = clesUsager
             } catch(err) {
                 console.error("Erreur chargement cles %O : %O", fuuids, err)

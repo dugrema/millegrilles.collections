@@ -20,7 +20,7 @@ async function getClesFichiers(fuuids, usager, opts) {
 
   const partage = opts.partage
 
-  const params = { fuuids, partage }
+  const params = { fuuids, partage, version: 2 }
   return connexionClient.emitWithAck(
     'getPermissionCles', params, 
     {

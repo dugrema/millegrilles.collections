@@ -1,3 +1,5 @@
+import { base64 } from 'multiformats/bases/base64'
+
 const CONST_TIMEOUT_CERTIFICAT = 2 * 60 * 1000
 
 function build(workers) {
@@ -48,25 +50,44 @@ async function getCles(workers, liste_hachage_bytes, opts) {
         }
     }
 
-    // console.debug("Cles connues : %d, cles manquantes : %d", Object.keys(clesDechiffrees).length, clesManquantes.length)
+    console.debug("Cles connues : %d, cles manquantes : %d", Object.keys(clesDechiffrees).length, clesManquantes.length)
     if(clesManquantes.length > 0) {
         // Recuperer les cles du serveur
         const reponseClesChiffrees = await connexion.getClesFichiers(liste_hachage_bytes, null, {partage})
-        // console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
-        for await(const cleHachage_bytes of Object.keys(reponseClesChiffrees.cles)) {
-            const infoCle = reponseClesChiffrees.cles[cleHachage_bytes]
-            const cleSecrete = await chiffrage.dechiffrerCleSecrete(infoCle.cle)
+        console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
 
-            infoCle.cleSecrete = cleSecrete
-            delete infoCle.cle  // Supprimer cle chiffree
+        // Note : ancienne methode (V1)
+        // for await(const cleHachage_bytes of Object.keys(reponseClesChiffrees.cles)) {
+        //     const infoCle = reponseClesChiffrees.cles[cleHachage_bytes]
+        //     const cleSecrete = await chiffrage.dechiffrerCleSecrete(infoCle.cle)
 
+        //     infoCle.cleSecrete = cleSecrete
+        //     delete infoCle.cle  // Supprimer cle chiffree
+
+        //     // Sauvegarder la cle pour reutilisation
+        //     usagerDao.saveCleDechiffree(cleHachage_bytes, cleSecrete, infoCle)
+        //         .catch(err=>{
+        //             console.warn("clesDao.getCles Erreur sauvegarde cle dechiffree %s dans la db locale", err)
+        //         })
+        
+        //     clesDechiffrees[cleHachage_bytes] = infoCle
+        // }
+
+        // Nouvelle methode avec reponse chiffree (V2)
+        if(!reponseClesChiffrees.ok) {
+            throw new Error("Erreur recuperation cles : %O", reponseClesChiffrees.err)
+        }
+        const cles = reponseClesChiffrees.cles
+        for(const cle of cles) {
+            const cleSecrete = base64.decode('m'+cle.cle_secrete_base64)
+            const { format, nonce, verification, cle_id } = cle
             // Sauvegarder la cle pour reutilisation
-            usagerDao.saveCleDechiffree(cleHachage_bytes, cleSecrete, infoCle)
+            const infoCle = {hachage_bytes: cle_id, cleSecrete, format, nonce, verification}
+            clesDechiffrees[cle_id] = infoCle
+            usagerDao.saveCleDechiffree(cle_id, cleSecrete, infoCle)
                 .catch(err=>{
                     console.warn("clesDao.getCles Erreur sauvegarde cle dechiffree %s dans la db locale", err)
-                })
-        
-            clesDechiffrees[cleHachage_bytes] = infoCle
+                })            
         }
     }
 
