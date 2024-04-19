@@ -1449,12 +1449,12 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
         // Les items mixtes sont des fichiers qui peuvent provenir de plusieurs userIds (e.g. pour recherche)
         const {liste_hachage_bytes: fuuids, listeItemsMixtes: fuuidsPartages} = identifierClesHachages(batchFichiers, userIdEffectif)
 
-        console.debug("Dechiffrer avec fuuids %O, fuuidsPartages : %O ", fuuids, fuuidsPartages)
+        // console.debug("Dechiffrer avec fuuids %O, fuuidsPartages : %O ", fuuids, fuuidsPartages)
         let cles = {}
         if(fuuids && fuuids.length > 0) {
             try {
                 const clesUsager = await clesDao.getCles(fuuids, {partage})
-                console.debug("Reponse cles : ", clesUsager)
+                // console.debug("Reponse cles : ", clesUsager)
                 cles = clesUsager
             } catch(err) {
                 console.error("Erreur chargement cles %O : %O", fuuids, err)
@@ -1486,16 +1486,23 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
             const metadata = docCourant.metadata || version_courante.metadata,
                     images = version_courante.images || {}
 
+            // console.debug("Cles de dechiffrage %O, metadata: %O", cles, metadata)
+
             if( cles && metadata ) {
                 // Dechiffrer champs de metadata chiffres (e.g. nom, date du fichier)
-                const hachage_bytes = metadata.ref_hachage_bytes || metadata.hachage_bytes || fuuid_v_courante
-                let cleMetadata = cles[hachage_bytes]
+                const cle_id = metadata.cle_id || metadata.ref_hachage_bytes || metadata.hachage_bytes || fuuid_v_courante
+                let cleMetadata = cles[cle_id]
                 if(cleMetadata) {
-                    const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cleMetadata)
-                    // console.debug("Contenu dechiffre : ", metaDechiffree)
-                    // Ajout/override champs de metadonne avec contenu dechiffre
-                    Object.assign(docCourant, metaDechiffree)
+                    try {
+                        const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsV2(metadata, cleMetadata.cleSecrete)
+                        // Ajout/override champs de metadonne avec contenu dechiffre
+                        Object.assign(docCourant, metaDechiffree)
+                    } catch(err) {
+                        console.warn("Erreur de dechiffrage avec cle_id %s : %O", cle_id, err)
+                        throw err
+                    }
                 } else {
+                    // console.debug("Cle inconnue ", cle_id)
                     dechiffre = false  // Cle inconnue
                 }
             }
@@ -1643,9 +1650,11 @@ async function chargerDocuments(workers, dispatch, mergeTuuidData, tuuids, conta
 }
 
 function identifierClesHachages(liste, userId) {
-    const liste_hachage_bytes = new Set(),
-          liste_hachage_bytes_partages_mixtes = new Set(),
-          fichiersChiffres = []
+    // const liste_hachage_bytes = new Set(),
+    //       liste_hachage_bytes_partages_mixtes = new Set()
+    const fichiersChiffres = [],
+          cleIds = new Set(),
+          cleIdsPartages = new Set()
 
     for (const item of liste) {
         let chiffre = false
@@ -1659,19 +1668,14 @@ function identifierClesHachages(liste, userId) {
 
         if(metadata) {
             // Champs proteges
-            let hachage_bytes
-            if(metadata.ref_hachage_bytes) {
-                hachage_bytes = metadata.ref_hachage_bytes
-            } else {
-                hachage_bytes = fuuid_v_courante
-            }
-
+            let cle_id = metadata.cle_id || metadata.ref_hachage_bytes || fuuid_v_courante
             if(userId && item.user_id && item.user_id === userId) {
-                liste_hachage_bytes.add(hachage_bytes)
+                // liste_hachage_bytes.add(hachage_bytes)
+                cleIds.add(cle_id)
             } else {
-                liste_hachage_bytes_partages_mixtes.add(hachage_bytes)
+                // liste_hachage_bytes_partages_mixtes.add(hachage_bytes)
+                cleIdsPartages.add(cle_id)
             }
-
             chiffre = true
         }
         if(images) Object.values(images).forEach(image=>{
@@ -1685,12 +1689,12 @@ function identifierClesHachages(liste, userId) {
     }
 
     const listeItems = []
-    for(const item of liste_hachage_bytes) {
+    for(const item of cleIds) {
         listeItems.push(item)
     }
 
     const listeItemsMixtes = []
-    for(const item of liste_hachage_bytes_partages_mixtes) {
+    for(const item of cleIdsPartages) {
         listeItemsMixtes.push(item)
     }
 

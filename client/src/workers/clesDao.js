@@ -54,7 +54,7 @@ async function getCles(workers, liste_hachage_bytes, opts) {
     if(clesManquantes.length > 0) {
         // Recuperer les cles du serveur
         const reponseClesChiffrees = await connexion.getClesFichiers(liste_hachage_bytes, null, {partage})
-        console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
+        // console.debug("getCles reponseClesChiffrees ", reponseClesChiffrees)
 
         // Note : ancienne methode (V1)
         // for await(const cleHachage_bytes of Object.keys(reponseClesChiffrees.cles)) {
@@ -75,7 +75,7 @@ async function getCles(workers, liste_hachage_bytes, opts) {
 
         // Nouvelle methode avec reponse chiffree (V2)
         if(!reponseClesChiffrees.ok) {
-            throw new Error("Erreur recuperation cles : %O", reponseClesChiffrees.err)
+            throw new Error(`Erreur recuperation cles : ${reponseClesChiffrees.err}`)
         }
         const cles = reponseClesChiffrees.cles
         for(const cle of cles) {

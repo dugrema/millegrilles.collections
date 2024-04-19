@@ -572,17 +572,14 @@ function ModalCreerRepertoire(props) {
         
         new Promise(async resolve => {
             const metadataDechiffre = {nom: nomCollection}
-            const identificateurs_document = {type: 'collection'}
             const certificatsChiffrage = await connexion.getCertificatsMaitredescles()
-            // console.debug("creerCollection certificatChiffrage ", certificatsChiffrage)
-            const {doc: metadataChiffre, commandeMaitrecles} = await chiffrage.chiffrerDocument(
-                metadataDechiffre, 'GrosFichiers', certificatsChiffrage, {identificateurs_document, userId, DEBUG: false})
+            const {doc: metadataChiffre, commandeMaitrecles} = await chiffrage.chiffrerChampsV2(
+                metadataDechiffre, 'GrosFichiers', certificatsChiffrage, {DEBUG: false})
             // console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
 
             const opts = {}
             if(cuuidCourant) opts.cuuid = cuuidCourant
             else opts.favoris = true
-
             resolve(connexion.creerCollection(metadataChiffre, commandeMaitrecles, opts))
           })
             .then(()=>{
