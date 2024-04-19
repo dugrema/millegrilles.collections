@@ -1494,9 +1494,11 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
                 let cleMetadata = cles[cle_id]
                 if(cleMetadata) {
                     try {
+                        // console.debug("Dechiffrer %O avec cle %O", metadata, cleMetadata)
                         const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsV2(metadata, cleMetadata.cleSecrete)
                         // Ajout/override champs de metadonne avec contenu dechiffre
                         Object.assign(docCourant, metaDechiffree)
+                        // console.debug("Metadata dechiffre %O", metaDechiffree)
                     } catch(err) {
                         console.warn("Erreur de dechiffrage avec cle_id %s : %O", cle_id, err)
                         throw err
@@ -1513,19 +1515,23 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
                     const hachage_bytes = fuuid_v_courante  // image.hachage
                     const cleFichier = cles[hachage_bytes]
                     if(cleFichier) {
-                        const cleImage = {...cleFichier, ...image}  // Injecter header/format de l'image
-                        const dataChiffre = base64.decode(image.data_chiffre)
-                        const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, dataChiffre, cleImage)
-                        const dataDechiffre = base64.encode(ab)
-                        image.data = dataDechiffre
-                        delete image.data_chiffre
+                        try {
+                            // const cleImage = {...cleFichier, ...image}  // Injecter header/format de l'image
+                            const dataChiffre = base64.decode(image.data_chiffre)
+                            const ab = await chiffrage.chiffrage.dechiffrer(cleFichier.cleSecrete, dataChiffre, image)
+                            const dataDechiffre = base64.encode(ab)
+                            image.data = dataDechiffre
+                            delete image.data_chiffre
+                        } catch(err) {
+                            console.warn("Erreur dechiffrage image du fichier %s (%O) : %O", hachage_bytes, image, err)
+                        }
                     } else {
                         dechiffre = false  // Echec, cle non trouvee
                     }
                 }
             }
 
-            // console.debug("fichier dechiffre : %O", docCourant)
+            console.debug("fichier dechiffre : %O", docCourant)
 
             // Mettre a jour dans IDB
             fichiersDechiffres.push({...docCourant, dirty: false, dechiffre})
