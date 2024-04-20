@@ -1531,7 +1531,7 @@ async function dechiffrerFichiers(workers, listenerApi, actions, nomSlice) {
                 }
             }
 
-            console.debug("fichier dechiffre : %O", docCourant)
+            // console.debug("fichier dechiffre : %O", docCourant)
 
             // Mettre a jour dans IDB
             fichiersDechiffres.push({...docCourant, dirty: false, dechiffre})

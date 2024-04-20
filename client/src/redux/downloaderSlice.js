@@ -212,7 +212,7 @@ export function ajouterDownload(workers, docDownload) {
 async function traiterAjouterDownload(workers, docDownload, dispatch, getState) {
     const { downloadFichiersDao, clesDao } = workers
     
-    // console.debug("traiterAjouterDownload payload : ", docDownload)
+    console.debug("traiterAjouterDownload payload : ", docDownload)
     
     const userId = getState()[SLICE_NAME].userId
     if(!userId) throw new Error("userId n'est pas initialise dans downloaderSlice")
@@ -246,8 +246,29 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
         // Ajouter l'upload, un middleware va charger le reste de l'information
         // console.debug("Ajout upload %O", correlation)
 
-        // Fetch pour cache (ne pas stocker dans redux)
-        await clesDao.getCles([fuuidCle])
+        let informationDechiffrage = null
+        if(version_courante.cle_id) {
+            // Dechiffrage V2+
+            informationDechiffrage = {
+                cle_id: version_courante.cle_id,
+                format: version_courante.format,
+                nonce: version_courante.nonce,
+                verification: version_courante.verification,
+            }
+            // Fetch pour cache (ne pas stocker dans redux)
+            await clesDao.getCles([version_courante.cle_id])
+        } else {
+            // Approche obsolete, aller chercher information de dechiffrage symmetrique
+            // avec la cle.
+            const cles = await clesDao.getCles([fuuidCle])
+            // console.debug("traiterAjouterDownload Cles recues ", cles)
+            const cle = Object.values(cles).pop()
+            informationDechiffrage = {
+                cle_id: fuuidCle,
+                format: cle.format,
+                nonce: (cle.nonce || cle.header).slice(1),  // Retirer le 'm' multibase
+            }
+        }
 
         const nouveauDownload = {
             ...docDownload,
@@ -258,6 +279,7 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
             dechiffre: docDownload.url?true:false,
             etat: ETAT_PRET,
             dateCreation: new Date().getTime(),
+            dechiffrage: informationDechiffrage,
         }
 
         // Conserver le nouveau download dans IDB
@@ -717,16 +739,21 @@ async function genererFichierZip(workers, dispatch, downloadInfo, getAborted) {
 }
 
 async function downloadFichier(workers, dispatch, fichier, getAborted) {
-    // console.debug("downloadFichier Download fichier params : ", fichier)
+    console.debug("downloadFichier Download fichier params : ", fichier)
     const { transfertDownloadFichiers, clesDao } = workers
     const fuuid = fichier.fuuid,
           fuuidCle = fichier.fuuidCle || fichier.fuuid,
-          infoDechiffrage = fichier.infoDechiffrage || {}
+          infoDechiffrage = fichier.infoDechiffrage || {},
+          dechiffrage = fichier.dechiffrage
 
-    const cles = await clesDao.getCles([fuuidCle])  // Fetch pour cache (ne pas stocker dans redux)
+    // const cles = await clesDao.getCles([fuuidCle])  // Fetch pour cache (ne pas stocker dans redux)
+    const cles = await clesDao.getCles([dechiffrage.cle_id])
     const valueCles = Object.values(cles).pop()
-    Object.assign(valueCles, infoDechiffrage) // Injecter header custom
+    // Object.assign(valueCles, infoDechiffrage) // Injecter header custom
+    Object.assign(valueCles, dechiffrage) // Injecter header custom
     delete valueCles.date
+    // Ajuster nonce a multibase
+    valueCles.nonce = 'm' + valueCles.nonce
 
     const frequenceUpdate = 500
     let dernierUpdate = 0

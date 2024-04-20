@@ -13,6 +13,7 @@ import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
 import { getExtMimetypeMap } from '@dugrema/millegrilles.utiljs/src/constantes.js'
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
 import { ETAT_ECHEC } from './constantes'
+import { SignatureDomaines } from '@dugrema/millegrilles.utiljs/src/maitredescles'
 
 const { preparerCipher, preparerCommandeMaitrecles } = chiffrage
 
@@ -367,21 +368,31 @@ async function conserverFichier(file, fileMappe, params, fcts) {
 }
 
 async function formatterDocIdb(docIdb, infoChiffrage) {
-    const champsOptionnels = ['iv', 'nonce', 'header', 'tag']
-    const paramsChiffrage = champsOptionnels.reduce((acc, champ)=>{
-        const valeur = infoChiffrage[champ]
-        if(valeur) acc[champ] = valeur
-        return acc
-    }, {})
-
     const hachage_bytes = infoChiffrage.hachage,
-          secretKey = infoChiffrage.key
+          secretKey = infoChiffrage.key,
+          peerPublic = infoChiffrage.secretChiffre.slice(1)  // Retirer 'm' multibase
+
+    // console.debug("formatterDocIdb docIdb %O, infoChiffrage %O", docIdb, infoChiffrage)
+    // Signer avec la cle secrete pour ce domaine. Donne la reference au cleId.
+    const signatureCleDomaines = new SignatureDomaines(['GrosFichiers'])
+    await signatureCleDomaines.signerEd25519(peerPublic, secretKey)
+    const cleId = await signatureCleDomaines.getCleRef()
+    // console.debug("formatterDocIdb Nouveau cleId pour fuuid %s : %s", hachage_bytes, cleId)
 
     // Ajouter fuuid a la transaction GrosFichiers
     docIdb.transactionGrosfichiers.fuuid = hachage_bytes
+    
+    // Conserver information de dechiffrage
 
     // Chiffrer champs de metadonnees
     const transactionGrosfichiers = docIdb.transactionGrosfichiers
+
+    transactionGrosfichiers.cle_id = cleId
+    transactionGrosfichiers.format = infoChiffrage.format || 'mgs4'
+    if(infoChiffrage.nonce) transactionGrosfichiers.nonce = infoChiffrage.nonce
+    else if(infoChiffrage.header) transactionGrosfichiers.nonce = infoChiffrage.header.slice(1)  // Retirer 'm' multibase
+    if(infoChiffrage.verification) transactionGrosfichiers.verification = infoChiffrage.verification
+
     const listeChamps = ['nom', 'dateFichier']
     const metadataDechiffre = {
         hachage_original: infoChiffrage.hachage_original,
@@ -394,23 +405,19 @@ async function formatterDocIdb(docIdb, infoChiffrage) {
     }
     // console.debug("formatterDocIdb Champs a chiffrer ", metadataDechiffre)
     const champsChiffres = await chiffrage.updateChampsChiffres(metadataDechiffre, secretKey)
+    champsChiffres.cle_id = cleId
     transactionGrosfichiers.metadata = champsChiffres
 
-    // console.debug("Resultat chiffrage : %O", etatFinalChiffrage)
+    // console.debug("Resultat chiffrage : %O", champsChiffres)
     if(_fingerprintCa && infoChiffrage.secretChiffre) {
         // Creer la commande de maitre des cles, chiffrer les cles
-        const identificateurs_document = { fuuid: hachage_bytes }
         const certificats = _certificats.map(item=>item[0])  // Conserver les certificats maitredescles (pas chaine)
-
         docIdb.transactionMaitredescles = await preparerCommandeMaitrecles(
             certificats,
             secretKey,
-            _domaine,
-            hachage_bytes,
-            identificateurs_document,
-            {...paramsChiffrage, DEBUG: false}
+            signatureCleDomaines,
+            {DEBUG: false}
         )
-        docIdb.transactionMaitredescles.cles[_fingerprintCa] = infoChiffrage.secretChiffre
     } else {
         // Conserver la cle secrete directement (attention : le contenu du message devra etre chiffre)
         const informationCle = {
@@ -725,20 +732,18 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
     }
 
     // Signer et uploader les transactions
-    const transactionMaitredescles = {...fichier.transactionMaitredescles}
-    const partitionMaitreDesCles = transactionMaitredescles['_partition']
-    delete transactionMaitredescles['_partition']
+    const transactionMaitredescles = fichier.transactionMaitredescles
 
     const cle = await chiffrage.formatterMessage(
         transactionMaitredescles, 'MaitreDesCles', 
-        {kind: MESSAGE_KINDS.KIND_COMMANDE, partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false}
+        // {kind: MESSAGE_KINDS.KIND_COMMANDE, partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false}
+        {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'ajouterCleDomaines', DEBUG: false}
     )
-    cle.attachements = {partition: partitionMaitreDesCles}
 
     const transaction = await chiffrage.formatterMessage(
         fichier.transactionGrosfichiers, 'GrosFichiers', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'nouvelleVersion'})
     
-    transaction.attachements = {cle}
+    transaction.attachements = { cle }
 
     // console.debug("Confirmer upload de transactions signees : %O", transaction)
     try {
