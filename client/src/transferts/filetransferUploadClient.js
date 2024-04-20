@@ -779,7 +779,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
     const ETAT_PREPARATION = 1
 
     const mapExtensions = getExtMimetypeMap()
-    console.debug("Map extensions : ", mapExtensions)
+    // console.debug("Map extensions : ", mapExtensions)
 
     const setProgres = null
     const signalAnnuler = null
@@ -791,7 +791,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
 
     // Charger tous les sous-repertoires existants a partir de la destination
     const reponseSousRepertoires = await workers.connexion.getSousRepertoires(cuuid)
-    console.debug("Sous repertoires de %s : %O", cuuid, reponseSousRepertoires)
+    // console.debug("Sous repertoires de %s : %O", cuuid, reponseSousRepertoires)
     const cuuidsRepertoires = reponseSousRepertoires.liste.map(item=>item.tuuid)
     const repertoiresInconnus = new Set(cuuidsRepertoires)
     let repertoiresDechiffres = await workers.collectionsDao.getParTuuids(cuuidsRepertoires)
@@ -800,7 +800,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
         if(item) repertoiresInconnus.delete(item.tuuid)
     })
 
-    console.debug("Repertoires dechiffres : %O, inconnus : %O", repertoiresDechiffres, repertoiresInconnus)
+    // console.debug("Repertoires dechiffres : %O, inconnus : %O", repertoiresDechiffres, repertoiresInconnus)
 
     if(repertoiresInconnus.size > 0) {
         const repInconnusListe = []
@@ -808,7 +808,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
             repInconnusListe.push(rep)  // Creer array
         }
         const listeRepsDechiffres = await getDocuments(workers, repInconnusListe)
-        console.debug("Reponse repertoires inconnus : ", listeRepsDechiffres)
+        // console.debug("Reponse repertoires inconnus : ", listeRepsDechiffres)
         for await (const rep of listeRepsDechiffres) {
             repertoiresDechiffres.push(rep)
             rep.user_id = userId
@@ -828,7 +828,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
         parent.liste.push(repNode)
     }
 
-    console.debug("Hierarchie repertoires : ", dictRepertoires[cuuid])
+    // console.debug("Hierarchie repertoires : ", dictRepertoires[cuuid])
 
     mapperRepertoireRecursivement(dictRepertoires, '', dictRepertoires[cuuid])
     const mappingRepertoires = Object.values(dictRepertoires).reduce((acc, item)=>{
@@ -836,16 +836,16 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
         return acc
     }, {})
 
-    console.debug("Repertoires connus : ", mappingRepertoires)
+    // // console.debug("Repertoires connus : ", mappingRepertoires)
 
     for await (const entry of zipReader.getEntriesGenerator()) {
-        console.debug("Zip entry : ", entry)
+        // console.debug("Zip entry : ", entry)
 
         const filename = entry.filename.normalize()
 
         const dirName = path.dirname(filename)
         const nom = path.basename(filename)
-        console.debug("Repertoire : %s, nom fichier : %s", dirName, nom)
+        // console.debug("Repertoire : %s, nom fichier : %s", dirName, nom)
 
         if(entry.directory) {
             const parentCuuid = dirName==='.'?cuuid:mappingRepertoires['./' + dirName]
@@ -856,22 +856,20 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
 
             let dirNameMappe = dirName + '/' + nom
             if(!dirName.startsWith('.')) dirNameMappe = './' + dirNameMappe
-            console.debug("Mapper repertoire ", dirNameMappe)
+            // console.debug("Mapper repertoire ", dirNameMappe)
             let repertoire = mappingRepertoires[dirNameMappe]
             if(!repertoire) {
-                console.debug("Creer le repertoire %s sous parent cuuid %s", nom, parentCuuid)
+                // console.debug("Creer le repertoire %s sous parent cuuid %s", nom, parentCuuid)
 
                 const metadataDechiffre = {nom}
-                const identificateurs_document = {type: 'collection'}
                 const certificatsChiffrage = await workers.connexion.getCertificatsMaitredescles()
-                const {doc: metadataChiffre, commandeMaitrecles} = await workers.chiffrage.chiffrerDocument(
-                    metadataDechiffre, 'GrosFichiers', certificatsChiffrage, {identificateurs_document, userId, DEBUG: false})
-                console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
+                const {doc: metadataChiffre, commandeMaitrecles} = await workers.chiffrage.chiffrerChampsV2(
+                    metadataDechiffre, 'GrosFichiers', certificatsChiffrage, {DEBUG: false})
+                // console.debug("creerCollection metadataChiffre %O, commande Maitre des cles : %O", metadataChiffre, commandeMaitrecles)
 
                 const opts = { cuuid: parentCuuid }
-                // throw new Error('TODO creer repertoire')
                 const reponseCreation = await workers.connexion.creerCollection(metadataChiffre, commandeMaitrecles, opts)
-                console.debug("Reponse creation repertoire ", reponseCreation)
+                // console.debug("Reponse creation repertoire ", reponseCreation)
                 if(reponseCreation.ok !== true) {
                     throw new Error(`Erreur creation repertoire ${dirNameMappe} : ${reponseCreation.err}`)
                 }
@@ -885,7 +883,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
 
             const extension = path.extname(nom.toLocaleLowerCase()).slice(1)
             const mimetype = mapExtensions[extension] || 'application/octet-stream'
-            console.debug("Trouver mimetype avec extension '%s' : %O", extension, mimetype)
+            // console.debug("Trouver mimetype avec extension '%s' : %O", extension, mimetype)
 
             // Mapper fichier
             let dateFichier = null
@@ -916,7 +914,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
             } else {
                 throw new Error(`Le repertoire ${dirName} n'est pas mappe`)
             }
-            console.debug("dirname %s mappe au cuuid %s", dirName, cuuidRepertoire)
+            // console.debug("dirname %s mappe au cuuid %s", dirName, cuuidRepertoire)
             // console.debug("traiterFichier File mappe : ", fileMappe)
             const fileSize = fileMappe.size
 
@@ -943,14 +941,14 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
                 transactionMaitredescles: null,
             }
 
-            console.debug("Fichier mappe ", docIdb)
+            // console.debug("Fichier mappe ", docIdb)
 
             await updateFichier(Comlink.transfer(docIdb), {demarrer: false})
             const zipFileStream = new TransformStream()
             entry.getData(zipFileStream.writable)
 
             const fileStream = { readable: zipFileStream.readable }
-            console.debug("Filestream readable : ", fileStream)
+            // console.debug("Filestream readable : ", fileStream)
 
             const paramsConserver = {correlation, tailleTotale: fileSize}
 
@@ -960,7 +958,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
 
                 // Dispatch pour demarrer upload
                 const docIdbMaj = await formatterDocIdb(docIdb, etatFinalChiffrage)
-                console.debug("parseZipFile Fichier pret a uploader : ", docIdbMaj)
+                // console.debug("parseZipFile Fichier pret a uploader : ", docIdbMaj)
                 if(updateFichier) await updateFichier(Comlink.transfer(docIdbMaj), {demarrer: true})
             } catch(err) {
                 console.error("parseZipFile Erreur conserverFichier ", err)
@@ -970,7 +968,7 @@ export async function parseZipFile(workers, userId, fichier, cuuid, updateFichie
 }
 
 function mapperRepertoireRecursivement(dictRepertoires, pathParent, nodeCourant) {
-    console.debug("mapperRepertoireRecursivement pathParent : %s, nodeCourant : %O", pathParent, nodeCourant)
+    // console.debug("mapperRepertoireRecursivement pathParent : %s, nodeCourant : %O", pathParent, nodeCourant)
     const liste = nodeCourant.liste
     const pathCourant = pathParent?pathParent + '/' + nodeCourant.nom:nodeCourant.nom
     dictRepertoires[nodeCourant.tuuid].path = pathCourant
