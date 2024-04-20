@@ -61,11 +61,11 @@ export function mapDocumentComplet(workers, doc, opts) {
 
     if(version_courante) {
         const mimetype = doc.mimetype || version_courante.mimetype
-        const { anime, taille, images, video, duration } = version_courante
+        const { anime, taille, images, duration } = version_courante
         
         if(taille) copie.taille = taille
         if(duration) copie.duration = duration
-        const cleId = version_courante.cle_id || version_courante.fuuid_v_courante
+        const cleId = version_courante.cle_id || fuuid_v_courante
         let nonce = version_courante.nonce
         if(version_courante.header) nonce = version_courante.header.slice(1)  // Retirer 'm' multibase
 

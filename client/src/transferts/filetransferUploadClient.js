@@ -7,8 +7,8 @@ import { base64 } from 'multiformats/bases/base64'
 import { BlobReader, ZipReader } from '@zip.js/zip.js'
 
 import { getAcceptedFileReader, streamAsyncIterable, streamAsyncReaderIterable, createTransformStreamCallback, createTransformBatch, getAcceptedFileStream } from '@dugrema/millegrilles.reactjs/src/stream'
-import { chiffrage }  from '@dugrema/millegrilles.reactjs/src/chiffrage'
 import * as hachage from '@dugrema/millegrilles.reactjs/src/hachage'
+import { chiffrage }  from '@dugrema/millegrilles.reactjs/src/chiffrage'
 
 import { getExtMimetypeMap } from '@dugrema/millegrilles.utiljs/src/constantes.js'
 import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
