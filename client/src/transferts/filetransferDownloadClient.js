@@ -145,8 +145,9 @@ async function preparerDataProcessor(opts) {
   const dataProcessor = {
     start: async params => {
       try {
-        const header = opts.header || opts.nonce
-        const cipher = await preparerDecipher(password, {...opts, header})
+        const header = opts.header
+        const nonce = opts.nonce
+        const cipher = await preparerDecipher(password, {...opts, header, nonce})
         estActif = true
         blockCipher = cipher
       } catch(err) {
@@ -176,10 +177,13 @@ function createTransformStreamDechiffrage(dataProcessor) {
   // Demander un high watermark de 10 buffers de 64kb (64kb est la taille du buffer de dechiffrage)
   const queuingStrategy = new ByteLengthQueuingStrategy({ highWaterMark: 1024 * 64 * 10 });
 
+  let tailleLue = 0
+
   return new TransformStream({
     async transform(chunk, controller) {
       // console.debug("TransformStream chunk size : %s", chunk?chunk.length:'null')
       if(!chunk || chunk.length === 0) return controller.error("Aucun contenu")
+      tailleLue += chunk.length
       try {
         if(dataProcessor) {
           const sousBlockOutput = await dataProcessor.update(chunk)
@@ -407,12 +411,13 @@ export async function dechiffrerPartsDownload(workers, params, progressCb, opts)
 
   const infoDownload = await downloadFichiersDao.getDownload(fuuid)
   // console.debug("dechiffrerPartsDownload ", infoDownload)
-  const tailleChiffre = infoDownload.tailleChiffre,
-        tailleDechiffre = infoDownload.taille
-  if(!tailleChiffre || !tailleDechiffre) throw new Error("Taille du fichier chiffre/dechiffre manquante")
+  const tailleChiffre = infoDownload.tailleChiffre
+        // tailleDechiffre = infoDownload.taille
+  // if(!tailleChiffre || !tailleDechiffre) throw new Error("Taille du fichier chiffre/dechiffre manquante")
+  if(!tailleChiffre) throw new Error("Taille du fichier chiffre manquante")
 
   const paramsDataProcessor = {...params, password, passwordChiffre}
-  // console.debug("Dechifrer avec params : %O", paramsDataProcessor)
+  // console.debug("Dechiffrer avec params : %O", paramsDataProcessor)
   const dataProcessor = await preparerDataProcessor(paramsDataProcessor)
 
   if(dataProcessor && dataProcessor.start) {

@@ -323,22 +323,40 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         // Ajouter flag noSave=true pour le processus de download. Evite pop-up de sauvegarde.
         item.noSave = true
 
-        if(item.versions) {
+        if(item.type_node === 'Fichier') {
             // Extraire version courante (idx: 0)
             const version = item.versions[0]
-            item.version_courante = version
-            if(version) tailleTotale += version.taille
-            // if(version) {
-            //     item.taille = version.taille
-            // }
-        }
+            if(version) {
+                tailleTotale += version.taille
+            }
 
-        if(item.fuuids_versions) {
-            const fuuid = item.fuuids_versions[0]
-            item.fuuid = fuuid  // Set pour download
-            fuuidsCles.push(fuuid)
-        } else if(item.metadata.ref_hachage_bytes) {
-            fuuidsCles.push(item.metadata.ref_hachage_bytes)
+            // Ancienne version de chiffrage (obsolete)
+            let fuuid = null
+            if(item.fuuids_versions) {
+                fuuid = item.fuuids_versions[0]
+                item.fuuid = fuuid  // Set pour download
+            }
+
+            // Support nouvelle version chiffrage (V2) et ancienne obsolete
+            let cle_id = fuuid
+            if(version && version.cle_id) {
+                cle_id = version.cle_id
+
+                // Transferer champs de dechiffrage V2
+                const version_courante = item.version_courante || {}
+                item.version_courante = version_courante
+                version_courante.fuuid = fuuid
+                version_courante.cle_id = cle_id
+                version_courante.format = version.format
+                version_courante.nonce = version.nonce
+                version_courante.verificaton = version.verification
+            }
+            fuuidsCles.push(cle_id)
+        } else {
+            // Collection ou repertoire
+            const metadata = item.metadata
+            const cle_id = metadata.cle_id || metadata.ref_hachage_bytes
+            fuuidsCles.push(cle_id)
         }
 
         if(item.path_cuuids && item.path_cuuids[0] !== cuuid) {
@@ -354,26 +372,6 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
             if(item.tuuid !== cuuid) root.push(item)
         }
     })
-    // console.debug("traiterAjouterZipDownload Taille totale : %s, nodeParTuuid : %O, nodeParCuuidParent : %O, root: %O, fuuidsCles: %O", 
-    //     tailleTotale, nodeParTuuid, nodeParCuuidParent, root, fuuidsCles)
-
-    // Verifier s'il y a assez d'espace pour tout downloader et generer le ZIP
-    // if('storage' in navigator) {
-    //     const estimate = await navigator.storage.estimate()
-    //     console.debug("traiterAjouterZipDownload storage estimate ", estimate)
-    //     const quota = estimate.quota
-    //     if(quota && quota < 2*tailleTotale) {
-    //         const error = new Error(
-    //             `Espace disponible dans le navigateur insuffisant : 
-    //             requis ${Math.floor(2*tailleTotale/CONST_1MB)} MB, 
-    //             disponible ${quota/CONST_1MB} MB`
-    //         )
-    //         error.code = 1
-    //         error.tailleTotale = tailleTotale
-    //         error.tailleDisponible = quota
-    //         throw error
-    //     }
-    // }
 
     for (const cuuidLoop of Object.keys(nodeParCuuidParent)) {
         const nodes = nodeParCuuidParent[cuuidLoop]
@@ -392,38 +390,36 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         }
     }
 
-    // const fichiersADownloader = Object.values(nodeParTuuid).filter(item=>item.type_node === 'Fichier')
-
-    // console.debug("Arborescence completee : %O\nDownload %d fichiers\n%O", root, fichiersADownloader.length, fichiersADownloader)
-
     // Preparer toutes les cles (tous les tuuids incluant repertoires)
     const cles = await clesDao.getCles(fuuidsCles, {partage: !!contactId})
-    // console.debug("Cles chargees : ", cles)
+    // console.debug("Cles chargees : %O", cles)
 
     // Dechiffrer le contenu des tuuids. On a besoin du nom (fichiers et repertoires)
     const fuuidsFichiersDownloadSet = new Set()
     for await(const tuuid of Object.keys(nodeParTuuid)) {
         const item = nodeParTuuid[tuuid]
         const metadata = item.metadata
-        let fuuid = metadata.ref_hachage_bytes
+
+        let cle_id = metadata.cle_id || metadata.ref_hachage_bytes
+
         if(item.fuuids_versions) {
             // C'est un fichier a downloader
-            fuuid = item.fuuids_versions[0]
+            const fuuid = item.fuuids_versions[0]
+            if(!fuuid) {
+                console.warn("Aucun fuuid pour %s - SKIP", tuuid)
+                continue
+            }
             fuuidsFichiersDownloadSet.add(fuuid)
         }
 
-        if(!fuuid) {
-            console.warn("Aucun fuuid pour %s - SKIP", tuuid)
+        const cle = cles[cle_id]
+        if(!cle) {
+            console.warn("Aucune cle pour cle_id %s - SKIP", cle_id)
             continue
         }
 
-        const cle = cles[fuuid]
-        if(!cle) {
-            console.warn("Aucune cle pour fuuid %s - SKIP", fuuid)
-        }
-
         // console.debug("Dechiffrer %O avec cle %O", metadata, cle)
-        const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsChiffres(metadata, cle)
+        const metaDechiffree = await chiffrage.chiffrage.dechiffrerChampsV2({...cle, ...metadata}, cle.cleSecrete)
         // console.debug("Contenu dechiffre : ", metaDechiffree)
         // Ajout/override champs de metadonne avec contenu dechiffre
         Object.assign(item, metaDechiffree)
@@ -791,6 +787,7 @@ async function downloadFichier(workers, dispatch, fichier, getAborted) {
             ...valueCles,  // Inclure params optionnels comme iv, header, etc
             password: valueCles.cleSecrete,
         }
+        // console.debug("Params dechiffrage : ", paramsDechiffrage)
         await transfertDownloadFichiers.dechiffrerPartsDownload(workers, paramsDechiffrage, progressCb)
     } else {
         // console.debug("downloadFichier Fichier %s deja dechiffre", fuuid)
