@@ -404,7 +404,7 @@ async function formatterDocIdb(docIdb, infoChiffrage) {
         delete transactionGrosfichiers[champ]
     }
     // console.debug("formatterDocIdb Champs a chiffrer ", metadataDechiffre)
-    const champsChiffres = await chiffrage.updateChampsChiffres(metadataDechiffre, secretKey)
+    const champsChiffres = await chiffrage.updateChampsChiffres(metadataDechiffre, secretKey, cleId)
     champsChiffres.cle_id = cleId
     transactionGrosfichiers.metadata = champsChiffres
 
