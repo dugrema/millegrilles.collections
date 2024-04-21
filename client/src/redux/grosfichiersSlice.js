@@ -456,6 +456,10 @@ function retirerTuuidsListeAction(state, action) {
     }
 }
 
+function setNombreFichiersTotalAction(state, action) {
+    state.nombreFichiersTotal = action.payload
+}
+
 /** Change l'etape de chargement. Declenche differents comportements sur les middlewares. */
 function setEtapeChargementAction(state, action) {
     state.etapeChargement = action.payload
@@ -507,6 +511,7 @@ export function creerSlice(name) {
             pushTuuidsDirty: pushTuuidsDirtyAction,
             remplacerFichiers: remplacerFichiersAction,
             setResultatRecherche: setResultatRechercheAction,
+            setNombreFichiersTotal: setNombreFichiersTotalAction,
         }
     })
 
@@ -519,7 +524,7 @@ export function creerThunks(actions, nomSlice) {
         setCuuid, setCollectionInfo, push, clear, mergeTuuidData,
         setSortKeys, setSource, setIntervalle, pushFichiersChiffres, setDechiffrageComplete,
         setUserContactId, breadcrumbPush, breadcrumbSlice, retirerTuuidsListe, setEtapeChargement, 
-        setListeDirty, pushTuuidsDirty, setResultatRecherche,
+        setListeDirty, pushTuuidsDirty, setResultatRecherche, setNombreFichiersTotal,
     } = actions
 
     function chargerTuuids(workers, tuuids, opts) {
@@ -967,7 +972,7 @@ export function creerThunks(actions, nomSlice) {
     
         const { connexion, collectionsDao } = workers
         const resultatRecherche = await connexion.rechercheIndex( parametresRecherche, 0, CONST_RECHERCHE_LIMITE )
-        // console.debug("traiterChargerRecherche Resultat recherche : ", resultatRecherche)
+        console.debug("traiterChargerRecherche Resultat recherche : ", resultatRecherche)
         const resultatsPrepares = resultatRecherche.resultat
         resultatsPrepares.dictDocs = resultatRecherche.resultat.docs.reduce((acc, item)=>{
             const tuuid = item.id
@@ -978,6 +983,10 @@ export function creerThunks(actions, nomSlice) {
 
         if(resultatRecherche.ok !== true) {
             console.warn("traiterChargerRecherche Erreur recherche : ", resultatRecherche)
+            dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_COMPLETE))
+            return
+        } else if(resultatsPrepares.numFound === 0) {
+            // console.debug("traiterChargerRecherche Aucuns resultats (vide)")
             dispatch(setEtapeChargement(CONST_ETAPE_CHARGEMENT_COMPLETE))
             return
         }
@@ -1356,15 +1365,18 @@ async function dechiffrageMiddlewareListener(workers, actions, thunks, nomSlice,
             const resultatRecherche = listenerApi.getState().fichiers.resultatRecherche
             // console.debug("dechiffrageMiddlewareListener Resultat recherche : %O", resultatRecherche)
             if(resultatRecherche) {
-                for(const item of fichiersDechiffres) {
-                    const tuuid = item.tuuid
-                    if(resultatRecherche && resultatRecherche.dictDocs) {
-                        // Resultat recherche, combiner le score
-                        const itemRecherche = resultatRecherche.dictDocs[tuuid]
-                        if(itemRecherche) item.score = itemRecherche.score
+                if(fichiersDechiffres) {
+                    for(const item of fichiersDechiffres) {
+                        const tuuid = item.tuuid
+                        if(resultatRecherche && resultatRecherche.dictDocs) {
+                            // Resultat recherche, combiner le score
+                            const itemRecherche = resultatRecherche.dictDocs[tuuid]
+                            if(itemRecherche) item.score = itemRecherche.score
+                        }
+                        listenerApi.dispatch(actions.mergeTuuidData({tuuid: item.tuuid, data: item}))
                     }
-                    listenerApi.dispatch(actions.mergeTuuidData({tuuid: item.tuuid, data: item}))
                 }
+                listenerApi.dispatch(actions.setNombreFichiersTotal(resultatRecherche.numFound||0))
             }
 
             // console.debug("dechiffrageMiddlewareListener Dechiffrage complete, liste prete")
