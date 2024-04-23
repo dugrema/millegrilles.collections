@@ -263,7 +263,7 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
             const cles = await clesDao.getCles([fuuidCle])
             // console.debug("traiterAjouterDownload Cles recues ", cles)
             const cle = Object.values(cles).pop()
-            const nonce = cle.nonce
+            let nonce = cle.nonce
             if(cle.header) nonce = cle.header.slice(1)  // Retirer le 'm' multibase
             informationDechiffrage = {
                 cle_id: fuuidCle,
