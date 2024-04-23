@@ -263,10 +263,12 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
             const cles = await clesDao.getCles([fuuidCle])
             // console.debug("traiterAjouterDownload Cles recues ", cles)
             const cle = Object.values(cles).pop()
+            const nonce = cle.nonce
+            if(cle.header) nonce = cle.header.slice(1)  // Retirer le 'm' multibase
             informationDechiffrage = {
                 cle_id: fuuidCle,
                 format: cle.format,
-                nonce: (cle.nonce || cle.header).slice(1),  // Retirer le 'm' multibase
+                nonce,
             }
         }
 
@@ -735,15 +737,16 @@ async function genererFichierZip(workers, dispatch, downloadInfo, getAborted) {
 }
 
 async function downloadFichier(workers, dispatch, fichier, getAborted) {
-    console.debug("downloadFichier Download fichier params : ", fichier)
+    // console.debug("downloadFichier Download fichier params : ", fichier)
     const { transfertDownloadFichiers, clesDao } = workers
     const fuuid = fichier.fuuid,
-          fuuidCle = fichier.fuuidCle || fichier.fuuid,
-          infoDechiffrage = fichier.infoDechiffrage || {},
           dechiffrage = fichier.dechiffrage
+        //   fuuidCle = fichier.fuuidCle || fichier.fuuid,
+        //   infoDechiffrage = fichier.infoDechiffrage || {},
 
     // const cles = await clesDao.getCles([fuuidCle])  // Fetch pour cache (ne pas stocker dans redux)
     const cles = await clesDao.getCles([dechiffrage.cle_id])
+    // console.debug("downloadFichier Cles a utiliser pour download fichier : ", cles)
     const valueCles = Object.values(cles).pop()
     // Object.assign(valueCles, infoDechiffrage) // Injecter header custom
     Object.assign(valueCles, dechiffrage) // Injecter header custom
