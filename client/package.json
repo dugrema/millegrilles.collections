@@ -1,12 +1,12 @@
 {
   "name": "millegrilles.collection-client",
-  "version": "2024.3.0",
+  "version": "2024.4.0",
   "private": true,
   "proxy": "https://localhost:4037",
   "homepage": "/collections",
   "dependencies": {
     "@babel/plugin-syntax-object-rest-spread": "^7.8.3",
-    "@dugrema/millegrilles.reactjs": "git+ssh://git.maple.maceroc.com/git/millegrilles.reactjs#2024.3",
+    "@dugrema/millegrilles.reactjs": "git+ssh://git.maple.maceroc.com/git/millegrilles.reactjs#2024.4",
     "buffer": "^6.0.3",
     "client-zip": "^2.4.4",
     "comlink": "^4.4.1",
@@ -24,7 +24,7 @@
     "stream-browserify": "^3.0.0"
   },
   "peerDependencies": {
-    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2024.3",
+    "@dugrema/millegrilles.utiljs": "https://github.com/dugrema/millegrilles.utiljs.git#2024.4",
     "@reduxjs/toolkit": "^1.8",
     "bootstrap": "^5.1",
     "react": "^18.2.0",
