@@ -588,7 +588,7 @@ export async function down_entretienCache() {
 }
 
 export async function genererFichierZip(workers, downloadInfo, getAborted, progressCb) {
-  // console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
+  console.debug("genererFichierZip Downloads completes, generer le zip pour ", downloadInfo)
   const { downloadFichiersDao } = workers
 
   const { fuuids } = downloadInfo
@@ -601,7 +601,7 @@ export async function genererFichierZip(workers, downloadInfo, getAborted, progr
     // console.debug("genererFichierZip Prepass fichier : ", info)
     tailleFichiers += info.taille
   }
-  // console.debug("Mettre %d bytes dans le zip", tailleFichiers)
+  console.debug("Mettre %d bytes dans le zip", tailleFichiers)
   await progressCb(0, {tailleTotale: tailleFichiers})
 
   // Parcourir tous les repertoires, streamer les fichiers dans le stream
@@ -661,6 +661,7 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
   // console.debug("streamRepertoireDansZipRecursif parents ", parents)
   let bytesTraites = 0
   for await (const node of nodes) {
+      console.debug("parcourirRepertoireDansZipRecursif Ajout node ", node)
       if(getAborted && await getAborted()) {
         throw new Error("abort")
       }
