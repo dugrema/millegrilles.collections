@@ -402,7 +402,7 @@ async function traiterAjouterZipDownload(workers, params, dispatch, getState) {
         const item = nodeParTuuid[tuuid]
         const metadata = item.metadata
 
-        let cle_id = metadata.cle_id || metadata.ref_hachage_bytes
+        let cle_id = metadata.cle_id || metadata.ref_hachage_bytes || item.fuuid
 
         if(item.fuuids_versions) {
             // C'est un fichier a downloader
