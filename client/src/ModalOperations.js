@@ -546,8 +546,6 @@ export function InfoGenerique(props) {
         const hachageOriginal = fichier.hachage_original
         if(!hachageOriginal) return '' // Hachage non disponible
 
-        console.debug("Fichier : ", fichier)
-
         // Convertir en hex
         const {algo, digest} = hachage.decoderHachage(hachageOriginal)
         const digestHex = Buffer.from(digest).toString('hex')
