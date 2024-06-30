@@ -5,7 +5,7 @@ import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux
 import Button from 'react-bootstrap/Button'
 import Modal from 'react-bootstrap/Modal'
 
-import { LayoutMillegrilles, ModalErreur, OuvertureSessionModal } from '@dugrema/millegrilles.reactjs'
+import { initI18n, LayoutMillegrilles, ModalErreur, OuvertureSessionModal } from '@dugrema/millegrilles.reactjs'
 
 import ErrorBoundary from './ErrorBoundary'
 import useWorkers, {useCapabilities, useEtatConnexion, useEtatConnexionOpts, WorkerProvider, 
@@ -20,7 +20,7 @@ import { setUserId as setUserIdPartager } from './redux/partagerSlice'
 
 import * as CONST_ETAT_TRANSFERT from './transferts/constantes'
 
-import './i18n'
+import i18n from './i18n'
 
 // Importer JS global
 import 'react-bootstrap/dist/react-bootstrap.min.js'
@@ -37,6 +37,9 @@ import './App.css'
 
 import Menu from './Menu'
 import TransfertModal from './TransfertModal'
+
+// Wire i18n dans module @dugrema/millegrilles.reactjs
+initI18n(i18n)
 
 const NavigationCollections = lazy( () => import('./NavigationCollections') )
 const NavigationCorbeille = lazy( () => import('./NavigationCorbeille') )
