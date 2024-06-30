@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react'
+import { useCallback, useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 
@@ -7,10 +7,11 @@ import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
 import NavDropdown from 'react-bootstrap/NavDropdown'
 
+import { getIdmg } from '@dugrema/millegrilles.utiljs/src/idmg'
 import { Menu as MenuMillegrilles, DropDownLanguage, ModalInfo } from '@dugrema/millegrilles.reactjs'
 import { supprimerContenuIdb } from '@dugrema/millegrilles.reactjs/src/dbNettoyage'
 
-import { useCapabilities, useInfoConnexion, useUsager } from './WorkerContext'
+import useWorkers, { useCapabilities, useUsager, useEtatPret} from './WorkerContext'
 
 import * as CONST_ETAT_TRANSFERT from './transferts/constantes'
 
@@ -40,13 +41,22 @@ function Menu(props) {
 
   const capabilities = useCapabilities()
   const estMobile = capabilities.device !== 'desktop'
+  const etatPret = useEtatPret()
 
   const { t } = useTranslation()
-  const infoConnexion = useInfoConnexion()
   const usager = useUsager()
+  const workers = useWorkers()
   // console.debug("UseUsager usager ", usager)
 
-  const idmg = infoConnexion.idmg
+  const [idmg, setIdmg] = useState('')
+
+  useEffect(()=>{
+    if(usager && usager.ca) {
+      getIdmg(usager.ca)
+        .then(setIdmg)
+        .catch(err=>console.error("Erreur chargement IDMG", err))
+    }
+  }, [usager, setIdmg])
 
   const [showModalInfo, setShowModalInfo] = useState(false)
   const handlerCloseModalInfo = useCallback(()=>setShowModalInfo(false), [setShowModalInfo])
