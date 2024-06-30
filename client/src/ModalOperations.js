@@ -546,6 +546,8 @@ export function InfoGenerique(props) {
         const hachageOriginal = fichier.hachage_original
         if(!hachageOriginal) return '' // Hachage non disponible
 
+        console.debug("Fichier : ", fichier)
+
         // Convertir en hex
         const {algo, digest} = hachage.decoderHachage(hachageOriginal)
         const digestHex = Buffer.from(digest).toString('hex')
@@ -607,6 +609,10 @@ export function InfoGenerique(props) {
                         </Col>
                     </Row>
 
+                    <Row>
+                        <Col xs={5} md={3}>Creation</Col>
+                        <Col xs={7} md={9}><FormatterDate value={fichier.date_creation} /></Col>
+                    </Row>
                     <Row>
                         <Col xs={5} md={3}>Modification</Col>
                         <Col xs={7} md={9}><FormatterDate value={derniereModification} /></Col>
