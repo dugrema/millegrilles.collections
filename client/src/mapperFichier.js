@@ -49,6 +49,8 @@ export function mapDocumentComplet(workers, doc, opts) {
     
     if(date_creation) copie.dateAjout = date_creation
     copie.dateFichier = doc.dateFichier || date_creation
+    console.debug("Data : copie:%O, doc:%O", copie, doc)
+    copie.dateItem = copie.dateFichier || doc.derniere_modification
 
     // Icones et image
     copie.thumbnail = {

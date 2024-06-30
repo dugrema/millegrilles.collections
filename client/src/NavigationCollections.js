@@ -627,20 +627,20 @@ function preparerColonnes(workers) {
     const rowLoader = (item, idx) => mapDocumentComplet(workers, item, idx)
 
     const params = {
-        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateFichier'],
+        ordreColonnes: ['nom', 'taille', 'mimetype', 'dateItem'],
         paramsColonnes: {
             'nom': {'label': 'Nom', showThumbnail: true, xs: 11, lg: 6, xl: 7},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 3, lg: 1, xl: 1},
             'mimetype': {'label': 'Type', className: 'details', xs: 3, lg: 2, xl: 2},
             // 'dateAjout': {'label': 'Date ajout', className: 'details', formatteur: FormatterColonneDate, xs: 5, lg: 2},
-            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 3, xl: 2},
+            'dateItem': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 6, lg: 3, xl: 2},
             // 'boutonDetail': {label: ' ', className: 'details', showBoutonContexte: true, xs: 1, lg: 1},
         },
         ordreColonnesMobile: ['nom', 'taille', 'dateFichier', 'mimetype'],
         paramsColonnesMobile: {
             'nom': {'label': 'Nom', xs: 12},
             'taille': {'label': 'Taille', className: 'details', formatteur: FormatteurTaille, xs: 12},
-            'dateFichier': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 12},
+            'dateItem': {'label': 'Date', className: 'details', formatteur: FormatterColonneDate, xs: 12},
             'mimetype': {'label': 'Type', className: 'details', xs: 12},
         },
         tri: {colonne: 'nom', ordre: 1},
