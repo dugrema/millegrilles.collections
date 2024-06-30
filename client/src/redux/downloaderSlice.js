@@ -290,7 +290,15 @@ async function traiterAjouterDownload(workers, docDownload, dispatch, getState) 
 
         dispatch(pushDownload(nouveauDownload))
     } else {
-        throw new Error(`Download ${fuuid} existe deja`)
+        try {
+            console.debug("Sauvegarder fichier : ", docDownload)
+            // Prompt sauvegarder
+            const fuuid = docDownload.version_courante.fuuid,
+                  filename = docDownload.nom
+            await workers.traitementFichiers.downloadCache(fuuid, {filename})
+        } catch(err) {
+            console.warn("Erreur prompt pour sauvegarder fichier downloade ", err)
+        }
     }    
 }
 
