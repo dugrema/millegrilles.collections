@@ -585,9 +585,6 @@ async function onePassUploader(workers, fuuid, partContent, opts) {
     const cancelTokenSource = axios.CancelToken.source()
     _cancelUploadToken = cancelTokenSource
 
-    console.debug("Authenticate, fichier %O, opts: %O", partContent, opts)
-    await authenticate(workers);
-
     // console.debug("Cancel token source : ", cancelTokenSource)
 
     const headers = {
@@ -623,24 +620,20 @@ async function onePassUploader(workers, fuuid, partContent, opts) {
     return reponse
 }
 
-async function partUploader(workers, token, correlation, position, partContent, opts) {
+async function partUploader(workers, fuuid, position, partContent, opts) {
     opts = opts || {}
     const onUploadProgress = opts.onUploadProgress,
     hachagePart = opts.hachagePart
 
-    const pathUploadUrl = new URL(_pathServeur.href + path.join('/'+correlation, ''+position))
+    const pathUploadUrl = new URL(_pathServeur.href + path.join('/files', ''+fuuid, ''+position))
     // console.debug("partUploader pathUpload ", pathUploadUrl.href)
     const cancelTokenSource = axios.CancelToken.source()
     _cancelUploadToken = cancelTokenSource
-
-    console.debug("Authenticate")
-    await authenticate(workers);
 
     // console.debug("Cancel token source : ", cancelTokenSource)
 
     const headers = {
         'content-type': 'application/data',
-        'x-token-jwt': token,
     }
     if(hachagePart) {
         headers['x-content-hash'] = hachagePart  // 'm4OQCIPFQ/07VX/RQIGDoC1LRyicc1VBRaZEPr9DPm9qrdyDE'
@@ -660,11 +653,17 @@ async function partUploader(workers, token, correlation, position, partContent, 
             // console.debug("Resultat upload : ", resultat)
             return {status: resultat.status, data: resultat.data}
       })
-        .catch(err=>{
+        .catch(async err => {
             // console.error("partUploader Erreur upload : %O", err)
             const response = err.response
             // console.debug("partUploader Erreur response : %O", response)
-            if(response.status === 409) return {status: response.status, data: null}  // Ok, part deja uploade avec succes. Skip
+            if([409, 412].includes(response.status)) {
+                return {status: response.status, data: null}  // Ok, part deja uploade avec succes. Skip
+            }
+            else if([401, 403].includes(response.status)) {
+                console.debug("Not authenticated, try again");
+                await authenticate(workers);
+            }
             throw err
         })
         .finally( () => _cancelUploadToken = null )
@@ -672,7 +671,7 @@ async function partUploader(workers, token, correlation, position, partContent, 
     return reponse
 }
 
-export async function confirmerUpload(token, correlation, opts) {
+export async function confirmerUpload(token, fuuid, opts) {
     opts = opts || {}
     const { transaction } = opts
     // console.debug("confirmerUpload %s cle : %O, transaction : %O", correlation, cle, transaction)
@@ -686,16 +685,15 @@ export async function confirmerUpload(token, correlation, opts) {
     }
     if(!hachage) throw new Error("Hachage fichier manquant")
 
-    const confirmationResultat = { etat: {correlation, hachage} }
+    const confirmationResultat = { etat: {hachage} }
     if(transaction) confirmationResultat.transaction = transaction
     // if(cle) confirmationResultat.cle = cle
-    const pathConfirmation = _pathServeur.href + path.join('/' + correlation)
+    const pathConfirmation = _pathServeur.href + path.join('/files', fuuid)
     try {
         const reponse = await axios({
             method: 'POST',
             url: pathConfirmation,
             data: confirmationResultat,
-            headers: {'x-token-jwt': token},
             timeout: 30_000,
         })
         if(reponse.data.ok === false) {
@@ -727,16 +725,14 @@ export async function confirmerUpload(token, correlation, opts) {
     }
 }
 
-export async function supprimerUpload(token, correlation) {
-    const pathConfirmation = _pathServeur.href + path.join('/' + correlation)
+export async function supprimerUpload(token, fuuid) {
+    const pathConfirmation = _pathServeur.href + path.join('/' + fuuid)
 
     let response
     try {
         response = await axios({
             method: 'DELETE',
             url: pathConfirmation,
-            //data: confirmationResultat,
-            headers: {'x-token-jwt': token}
         })
     } catch(err) {
         response = err.response
@@ -773,6 +769,9 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
             .catch(err=>console.warn("uploadFichier.progressFichier Erreur maj etat upload : ", err))
     }
 
+    console.debug("Authenticate, fuuid %s", fuuid);
+    await authenticate(workers);
+
     if(parts.length === 1) {
         console.debug("uploadFichier Using one-shot uploader");
         let part = parts[0];
@@ -801,7 +800,7 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
                 onUploadProgress: progressFichier,
             }
             // console.debug("uploadFichier Debut upload %s", correlation)
-            await partUploader(workers, token, correlation, position, partContent, opts)
+            await partUploader(workers, fuuid, position, partContent, opts)
             // console.debug("uploadFichier Resultat upload %s (cancelled? %O) : %O", correlation, cancelToken, resultatUpload)
 
             if(cancelToken && cancelToken.cancelled) {
@@ -815,41 +814,37 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
         }
     }
 
-    // Signer et uploader les transactions
-    const transactionMaitredescles = fichier.transactionMaitredescles
-
-    const cle = await chiffrage.formatterMessage(
-        transactionMaitredescles, 'MaitreDesCles', 
-        // {kind: MESSAGE_KINDS.KIND_COMMANDE, partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false}
-        {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'ajouterCleDomaines', DEBUG: false}
-    )
-
-    const transaction = await chiffrage.formatterMessage(
-        fichier.transactionGrosfichiers, 'GrosFichiers', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'nouvelleVersion'})
-    
-    transaction.attachements = { cle }
-
     // console.debug("Confirmer upload de transactions signees : %O", transaction)
     try {
-        const reponse = await transfertUploadFichiers.confirmerUpload(token, correlation, {transaction})
-        if(reponse.errcode === 'ECONNABORTED') {
-            console.warn("uploadFichier Connexion aborted (%s) - marquer complete quand meme", reponse.err)
-        } else if(reponse.err) {
-            throw reponse.err
-        } else if(reponse.status === 404) {
+        const reponseUpload = await transfertUploadFichiers.confirmerUpload(token, fuuid, {hachage: fuuid})
+        if(reponseUpload.errcode === 'ECONNABORTED') {
+            console.warn("uploadFichier Connexion aborted (%s) - marquer complete quand meme", reponseUpload.err)
+        } else if(reponseUpload.err) {
+            throw reponseUpload.err
+        } else if(reponseUpload.status === 404) {
             // L'upload a ete resette (DELETE ou supprime par serveur)
             // Tenter de recommencer l'upload (resetter localement)
             await marquerUploadEtat(correlation, {etat: ETAT_PRET, tailleCompletee: 0, positionsCompletees: []})
-            throw new Error(`Erreur upload status : ${reponse.status}`)
-        } else if( ! [200, 202].includes(reponse.status)) {
-            console.error("Erreur confirmation upload : ", reponse)
-            await marquerUploadEtat(correlation, {etat: ETAT_ECHEC, status: reponse.status})
+            throw new Error(`Erreur upload status : ${reponseUpload.status}`)
+        } else if( ! [200, 202].includes(reponseUpload.status)) {
+            console.error("Erreur confirmation upload : ", reponseUpload)
+            await marquerUploadEtat(correlation, {etat: ETAT_ECHEC, status: reponseUpload.status})
 
-            await transfertUploadFichiers.confirmerUpload(token, correlation, {transaction})
+            // Reessayer
+            await transfertUploadFichiers.confirmerUpload(token, correlation, {hachage: fuuid})
 
-            throw new Error(`Erreur upload status : ${reponse.status}`)
+            throw new Error(`Erreur upload status : ${reponseUpload.status}`)
         }
         // console.debug("uploadFichier Upload confirme")
+
+        // Signer et uploader les transactions
+        let cle = await chiffrage.formatterMessage(
+            fichier.transactionMaitredescles, 'MaitreDesCles', 
+            {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'ajouterCleDomaines', DEBUG: false}
+        );
+        let reponseTransactions = await workers.connexion.creerFichier(fichier.transactionGrosfichiers, cle);
+        if(reponseTransactions.ok !== true) throw new Error("uploadFichier Error upload: " + reponseTransactions.err);
+
     } catch(err) {
         console.error("uploadFichier Erreur non geree durant POST ", err)
         throw err
