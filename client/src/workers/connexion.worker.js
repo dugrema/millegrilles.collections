@@ -57,6 +57,30 @@ async function creerCollection(metadataChiffre, commandeMaitrecles, opts) {
   )
 }
 
+async function creerFichier(fichier, commandeCle) {
+  // const cle = await chiffrage.formatterMessage(
+  //   transactionMaitredescles, 'MaitreDesCles', 
+  //   // {kind: MESSAGE_KINDS.KIND_COMMANDE, partition: partitionMaitreDesCles, action: 'sauvegarderCle', DEBUG: false}
+  //   {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'ajouterCleDomaines', DEBUG: false}
+  // )
+
+  // return connexionClient.emitWithAck(
+  //   'creerCollection', 
+  //   params, 
+  //   {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'ajouterCleDomaines', noformat: true}
+  // );
+  // const transaction = await chiffrage.formatterMessage(
+  //   fichier.transactionGrosfichiers, 'GrosFichiers', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'nouvelleVersion'})
+  return connexionClient.emitWithAck(
+    'ajouterFichier', 
+    fichier, 
+    {
+      kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'nouvelleVersion', ajouterCertificat: true, 
+      attachements: {cle: commandeCle},
+    }
+  )
+}
+
 function toggleFavoris(etatFavoris) {
   // Format etatFavoris : {tuuid1: false, tuuid2: true, ...}
   return connexionClient.emitWithAck(
@@ -388,6 +412,7 @@ expose({
     ajouterFichier, creerTokenStream, supprimerVideo,
     regenererPreviews,
     archiverDocuments,
+    creerFichier,
 
     chargerContacts, ajouterContactLocal, supprimerContacts,
     partagerCollections, getPartagesUsager, supprimerPartageUsager, getPartagesContact,

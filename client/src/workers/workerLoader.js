@@ -53,7 +53,8 @@ async function wireWorkers(workers) {
     transfertDownloadFichiers.down_setChiffrage(chiffrage).catch(err=>console.error("Erreur chargement transfertDownloadFichiers/down worker : %O", err))
 
     const urlLocal = new URL(window.location.href)
-    urlLocal.pathname = '/collections/fichiers'
+    // urlLocal.pathname = '/collections/fichiers'
+    urlLocal.pathname = '/filehost'
     const downloadHref = urlLocal.href
     console.debug("Download path : %O", downloadHref)
     transfertDownloadFichiers.down_setUrlDownload(downloadHref)

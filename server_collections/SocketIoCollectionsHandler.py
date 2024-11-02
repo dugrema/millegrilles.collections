@@ -212,8 +212,8 @@ class SocketIoCollectionsHandler(SocketIoHandler):
                                             ConstantesCollections.NOM_DOMAINE, 'transcoderVideo')
 
     async def ajouter_fichier(self, sid: str, message: dict):
-        return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'commandeNouveauFichier')
+        return await self.executer_commande(
+            sid, message, ConstantesCollections.NOM_DOMAINE, 'nouvelleVersion')
 
     async def supprimer_video(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
