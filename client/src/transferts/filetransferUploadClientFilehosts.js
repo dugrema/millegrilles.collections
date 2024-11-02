@@ -769,8 +769,24 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
             .catch(err=>console.warn("uploadFichier.progressFichier Erreur maj etat upload : ", err))
     }
 
-    console.debug("Authenticate, fuuid %s", fuuid);
+    // Re-authenticate to ensure the filehost is available. This updates the cookie.
     await authenticate(workers);
+
+    // Access to the filehost works, emit the transaction/key immediately so that the file shows up in the list.
+    // Also, the FileControler emits the newFuuid event as soon as the file is done. This event must
+    // be received by GrosFichiers after the file entry is created.
+    let cle = await chiffrage.formatterMessage(
+        fichier.transactionMaitredescles, 'MaitreDesCles', 
+        {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'ajouterCleDomaines', DEBUG: false}
+    );
+    let reponse = await workers.connexion.creerFichier(fichier.transactionGrosfichiers, cle);
+    if(reponse.ok !== true) {
+        if(reponse.code === 409) {
+            // Ok, file entry already created. Continue
+        } else {
+            throw new Error("uploadFichier Error upload: " + reponse.err);
+        }
+    }
 
     if(parts.length === 1) {
         console.debug("uploadFichier Using one-shot uploader");
@@ -780,13 +796,6 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
             onUploadProgress: progressFichier,
         };
         await onePassUploader(workers, fuuid, part.data, opts);
-
-        let cle = await chiffrage.formatterMessage(
-            fichier.transactionMaitredescles, 'MaitreDesCles', 
-            {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'ajouterCleDomaines', DEBUG: false}
-        );
-        let reponse = await workers.connexion.creerFichier(fichier.transactionGrosfichiers, cle);
-        if(reponse.ok !== true) throw new Error("uploadFichier Error upload: " + reponse.err);
         return;
     } else {
         for await (const part of parts) {
@@ -836,14 +845,6 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
             throw new Error(`Erreur upload status : ${reponseUpload.status}`)
         }
         // console.debug("uploadFichier Upload confirme")
-
-        // Signer et uploader les transactions
-        let cle = await chiffrage.formatterMessage(
-            fichier.transactionMaitredescles, 'MaitreDesCles', 
-            {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'ajouterCleDomaines', DEBUG: false}
-        );
-        let reponseTransactions = await workers.connexion.creerFichier(fichier.transactionGrosfichiers, cle);
-        if(reponseTransactions.ok !== true) throw new Error("uploadFichier Error upload: " + reponseTransactions.err);
 
     } catch(err) {
         console.error("uploadFichier Erreur non geree durant POST ", err)
