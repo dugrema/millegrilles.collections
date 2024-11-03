@@ -38,6 +38,7 @@ import './App.css'
 
 import Menu from './Menu'
 import TransfertModal from './TransfertModal'
+import { authenticateFilehost } from './transferts/authentication'
 
 // Wire i18n dans module @dugrema/millegrilles.reactjs
 initI18n(i18n)
@@ -524,6 +525,8 @@ function InitialisationTransferts() {
   let workers = useWorkers();
   let etatPret = useEtatPret();
 
+  let [url, setUrl] = useState('');
+
   useEffect(()=>{
     if(!etatPret) return;
     console.debug('Charger information filehost');
@@ -543,13 +546,39 @@ function InitialisationTransferts() {
           workers.transfertUploadFichiers.up_setPathServeur(url.href);
           workers.traitementFichiers.setPathServeur(url.href);
 
+          setUrl(url);
+
         } else {
           console.error("Error receiving filehost information: %O", reponse.err);
         }
       })
       .catch(err=>console.error("Erreur chargement info filehost: %O", err));
 
-  }, [workers, etatPret]);
+  }, [workers, etatPret, setUrl]);
+
+  useEffect(()=>{
+    if(!url) return;
+
+    authenticateFilehost(workers, url)
+      .then(()=>{
+        console.info("Filehost authentication OK at %s", url.href);
+      })
+      .catch(err=>console.error("Filehost authentication error"))
+
+    let interval = setInterval(()=>{
+      authenticateFilehost(workers, url)
+      .then(()=>{
+        console.info("Filehost re-authentication OK at %O", url);
+      })
+      .catch(err=>console.error("Filehost authentication error"))
+    }, 300_000);
+
+    // Cleanup
+    return () => {
+      clearInterval(interval);
+    }
+
+  }, [workers, url]);
 
   return (<></>);
 }
