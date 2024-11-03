@@ -194,9 +194,10 @@ async function traiterAcceptedFiles(workers, dispatch, params, opts) {
         try {
             // Recuperer un token, faire 1 fichier par batch
             const debutGetBatch = new Date().getTime()
-            const infoBatch = await workers.connexion.getBatchUpload()
+            // const infoBatch = await workers.connexion.getBatchUpload()
             // console.debug("traiterAcceptedFiles InfoBatch %O (duree get %d)", infoBatch, new Date().getTime()-debutGetBatch)
-            const { batchId, token } = infoBatch
+            // const { batchId, token } = infoBatch
+            let batchId = 'OBSOLETE-BATCHID', token = 'OBSOLETE-TOKEN'
             const paramBatch = {...params, acceptedFiles: [file], token, batchId, infoTaille}
 
             // console.debug("Params batch upload ", paramBatch)

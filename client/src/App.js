@@ -9,7 +9,8 @@ import { initI18n, LayoutMillegrilles, ModalErreur, OuvertureSessionModal } from
 
 import ErrorBoundary from './ErrorBoundary'
 import useWorkers, {useCapabilities, useEtatConnexion, useEtatConnexionOpts, WorkerProvider, 
-  useUsager, useOverrideAffichage, useSetOverrideAffichage, useStopUnload, useModalTransfertEnCours} from './WorkerContext'
+  useUsager, useOverrideAffichage, useSetOverrideAffichage, useStopUnload, useModalTransfertEnCours,
+  useEtatPret} from './WorkerContext'
 import storeSetup from './redux/store'
 
 import fichiersActions from './redux/fichiersSlice'
@@ -272,6 +273,7 @@ function LayoutMain() {
           />
 
         <InitialisationConfiguration />
+        <InitialisationTransferts />
         <InitialisationDownload />
         <InitialisationUpload />
 
@@ -516,6 +518,41 @@ function InitialisationUpload(props) {
   // Rien a afficher
   return ''
 }
+
+function InitialisationTransferts() {
+
+  let workers = useWorkers();
+  let etatPret = useEtatPret();
+
+  useEffect(()=>{
+    if(!etatPret) return;
+    console.debug('Charger information filehost');
+    workers.connexion.getInfoFilehost()
+      .then(reponse=>{
+        console.debug("Filehost : %O", reponse);
+        if(reponse.ok) {
+          let filehost = reponse.filehost;
+          // Modifier la connection au besoin
+          let url = new URL(filehost.url);
+          if(url.hostname === 'localhost') {
+            // Utiliser hostname de la connexion courante. Donne acces au filehost interne via nginx.
+            url.hostname = window.location.hostname;
+          }
+
+          workers.transfertDownloadFichiers.down_setUrlDownload(url.href);
+          workers.transfertUploadFichiers.up_setPathServeur(url.href);
+
+        } else {
+          console.error("Error receiving filehost information: %O", reponse.err);
+        }
+      })
+      .catch(err=>console.error("Erreur chargement info filehost: %O", err));
+
+  }, [workers, etatPret]);
+
+  return (<></>);
+}
+
 
 function supprimerUploads(workers, dispatch, params, erreurCb) {
   // console.debug("!!! supprimerUploaders ", params)

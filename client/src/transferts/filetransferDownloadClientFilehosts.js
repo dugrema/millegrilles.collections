@@ -307,12 +307,14 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   let dechiffre = downloadEnCours.dechiffre || false
 
   let urlDownload = new URL(_urlDownload + '/files')
+  urlDownload.pathname = urlDownload.pathname.replaceAll('//', '/');
   try {
     // Verifier si URL fourni est valide/global
     urlDownload = new URL(url)
   } catch(err) {
     // Ajouter url au path
     urlDownload.pathname = path.join(urlDownload.pathname, fuuid)
+    urlDownload.pathname = urlDownload.pathname.replaceAll('//', '/');
     dechiffre = false
   }
   // console.debug("URL de download de fichier : %O, dechiffre : %s", urlDownload, dechiffre)
@@ -719,6 +721,8 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
 
 async function authenticate(workers) {
   let url = new URL(_urlDownload + '/authenticate')
+  url.pathname = url.pathname.replaceAll('//', '/');
+
   let signedMessage = await workers.chiffrage.formatterMessage(
       {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
 

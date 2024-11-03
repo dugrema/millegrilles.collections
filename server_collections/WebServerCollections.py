@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from asyncio import TaskGroup
 
 from typing import Optional
 
@@ -18,15 +19,11 @@ class WebServerCollections(WebServer):
 
         self.__semaphore_web_verifier = asyncio.BoundedSemaphore(value=5)
 
-        self.__reception_fichiers = ReceptionFichiersMiddleware(
-            self.app, self.etat, '/collections/fichiers/upload')
-
     def get_nom_app(self) -> str:
         return ConstantesCollections.APP_NAME
 
     async def setup(self, configuration: Optional[dict] = None, stop_event: Optional[asyncio.Event] = None):
         await super().setup(configuration, stop_event)
-        await self.__reception_fichiers.setup()
 
     async def setup_socketio(self):
         """ Wiring socket.io """
@@ -43,8 +40,5 @@ class WebServerCollections(WebServer):
         Override pour ajouter thread reception fichiers
         :return:
         """
-        tasks = [
-            super().run(),
-            self.__reception_fichiers.run(self._stop_event)
-        ]
-        await asyncio.gather(*tasks)
+        async with TaskGroup() as group:
+            group.create_task(super().run())

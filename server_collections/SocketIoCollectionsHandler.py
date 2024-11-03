@@ -38,7 +38,6 @@ class SocketIoCollectionsHandler(SocketIoHandler):
         self._sio.on('getPartagesContact', handler=self.requete_partages_contact)
         self._sio.on('getInfoStatistiques', handler=self.requete_info_statistiques)
         self._sio.on('getStructureRepertoire', handler=self.requete_structure_repertoire)
-        self._sio.on('getBatchUpload', handler=self.requete_batch_upload)
         self._sio.on('getPermissionCles', handler=self.requete_permission_cles)
         self._sio.on('getSousRepertoires', handler=self.get_sous_repertoires)
 
@@ -142,24 +141,6 @@ class SocketIoCollectionsHandler(SocketIoHandler):
     async def requete_structure_repertoire(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
                                            ConstantesCollections.NOM_DOMAINE, 'getStructureRepertoire')
-
-    async def requete_batch_upload(self, sid: str, message: dict):
-        async with self._sio.session(sid) as session:
-            try:
-                enveloppe = await self.authentifier_message(session, message)
-            except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        user_id = enveloppe.get_user_id
-        cle_certificat = self.etat.clecertificat
-
-        # Signer un token JWT
-        expiration = datetime.datetime.now(tz=pytz.UTC) + datetime.timedelta(days=1)
-        uuid_batch = str(uuid.uuid4())
-        token = creer_token_fichier(cle_certificat,
-                                    issuer='collections', user_id=user_id, fuuid=uuid_batch, expiration=expiration)
-
-        return {'token': token, 'batchId': uuid_batch}
 
     async def requete_permission_cles(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,

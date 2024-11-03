@@ -15,6 +15,13 @@ function getCorbeille() {
   return connexionClient.emitWithAck('getCorbeille', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'getCorbeille', ajouterCertificat: true})
 }
 
+function getInfoFilehost() {
+  return connexionClient.emitWithAck(
+    'getInfoFilehost', {}, 
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'collection', action: 'getInfoFilehost', ajouterCertificat: true}
+  );
+}
+
 async function getClesFichiers(fuuids, usager, opts) {
   opts = opts || {}
 
@@ -268,9 +275,9 @@ function getMediaJobs(opts) {
 }
 
 /** Retourne nouveau { token, batchId } */
-function getBatchUpload() {
-  return connexionClient.emitWithAck('getBatchUpload', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, timeout: 30_000, noverif: true})
-}
+// function getBatchUpload() {
+//   return connexionClient.emitWithAck('getBatchUpload', {}, {kind: MESSAGE_KINDS.KIND_REQUETE, timeout: 30_000, noverif: true})
+// }
 
 async function submitBatchUpload(token) {
   const commande = { token }
@@ -402,7 +409,7 @@ expose({
     ...connexionClient, 
 
     // Requetes et commandes privees
-    getDocuments, getClesFichiers,
+    getDocuments, getClesFichiers, getInfoFilehost,
     getFavoris, getCorbeille,
     creerCollection, toggleFavoris, 
     recupererDocuments, supprimerDocuments,
@@ -419,7 +426,8 @@ expose({
 
     syncCollection, syncRecents, syncCorbeille,
     getMediaJobs, supprimerJobVideo,
-    getBatchUpload, submitBatchUpload,
+    // getBatchUpload, 
+    submitBatchUpload,
 
     getInfoStatistiques, getStructureRepertoire, getSousRepertoires,
 

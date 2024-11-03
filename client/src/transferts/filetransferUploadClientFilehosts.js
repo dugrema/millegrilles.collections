@@ -41,25 +41,23 @@ const _hachageDechiffre = new hachage.Hacheur({hashingCode: 'blake2b-512', DEBUG
 _pathServeur.pathname = '/filehost'
 
 const CONST_1MB = 1024 * 1024
-const THRESHOLD_5mb = 100 * CONST_1MB,
-      THRESHOLD_10mb = 250 * CONST_1MB,
-      THRESHOLD_20mb = 500 * CONST_1MB,
-      THRESHOLD_50mb = 1000 * CONST_1MB
+const THRESHOLD_100mb = 2_000 * CONST_1MB,
+      THRESHOLD_500mb = 10_000 * CONST_1MB
 
 // Retourne la taille a utiliser pour les batch
 function getUploadBatchSize(fileSize) {
     if(!fileSize) throw new Error("NaN")
-    if(fileSize < THRESHOLD_5mb) return 5 * CONST_1MB
-    if(fileSize < THRESHOLD_10mb) return 10 * CONST_1MB
-    if(fileSize < THRESHOLD_20mb) return 20 * CONST_1MB
-    if(fileSize < THRESHOLD_50mb) return 50 * CONST_1MB
-    return 100 * CONST_1MB
+    if(fileSize < THRESHOLD_100mb) return 100 * CONST_1MB
+    if(fileSize < THRESHOLD_500mb) return 500 * CONST_1MB
+    return 1_000 * CONST_1MB
 }
 
 const ETAT_PREPARATION = 1,
       ETAT_PRET = 2
 
 export function up_setPathServeur(pathServeur) {
+    console.info("up_setPathServeur Path upload : ", _pathServeur.href)
+    _pathServeur = new URL(pathServeur)
     // if(pathServeur.startsWith('https://')) {
     //     _pathServeur = new URL(pathServeur)
     // } else {
@@ -68,7 +66,6 @@ export function up_setPathServeur(pathServeur) {
     //     pathServeurUrl.pathname = pathServeur
     //     _pathServeur = pathServeurUrl
     // }
-    console.info("Path serveur : ", _pathServeur.href)
 }
 
 export function up_getEtatCourant() {
@@ -562,7 +559,10 @@ export function cancelUpload() {
 }
 
 async function authenticate(workers) {
-    let url = new URL(_pathServeur.href + '/authenticate')
+    let url = new URL(_pathServeur.href)
+    url.pathname += '/authenticate';
+    url.pathname = url.pathname.replaceAll('//', '/');
+
     let signedMessage = await workers.chiffrage.formatterMessage(
         {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
 
@@ -580,7 +580,9 @@ async function onePassUploader(workers, fuuid, partContent, opts) {
     const onUploadProgress = opts.onUploadProgress,
     hachagePart = opts.hachagePart
 
-    const pathUploadUrl = new URL(_pathServeur.href + '/files/' + fuuid)
+    let pathUploadUrl = new URL(_pathServeur.href + '/files/' + fuuid)
+    pathUploadUrl.pathname = pathUploadUrl.pathname.replaceAll('//', '/');
+
     // console.debug("partUploader pathUpload ", pathUploadUrl.href)
     const cancelTokenSource = axios.CancelToken.source()
     _cancelUploadToken = cancelTokenSource
@@ -625,7 +627,9 @@ async function partUploader(workers, fuuid, position, partContent, opts) {
     const onUploadProgress = opts.onUploadProgress,
     hachagePart = opts.hachagePart
 
-    const pathUploadUrl = new URL(_pathServeur.href + path.join('/files', ''+fuuid, ''+position))
+    let pathUploadUrl = new URL(_pathServeur.href + path.join('/files', ''+fuuid, ''+position))
+    pathUploadUrl.pathname = pathUploadUrl.pathname.replaceAll('//', '/');
+
     // console.debug("partUploader pathUpload ", pathUploadUrl.href)
     const cancelTokenSource = axios.CancelToken.source()
     _cancelUploadToken = cancelTokenSource
@@ -688,7 +692,9 @@ export async function confirmerUpload(token, fuuid, opts) {
     const confirmationResultat = { etat: {hachage} }
     if(transaction) confirmationResultat.transaction = transaction
     // if(cle) confirmationResultat.cle = cle
-    const pathConfirmation = _pathServeur.href + path.join('/files', fuuid)
+    let pathConfirmation = _pathServeur.href + path.join('/files', fuuid)
+    pathConfirmation.pathname = pathConfirmation.pathname.replaceAll('//', '/');
+
     try {
         const reponse = await axios({
             method: 'POST',

@@ -55,9 +55,7 @@ async function wireWorkers(workers) {
     const urlLocal = new URL(window.location.href)
     // urlLocal.pathname = '/collections/fichiers'
     urlLocal.pathname = '/filehost'
-    const downloadHref = urlLocal.href
-    console.debug("Download path : %O", downloadHref)
-    transfertDownloadFichiers.down_setUrlDownload(downloadHref)
+    transfertDownloadFichiers.down_setUrlDownload(urlLocal.href)
     
     const callbackAjouterChunkIdb = proxy((fuuid, position, blob, opts) => {
         // console.debug("callbackAjouterChunkIdb proxy fuuid %s, position %d, blob %O", fuuid, position, blob)
@@ -65,10 +63,8 @@ async function wireWorkers(workers) {
     })
     transfertDownloadFichiers.down_setCallbackAjouterChunkIdb(callbackAjouterChunkIdb)
 
-    urlLocal.pathname = '/collections/fichiers/upload'
-    const uploadHref = urlLocal.href
-    console.debug("Upload path : %O", uploadHref)
-    transfertUploadFichiers.up_setPathServeur(urlLocal.pathname)
+    // urlLocal.pathname = '/collections/fichiers/upload'
+    transfertUploadFichiers.up_setPathServeur(urlLocal.href)
 
     const location = new URL(window.location)
     location.pathname = '/fiche.json'
