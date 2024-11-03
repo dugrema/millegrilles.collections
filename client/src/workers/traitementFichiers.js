@@ -48,7 +48,8 @@ function getUrlFuuid(fuuid, opts) {
     if(jwt) {
         // Mode streaming
         let url = new URL(window.location.href)
-        url.pathname = `/collections/streams/${fuuid}`
+        // url.pathname = `/collections/streams/${fuuid}`
+        url.pathname = `/streams/${fuuid}`
         url.searchParams.append('jwt', jwt)
         return url.href;
     } else {

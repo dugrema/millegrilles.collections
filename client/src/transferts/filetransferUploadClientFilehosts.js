@@ -692,13 +692,13 @@ export async function confirmerUpload(token, fuuid, opts) {
     const confirmationResultat = { etat: {hachage} }
     if(transaction) confirmationResultat.transaction = transaction
     // if(cle) confirmationResultat.cle = cle
-    let pathConfirmation = _pathServeur.href + path.join('/files', fuuid)
+    let pathConfirmation = new URL(_pathServeur.href + path.join('/files', fuuid))
     pathConfirmation.pathname = pathConfirmation.pathname.replaceAll('//', '/');
 
     try {
         const reponse = await axios({
             method: 'POST',
-            url: pathConfirmation,
+            url: pathConfirmation.href,
             data: confirmationResultat,
             timeout: 30_000,
         })
