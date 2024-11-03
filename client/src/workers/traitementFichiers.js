@@ -3,6 +3,9 @@ import * as Comlink from 'comlink'
 import * as CONST_TRANSFERT from '../transferts/constantes'
 import {getPartsDownload} from '../transferts/storage'
 
+var _pathServeur = new URL(window.location.href);
+_pathServeur.pathname = '/filehost/';
+
 function setup(workers) {
     return {
         traiterAcceptedFiles(dispatch, params, opts) {
@@ -29,6 +32,10 @@ function setup(workers) {
         updateFichier(dispatch, doc, opts) {
             updateFichier(workers, dispatch, doc, opts)
         },
+        setPathServeur(url) {
+            _pathServeur = new URL(url);
+            console.info("Path serveur: %O", _pathServeur);
+        }
     }
 }
 
@@ -38,17 +45,19 @@ function getUrlFuuid(fuuid, opts) {
     opts = opts || {}
     const jwt = opts.jwt
 
-    const url = new URL(window.location.href)
     if(jwt) {
         // Mode streaming
+        let url = new URL(window.location.href)
         url.pathname = `/collections/streams/${fuuid}`
         url.searchParams.append('jwt', jwt)
+        return url.href;
     } else {
         // Fichiers (defaut)
-        url.pathname = `/collections/fichiers/${fuuid}`
+        let url = new URL(_pathServeur.href);
+        url.pathname += `/files/${fuuid}`
+        url.pathname = url.pathname.replaceAll('//', '/');
+        return url.href;
     }
-
-    return url.href
 }
 
 async function getCleSecrete(workers, cle_id, opts) {

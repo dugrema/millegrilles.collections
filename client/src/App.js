@@ -541,6 +541,7 @@ function InitialisationTransferts() {
 
           workers.transfertDownloadFichiers.down_setUrlDownload(url.href);
           workers.transfertUploadFichiers.up_setPathServeur(url.href);
+          workers.traitementFichiers.setPathServeur(url.href);
 
         } else {
           console.error("Error receiving filehost information: %O", reponse.err);
