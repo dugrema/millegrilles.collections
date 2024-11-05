@@ -58,14 +58,6 @@ const ETAT_PREPARATION = 1,
 export function up_setPathServeur(pathServeur) {
     console.info("up_setPathServeur Path upload : ", _pathServeur.href)
     _pathServeur = new URL(pathServeur)
-    // if(pathServeur.startsWith('https://')) {
-    //     _pathServeur = new URL(pathServeur)
-    // } else {
-    //     // eslint-disable-next-line no-restricted-globals
-    //     const pathServeurUrl = new URL(self.location.href)
-    //     pathServeurUrl.pathname = pathServeur
-    //     _pathServeur = pathServeurUrl
-    // }
 }
 
 export function up_getEtatCourant() {
