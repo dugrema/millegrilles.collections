@@ -14,6 +14,7 @@ export async function authenticateFilehost(workers, urlFilehost) {
         method: 'POST',
         url: url.href,
         data: signedMessage,
+        withCredentials: true,
     });
     console.debug("Authentication response: ", response)
     if(!response.data.ok) {

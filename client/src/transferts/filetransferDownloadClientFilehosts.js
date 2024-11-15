@@ -720,18 +720,20 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
 }
 
 async function authenticate(workers) {
-  let url = new URL(_urlDownload + '/authenticate')
-  url.pathname = url.pathname.replaceAll('//', '/');
+  // NOTE - rien a faire, gere par App.js::InitialisationTransferts
 
-  let signedMessage = await workers.chiffrage.formatterMessage(
-      {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
+  // let url = new URL(_urlDownload + '/authenticate')
+  // url.pathname = url.pathname.replaceAll('//', '/');
 
-  console.debug('Authenticate url: %s, Signed message: %O', url.href, signedMessage);
-  let response = await axios({
-      method: 'POST',
-      url: url.href,
-      data: signedMessage,
-      withCredentials: true,
-  });
-  console.debug("Authentication response: ", response)
+  // let signedMessage = await workers.chiffrage.formatterMessage(
+  //     {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
+
+  // console.debug('Authenticate url: %s, Signed message: %O', url.href, signedMessage);
+  // let response = await axios({
+  //     method: 'POST',
+  //     url: url.href,
+  //     data: signedMessage,
+  //     withCredentials: true,
+  // });
+  // console.debug("Authentication response: ", response)
 }

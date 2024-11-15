@@ -553,21 +553,23 @@ export function cancelUpload() {
 }
 
 async function authenticate(workers) {
-    let url = new URL(_pathServeur.href)
-    url.pathname += '/authenticate';
-    url.pathname = url.pathname.replaceAll('//', '/');
+    // NOTE - rien a faire, gere par App.js::InitialisationTransferts
 
-    let signedMessage = await workers.chiffrage.formatterMessage(
-        {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
+    // let url = new URL(_pathServeur.href)
+    // url.pathname += '/authenticate';
+    // url.pathname = url.pathname.replaceAll('//', '/');
 
-    console.debug('Signed message: ', signedMessage);
-    let response = await axios({
-        method: 'POST',
-        url: url.href,
-        data: signedMessage,
-        withCredentials: true,
-    });
-    console.debug("Authentication response: ", response)
+    // let signedMessage = await workers.chiffrage.formatterMessage(
+    //     {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
+
+    // console.debug('Signed message: ', signedMessage);
+    // let response = await axios({
+    //     method: 'POST',
+    //     url: url.href,
+    //     data: signedMessage,
+    //     withCredentials: true,
+    // });
+    // console.debug("Authentication response: ", response)
 }
 
 async function onePassUploader(workers, fuuid, partContent, opts) {
