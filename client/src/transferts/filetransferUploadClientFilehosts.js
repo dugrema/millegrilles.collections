@@ -41,13 +41,15 @@ const _hachageDechiffre = new hachage.Hacheur({hashingCode: 'blake2b-512', DEBUG
 _pathServeur.pathname = '/filehost'
 
 const CONST_1MB = 1024 * 1024
-const THRESHOLD_100mb = 2_000 * CONST_1MB,
-      THRESHOLD_500mb = 10_000 * CONST_1MB
+const THRESHOLD_100mb = 4_000 * CONST_1MB,
+      THRESHOLD_250mb = 10_000 * CONST_1MB,
+      THRESHOLD_500mb = 20_000 * CONST_1MB
 
 // Retourne la taille a utiliser pour les batch
 function getUploadBatchSize(fileSize) {
     if(!fileSize) throw new Error("NaN")
     if(fileSize < THRESHOLD_100mb) return 100 * CONST_1MB
+    if(fileSize < THRESHOLD_250mb) return 250 * CONST_1MB
     if(fileSize < THRESHOLD_500mb) return 500 * CONST_1MB
     return 1_000 * CONST_1MB
 }
@@ -646,6 +648,7 @@ async function partUploader(workers, fuuid, position, partContent, opts) {
         data: partContent,
         onUploadProgress,
         cancelToken: cancelTokenSource.token,
+        withCredentials: true,  // pour CORS filehost
       })
         .then(resultat=>{
             // console.debug("Resultat upload : ", resultat)
@@ -695,6 +698,7 @@ export async function confirmerUpload(token, fuuid, opts) {
             url: pathConfirmation.href,
             data: confirmationResultat,
             timeout: 30_000,
+            withCredentials: true,  // pour CORS filehost
         })
         if(reponse.data.ok === false) {
             const data = reponse.data
@@ -733,6 +737,7 @@ export async function supprimerUpload(token, fuuid) {
         response = await axios({
             method: 'DELETE',
             url: pathConfirmation,
+            withCredentials: true,  // pour CORS filehost
         })
     } catch(err) {
         response = err.response
