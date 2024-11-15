@@ -563,6 +563,7 @@ async function authenticate(workers) {
         method: 'POST',
         url: url.href,
         data: signedMessage,
+        withCredentials: true,
     });
     console.debug("Authentication response: ", response)
 }
@@ -597,6 +598,7 @@ async function onePassUploader(workers, fuuid, partContent, opts) {
         data: partContent,
         onUploadProgress,
         cancelToken: cancelTokenSource.token,
+        withCredentials: true,  // pour CORS filehost
       })
         .then(resultat=>{
             // console.debug("Resultat upload : ", resultat)

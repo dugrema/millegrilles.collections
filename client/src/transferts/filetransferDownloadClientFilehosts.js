@@ -95,7 +95,7 @@ async function fetchAvecProgress(url, opts) {
   }
   // console.debug("fetch url %s header range %O", url, headerContentRange)
   const reponse = await fetch(url, {
-    signal, cache: 'no-store', keepalive: false,
+    signal, cache: 'no-store', keepalive: false, credentials: "include",
     headers: {'Range': headerContentRange}
   })
   const contentLengthRecu = Number(reponse.headers.get('Content-Length'))
@@ -322,11 +322,11 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   const infoFichier = await downloadFichiersDao.getDownload(fuuid)
   let tailleFichierChiffre = infoFichier.tailleChiffre
   if(dechiffre) {
-    const reponseHead = await fetch(urlDownload, {method: 'HEAD'})
+    const reponseHead = await fetch(urlDownload, {method: 'HEAD', credentials: "include"})
     tailleFichierChiffre = Number.parseInt(reponseHead.headers.get('Content-Length'))
   } else if(!tailleFichierChiffre) {
     // Recuperer la taille du fichier chiffre
-    const reponseHead = await fetch(urlDownload, {method: 'HEAD'})
+    const reponseHead = await fetch(urlDownload, {method: 'HEAD', credentials: "include"})
     tailleFichierChiffre = Number.parseInt(reponseHead.headers.get('Content-Length'))
     infoFichier.tailleChiffre = tailleFichierChiffre
     await downloadFichiersDao.updateFichierDownload(infoFichier)
@@ -365,7 +365,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
         // done,
       } = await fetchAvecProgress(
         urlDownload,
-        {progressCb, downloadEnCours, position: positionPart, partSize, taille: tailleFichierChiffre, signal: abortControllerLocal.signal, DEBUG}
+        {progressCb, downloadEnCours, position: positionPart, partSize, taille: tailleFichierChiffre, signal: abortControllerLocal.signal, withCredentials: true, DEBUG}
       )
 
       if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
@@ -731,6 +731,7 @@ async function authenticate(workers) {
       method: 'POST',
       url: url.href,
       data: signedMessage,
+      withCredentials: true,
   });
   console.debug("Authentication response: ", response)
 }
