@@ -268,11 +268,12 @@ function BadgeTransfer(props) {
 }
 
 async function deconnecter(nomUsager) {
-  try {
-    await supprimerContenuIdb({nomUsager})
-  } catch (err) {
-    console.error("deconnecter Erreur nettoyage IDB : ", err)
-  } finally {
-    window.location = '/auth/deconnecter_usager'
-  }
+  window.location.href = '/auth/deconnecter_usager';
+  // try {
+  //   await supprimerContenuIdb({nomUsager})
+  // } catch (err) {
+  //   console.error("deconnecter Erreur nettoyage IDB : ", err)
+  // } finally {
+  //   window.location.href = '/auth/deconnecter_usager';
+  // }
 }
