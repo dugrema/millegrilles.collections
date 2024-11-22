@@ -1,4 +1,4 @@
-FROM docker.maple.maceroc.com:5000/millegrilles_web_python:2024.8.43
+FROM docker.maple.maceroc.com:5000/millegrilles_web_python:2024.9.44
 
 ENV CA_PEM=/run/secrets/millegrille.cert.pem \
     CERT_PEM=/run/secrets/cert.pem \
