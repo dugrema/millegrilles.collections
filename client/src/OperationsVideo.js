@@ -9,7 +9,7 @@ import Row from 'react-bootstrap/Row'
 
 import { AfficherListeJobs } from './MediaJobsModal'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes'
-import { useCapabilities } from './WorkerContext'
+import { useCapabilities, useEtatPret } from './WorkerContext'
 
 const VIDEO_CODEC = [
   {label: 'HEVC (mp4)', value: "hevc"},
@@ -147,11 +147,27 @@ export function ConversionVideo(props) {
 
     const { workers, support, downloadAction, usager } = props
 
+    let etatPret = useEtatPret();
     const fichier = useMemo(()=>props.fichier || {}, [props.fichier])
     const versionCourante = fichier.version_courante || {}
     const mimetype = fichier.mimetype || versionCourante.mimetype || ''
     const estVideo = estMimetypeVideo(mimetype)
     // const mimetypeBase = mimetype.split('/').shift()
+
+    let [infoVideo, setInfoVideo] = useState('');
+
+    useEffect(()=>{
+      if(!workers || !etatPret || !fichier || !fichier.version_courante) return;
+      console.debug("Charger info video pour ", fichier);
+      let versionCourante = fichier.version_courante;
+      let fuuid = versionCourante.fuuid;
+      workers.connexion.getInfoVideo(fuuid)
+        .then(reponse=>{
+          console.debug("Info video", reponse);
+          setInfoVideo(reponse);
+        })
+        .catch(err=>console.error("Erreur chargement infoVideo", err));
+    }, [workers, etatPret, setInfoVideo, fichier]);
     
     const erreurCb = (err, message) => {
       console.error("ConversionVideo Erreur %s : %O", message, err)
@@ -165,6 +181,7 @@ export function ConversionVideo(props) {
                 workers={workers}
                 fichier={fichier}
                 usager={usager}
+                infoVideo={infoVideo}
                 erreurCb={erreurCb}
             />
 
@@ -182,7 +199,7 @@ export function ConversionVideo(props) {
 
 function FormConversionVideo(props) {
 
-    const { workers, fichier, setTranscodage, usager, erreurCb } = props
+    const { workers, fichier, setTranscodage, infoVideo, usager, erreurCb } = props
 
     const [codecVideo, setCodecVideo] = useState('h264')
     const [codecAudio, setCodecAudio] = useState('aac')
@@ -190,6 +207,8 @@ function FormConversionVideo(props) {
     const [qualityVideo, setQualityVideo] = useState(22)
     const [bitrateAudio, setBitrateAudio] = useState(128000)
     const [preset, setPreset] = useState('slow')
+    let [audioStream, setAudioStream] = useState('');
+    let [subtitleStream, setSubtitleStream] = useState('');
 
     const profilDefault = useMemo(()=>{
       const profilCodec = PROFILS_VIDEO[codecVideo]
@@ -232,6 +251,24 @@ function FormConversionVideo(props) {
       setResolutionVideo(360)
     }, [resolutionOriginal, setResolutionVideo])
 
+    const convertir = useCallback(() => {
+      let audio = audioStream?Number.parseInt(audioStream):null;
+      let subtitles = subtitleStream?Number.parseInt(subtitleStream):null;
+
+      convertirVideo(
+        workers,
+        fichier,
+        {
+          codecVideo, codecAudio, resolutionVideo, qualityVideo, bitrateAudio, preset, 
+          audio_stream_idx: audio, subtitle_stream_idx: subtitles,
+        },
+        erreurCb,
+        {usager}
+      )
+      .then(setTranscodage)
+      .catch(err=>erreurCb(err, "Erreur de preparation pour le transcodage du video"))
+    }, [workers, fichier, codecVideo, codecAudio, resolutionVideo, qualityVideo, bitrateAudio, preset, erreurCb, usager, subtitleStream, audioStream]);
+
     if(!fichier) return ''
     const mimetype = fichier.mimetype || versionCourante.mimetype
     const estVideo = estMimetypeVideo(mimetype)
@@ -247,18 +284,6 @@ function FormConversionVideo(props) {
     const changerResolutionVideo = event => { setResolutionVideo(Number(event.currentTarget.value)) }
     const changerQualityVideo = event => { setQualityVideo(Number(event.currentTarget.value)) }
     const changerBitrateAudio = event => { setBitrateAudio(Number(event.currentTarget.value)) }
-  
-    const convertir = event => {
-      convertirVideo(
-        workers,
-        fichier,
-        {codecVideo, codecAudio, resolutionVideo, qualityVideo, bitrateAudio, preset},
-        erreurCb,
-        {usager}
-      )
-      .then(setTranscodage)
-      .catch(err=>erreurCb(err, "Erreur de preparation pour le transcodage du video"))
-    }
   
     return (
       <>
@@ -276,11 +301,13 @@ function FormConversionVideo(props) {
                 maxValueFilter={maxValueFilterResolution} 
                 maxValue={resolutionOriginal} />
               <SelectGroup formLabel={'Qualite'} name={'qualityVideo'} value={qualityVideo} onChange={changerQualityVideo} options={QUALITY_VIDEO} />
+              <SelectSubtitles infoVideo={infoVideo} value={subtitleStream} dispatch={setSubtitleStream} />
             </Col>
             <Col xs={12} md={6}>
               <h3>Audio</h3>
               <SelectGroup formLabel={'Codec'} name={'codecAudio'} value={codecAudio} options={AUDIO_CODEC} disabled/>
               <SelectGroup formLabel={'Bitrate'} name={'bitrateAudio'} value={bitrateAudio} onChange={changerBitrateAudio} options={BITRATES_AUDIO} />
+              <SelectAudio infoVideo={infoVideo} value={audioStream} dispatch={setAudioStream} />
             </Col>
           </Row>
           <Row>
@@ -331,6 +358,86 @@ function SelectGroup(props) {
   )
 }
 
+function SelectAudio(props) {
+
+  let { infoVideo, value, dispatch } = props;
+
+  let onChange = useCallback(e=>{
+    let value = e.currentTarget.value;
+    dispatch(value);
+  }, [dispatch]);
+
+  let options = useMemo(()=>{
+    if(!infoVideo || !infoVideo.audio) return null;
+    let audio = infoVideo.audio;
+    if(audio) {
+      return audio.map((item, idx)=>{
+        return <option key={''+item.index} value={''+idx}>{item.title || item.language || 'Stream #'+item.index}</option>
+      });
+    }
+    return null
+  }, [infoVideo]);
+  
+  return (
+    <Form.Group>
+      <Row>
+        <Col xs={12} lg={6}>
+          <Form.Label>Stream</Form.Label>
+        </Col>
+        <Col xs={12} lg={6}>
+          {options?
+            <Form.Select value={value} onChange={onChange}>
+              <option value=''>Default</option>
+              {options}
+            </Form.Select>
+            :<>N/A</>
+          }
+        </Col>
+      </Row>
+    </Form.Group>
+  )
+}
+
+function SelectSubtitles(props) {
+  
+  let { infoVideo, value, dispatch } = props;
+
+  let onChange = useCallback(e=>{
+    let value = e.currentTarget.value;
+    dispatch(value);
+  }, [dispatch]);
+
+  let options = useMemo(()=>{
+    if(!infoVideo || !infoVideo.subtitles) return null;
+    let subtitles = infoVideo.subtitles;
+    if(subtitles) {
+      return subtitles.map((item, idx)=>{
+        return <option key={''+item.index} value={''+idx}>{item.title || item.language || 'Stream #'+item.index}</option>
+      });
+    }
+    return null
+  }, [infoVideo]);
+
+  return (
+    <Form.Group>
+      <Row>
+        <Col xs={12} lg={6}>
+          <Form.Label>Subtitles</Form.Label>
+        </Col>
+        <Col xs={12} lg={6}>
+          {options?
+            <Form.Select value={value} onChange={onChange}>
+              <option value=''>None</option>
+              {options}
+            </Form.Select>
+            :<>N/A</>
+          }
+        </Col>
+      </Row>
+    </Form.Group>
+  )
+}
+
 async function convertirVideo(workers, fichier, params, erreurCb, opts) {
   opts = opts || {}
   // console.debug("Convertir video %O (opts: %O)", params, opts)
@@ -371,7 +478,7 @@ async function convertirVideo(workers, fichier, params, erreurCb, opts) {
     commande.permission_hachage_bytes = [fichier.fuuid_v_courante]
   }
 
-  // console.debug("Commande transcodage : %O", commande)
+  console.debug("Commande transcodage : %O", commande)
   connexion.transcoderVideo(commande)
     .then(reponse=>{
       console.debug("convertirVideo Reponse commande transcodage : %O", reponse)

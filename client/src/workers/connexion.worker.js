@@ -198,6 +198,14 @@ function rechercheIndex(mots_cles, from_idx, size) {
   )
 }
 
+function getInfoVideo(fuuid) {
+  return connexionClient.emitWithAck(
+    'getInfoVideo',
+    {fuuid},
+    {kind: MESSAGE_KINDS.KIND_REQUETE, domaine: 'GrosFichiers', action: 'getInfoVideo', attacherCertificat: true, timeout: 5_000}
+  )
+}
+
 function transcoderVideo(commande) {
   return connexionClient.emitWithAck(
     'transcoderVideo',
@@ -429,7 +437,7 @@ expose({
     // getBatchUpload, 
     submitBatchUpload,
 
-    getInfoStatistiques, getStructureRepertoire, getSousRepertoires,
+    getInfoStatistiques, getStructureRepertoire, getSousRepertoires, getInfoVideo,
 
     // Event listeners prives
     enregistrerCallbackMajCollection, retirerCallbackMajCollection,

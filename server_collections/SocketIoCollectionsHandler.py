@@ -33,6 +33,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
         self._sio.on('syncRecents', handler=self.requete_sync_recents)
         self._sio.on('syncCorbeille', handler=self.requete_sync_corbeille)
         self._sio.on('requeteJobsVideo', handler=self.requete_jobs_video)
+        self._sio.on('getInfoVideo', handler=self.requete_info_video)
         self._sio.on('chargerContacts', handler=self.requete_contacts)
         self._sio.on('getPartagesUsager', handler=self.requete_partages_usager)
         self._sio.on('getPartagesContact', handler=self.requete_partages_contact)
@@ -121,6 +122,10 @@ class SocketIoCollectionsHandler(SocketIoHandler):
     async def requete_jobs_video(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
                                            ConstantesCollections.NOM_DOMAINE, 'requeteJobsVideo')
+
+    async def requete_info_video(self, sid: str, message: dict):
+        return await self.executer_requete(sid, message,
+                                           ConstantesCollections.NOM_DOMAINE, 'getInfoVideo')
 
     async def requete_contacts(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
