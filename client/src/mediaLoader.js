@@ -272,6 +272,7 @@ function videoLoader(getUrl, creerTokenJwt, videos, opts) {
             if(!videoSelectionne && fuuid === selecteur && original) {
                 videoSelectionne = original;
             }
+            if(!videoSelectionne) throw new Error('No video selected');
             // console.debug("videoLoader Video selectionne ", videoSelectionne)
 
             // Creer token JWT et url d'acces

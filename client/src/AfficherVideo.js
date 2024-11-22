@@ -467,7 +467,7 @@ function ErreurChargement(props) {
 export function SelecteurResolution(props) {
     const { fichier, selecteur, setSelecteur } = props
 
-    const capabilities = useCapabilities()
+    const capabilities = useCapabilities();
 
     const changerSelecteur = useCallback(value=>{
         // if(Number.parseInt(value)) window.localStorage.setItem('videoResolution', value)
@@ -496,7 +496,10 @@ export function SelecteurResolution(props) {
         for(let resolution of Object.keys(selecteurs.resolutions)) {
             let valeur = selecteurs.resolutions[resolution];
             for(let subres of valeur) {
-                if(subres.fuuid_video === selecteur) return resolution;
+                if(subres.fuuid_video === selecteur) {
+                    if(subres.original) return 'Original';
+                    return resolution;
+                }
             }
         }
         return '';
@@ -505,10 +508,10 @@ export function SelecteurResolution(props) {
     // Identifier un selecteur initial pour declencher le chargement automatique
     useEffect(()=>{
         // console.debug("SelecteurResolution selecteur %O, selecteurs %O", selecteur, selecteurs)
-        if(selecteur || !selecteurs) return  // Deja initialise
+        if(selecteur || !selecteurs) return;  // Deja initialise
         // const selecteursKeys = Object.keys(selecteurs)
 
-        const defaultSelecteur = window.localStorage.getItem('videoResolution')
+        const defaultSelecteur = window.localStorage.getItem('videoResolution') || '0720';
 
         if(!selecteurs.resolutions || Object.keys(selecteurs.resolutions).length === 0) {
             // Choisir fallback, sinon original
@@ -520,7 +523,10 @@ export function SelecteurResolution(props) {
         if(defaultSelecteur && selecteurs.resolutions) {
             const resolutions = selecteurs.resolutions
             // Tenter de trouver une resolution qui correspond au selecteur
-            if(resolutions[defaultSelecteur]) return setSelecteur(defaultSelecteur)
+            if(resolutions[defaultSelecteur]) {
+                let fuuid_video = resolutions[defaultSelecteur][0].fuuid_video;
+                return setSelecteur(fuuid_video);
+            }
 
             // Hacky, trouver resolution la plus elevee disponible par rapport au selecteur
             const resolutionDefault = Number.parseInt(defaultSelecteur)
@@ -537,18 +543,21 @@ export function SelecteurResolution(props) {
                 }
             }
 
-            // Fallback
-            return setSelecteur('')
+            // Fallback - original
+            let fuuid = fichier.version_courante.fuuid;
+            return setSelecteur(fuuid);
         } else {
             console.error("Aucuns format video n'est disponible dans le selecteur")
         }
-    }, [selecteurs, selecteur, setSelecteur])
+    }, [selecteurs, selecteur, setSelecteur, fichier]);
 
     return (
         <DropdownButton title={titleDropdown} variant="secondary" onSelect={changerSelecteur}>
-            <SelecteurVideoContenu fichier={fichier} selecteurs={selecteurs} selecteur={selecteur} setSelecteur={changerSelecteur} />
+            <SelecteurVideoContenu 
+                fichier={fichier}
+                selecteurs={selecteurs} selecteur={selecteur} setSelecteur={changerSelecteur} />
         </DropdownButton>
-    )
+    );
 }
 
 function SelecteurVideoContenu(props) {
@@ -557,11 +566,13 @@ function SelecteurVideoContenu(props) {
 }
 
 function SelecteurVideoResolution(props) {
-    const { selecteurs, selecteur } = props
+    const { selecteurs, selecteur, fichier } = props
+
+    let fuuid = fichier.version_courante.fuuid;
 
     const listeOptions = useMemo(()=>{
         // if(!selecteurs) return [{key: 'original', label: 'Original'}]
-        if(!selecteurs) return [{key: '', label: 'Aucun format disponible'}]
+        if(!selecteurs) return [{key: '', value: '', label: 'Aucun format disponible'}]
 
         console.debug("SelecteurVideoResolution selecteurs", selecteurs)
 
@@ -585,13 +596,13 @@ function SelecteurVideoResolution(props) {
             options.unshift({key: '', label: 'Selectionner'})
             // Ajouter option a la fin - quand meme permettre de selectionner l'original si l'option
             // n'est pas disponible
-            options.push({key: 'original', label: 'Original - non supporte'})
+            options.push({key: 'original', fuuid_video: fuuid, label: 'Original - non supporte'})
         } else if(originalSupporte) {
             // Ajouter l'original a la fin
-            options.push({key: 'original', label: 'Original'})            
+            options.push({key: 'original', fuuid_video: fuuid, label: 'Original'})            
         }
         return options
-    }, [selecteurs])
+    }, [selecteurs, fuuid])
 
     return listeOptions.map(item=>{
         // const key = item.original?'original':item.key
@@ -626,6 +637,8 @@ export function determinerSelecteursVideos(videos, original) {
         }
     }
 
+    console.debug("Videos intermediaire ", videos);
+
     // Retirer les videos qui ne sont pas supportes (codec)
     let videosFiltres = Object.values(videos).filter(item=>{
         if(supportMedia[item.codec]) {
@@ -636,6 +649,8 @@ export function determinerSelecteursVideos(videos, original) {
         }
         return false;
     });
+
+    console.debug("Videos filtres ", videosFiltres);
 
     for(let video of videosFiltres) {
         const { codec, fuuid_video, width, height, mimetype, quality, original, audio_stream_idx, subtitle_stream_idx, cle_conversion } = video
