@@ -9,7 +9,7 @@ import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
+import MediaLoader from './mediaLoader'
 import { supporteFormatVideo } from '@dugrema/millegrilles.reactjs/src/detecterAppareils'
 
 import VideoViewer from './VideoViewer'
@@ -47,7 +47,7 @@ export function WrapperPlayer(props) {
 
     const videoLoader = useMemo(()=>{
         const { connexion, traitementFichiers } = workers
-        console.debug("videoLoader fichier: %O, contactId: %O", fichier, contactId)
+        // console.debug("videoLoader fichier: %O, contactId: %O", fichier, contactId)
         const version_courante = fichier.version_courante
         const {fuuid, video} = version_courante
         const creerTokenStreamInst = commande => {
@@ -58,18 +58,18 @@ export function WrapperPlayer(props) {
                 commandeV2.fuuid_ref = fuuid
             }
             if(contactId) commandeV2.contact_id = contactId
-            console.debug("creerTokenStreamInst Commande V2 %O, fichier %O", commandeV2, fichier)
+            // console.debug("creerTokenStreamInst Commande V2 %O, fichier %O", commandeV2, fichier)
     
             return connexion.creerTokenStream(commandeV2)
         }        
         const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, creerTokenStreamInst)        
-        console.debug("Nouveau mediaLoad : ", mediaLoader)
+        // console.debug("Nouveau mediaLoad : ", mediaLoader)
 
         const mimetype = fichier.mimetype || version_courante.mimetype
 
-        console.debug("Creer videoloader avec video : %O, fuuid %O, mimetype %O", video, fuuid, mimetype)
-
+        // console.debug("Creer videoloader avec video : %O, fuuid %O, mimetype %O", video, fuuid, mimetype)
         const videoLoader = mediaLoader.videoLoader(video || {}, {fuuid, mimetype})
+        
         return videoLoader
     }, [workers, fichier, contactId])
 
@@ -185,9 +185,9 @@ export function WrapperPlayer(props) {
         setErrVideoCb('')
         setProgresChargement(0)
 
-        // console.debug("AfficherVideo selecteur ", selecteur)
+        console.debug("AfficherVideo selecteur ", selecteur)
 
-        videoLoader.load({selecteur})
+        videoLoader.load({selecteur: selecteurCourant})
             .then(async src => {
                 // console.debug("WrapperPlayer videoLoader.load resultat : ", src)
                 await attendreChargement(src, majChargement, setSrcVideo, setErrVideoCb, abortController.signal)
@@ -471,7 +471,7 @@ export function SelecteurResolution(props) {
 
     const changerSelecteur = useCallback(value=>{
         // if(Number.parseInt(value)) window.localStorage.setItem('videoResolution', value)
-        // console.debug("changerSelecteur : ", value)
+        console.debug("changerSelecteur : ", value)
         setSelecteur(value)
     }, [setSelecteur])
 
@@ -487,15 +487,26 @@ export function SelecteurResolution(props) {
             supportMedia: capabilities.video
         }
         const selecteurs = determinerSelecteursVideos(videos, paramsOpts)
-        // console.debug("SelecteurResolution selecteurs ", selecteurs)
+        console.debug("SelecteurResolution selecteurs ", selecteurs)
         return selecteurs
     }, [fichier, capabilities])
+
+    let titleDropdown = useMemo(()=>{
+        if(!selecteur || !selecteurs) return '';
+        for(let resolution of Object.keys(selecteurs.resolutions)) {
+            let valeur = selecteurs.resolutions[resolution];
+            for(let subres of valeur) {
+                if(subres.fuuid_video === selecteur) return resolution;
+            }
+        }
+        return '';
+    }, [selecteur, selecteurs]);
 
     // Identifier un selecteur initial pour declencher le chargement automatique
     useEffect(()=>{
         // console.debug("SelecteurResolution selecteur %O, selecteurs %O", selecteur, selecteurs)
         if(selecteur || !selecteurs) return  // Deja initialise
-        const selecteursKeys = Object.keys(selecteurs)
+        // const selecteursKeys = Object.keys(selecteurs)
 
         const defaultSelecteur = window.localStorage.getItem('videoResolution')
 
@@ -513,16 +524,16 @@ export function SelecteurResolution(props) {
 
             // Hacky, trouver resolution la plus elevee disponible par rapport au selecteur
             const resolutionDefault = Number.parseInt(defaultSelecteur)
-            const resolutionListe = Object.keys(resolutions).map(item=>Number.parseInt(item))
+            // const resolutionListe = Object.keys(resolutions).map(item=>Number.parseInt(item))
+            let resolutionListe = Object.keys(resolutions);
             resolutionListe.sort()
             resolutionListe.reverse()
-            for(const resolutionInt of resolutionListe) {
+            for(const resolutionString of resolutionListe) {
+                let resolutionInt = Number.parseInt(resolutionString);
                 if(resolutionInt <= resolutionDefault) {
-                    if(resolutionInt < 1000) {
-                        return setSelecteur('0'+resolutionInt)
-                    } else {
-                        return setSelecteur(''+resolutionInt)
-                    }
+                    let resolution = resolutions[resolutionString];
+                    let fuuid_video = resolution[0].fuuid_video;
+                    return setSelecteur(fuuid_video);
                 }
             }
 
@@ -534,7 +545,7 @@ export function SelecteurResolution(props) {
     }, [selecteurs, selecteur, setSelecteur])
 
     return (
-        <DropdownButton title={selecteur} variant="secondary" onSelect={changerSelecteur}>
+        <DropdownButton title={titleDropdown} variant="secondary" onSelect={changerSelecteur}>
             <SelecteurVideoContenu fichier={fichier} selecteurs={selecteurs} selecteur={selecteur} setSelecteur={changerSelecteur} />
         </DropdownButton>
     )
@@ -552,20 +563,21 @@ function SelecteurVideoResolution(props) {
         // if(!selecteurs) return [{key: 'original', label: 'Original'}]
         if(!selecteurs) return [{key: '', label: 'Aucun format disponible'}]
 
-        // console.debug("SelecteurVideoResolution selecteurs", selecteurs)
+        console.debug("SelecteurVideoResolution selecteurs", selecteurs)
 
         let originalSupporte = false
 
-        const resolutions = selecteurs.resolutions
+        const resolutions = selecteurs.resolutions;
         const optionKeys = Object.keys(resolutions)
         optionKeys.sort()
         optionKeys.reverse()
         const options = optionKeys.map(key=>{ 
             const valeur = resolutions[key]
-            const label = '' + Number.parseInt(key) + 'p'
+            let fuuid_video = valeur[0].fuuid_video;
+            let label = key; //'' + Number.parseInt(key) + 'p'
             const original = valeur.reduce((acc, item)=>acc || item.original, false)
             if(original) originalSupporte = true
-            return {key, label, original} 
+            return {key, label, original, fuuid_video};
         })
         // if(selecteurs.fallback) options.push({key: 'fallback', label: 'fallback'})
         if(selecteurs.original) {
@@ -582,18 +594,19 @@ function SelecteurVideoResolution(props) {
     }, [selecteurs])
 
     return listeOptions.map(item=>{
-        const key = item.original?'original':item.key
-        const keyReact = item.original?key+'original':item.key
-        if(item.key === selecteur) {
-            return <Dropdown.Item key={keyReact} eventKey={key} active>{item.label}</Dropdown.Item>
+        // const key = item.original?'original':item.key
+        let fuuid_video = item.fuuid_video;
+        const keyReact = item.original?fuuid_video+'original':item.key
+        if(item.fuuid_video === selecteur) {
+            return <Dropdown.Item key={keyReact} eventKey={fuuid_video} active>{item.label}</Dropdown.Item>
         } else {
-            return <Dropdown.Item key={keyReact} eventKey={key}>{item.label}</Dropdown.Item>
+            return <Dropdown.Item key={keyReact} eventKey={fuuid_video}>{item.label}</Dropdown.Item>
         }
     })
 }
 
 export function determinerSelecteursVideos(videos, original) {
-    // console.debug("determinerSelecteursVideos %O, original %O", videos, original)
+    console.debug("determinerSelecteursVideos %O, original %O", videos, original)
 
     // Information original (optionnel)
     const { fuuid, mimetype, height, width, codec, supportMedia } = original
@@ -613,10 +626,24 @@ export function determinerSelecteursVideos(videos, original) {
         }
     }
 
-    for(const key of Object.keys(videos)) {
-        const video = videos[key]
-        const { codec, fuuid_video, width, height, mimetype, quality, original } = video
+    // Retirer les videos qui ne sont pas supportes (codec)
+    let videosFiltres = Object.values(videos).filter(item=>{
+        if(supportMedia[item.codec]) {
+            // Verification incluant le mimetype
+            let verifMimetype = ['probably', 'maybe'].includes(supporteFormatVideo(item.mimetype))
+            // console.debug("Resultat verif mimetype video : ", verifMimetype)
+            return verifMimetype;
+        }
+        return false;
+    });
+
+    for(let video of videosFiltres) {
+        const { codec, fuuid_video, width, height, mimetype, quality, original, audio_stream_idx, subtitle_stream_idx, cle_conversion } = video
         let resolution = video.resolution || Math.min(width, height)
+
+        let bucketSuffix = ''
+        if(audio_stream_idx) bucketSuffix += ' A'+audio_stream_idx
+        if(typeof(subtitle_stream_idx) == 'number') bucketSuffix += ' S'+subtitle_stream_idx
 
         const infoVideo = {
             fuuid,
@@ -629,6 +656,9 @@ export function determinerSelecteursVideos(videos, original) {
             header: video.header,
             format: video.format,
             original,
+            audio_stream_idx, 
+            subtitle_stream_idx,
+            cle_conversion,
         }
         // console.debug("InfoVideo %O (video elem %O)", infoVideo, key)
 
@@ -647,9 +677,10 @@ export function determinerSelecteursVideos(videos, original) {
         else if(resolution < 720 && resolution >= 480) resolutionTag = '0480'
         else if(resolution < 480 && resolution >= 360) resolutionTag = '0360'
         else if(resolution < 360) resolutionTag = '0270'
-        
+
         // Inserer label (selecteur) pour le tag
         if(resolutionTag) {
+            resolutionTag += bucketSuffix;
             let liste = bucketResolution[resolutionTag]
             if(!liste) {
                 liste = []
@@ -659,24 +690,28 @@ export function determinerSelecteursVideos(videos, original) {
         }
     }
 
-    // Cleanup des buckets de resolution si aucun codec n'est supporte
-    const resolutions = buckets.resolutions
-    const keysResolution = Object.keys(resolutions)
-    for(const key of keysResolution) {
-        const listeVideos = resolutions[key]
-        let supporte = false
-        for(const video of listeVideos) {
-            if(supportMedia[video.codec]) {
-                // Verification incluant le mimetype
-                const verifMimetype = ['probably', 'maybe'].includes(supporteFormatVideo(video.mimetype))
-                // console.debug("Resultat verif mimetype video : ", verifMimetype)
-                supporte = verifMimetype
-                break
-            }
-        }
-        // Retirer cette resolution
-        if(!supporte) delete resolutions[key]
-    }
+    console.debug("Buckets intermediaires ", buckets);
+
+    // // Cleanup des buckets de resolution si aucun codec n'est supporte
+    // const resolutions = buckets.resolutions
+    // const keysResolution = Object.keys(resolutions)
+    // for(const key of keysResolution) {
+    //     const listeVideos = resolutions[key]
+    //     let supporte = false
+    //     for(const video of listeVideos) {
+    //         if(supportMedia[video.codec]) {
+    //             // Verification incluant le mimetype
+    //             const verifMimetype = ['probably', 'maybe'].includes(supporteFormatVideo(video.mimetype))
+    //             // console.debug("Resultat verif mimetype video : ", verifMimetype)
+    //             supporte = verifMimetype
+    //             break
+    //         }
+    //     }
+    //     // Retirer cette resolution
+    //     if(!supporte) delete resolutions[key]
+    // }
+
+    console.debug("Buckets ", buckets);
 
     return buckets
 }

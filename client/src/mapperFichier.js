@@ -1,4 +1,4 @@
-import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
+import MediaLoader from './mediaLoader'
 import { estMimetypeVideo } from '@dugrema/millegrilles.utiljs/src/mimetypes.js'
 
 const ICONE_FOLDER = <i className="fa fa-folder fa-lg"/>

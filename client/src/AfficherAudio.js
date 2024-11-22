@@ -8,7 +8,7 @@ import Button from 'react-bootstrap/Button'
 import Alert from 'react-bootstrap/Alert'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-import MediaLoader from '@dugrema/millegrilles.reactjs/src/mediaLoader'
+import MediaLoader from './mediaLoader'
 import useWorkers from './WorkerContext'
 
 const HTTP_STATUS_ATTENTE = [202, 204]

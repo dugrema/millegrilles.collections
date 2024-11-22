@@ -513,6 +513,18 @@ function Videos(props) {
     </>
   )
 
+  // <Col xs={2} lg={1}>{packageFormat}</Col>
+  // <Col xs={2} lg={1}>{codec}</Col>
+  // <Col xs={1}>{bitrate_quality}</Col>
+  // <Col xs={5} sm={2} lg={2}>{video.width} x {video.height}</Col>
+  // <Col xs={3} sm={2}><FormatteurTaille value={video.taille_fichier} /></Col>
+  // <Col xs={2} sm={1}>
+  //   {video.audio_stream_idx?'A'+video.audio_stream_idx:''}
+  //   {typeof(video.subtitle_stream_idx)==='number'?'S'+video.subtitle_stream_idx:''}
+  // </Col>
+  // <Col xs={8} sm={3} lg={4}>
+
+  
   return (
     <>
       <h3>Videos disponibles</h3>
@@ -521,9 +533,10 @@ function Videos(props) {
         <Col xs={2} lg={1}>Codec</Col>
         <Col md={1} className='d-none d-md-block'>Qualite</Col>
         <Col xs={1} className='d-md-none'>Qual</Col>
-        <Col xs={6} sm={3} lg={2}>Resolution</Col>
+        <Col xs={5} sm={2} lg={2}>Resolution</Col>
         <Col sm={2} className='d-none d-sm-block'>Taille</Col>
-        <Col sm={2} lg={5} className='d-none d-sm-block'>Actions</Col>
+        <Col sm={1} className='d-none d-sm-block'>Streams</Col>
+        <Col sm={3} lg={4} className='d-none d-sm-block'>Actions</Col>
       </Row>
       {videosTries.map(video=>{
         return (
@@ -614,9 +627,13 @@ function AfficherLigneFormatVideo(props) {
       <Col xs={2} lg={1}>{packageFormat}</Col>
       <Col xs={2} lg={1}>{codec}</Col>
       <Col xs={1}>{bitrate_quality}</Col>
-      <Col xs={6} sm={3} lg={2}>{video.width} x {video.height}</Col>
-      <Col xs={4} sm={2}><FormatteurTaille value={video.taille_fichier} /></Col>
-      <Col xs={8} sm={2} lg={5}>
+      <Col xs={5} sm={2} lg={2}>{video.width} x {video.height}</Col>
+      <Col xs={3} sm={2}><FormatteurTaille value={video.taille_fichier} /></Col>
+      <Col xs={2} sm={1}>
+        {video.audio_stream_idx?'A'+video.audio_stream_idx:''}
+        {typeof(video.subtitle_stream_idx)==='number'?'S'+video.subtitle_stream_idx:''}
+      </Col>
+      <Col xs={8} sm={3} lg={4}>
         {mobile?'':
           <Button variant="secondary" onClick={download}>
             <i className="fa fa-download" />

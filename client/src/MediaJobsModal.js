@@ -154,6 +154,7 @@ export function AfficherListeJobs(props) {
 export function AfficherLigneFormatVideo(props) {
     const { showNomFichier, job } = props
     const { fuuid, cle_conversion } = job
+    console.debug("Job: ", job)
 
     const workers = useWorkers()
 
@@ -207,6 +208,7 @@ export function AfficherLigneFormatVideo(props) {
             :''
         }
         <Col xs={3} lg={1}>{codec}</Col>
+        <Col xs={3} lg={1}>{resolution}</Col>
         <Col xs={3} lg={1}>{resolution}</Col>
         {showNomFichier?
             <Col xs={6} lg={2}><FormatteurTaille value={tailleFichier} /></Col>
