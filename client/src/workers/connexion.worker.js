@@ -235,7 +235,7 @@ function supprimerJobVideo(commande) {
   return connexionClient.emitWithAck(
     'supprimerJobVideo',
     commande,
-    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerJobVideo', attacherCertificat: true}
+    {kind: MESSAGE_KINDS.KIND_COMMANDE, domaine: CONST_DOMAINE_GROSFICHIERS, action: 'supprimerJobVideoV2', attacherCertificat: true}
   )
 }
 

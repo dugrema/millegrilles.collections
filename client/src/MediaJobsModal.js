@@ -153,50 +153,51 @@ export function AfficherListeJobs(props) {
 
 export function AfficherLigneFormatVideo(props) {
     const { showNomFichier, job } = props
-    const { fuuid, cle_conversion } = job
-    console.debug("Job: ", job)
+    const { fuuid, tuuid, cle_conversion, codec, job_id, etat, resolution } = job
+    // console.debug("Job: ", job)
 
     const workers = useWorkers()
 
-    let label = job.nom || job.tuuid || job.fuuid || 'N/D'
+    let label = job.nom || tuuid || fuuid || job_id || 'N/D'
     // label = label.substring(0, 50)
 
     let progres = useMemo(()=>{
         // console.debug("AfficherLigneFormatVideo progres ", job)
         if(['dechiffrage'].includes(job.etat)) {
             return <ProgressBar striped animated now={100} label={`Dechiffrage`} />
-        } else if(job.etat === 'probe') {
+        } else if(etat === 'probe') {
             return <ProgressBar striped animated now={100} label={`Analyse`} />
-        } else if(job.etat === 'termine') {
+        } else if(etat === 'termine') {
             return <ProgressBar now={100} variant='success' label='Termine' />
-        } else if (job.etat === 'transcodage') {
+        } else if (etat === 'transcodage') {
             if(!job.pct_progres && job.pct_progres !== 0) {
                 return <ProgressBar striped animated now={100} label={`Traitement`} />
             } else if(job.pct_progres < 3) {
                 return <ProgressBar striped animated now={100} label={`Traitement ${job.pct_progres}%`} />
             }
             return <ProgressBar striped animated now={job.pct_progres} label={`${job.pct_progres}%`} />
-        } else if(!job.etat || job.etat === 1) {
+        } else if(!etat || etat === 1) {
             return <ProgressBar variant='dark' now={100} label='Pending' />
-        } else if(job.etat === 2 && job.pct_progres === 100) {
+        } else if(etat === 2 && job.pct_progres === 100) {
             // Chargement de la DB sans reception termine
             return <ProgressBar now={100} variant='success' label='Termine' />
-        } else if(job.etat === 2) {
+        } else if(etat === 2) {
             // Chargement de la DB sans reception etat transcodage
             return <ProgressBar striped now={100} label={`Rafraichissement`} />
         } else {
-            return <ProgressBar variant='danger' now={100} label={`Erreur ${job.etat}`} />
+            return <ProgressBar variant='danger' now={100} label={`Erreur ${etat}`} />
         }
     }, [job])
 
     const version_courante = job.version_courante || {}
     const tailleFichier = version_courante.taille
-    const [_mimetype, codec, resolution] = cle_conversion.split(';')
+    // const [_mimetype, codec, resolution] = cle_conversion.split(';')
+    let jobId = job.job_id;
   
     const supprimerJobVideoHandler = useCallback(()=>{
-        supprimerJobVideo(workers, fuuid, cle_conversion)
+        supprimerJobVideo(workers, fuuid, tuuid, jobId)
             .catch(err=>console.error("AfficherLigneFormatVideo Erreur supprimer job video : ", err))
-    }, [workers, fuuid, cle_conversion])
+    }, [workers, fuuid, tuuid, jobId])
 
     return (
       <Row>
@@ -220,8 +221,8 @@ export function AfficherLigneFormatVideo(props) {
   
 }
 
-export async function supprimerJobVideo(workers, fuuid, cleConversion) {
+export async function supprimerJobVideo(workers, fuuid, tuuid, jobId) {
     const { connexion } = workers
-    const reponse = await connexion.supprimerJobVideo({fuuid, cle_conversion: cleConversion})
+    const reponse = await connexion.supprimerJobVideo({fuuid, tuuid, job_id: jobId})
     console.debug("Reponse supprimer job video : ", reponse)
 }

@@ -219,7 +219,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
 
     async def supprimer_job_video(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideo')
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideoV2')
 
     async def ajouter_contact_local(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,

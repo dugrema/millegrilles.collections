@@ -22,25 +22,25 @@ function mergeAction(state, action) {
     let trier = false
 
     for (let job of jobs) {
-        if(job.height || job.width || job.cle_conversion) {
+        if(job.job_id) {
             job = mapJob(job)
         } else {
-            console.trace("job sans resolution : ", job)
+            console.debug("job sans job_id : ", job)
             continue  // Skip
         }
+
         // console.debug("Mapper job ", job)
-        const { fuuid, cle_conversion } = job
+        const { job_id, fuuid } = job
 
         // Map job
-
         if(job.supprime === true) {
             // Delete. Supprimer la job de la liste
             state.liste = state.liste.filter(item=>{
-                return ! (item.fuuid === fuuid && item.cle_conversion === cle_conversion)
+                return ! (item.fuuid === fuuid && item.job_id === job_id)
             })
         } else {
             let jobItem = state.liste.filter(item=>{
-                return item.fuuid === fuuid && item.cle_conversion === cle_conversion
+                return item.fuuid === fuuid && item.job_id === job_id
             }).pop()
             
             if(!jobItem) {
@@ -229,11 +229,11 @@ async function middlewareListener(workers, action, listenerApi) {
 function mapJob(job) {
     const jobCopie = {...job}
     if(jobCopie.pctProgres) jobCopie.pct_progres = jobCopie.pctProgres
-    if(!jobCopie.cle_conversion) {
-        let resolution = Math.min(jobCopie.width || Number.MAX_SAFE_INTEGER, jobCopie.height || Number.MAX_SAFE_INTEGER)
-        resolution += 'p'
-        const cle_conversion = [jobCopie.mimetype, jobCopie.videoCodec, resolution, jobCopie.videoQuality].join(';')
-        jobCopie.cle_conversion = cle_conversion
-    }
+    // if(!jobCopie.job_id) {
+    //     let resolution = Math.min(jobCopie.width || Number.MAX_SAFE_INTEGER, jobCopie.height || Number.MAX_SAFE_INTEGER)
+    //     resolution += 'p'
+    //     const cle_conversion = [jobCopie.mimetype, jobCopie.videoCodec, resolution, jobCopie.videoQuality].join(';')
+    //     jobCopie.cle_conversion = cle_conversion
+    // }
     return jobCopie
 }
