@@ -1,8 +1,8 @@
 FROM docker.maple.maceroc.com:5000/millegrilles_web_python:2024.9.48
 
-ENV CA_PEM=/run/secrets/millegrille.cert.pem \
-    CERT_PEM=/run/secrets/cert.pem \
-    KEY_PEM=/run/secrets/key.pem \
+ENV CA_PATH=/run/secrets/millegrille.cert.pem \
+    CERT_PATH=/run/secrets/cert.pem \
+    KEY_PATH=/run/secrets/key.pem \
     MQ_HOSTNAME=mq \
     MQ_PORT=5673 \
     REDIS_HOSTNAME=redis \
