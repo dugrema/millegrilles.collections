@@ -553,29 +553,32 @@ export function cancelUpload() {
 }
 
 async function authenticate(workers) {
-    // NOTE - rien a faire, gere par App.js::InitialisationTransferts
-
-    // let url = new URL(_pathServeur.href)
-    // url.pathname += '/authenticate';
-    // url.pathname = url.pathname.replaceAll('//', '/');
-
-    // let signedMessage = await workers.chiffrage.formatterMessage(
-    //     {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
-
-    // console.debug('Signed message: ', signedMessage);
-    // let response = await axios({
-    //     method: 'POST',
-    //     url: url.href,
-    //     data: signedMessage,
-    //     withCredentials: true,
-    // });
+    let url = new URL(_pathServeur.href)
+    url.pathname += '/authenticate_jwt';
+    url.pathname = url.pathname.replaceAll('//', '/');
+  
+    let signedMessage = await workers.chiffrage.formatterMessage(
+        {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
+  
+    // console.debug('Authenticate url: %s, Signed message: %O', url.href, signedMessage);
+    let response = await axios({
+        method: 'POST',
+        url: url.href,
+        data: signedMessage,
+        withCredentials: true,
+    });
     // console.debug("Authentication response: ", response)
+    if(!response.data.ok) {
+        throw new Error("Authentication error");
+    }
+    return response.data.jwt;
 }
 
 async function onePassUploader(workers, fuuid, partContent, opts) {
     opts = opts || {}
     const onUploadProgress = opts.onUploadProgress,
-    hachagePart = opts.hachagePart
+    hachagePart = opts.hachagePart,
+    jwt = opts.jwt
 
     let pathUploadUrl = new URL(_pathServeur.href + '/files/' + fuuid)
     pathUploadUrl.pathname = pathUploadUrl.pathname.replaceAll('//', '/');
@@ -591,6 +594,9 @@ async function onePassUploader(workers, fuuid, partContent, opts) {
     }
     if(hachagePart) {
         headers['x-content-hash'] = hachagePart
+    }
+    if(jwt) {
+        headers['X-Token-Jwt'] = jwt;
     }
 
     // console.debug("partUploader Part uploader headers ", headers)
@@ -623,7 +629,8 @@ async function onePassUploader(workers, fuuid, partContent, opts) {
 async function partUploader(workers, fuuid, position, partContent, opts) {
     opts = opts || {}
     const onUploadProgress = opts.onUploadProgress,
-    hachagePart = opts.hachagePart
+    hachagePart = opts.hachagePart,
+    jwt = opts.jwt
 
     let pathUploadUrl = new URL(_pathServeur.href + path.join('/files', ''+fuuid, ''+position))
     pathUploadUrl.pathname = pathUploadUrl.pathname.replaceAll('//', '/');
@@ -639,6 +646,9 @@ async function partUploader(workers, fuuid, position, partContent, opts) {
     }
     if(hachagePart) {
         headers['x-content-hash'] = hachagePart  // 'm4OQCIPFQ/07VX/RQIGDoC1LRyicc1VBRaZEPr9DPm9qrdyDE'
+    }
+    if(jwt) {
+        headers['X-Token-Jwt'] = jwt;
     }
 
     // console.debug("partUploader Part uploader headers ", headers)
@@ -665,7 +675,10 @@ async function partUploader(workers, fuuid, position, partContent, opts) {
             }
             else if([401, 403].includes(response.status)) {
                 console.debug("Not authenticated, try again");
-                await authenticate(workers);
+                // On first try, we rely on the cookie in case it works. If it expires/CORS blocks it, use JWT.
+                // Get a new jwt and put it in headers.
+                let jwt = await authenticate(workers);
+                headers['X-Token-Jwt'] = jwt;
             }
             throw err
         })
@@ -676,7 +689,7 @@ async function partUploader(workers, fuuid, position, partContent, opts) {
 
 export async function confirmerUpload(token, fuuid, opts) {
     opts = opts || {}
-    const { transaction } = opts
+    const { transaction, jwt } = opts
     // console.debug("confirmerUpload %s cle : %O, transaction : %O", correlation, cle, transaction)
 
     let hachage = opts.hachage
@@ -699,6 +712,7 @@ export async function confirmerUpload(token, fuuid, opts) {
             method: 'POST',
             url: pathConfirmation.href,
             data: confirmationResultat,
+            headers: {'X-Token-Jwt': jwt},
             timeout: 30_000,
             withCredentials: true,  // pour CORS filehost
         })
@@ -777,7 +791,7 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
     }
 
     // Re-authenticate to ensure the filehost is available. This updates the cookie.
-    await authenticate(workers);
+    let jwt = await authenticate(workers);
 
     // Access to the filehost works, emit the transaction/key immediately so that the file shows up in the list.
     // Also, the FileControler emits the newFuuid event as soon as the file is done. This event must
@@ -801,6 +815,7 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
         const opts = {
             hachagePart: part.hachagePart,
             onUploadProgress: progressFichier,
+            jwt,
         };
         await onePassUploader(workers, fuuid, part.data, opts);
         return;
@@ -814,6 +829,7 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
             const opts = {
                 hachagePart: part.hachagePart,
                 onUploadProgress: progressFichier,
+                jwt,
             }
             // console.debug("uploadFichier Debut upload %s", correlation)
             await partUploader(workers, fuuid, position, partContent, opts)
@@ -832,7 +848,7 @@ export async function uploadFichier(workers, marquerUploadEtat, fichier, cancelT
 
     // console.debug("Confirmer upload de transactions signees : %O", transaction)
     try {
-        const reponseUpload = await transfertUploadFichiers.confirmerUpload(token, fuuid, {hachage: fuuid})
+        const reponseUpload = await transfertUploadFichiers.confirmerUpload(token, fuuid, {hachage: fuuid, jwt})
         if(reponseUpload.errcode === 'ECONNABORTED') {
             console.warn("uploadFichier Connexion aborted (%s) - marquer complete quand meme", reponseUpload.err)
         } else if(reponseUpload.err) {

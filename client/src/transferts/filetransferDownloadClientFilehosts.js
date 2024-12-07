@@ -75,7 +75,8 @@ async function fetchAvecProgress(url, opts) {
         position = opts.position || 0,
         partSize = opts.partSize,
         taille = opts.taille,
-        signal = opts.signal
+        signal = opts.signal,
+        jwt = opts.jwt
 
   var dataProcessor = opts.dataProcessor
 
@@ -96,7 +97,7 @@ async function fetchAvecProgress(url, opts) {
   // console.debug("fetch url %s header range %O", url, headerContentRange)
   const reponse = await fetch(url, {
     signal, cache: 'no-store', keepalive: false, credentials: "include",
-    headers: {'Range': headerContentRange}
+    headers: {'Range': headerContentRange, 'X-Token-Jwt': jwt}
   })
   const contentLengthRecu = Number(reponse.headers.get('Content-Length'))
   if(tailleTransfert && tailleTransfert !== contentLengthRecu) {
@@ -297,7 +298,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
   if(!_callbackAjouterChunkIdb) { throw new Error('_callbackAjouterChunkIdb non initialise') }
 
-  await authenticate(workers);
+  let jwt = await authenticate(workers);
 
   // console.debug("downloadFichierParts %O, Options : %O", downloadEnCours, opts)
   const DEBUG = opts.DEBUG || false
@@ -322,11 +323,11 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
   const infoFichier = await downloadFichiersDao.getDownload(fuuid)
   let tailleFichierChiffre = infoFichier.tailleChiffre
   if(dechiffre) {
-    const reponseHead = await fetch(urlDownload, {method: 'HEAD', credentials: "include"})
+    const reponseHead = await fetch(urlDownload, {method: 'HEAD', credentials: "include", headers: {'X-Token-Jwt': jwt}})
     tailleFichierChiffre = Number.parseInt(reponseHead.headers.get('Content-Length'))
   } else if(!tailleFichierChiffre) {
     // Recuperer la taille du fichier chiffre
-    const reponseHead = await fetch(urlDownload, {method: 'HEAD', credentials: "include"})
+    const reponseHead = await fetch(urlDownload, {method: 'HEAD', credentials: "include", headers: {'X-Token-Jwt': jwt}})
     tailleFichierChiffre = Number.parseInt(reponseHead.headers.get('Content-Length'))
     infoFichier.tailleChiffre = tailleFichierChiffre
     await downloadFichiersDao.updateFichierDownload(infoFichier)
@@ -365,7 +366,8 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
         // done,
       } = await fetchAvecProgress(
         urlDownload,
-        {progressCb, downloadEnCours, position: positionPart, partSize, taille: tailleFichierChiffre, signal: abortControllerLocal.signal, withCredentials: true, DEBUG}
+          {progressCb, downloadEnCours, position: positionPart, partSize, taille: tailleFichierChiffre, 
+          signal: abortControllerLocal.signal, withCredentials: true, DEBUG, jwt}
       )
 
       if(DEBUG) console.debug("Stream url %s recu (status: %d): %O", url, status, stream)
@@ -381,7 +383,7 @@ export async function downloadFichierParts(workers, downloadEnCours, progressCb,
 
       if([401, 403].includes(status)) {
         console.debug("Code %d, tenter authentification");
-        await authenticate(workers)
+        jwt = await authenticate(workers)
       }
 
       if(status>299) {
@@ -720,20 +722,22 @@ async function* parcourirRepertoireDansZipRecursif(workers, nodes, parents, opts
 }
 
 async function authenticate(workers) {
-  // NOTE - rien a faire, gere par App.js::InitialisationTransferts
-
-  // let url = new URL(_urlDownload + '/authenticate')
-  // url.pathname = url.pathname.replaceAll('//', '/');
-
-  // let signedMessage = await workers.chiffrage.formatterMessage(
-  //     {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
-
-  // console.debug('Authenticate url: %s, Signed message: %O', url.href, signedMessage);
-  // let response = await axios({
-  //     method: 'POST',
-  //     url: url.href,
-  //     data: signedMessage,
-  //     withCredentials: true,
-  // });
-  // console.debug("Authentication response: ", response)
+    let url = new URL(_urlDownload + '/authenticate_jwt')
+    url.pathname = url.pathname.replaceAll('//', '/');
+  
+    let signedMessage = await workers.chiffrage.formatterMessage(
+        {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
+  
+    console.debug('Authenticate url: %s, Signed message: %O', url.href, signedMessage);
+    let response = await axios({
+        method: 'POST',
+        url: url.href,
+        data: signedMessage,
+        withCredentials: true,
+    });
+    console.debug("Authentication response: ", response)
+    if(!response.data.ok) {
+        throw new Error("Authentication error");
+    }
+    return response.data.jwt;
 }
