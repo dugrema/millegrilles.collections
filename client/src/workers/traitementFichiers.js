@@ -1,10 +1,16 @@
-import { ajouterUpload } from '../redux/uploaderSlice'
+import axios from 'axios';
 import * as Comlink from 'comlink'
+import { MESSAGE_KINDS } from '@dugrema/millegrilles.utiljs/src/constantes'
+
+import { ajouterUpload } from '../redux/uploaderSlice'
 import * as CONST_TRANSFERT from '../transferts/constantes'
 import {getPartsDownload} from '../transferts/storage'
 
 var _pathServeur = new URL(window.location.href);
 _pathServeur.pathname = '/filehost/';
+
+var _jwt = null;
+var _jwt_updated = 0;
 
 function setup(workers) {
     return {
@@ -22,6 +28,9 @@ function setup(workers) {
 
         // Remplacement pour getFichierChiffre
         getUrlFuuid,
+        getFilehostJwt(refresh) {
+            return getFilehostJwt(workers, refresh)
+        },
         getCleSecrete(cle_id, opts) {
             opts = opts || {}
             return getCleSecrete(workers, cle_id, opts)
@@ -59,6 +68,36 @@ function getUrlFuuid(fuuid, opts) {
         url.pathname = url.pathname.replaceAll('//', '/');
         return url.href;
     }
+}
+
+async function getFilehostJwt(workers, refresh) {
+    if(!refresh) {
+        if(_jwt_updated < new Date().getTime() - 30_000) {
+            refresh = true;
+        }
+    }
+    if(refresh || !_jwt) {
+        let url = new URL(_pathServeur.href + '/authenticate_jwt')
+        url.pathname = url.pathname.replaceAll('//', '/');
+
+        let signedMessage = await workers.chiffrage.formatterMessage(
+            {}, 'filehost', {kind: MESSAGE_KINDS.KIND_COMMANDE, action: 'authenticate', inclureCa: true});
+    
+        console.debug('Authenticate url: %s, Signed message: %O', url.href, signedMessage);
+        let response = await axios({
+            method: 'POST',
+            url: url.href,
+            data: signedMessage,
+            withCredentials: true,
+        });
+        console.debug("Authentication response: ", response)
+        if(!response.data.ok) {
+            throw new Error("Authentication error");
+        }
+        _jwt = response.data.jwt;
+        _jwt_updated = new Date().getTime();
+    }
+    return _jwt;
 }
 
 async function getCleSecrete(workers, cle_id, opts) {

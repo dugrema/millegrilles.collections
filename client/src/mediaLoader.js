@@ -392,7 +392,7 @@ export function determinerSelecteursVideos(videos, opts) {
 
 class MediaLoader {
 
-    constructor(urlMapper, getCleSecrete, creerTokenJwt) {
+    constructor(urlMapper, getCleSecrete, creerTokenJwt, authenticateFilehostJwt) {
         // Methode avec parametre (fuuid: str, {jwt: str})
         this.urlMapper = urlMapper
         
@@ -401,6 +401,9 @@ class MediaLoader {
 
         // Methode avec parametre ({fuuids: [str], fuuidMedia: str, mimetype: str})
         this.creerTokenJwt = creerTokenJwt
+
+        // Method qui retourne un Jwt valide pour le filehost
+        this.authenticateFilehostJwt = authenticateFilehostJwt
     }
 
     async downloader(fuuid, opts) {
@@ -412,6 +415,9 @@ class MediaLoader {
 
         const signal = controller?controller.signal:null
 
+        let jwt = await this.authenticateFilehostJwt()
+        let headers = {'X-Token-Jwt': jwt};
+
         // Recuperer le fichier
         const reponse = await axios({
             method: 'GET',
@@ -420,6 +426,7 @@ class MediaLoader {
             timeout: CONST_TIMEOUT_DOWNLOAD,
             progress,
             withCredentials: true,
+            headers,
             // signal,  // Bug sur dev - react useEffect() calle 2 fois
         })
 

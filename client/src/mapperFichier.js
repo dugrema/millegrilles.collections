@@ -25,7 +25,7 @@ export function mapDocumentComplet(workers, doc, opts) {
 
     const { traitementFichiers } = workers
 
-    const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete)
+    const mediaLoader = new MediaLoader(traitementFichiers.getUrlFuuid, traitementFichiers.getCleSecrete, null, traitementFichiers.getFilehostJwt)
 
     const { nom, tuuid, date_creation, mimetype, user_id, /* archive, */ } = doc
     const version_courante = doc.version_courante?{...doc.version_courante}:null
