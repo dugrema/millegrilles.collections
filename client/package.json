@@ -1,8 +1,7 @@
 {
   "name": "millegrilles.collection-client",
-  "version": "2024.8.0",
+  "version": "2024.9.0",
   "private": true,
-  "proxy": "https://localhost:4037",
   "homepage": "/collections",
   "dependencies": {
     "@babel/plugin-syntax-object-rest-spread": "^7.8.3",

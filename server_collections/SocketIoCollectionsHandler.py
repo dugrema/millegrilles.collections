@@ -1,22 +1,20 @@
 import asyncio
-import datetime
 import json
 import logging
-import uuid
 
-import pytz
 
 from millegrilles_messages.messages import Constantes
 from millegrilles_web.SocketIoHandler import SocketIoHandler, ErreurAuthentificationMessage
-from millegrilles_web.JwtUtils import creer_token_fichier
+from millegrilles_web.SocketIoSubscriptions import SocketIoSubscriptions
 from server_collections import Constantes as ConstantesCollections
+from server_collections.CollectionsManager import CollectionsManager
 
 
 class SocketIoCollectionsHandler(SocketIoHandler):
 
-    def __init__(self, app, stop_event: asyncio.Event):
+    def __init__(self, manager: CollectionsManager, subscription_handler: SocketIoSubscriptions, always_connect=False):
+        super().__init__(manager, subscription_handler, always_connect)
         self.__logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
-        super().__init__(app, stop_event)
 
     async def _preparer_socketio_events(self):
         await super()._preparer_socketio_events()
@@ -79,167 +77,168 @@ class SocketIoCollectionsHandler(SocketIoHandler):
 
     async def requete_documents(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'documentsParTuuid')
+                                           ConstantesCollections.NOM_DOMAINE, 'documentsParTuuid', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_favoris(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'favoris')
+                                           ConstantesCollections.NOM_DOMAINE, 'favoris', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_corbeille(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getCorbeille')
+                                           ConstantesCollections.NOM_DOMAINE, 'getCorbeille', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_collection(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'contenuCollection')
+                                           ConstantesCollections.NOM_DOMAINE, 'contenuCollection', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_recents(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'activiteRecente')
+                                           ConstantesCollections.NOM_DOMAINE, 'activiteRecente', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_cles_fichiers(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           Constantes.DOMAINE_MAITRE_DES_CLES, 'dechiffrage')
+                                           Constantes.DOMAINE_MAITRE_DES_CLES, 'dechiffrage', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_recherche_index(self, sid: str, message: dict):
         # return await self.executer_requete(sid, message,
         #                                    ConstantesCollections.DOMAINE_SOLR_RELAI, 'fichiers')
         return await self.executer_requete(sid, message,
-                                           Constantes.DOMAINE_GROS_FICHIERS, 'rechercheIndex')
+                                           Constantes.DOMAINE_GROS_FICHIERS, 'rechercheIndex', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_sync_collection(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'syncCollection')
+                                           ConstantesCollections.NOM_DOMAINE, 'syncCollection', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_sync_recents(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'syncRecents')
+                                           ConstantesCollections.NOM_DOMAINE, 'syncRecents', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_sync_corbeille(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'syncCorbeille')
+                                           ConstantesCollections.NOM_DOMAINE, 'syncCorbeille', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_jobs_video(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'requeteJobsVideo')
+                                           ConstantesCollections.NOM_DOMAINE, 'requeteJobsVideo', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_info_video(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getInfoVideo')
+                                           ConstantesCollections.NOM_DOMAINE, 'getInfoVideo', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_contacts(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'chargerContacts')
+                                           ConstantesCollections.NOM_DOMAINE, 'chargerContacts', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_partages_usager(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getPartagesUsager')
+                                           ConstantesCollections.NOM_DOMAINE, 'getPartagesUsager', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_partages_contact(self, sid: str, message: dict):
-        return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getPartagesContact')
+        return await self.executer_requete(
+            sid, message, ConstantesCollections.NOM_DOMAINE, 'getPartagesContact', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_info_statistiques(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getInfoStatistiques')
+                                           ConstantesCollections.NOM_DOMAINE, 'getInfoStatistiques', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_structure_repertoire(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getStructureRepertoire')
+                                           ConstantesCollections.NOM_DOMAINE, 'getStructureRepertoire', exchange=Constantes.SECURITE_PRIVE)
 
     async def requete_permission_cles(self, sid: str, message: dict):
-        return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getClesFichiers')
+        return await self.executer_requete(
+            sid, message, ConstantesCollections.NOM_DOMAINE, 'getClesFichiers',
+            exchange=Constantes.SECURITE_PRIVE, domain_check=[ConstantesCollections.NOM_DOMAINE, Constantes.DOMAINE_MAITRE_DES_CLES])
 
     # Commandes
 
     async def creer_collection(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'nouvelleCollection')
+                                            ConstantesCollections.NOM_DOMAINE, 'nouvelleCollection', exchange=Constantes.SECURITE_PRIVE)
 
     async def changer_favoris(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'changerFavoris')
+                                            ConstantesCollections.NOM_DOMAINE, 'changerFavoris', exchange=Constantes.SECURITE_PRIVE)
 
     async def retirer_documents(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'retirerDocumentsCollection')
+                                            ConstantesCollections.NOM_DOMAINE, 'retirerDocumentsCollection', exchange=Constantes.SECURITE_PRIVE)
 
     async def supprimer_documents(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'supprimerDocuments')
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerDocuments', exchange=Constantes.SECURITE_PRIVE)
 
     async def archiver_documents(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'archiverDocuments')
+                                            ConstantesCollections.NOM_DOMAINE, 'archiverDocuments', exchange=Constantes.SECURITE_PRIVE)
 
     async def decrire_fichier(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'decrireFichier')
+                                            ConstantesCollections.NOM_DOMAINE, 'decrireFichier', exchange=Constantes.SECURITE_PRIVE)
 
     async def decrire_collection(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'decrireCollection')
+                                            ConstantesCollections.NOM_DOMAINE, 'decrireCollection', exchange=Constantes.SECURITE_PRIVE)
 
     async def recuperer_documents_v2(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'recupererDocumentsV2')
+                                            ConstantesCollections.NOM_DOMAINE, 'recupererDocumentsV2', exchange=Constantes.SECURITE_PRIVE)
 
     async def copier_vers_collection(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'ajouterFichiersCollection')
+                                            ConstantesCollections.NOM_DOMAINE, 'ajouterFichiersCollection', exchange=Constantes.SECURITE_PRIVE)
 
     async def decplacer_fichiers_collection(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'deplacerFichiersCollection')
+                                            ConstantesCollections.NOM_DOMAINE, 'deplacerFichiersCollection', exchange=Constantes.SECURITE_PRIVE)
 
     async def transcoder_video(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'transcoderVideo')
+                                            ConstantesCollections.NOM_DOMAINE, 'transcoderVideo', exchange=Constantes.SECURITE_PRIVE)
 
     async def ajouter_fichier(self, sid: str, message: dict):
         return await self.executer_commande(
-            sid, message, ConstantesCollections.NOM_DOMAINE, 'nouvelleVersion')
+            sid, message, ConstantesCollections.NOM_DOMAINE, 'nouvelleVersion', exchange=Constantes.SECURITE_PRIVE)
 
     async def supprimer_video(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'supprimerVideo')
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerVideo', exchange=Constantes.SECURITE_PRIVE)
 
     async def creer_token_stream(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getJwtStreaming')
+                                           ConstantesCollections.NOM_DOMAINE, 'getJwtStreaming', exchange=Constantes.SECURITE_PRIVE)
 
     async def get_sous_repertoires(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
-                                           ConstantesCollections.NOM_DOMAINE, 'getSousRepertoires')
+                                           ConstantesCollections.NOM_DOMAINE, 'getSousRepertoires', exchange=Constantes.SECURITE_PRIVE)
 
     async def completer_previews(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'completerPreviews')
+                                            ConstantesCollections.NOM_DOMAINE, 'completerPreviews', exchange=Constantes.SECURITE_PRIVE)
 
     async def supprimer_job_video(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideoV2')
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerJobVideoV2', exchange=Constantes.SECURITE_PRIVE)
 
     async def ajouter_contact_local(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'ajouterContactLocal')
+                                            ConstantesCollections.NOM_DOMAINE, 'ajouterContactLocal', exchange=Constantes.SECURITE_PRIVE)
 
     async def supprimer_contacts(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'supprimerContacts')
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerContacts', exchange=Constantes.SECURITE_PRIVE)
 
     async def partager_collections(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'partagerCollections')
+                                            ConstantesCollections.NOM_DOMAINE, 'partagerCollections', exchange=Constantes.SECURITE_PRIVE)
 
     async def supprimer_partage_usager(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'supprimerPartageUsager')
+                                            ConstantesCollections.NOM_DOMAINE, 'supprimerPartageUsager', exchange=Constantes.SECURITE_PRIVE)
 
     async def indexer_contenu(self, sid: str, message: dict):
         return await self.executer_commande(sid, message,
-                                            ConstantesCollections.NOM_DOMAINE, 'indexerContenu')
+                                            ConstantesCollections.NOM_DOMAINE, 'indexerContenu', exchange=Constantes.SECURITE_PRIVE)
 
     # Listeners
 
@@ -248,42 +247,54 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             try:
                 enveloppe = await self.authentifier_message(session, message)
             except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        contenu = json.loads(message['contenu'])
-        cuuid = contenu['cuuid']
-        contact_id = contenu.get('contact_id')
-        user_id = enveloppe.get_user_id
-
-        # Verifier si l'usager a un acces au cuuid demande via le partage
-        requete = {'tuuids': [cuuid], 'contact_id': contact_id, 'user_id': user_id}
-        action = 'verifierAccesTuuids'
-        domaine = Constantes.DOMAINE_GROS_FICHIERS
-
-        user_id_subscribe = user_id
+                return self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
 
         try:
-            producer = await asyncio.wait_for(self.etat.producer_wait(), timeout=2)
-        except asyncio.TimeoutError:
-            # MQ non disponible, abort
-            raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur temporaire)')
-        else:
-            reponse = await producer.executer_requete(requete, domaine=domaine, action=action,
-                                                      exchange=Constantes.SECURITE_PRIVE)
-            if reponse.parsed.get('ok') is False:
-                raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur requete)')
+            contenu = json.loads(message['contenu'])
+            cuuid = contenu['cuuid']
+            contact_id = contenu.get('contact_id')
+            user_id = enveloppe.get_user_id
 
-            if reponse.parsed.get('acces_tous') is not True:
-                raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (contact_id/cuuid refuse')
+            # Verifier si l'usager a un acces au cuuid demande via le partage
+            requete = {'tuuids': [cuuid], 'contact_id': contact_id, 'user_id': user_id}
+            action = 'verifierAccesTuuids'
+            domaine = Constantes.DOMAINE_GROS_FICHIERS
 
-            # # User effectif (via contact_id)
-            user_id_subscribe = reponse.parsed['user_id']
+            user_id_subscribe = user_id
 
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [f'evenement.GrosFichiers.{cuuid}.majCollection']
-        self.__logger.debug("ecouter_maj_collection sur %s" % routing_keys)
-        reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+            try:
+                producer = await asyncio.wait_for(self._manager.context.get_producer(), timeout=0.5)
+            except asyncio.TimeoutError:
+                # MQ non disponible, abort
+                raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur temporaire)')
+            else:
+                reponse = await producer.request(requete, domain=domaine, action=action, exchange=Constantes.SECURITE_PRIVE, timeout=3)
+                if reponse.parsed.get('ok') is False:
+                    raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur requete)')
+
+                if reponse.parsed.get('acces_tous') is not True:
+                    raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (contact_id/cuuid refuse')
+
+                # # User effectif (via contact_id)
+                user_id_subscribe = reponse.parsed['user_id']
+
+            exchanges = [Constantes.SECURITE_PRIVE]
+            routing_keys = [f'evenement.GrosFichiers.{cuuid}.majCollection']
+            self.__logger.debug("ecouter_maj_collection sur %s" % routing_keys)
+            reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
+            reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, reponse)
+        except asyncio.CancelledError as e:
+            raise e
+        except asyncio.TimeoutError as e:
+            self.__logger.debug('ecouter_maj_collection Timeout: %s', exc_info=e)
+            reponse = {'ok': False, 'err': 'Timeout'}
+            reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(
+                Constantes.KIND_REPONSE, reponse)
+        except Exception as e:
+            self.__logger.exception('Unhandled exception')
+            reponse = {'ok': False, 'err': str(e)}
+            reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(
+                Constantes.KIND_REPONSE, reponse)
 
         return reponse_signee
 
@@ -292,7 +303,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             try:
                 enveloppe = await self.authentifier_message(session, message)
             except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+                return self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
 
         contenu = json.loads(message['contenu'])
         cuuid = contenu['cuuid']
@@ -301,7 +312,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
         routing_keys = [f'evenement.GrosFichiers.{cuuid}.majCollection']
         self.__logger.debug("retirer_maj_collection sur %s" % routing_keys)
         reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+        reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, reponse)
 
         return reponse_signee
 
@@ -310,42 +321,54 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             try:
                 enveloppe = await self.authentifier_message(session, message)
             except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
-
-        contenu = json.loads(message['contenu'])
-        cuuid = contenu['cuuid']
-        contact_id = contenu.get('contact_id')
-        user_id = enveloppe.get_user_id
-
-        # Verifier si l'usager a un acces au cuuid demande via le partage
-        requete = {'tuuids': [cuuid], 'contact_id': contact_id, 'user_id': user_id}
-        action = 'verifierAccesTuuids'
-        domaine = Constantes.DOMAINE_GROS_FICHIERS
+                return self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
 
         try:
-            producer = await asyncio.wait_for(self.etat.producer_wait(), timeout=2)
-        except asyncio.TimeoutError:
-            # MQ non disponible, abort
-            raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur temporaire)')
-        else:
-            reponse = await producer.executer_requete(requete, domaine=domaine, action=action,
-                                                      exchange=Constantes.SECURITE_PRIVE)
-            if reponse.parsed.get('ok') is False:
-                raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur requete)')
+            contenu = json.loads(message['contenu'])
+            cuuid = contenu['cuuid']
+            contact_id = contenu.get('contact_id')
+            user_id = enveloppe.get_user_id
 
-            if cuuid != user_id and reponse.parsed.get('acces_tous') is not True:
-                raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (contact_id/cuuid refuse')
+            # Verifier si l'usager a un acces au cuuid demande via le partage
+            requete = {'tuuids': [cuuid], 'contact_id': contact_id, 'user_id': user_id}
+            action = 'verifierAccesTuuids'
+            domaine = Constantes.DOMAINE_GROS_FICHIERS
 
-            if contact_id is not None:
-                # Utiliser le user_id qui correspond au contact_id
-                user_id = reponse.parsed['user_id']
+            try:
+                producer = await asyncio.wait_for(self._manager.context.get_producer(), timeout=2)
+            except asyncio.TimeoutError:
+                # MQ non disponible, abort
+                raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur temporaire)')
+            else:
+                reponse = await producer.request(requete, domain=domaine, action=action, exchange=Constantes.SECURITE_PRIVE)
+                if reponse.parsed.get('ok') is False:
+                    raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (erreur requete)')
 
-        exchanges = [Constantes.SECURITE_PRIVE]
-        routing_keys = [
-            f'evenement.GrosFichiers.{cuuid}.majContenuCollection'
-        ]
-        reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe, user_id=user_id)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+                if cuuid != user_id and reponse.parsed.get('acces_tous') is not True:
+                    raise ErreurAuthentificationMessage('Acces refuse au repertoire partage (contact_id/cuuid refuse')
+
+                if contact_id is not None:
+                    # Utiliser le user_id qui correspond au contact_id
+                    user_id = reponse.parsed['user_id']
+
+            exchanges = [Constantes.SECURITE_PRIVE]
+            routing_keys = [
+                f'evenement.GrosFichiers.{cuuid}.majContenuCollection'
+            ]
+            reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe, user_id=user_id)
+            reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, reponse)
+        except asyncio.CancelledError as e:
+            raise e
+        except asyncio.TimeoutError as e:
+            self.__logger.debug('ecouter_maj_contenu_collection Timeout: %s', exc_info=e)
+            reponse = {'ok': False, 'err': 'Timeout'}
+            reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(
+                Constantes.KIND_REPONSE, reponse)
+        except Exception as e:
+            self.__logger.exception('Unhandled exception')
+            reponse = {'ok': False, 'err': str(e)}
+            reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(
+                Constantes.KIND_REPONSE, reponse)
 
         return reponse_signee
 
@@ -354,7 +377,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             try:
                 enveloppe = await self.authentifier_message(session, message)
             except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+                return self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
 
         contenu = json.loads(message['contenu'])
         cuuid = contenu['cuuid']
@@ -364,7 +387,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             f'evenement.GrosFichiers.{cuuid}.majContenuCollection'
         ]
         reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+        reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, reponse)
 
         return reponse_signee
 
@@ -373,7 +396,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             try:
                 enveloppe = await self.authentifier_message(session, message)
             except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+                return self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
 
         user_id = enveloppe.get_user_id
 
@@ -384,7 +407,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             f'evenement.GrosFichiers.{user_id}.jobSupprimee',
         ]
         reponse = await self.subscribe(sid, message, routing_keys, exchanges, enveloppe=enveloppe)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+        reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, reponse)
 
         return reponse_signee
 
@@ -393,7 +416,7 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             try:
                 enveloppe = await self.authentifier_message(session, message)
             except ErreurAuthentificationMessage as e:
-                return self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
+                return self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, {'ok': False, 'err': str(e)})[0]
 
         user_id = enveloppe.get_user_id
 
@@ -404,6 +427,6 @@ class SocketIoCollectionsHandler(SocketIoHandler):
             f'evenement.GrosFichiers.{user_id}.jobSupprimee',
         ]
         reponse = await self.unsubscribe(sid, message, routing_keys, exchanges)
-        reponse_signee, correlation_id = self.etat.formatteur_message.signer_message(Constantes.KIND_REPONSE, reponse)
+        reponse_signee, correlation_id = self._manager.context.formatteur.signer_message(Constantes.KIND_REPONSE, reponse)
 
         return reponse_signee
