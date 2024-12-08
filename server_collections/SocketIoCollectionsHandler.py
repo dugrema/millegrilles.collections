@@ -103,7 +103,8 @@ class SocketIoCollectionsHandler(SocketIoHandler):
         # return await self.executer_requete(sid, message,
         #                                    ConstantesCollections.DOMAINE_SOLR_RELAI, 'fichiers')
         return await self.executer_requete(sid, message,
-                                           Constantes.DOMAINE_GROS_FICHIERS, 'rechercheIndex', exchange=Constantes.SECURITE_PRIVE)
+                                           Constantes.DOMAINE_GROS_FICHIERS, 'rechercheIndex',
+                                           exchange=Constantes.SECURITE_PRIVE, role_check='solrrelai')
 
     async def requete_sync_collection(self, sid: str, message: dict):
         return await self.executer_requete(sid, message,
