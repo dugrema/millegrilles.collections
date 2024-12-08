@@ -208,13 +208,12 @@ export function AfficherLigneFormatVideo(props) {
             <Col xs={9} lg={5} className='modal-media-nomfichier'>{label}</Col>
             :''
         }
-        <Col xs={3} lg={1}>{codec}</Col>
-        <Col xs={3} lg={1}>{resolution}</Col>
-        <Col xs={3} lg={1}>{resolution}</Col>
         {showNomFichier?
-            <Col xs={6} lg={2}><FormatteurTaille value={tailleFichier} /></Col>
+            <Col xs={4} lg={2}><FormatteurTaille value={tailleFichier} /></Col>
             :''
         }
+        {codec?<Col xs={3} lg={1}>{codec}</Col>:<></>}
+        {codec?<Col xs={3} lg={1}>{resolution}</Col>:<></>}
         <Col>{progres}</Col>
       </Row>
     )

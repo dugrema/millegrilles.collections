@@ -269,8 +269,7 @@ BUTTON.supprimer {
 }
 
 .modal-media-nomfichier {
-    text-overflow: clip;
-    text-wrap: wrap;
+    word-wrap: break-word;
 }
 
 .btn-upload::file-selector-button {
